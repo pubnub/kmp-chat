@@ -8,9 +8,7 @@ import kotlin.js.Promise
 import PubNub as PubNubJs
 
 actual class PubNub actual constructor(configuration: PNConfiguration) {
-
     private val jsPubNub: PubNubJs = createPubNub(configuration.userId.value, configuration.subscribeKey, configuration.publishKey)
-
     actual fun publish(
         channel: String,
         message: Any,
