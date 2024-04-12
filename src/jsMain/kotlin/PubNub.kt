@@ -16,3 +16,6 @@ fun createPubNub(userId: String, subscribeKey: String, publishKey: String): PubN
     config.publishKey = publishKey
     return PubNub(config)
 }
+
+
+/// var a = new PubNub({ ... })
