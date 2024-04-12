@@ -1,0 +1,22 @@
+PODS:
+  - PubNubChat (1.0):
+    - PubNubSwift
+  - PubNubSwift (7.1.0)
+
+DEPENDENCIES:
+  - PubNubChat (from `../`)
+  - PubNubSwift (from `../swift`)
+
+EXTERNAL SOURCES:
+  PubNubChat:
+    :path: "../"
+  PubNubSwift:
+    :path: "../swift"
+
+SPEC CHECKSUMS:
+  PubNubChat: 13ea1c8bb123073e6a853db0739d802e97978bec
+  PubNubSwift: d20d42c99a035f8026e6df43e171bda9d719f46b
+
+PODFILE CHECKSUM: e8c859fa599e7549a81ee7163cc53ed15ac61bd8
+
+COCOAPODS: 1.15.2

@@ -5,11 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="560375e1-d8e1-4561-8a46-8ca25f01c457" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/PubNubChat.podspec" beforeDir="false" afterPath="$PROJECT_DIR$/PubNubChat.podspec" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/swift/Sources/PubNub/PubNubObjC.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sample Chat app/Sample Chat app.xcodeproj/project.pbxproj" beforeDir="false" afterPath="$PROJECT_DIR$/Sample Chat app/Sample Chat app.xcodeproj/project.pbxproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sample Chat app/Sample Chat app.xcodeproj/xcuserdata/wojciech.kalicinski.xcuserdatad/xcschemes/xcschememanagement.plist" beforeDir="false" afterPath="$PROJECT_DIR$/Sample Chat app/Sample Chat app.xcodeproj/xcuserdata/wojciech.kalicinski.xcuserdatad/xcschemes/xcschememanagement.plist" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sample Chat app/Sample Chat app/ContentView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Sample Chat app/Sample Chat app/ContentView.swift" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/iosArm64Main/kotlin/com/pubnub/kmp/PubNub.ios.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/iosMain/kotlin/com/pubnub/kmp/PubNub.ios.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/iosSimulatorArm64Main/kotlin/com/pubnub/kmp/PubNub.ios.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/iosSimulatorArm64Main/kotlin/com/pubnub/kmp/PubNub.ios.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/swift/Examples/Examples.xcodeproj/project.pbxproj" beforeDir="false" afterPath="$PROJECT_DIR$/swift/Examples/Examples.xcodeproj/project.pbxproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/swift/PubNub.xcodeproj/project.pbxproj" beforeDir="false" afterPath="$PROJECT_DIR$/swift/PubNub.xcodeproj/project.pbxproj" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -79,6 +83,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "wkal-pubnub"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/pubnub/swift.git",
+    "accountId": "ac08799a-8877-477c-8298-029226e2cf66"
+  }
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>

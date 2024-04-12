@@ -99,7 +99,7 @@ kotlin {
         xcodeConfigurationToNativeBuildType["CUSTOM_DEBUG"] = NativeBuildType.DEBUG
         xcodeConfigurationToNativeBuildType["CUSTOM_RELEASE"] = NativeBuildType.RELEASE
 
-        podfile = project.file("/Users/wojciech.kalicinski/projects/iosChatApp/Sample Chat app/Podfile")
+        podfile = project.file(project.file("Sample Chat app/Podfile"))
 
         framework {
             // Required properties
@@ -114,7 +114,7 @@ kotlin {
         pod("PubNubSwift") {
 //            headers = "PubNub/PubNub.h"
 //            source = git("https://github.com/pubnub/objective-c")
-            source = path("/Users/wojciech.kalicinski/projects/swift")
+            source = path(project.file("swift"))
 
 //            version = "7.1.0"
 //            version = "5.3.0"
