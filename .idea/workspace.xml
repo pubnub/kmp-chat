@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="afb6cfe4-60b5-4f29-a641-15a0b2e76be9" name="Changes" comment="" />
+    <list default="true" id="560375e1-d8e1-4561-8a46-8ca25f01c457" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/PubNubChat.podspec" beforeDir="false" afterPath="$PROJECT_DIR$/PubNubChat.podspec" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/iosArm64Main/kotlin/com/pubnub/kmp/PubNub.ios.kt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/iosMain/kotlin/com/pubnub/kmp/PubNub.ios.kt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/iosSimulatorArm64Main/kotlin/com/pubnub/kmp/PubNub.ios.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/iosSimulatorArm64Main/kotlin/com/pubnub/kmp/PubNub.ios.kt" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -15,184 +24,262 @@
   <component name="ExternalProjectsManager">
     <system id="GRADLE">
       <state>
+        <task path="$PROJECT_DIR$">
+          <activation />
+        </task>
         <projects_view>
           <tree_state>
-            <expand />
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="pubnub-chat" type="f1a62948:ProjectNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="pubnub-chat" type="f1a62948:ProjectNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="pubnub-chat" type="f1a62948:ProjectNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+                <item name="cocoapods" type="c8890929:TasksNode$1" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="pubnub-chat" type="f1a62948:ProjectNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+                <item name="interop" type="c8890929:TasksNode$1" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="pubnub-chat" type="f1a62948:ProjectNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+                <item name="run" type="c8890929:TasksNode$1" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="pubnub-chat" type="f1a62948:ProjectNode" />
+                <item name="Run Configurations" type="7b0102dc:RunConfigurationsNode" />
+              </path>
+            </expand>
             <select />
           </tree_state>
         </projects_view>
       </state>
     </system>
   </component>
-  <component name="Git.Settings">
-    <option name="PREVIOUS_COMMIT_AUTHORS">
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Wojciech Kaliciński &lt;wojciech.kalicinski@pubnub.com&gt;" />
+        <option value="Kotlin Class" />
       </list>
     </option>
-    <option name="RECENT_BRANCH_BY_REPOSITORY">
-      <map>
-        <entry key="$PROJECT_DIR$" value="wkal/pubnub-chat-kmp" />
-      </map>
-    </option>
+  </component>
+  <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "marcin-cebo"
-  }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "git@github.com:pubnub/kmp-chat",
-    "accountId": "cc0b743a-54b8-4de7-ba28-919493603df5"
-  }
-}]]></component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 2
-}]]></component>
-  <component name="ProjectId" id="2gaaperPkkJpddxp5or97BhrXtl" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="2erR3yZetVPwR4hn0uSKcX3V44J" />
   <component name="ProjectViewState">
-    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="autoscrollFromSource" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "SONARLINT_PRECOMMIT_ANALYSIS": "true",
-    "git-widget-placeholder": "initialCommitPR",
-    "go.import.settings.migrated": "true",
-    "kotlin-language-version-configured": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Gradle.Main [jvm].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [build].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [cinteropMyInteropIosArm64].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [cinteropMyInteropIosSimulatorArm64].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [cinteropMyInteropIosX64].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [cinteropPubNubSwiftIosArm64].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [commonize].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [jsBrowserDevelopmentRun].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [jsBrowserDistribution].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [jsBrowserProductionRun].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [kotlinUpgradePackageLock].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [kotlinUpgradeYarnLock].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [linkDebugFrameworkIosArm64].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [linkDebugFrameworkIosSimulatorArm64].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [linkIosArm64].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [linkIosSimulatorArm64].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [linkPodIosArm64].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [podBuildPubNubIphoneos].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [podImport].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [podInstall].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [podPublishDebugXCFramework].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [podspec].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.pubnub-chat [rootPackageJson].executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/wojciech.kalicinski/projects/pubnub-chat/src/iosMain/kotlin&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;kotlin-gradle-user-dirs&quot;: [
+      &quot;/Users/wojciech.kalicinski/.gradle&quot;
+    ]
   }
-}]]></component>
-  <component name="RunManager">
-    <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
-      <module name="kmp-chat" />
-      <working_directory value="$PROJECT_DIR$" />
-      <go_parameters value="-i" />
-      <kind />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
-      <module name="kmp-chat" />
-      <working_directory value="$PROJECT_DIR$" />
-      <go_parameters value="-i" />
-      <kind />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="JetRunConfigurationType">
-      <module name="kmp-chat" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
-      <module name="kmp-chat" />
-      <option name="filePath" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/iosMain/kotlin" />
+      <recent name="$PROJECT_DIR$/src/iosSimulatorArm64Main/kotlin/com/pubnub/kmp" />
+      <recent name="$PROJECT_DIR$/src/iosArm64Main/kotlin/com/pubnub/kmp" />
+      <recent name="$PROJECT_DIR$/src" />
+      <recent name="$PROJECT_DIR$/src/commonMain/kotlin/com/pubnub/kmp" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/commonMain/kotlin/com/pubnub/chat" />
+      <recent name="$PROJECT_DIR$/src/commonMain/kotlin" />
+    </key>
   </component>
-  <component name="SharedIndexes">
-    <attachedChunks>
-      <set>
-        <option value="bundled-jdk-9f38398b9061-18abd8497189-intellij.indexing.shared.core-IU-241.14494.240" />
-        <option value="bundled-js-predefined-1d06a55b98c1-74d2a5396914-JavaScript-IU-241.14494.240" />
-      </set>
-    </attachedChunks>
+  <component name="RunManager" selected="Gradle.pubnub-chat [linkDebugFrameworkIosArm64]">
+    <configuration name="pubnub-chat [commonize]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="commonize" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="pubnub-chat [linkDebugFrameworkIosArm64]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="linkDebugFrameworkIosArm64" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="pubnub-chat [linkDebugFrameworkIosSimulatorArm64]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="linkDebugFrameworkIosSimulatorArm64" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="pubnub-chat [podImport]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="podImport" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="pubnub-chat [podInstall]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="podInstall" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Gradle.pubnub-chat [linkDebugFrameworkIosArm64]" />
+        <item itemvalue="Gradle.pubnub-chat [podImport]" />
+        <item itemvalue="Gradle.pubnub-chat [podInstall]" />
+        <item itemvalue="Gradle.pubnub-chat [linkDebugFrameworkIosSimulatorArm64]" />
+        <item itemvalue="Gradle.pubnub-chat [commonize]" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="afb6cfe4-60b5-4f29-a641-15a0b2e76be9" name="Changes" comment="" />
-      <created>1715938327996</created>
+      <changelist id="560375e1-d8e1-4561-8a46-8ca25f01c457" name="Changes" comment="" />
+      <created>1712660516178</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1715938327996</updated>
-      <workItem from="1715938329212" duration="506000" />
+      <updated>1712660516178</updated>
     </task>
-    <task id="LOCAL-00001" summary="Init">
-      <option name="closed" value="true" />
-      <created>1715938717489</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1715938717489</updated>
-    </task>
-    <task id="LOCAL-00002" summary="initial commit">
-      <option name="closed" value="true" />
-      <created>1715938823284</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1715938823284</updated>
-    </task>
-    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
-  <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="3" />
-  </component>
   <component name="Vcs.Log.Tabs.Properties">
-    <option name="RECENT_FILTERS">
-      <map>
-        <entry key="Branch">
-          <value>
-            <list>
-              <RecentGroup>
-                <option name="FILTER_VALUES">
-                  <option value="wkal/pubnub-chat-kmp" />
-                </option>
-              </RecentGroup>
-            </list>
-          </value>
-        </entry>
-      </map>
-    </option>
     <option name="TAB_STATES">
       <map>
         <entry key="MAIN">
           <value>
-            <State>
-              <option name="FILTERS">
-                <map>
-                  <entry key="branch">
-                    <value>
-                      <list>
-                        <option value="wkal/pubnub-chat-kmp" />
-                      </list>
-                    </value>
-                  </entry>
-                </map>
-              </option>
-            </State>
+            <State />
           </value>
         </entry>
       </map>
     </option>
-  </component>
-  <component name="VcsManagerConfiguration">
-    <MESSAGE value="Init" />
-    <MESSAGE value="initial commit" />
-    <option name="LAST_COMMIT_MESSAGE" value="initial commit" />
-  </component>
-  <component name="VgoProject">
-    <settings-migrated>true</settings-migrated>
   </component>
 </project>

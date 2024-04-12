@@ -1,14 +1,15 @@
-@file:OptIn(ExperimentalForeignApi::class, ExperimentalForeignApi::class)
+@file:OptIn(ExperimentalForeignApi::class)
 
 package com.pubnub.kmp
 
-import cocoapods.PubNub.PNConfiguration.Companion.configurationWithPublishKey
-import cocoapods.PubNub.PNPublishStatus
-import cocoapods.PubNub.PubNub
-import cocoapods.PubNub.publish
+//import cocoapods.PubNub.PNConfiguration.Companion.configurationWithPublishKey
+//import cocoapods.PubNub.PNPublishStatus
+//import cocoapods.PubNub.PubNub
+//import cocoapods.PubNub.publish
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.posix.uint64_t
-import pubnubobjc.PubNubObjC
+//import pubnubobjc.PubNubObjC
+import cocoapods.PubNubSwift.PubNubObjC
 
 actual class PubNub actual constructor(configuration: PNConfiguration) {
 
@@ -22,6 +23,7 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
 //        configurationWithPublishKey(configuration.publishKey, configuration.subscribeKey, uuid = configuration.userId.value)
 //    )
 
+    @OptIn(ExperimentalForeignApi::class)
     actual fun publish(
         channel: String,
         message: Any,

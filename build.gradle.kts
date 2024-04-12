@@ -33,8 +33,8 @@ kotlin {
     jvm()
 
     listOf(
-        iosX64(),
         iosArm64(),
+        iosX64(),
         iosSimulatorArm64(),
     ).forEach {
         it.binaries {
@@ -44,31 +44,31 @@ kotlin {
             }
         }
 
-        it.compilations.getByName("main") {
-            val myInterop by cinterops.creating {
-                // Def-file describing the native API.
-                // The default path is src/nativeInterop/cinterop/<interop-name>.def
-                defFile(project.file("def-file.def"))
-
-                // Package to place the Kotlin API generated.
-//                packageName("objectivec.pubnub")
-
-                // Options to be passed to compiler by cinterop tool.
-                compilerOpts("-I/Users/wojciech.kalicinski/Library/Developer/Xcode/DerivedData/PubNub-gukbfwdrkubkmtgvokmytmdgrvzf/Build/Products/Debug-iphonesimulator/PubNub.framework/Headers")
-
-                // Directories to look for headers.
-//                includeDirs.apply {
-//                    // Directories for header search (an equivalent of the -I<path> compiler option).
-//                    allHeaders("path1")
+//        it.compilations.getByName("main") {
+//            val myInterop by cinterops.creating {
+//                // Def-file describing the native API.
+//                // The default path is src/nativeInterop/cinterop/<interop-name>.def
+//                defFile(project.file("def-file.def"))
 //
-//                    // Additional directories to search headers listed in the 'headerFilter' def-file option.
-//                    // -headerFilterAdditionalSearchPrefix command line option equivalent.
-////                    headerFilterOnly("path1", "path2")
-//                }
-                // A shortcut for includeDirs.allHeaders.
-//                includeDirs("include/directory", "another/directory")
-            }
-        }
+//                // Package to place the Kotlin API generated.
+////                packageName("objectivec.pubnub")
+//
+//                // Options to be passed to compiler by cinterop tool.
+//                compilerOpts("-I/Users/wojciech.kalicinski/Library/Developer/Xcode/DerivedData/PubNub-gukbfwdrkubkmtgvokmytmdgrvzf/Build/Products/Debug-iphonesimulator/PubNub.framework/Headers")
+//
+//                // Directories to look for headers.
+////                includeDirs.apply {
+////                    // Directories for header search (an equivalent of the -I<path> compiler option).
+////                    allHeaders("path1")
+////
+////                    // Additional directories to search headers listed in the 'headerFilter' def-file option.
+////                    // -headerFilterAdditionalSearchPrefix command line option equivalent.
+//////                    headerFilterOnly("path1", "path2")
+////                }
+//                // A shortcut for includeDirs.allHeaders.
+////                includeDirs("include/directory", "another/directory")
+//            }
+//        }
     }
 
     sourceSets {
@@ -99,6 +99,8 @@ kotlin {
         xcodeConfigurationToNativeBuildType["CUSTOM_DEBUG"] = NativeBuildType.DEBUG
         xcodeConfigurationToNativeBuildType["CUSTOM_RELEASE"] = NativeBuildType.RELEASE
 
+        podfile = project.file("/Users/wojciech.kalicinski/projects/iosChatApp/Sample Chat app/Podfile")
+
         framework {
             // Required properties
             // Framework name configuration. Use this property instead of deprecated 'frameworkName'
@@ -109,13 +111,15 @@ kotlin {
             isStatic = true
         }
 
-        pod("PubNub") {
-            headers = "PubNub/PubNub.h"
+        pod("PubNubSwift") {
+//            headers = "PubNub/PubNub.h"
 //            source = git("https://github.com/pubnub/objective-c")
+            source = path("/Users/wojciech.kalicinski/projects/swift")
+
 //            version = "7.1.0"
-            version = "5.3.0"
-//            moduleName = "PubNub"
-//            extraOpts += listOf("-compiler-option", "-fmodules")
+//            version = "5.3.0"
+            moduleName = "PubNub"
+            extraOpts += listOf("-compiler-option", "-fmodules")
         }
     }
 }
