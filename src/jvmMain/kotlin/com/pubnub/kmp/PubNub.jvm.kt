@@ -2,9 +2,11 @@
 
 package com.pubnub.kmp
 
+import com.pubnub.api.Endpoint
 import com.pubnub.api.PubNub
 import com.pubnub.api.UserId
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.v2.callbacks.Result
 import java.util.function.Consumer
 
@@ -24,17 +26,38 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
         usePost: Boolean,
         replicate: Boolean,
         ttl: Int?
-    ): Endpoint<PNPublishResult> {
+    ): com.pubnub.kmp.Endpoint<PNPublishResult> {
         return pubNub.publish(channel, message, meta, shouldStore, usePost, replicate, ttl).toKmp()
+    }
+
+    actual fun setUUIDMetadata(
+        uuid: String?,
+        name: String?,
+        externalId: String?,
+        profileUrl: String?,
+        email: String?,
+        custom: Any?,
+        includeCustom: Boolean,
+        type: String?,
+        status: String?,
+    ): com.pubnub.kmp.Endpoint<PNUUIDMetadataResult> {
+        return pubNub.setUUIDMetadata(uuid, name, externalId, profileUrl, email, custom, includeCustom, type, status).toKmp()
     }
 }
 
-private fun <T> com.pubnub.api.Endpoint<T>.toKmp() : Endpoint<T>{
-    return object : Endpoint<T> {
-        override fun async(callback: (T) -> Unit) {
-           async(Consumer<Result<T>> { result -> result.onSuccess{ callback(it) } })
+private fun <T> com.pubnub.api.Endpoint<T>.toKmp() : com.pubnub.kmp.Endpoint<T>{
+    return object : com.pubnub.kmp.Endpoint<T> {
+        override fun async(callback: (kotlin.Result<T>) -> Unit) {
+            async(Consumer<Result<T>> { result ->
+                result.onSuccess { callback(kotlin.Result.success(it)) }
+                    .onFailure{callback(kotlin.Result.failure(it))}
+            })
         }
     }
 }
 
 actual typealias PNPublishResult = PNPublishResult
+
+actual typealias PNUUIDMetadata = PNUUIDMetadata
+
+actual typealias PNUUIDMetadataResult = com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult

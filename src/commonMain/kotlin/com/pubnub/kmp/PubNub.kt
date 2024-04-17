@@ -4,11 +4,9 @@
 package com.pubnub.kmp
 
 import kotlin.js.ExperimentalJsExport
-import kotlin.js.JsExport
 
-@JsExport
 interface Endpoint<T> {
-    fun async(callback: (T)-> Unit)
+    fun async(callback: (Result<T>)-> Unit)
 }
 
 expect class PubNub(configuration: PNConfiguration) {
@@ -20,8 +18,38 @@ expect class PubNub(configuration: PNConfiguration) {
                 replicate: Boolean = true,
                 ttl: Int? = null,
     ): Endpoint<PNPublishResult>
+
+    fun setUUIDMetadata(
+        uuid: String? = null,
+        name: String? = null,
+        externalId: String? = null,
+        profileUrl: String? = null,
+        email: String? = null,
+        custom: Any? = null,
+        includeCustom: Boolean = false,
+        type: String? = null,
+        status: String? = null,
+    ): Endpoint<PNUUIDMetadataResult>
 }
 
 expect class PNPublishResult {
     val timetoken: Long
+}
+
+expect class PNUUIDMetadata {
+    val id: String
+    val name: String?
+    val externalId: String?
+    val profileUrl: String?
+    val email: String?
+    val custom: Any?
+    val updated: String?
+    val eTag: String?
+    val type: String?
+    val status: String?
+}
+
+expect class PNUUIDMetadataResult {
+    val status: Int
+    val data: PNUUIDMetadata?
 }
