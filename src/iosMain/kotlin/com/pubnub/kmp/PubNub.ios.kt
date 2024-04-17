@@ -35,11 +35,11 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
     ): Endpoint<PNPublishResult> {
         println("HELLO Publishing")
         return object : Endpoint<PNPublishResult> {
-            override fun async(callback: (PNPublishResult) -> Unit) {
+            override fun async(callback: (Result<PNPublishResult>) -> Unit) {
                 println("HELLO asyncing")
                 pubNub.publishWithChannel(channel, message) { uLong: uint64_t ->
                     println("HELLO callbacking")
-                    callback(PNPublishResult(uLong.toLong())) }
+                    callback(Result.success(PNPublishResult(uLong.toLong()))) }
 //                { result: PNPublishStatus? ->
 //                    if (result != null) {
 //                        callback(PNPublishResult(result.data().timetoken.longValue))
@@ -47,6 +47,20 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
 //                }
             }
         }
+    }
+
+    actual fun setUUIDMetadata(
+        uuid: String?,
+        name: String?,
+        externalId: String?,
+        profileUrl: String?,
+        email: String?,
+        custom: Any?,
+        includeCustom: Boolean,
+        type: String?,
+        status: String?
+    ): Endpoint<PNUUIDMetadataResult> {
+        TODO("Not yet implemented")
     }
 }
 

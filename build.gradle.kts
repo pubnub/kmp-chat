@@ -71,14 +71,23 @@ kotlin {
 //        }
     }
 
+    applyDefaultHierarchyTemplate()
+
     sourceSets {
         sourceSets {
             val jvmMain by getting {
                 dependencies {
-                    implementation("com.pubnub:pubnub-kotlin-impl:9.1.0")
-                    implementation("com.pubnub:pubnub-kotlin:9.1.0")
+                    implementation("com.pubnub:pubnub-kotlin-impl:9.1.1")
+                    implementation("com.pubnub:pubnub-kotlin:9.1.1")
                 }
             }
+
+            val nonJvm by creating {
+                dependsOn(commonMain.get())
+            }
+
+            iosMain.get().dependsOn(nonJvm)
+            jsMain.get().dependsOn(nonJvm)
         }
     }
 
