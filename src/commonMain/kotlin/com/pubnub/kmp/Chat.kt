@@ -11,16 +11,15 @@ class ChannelType {
 }
 
 @JsExport
-class ChatConfig {
+class ChatConfig(val pubnubConfig: PNConfiguration) {
     var uuid: String = ""
     var saveDebugLog: Boolean = false
     var typingTimeout: Int = 0
     var rateLimitPerChannel: Any = mutableMapOf<ChannelType, Int>()
-    var pubnubConfig: PNConfiguration? = null
 }
 
 class Chat(private val config: ChatConfig) {
-    private val pubNub = PubNub(config.pubnubConfig!!)
+    private val pubNub = PubNub(config.pubnubConfig)
 
     fun createUser(
         id: String,

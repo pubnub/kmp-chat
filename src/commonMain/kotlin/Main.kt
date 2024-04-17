@@ -21,9 +21,8 @@ import com.pubnub.kmp.UserId
 
 
 fun main() {
-    val chat = Chat(ChatConfig().apply {
-        pubnubConfig = PNConfiguration(UserId("uuuuuser"), "demo", "demo")
-    })
+    println("RESTARTING!")
+    val chat = Chat(ChatConfig(PNConfiguration(UserId("uuuuuser"), "demo", "demo")))
     chat.createUser("idid", "mememe") { it: Result<User> ->
         it.onSuccess { println("SUCCSEESES") }
             .onFailure { println(it) }

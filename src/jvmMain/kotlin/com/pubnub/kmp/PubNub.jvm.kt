@@ -45,7 +45,7 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
     }
 }
 
-private fun <T> com.pubnub.api.Endpoint<T>.toKmp() : com.pubnub.kmp.Endpoint<T>{
+private fun <T> Endpoint<T>.toKmp() : com.pubnub.kmp.Endpoint<T>{
     return object : com.pubnub.kmp.Endpoint<T> {
         override fun async(callback: (kotlin.Result<T>) -> Unit) {
             async(Consumer<Result<T>> { result ->
