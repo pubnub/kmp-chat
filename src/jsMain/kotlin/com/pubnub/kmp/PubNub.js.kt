@@ -3,7 +3,9 @@
 
 package com.pubnub.kmp
 
+import Optional
 import createPubNub
+import toOptional
 import kotlin.js.Promise
 import PubNub as PubNubJs
 
@@ -22,10 +24,11 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
     ): Endpoint<PNPublishResult> {
         return object : Endpoint<PNPublishResult> {
             override fun async(callback: (Result<PNPublishResult>) -> Unit) {
-                val params = Any().asDynamic()
-                params.message = "myMessage"
-                params.channel = "myChannel"
-                jsPubNub.publish(params).then(onFulfilled = { it: dynamic ->
+                val params = object : PubNubJs.PublishParameters {
+                    override var message: Any = "myMessage"
+                    override var channel: String = "myChannel"
+                }
+                jsPubNub.publish(params).then(onFulfilled = { it: PubNubJs.PublishResponse ->
                     callback(Result.success(PNPublishResult(it.timetoken.toString().toLong())))
                 }, onRejected = { it: Throwable ->
                     callback(Result.failure(it))
@@ -47,20 +50,19 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
     ): Endpoint<PNUUIDMetadataResult> {
         return object : Endpoint<PNUUIDMetadataResult> {
             override fun async(callback: (Result<PNUUIDMetadataResult>) -> Unit) {
-                val params = Any().asDynamic()
-                params.uuid = uuid
-                params.data = Any().asDynamic()
-                with (params.data) {
-                    this.name = name
-                    this.externalId = externalId
-                    this.profileUrl = profileUrl
-                    this.email = email
-                    this.custom = custom
-                }
-                params.include = Any().asDynamic()
-                params.include.customFields = includeCustom
+                val params = object : PubNubJs.SetUUIDMetadataParameters<PubNubJs.ObjectCustom> {
+                    override var data: PubNubJs.UUIDMetadata<PubNubJs.ObjectCustom> = UUIDMetadata(
+                        name.toOptional(), externalId.toOptional(), profileUrl.toOptional(), email.toOptional(), status.toOptional(), type.toOptional()
+                    )
 
-                jsPubNub.objects.setUUIDMetadata(params).then(onFulfilled = { it: dynamic ->
+                    override var uuid: String? = uuid
+
+                    override var include: PubNubJs.`T$30`? = object : PubNubJs.`T$30` {
+                        override var customFields: Boolean? = includeCustom
+                    }
+                }
+
+                jsPubNub.objects.setUUIDMetadata<dynamic>(params).then(onFulfilled = { it: dynamic ->
                     callback(Result.success(it))
                 }, onRejected = { it: Throwable ->
                     callback(Result.failure(it))
@@ -91,4 +93,22 @@ private fun <T> Promise<T>.toKmp() : Endpoint<T>{
             then { callback(Result.success(it))}
         }
     }
+}
+
+fun UUIDMetadata(
+    name: Optional<String?>,
+    externalId: Optional<String?>,
+    profileUrl: Optional<String?>,
+    email: Optional<String?>,
+    status: Optional<String?>,
+    type: Optional<String?>,
+) : PubNubJs.UUIDMetadata<dynamic> {
+    val result = Any().asDynamic()
+    name.asValue()?.let { result.name = it.value }
+    externalId.asValue()?.let { result.externalId = it.value }
+    profileUrl.asValue()?.let { result.profileUrl = it.value }
+    email.asValue()?.let { result.email = it.value }
+    status.asValue()?.let { result.status = it.value }
+    type.asValue()?.let { result.type = it.value }
+    return result
 }
