@@ -7,11 +7,13 @@ import com.pubnub.kmp.User
 import kotlin.js.Promise
 
 
-external class PubNub(configuration: dynamic) {
-    fun publish(params: dynamic): Promise<dynamic>
-    val objects: dynamic
+sealed class Optional<T> {
+    class Value<T>(val value: T) : Optional<T>()
+    class Absent<T> : Optional<T>()
+    fun asValue() : Value<T>? = this as? Value<T>
 }
 
+fun <T> T?.toOptional(): Optional<T> = this?.let { Optional.Value(it) } ?: Optional.Absent()
 
 @JsExport
 fun createPubNub(userId: String, subscribeKey: String, publishKey: String): PubNub {

@@ -70,6 +70,7 @@ kotlin {
 //        }
 //    }
 
+    applyDefaultHierarchyTemplate()
 
     sourceSets {
         sourceSets {

@@ -2,6 +2,9 @@
 
 package com.pubnub.kmp
 
+import kotlin.js.JsExport
+
+@JsExport
 actual class PNUUIDMetadata(
     actual val id: String,
     actual val name: String?,
@@ -15,6 +18,7 @@ actual class PNUUIDMetadata(
     actual val status: String?,
 )
 
+@JsExport
 actual class PNUUIDMetadataResult(
     actual val status: Int,
     actual val data: PNUUIDMetadata?,
