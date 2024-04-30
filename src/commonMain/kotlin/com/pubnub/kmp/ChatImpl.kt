@@ -38,9 +38,7 @@ class ChatImpl(private val config: ChatConfig) : Chat {
         pubNub.setUserMetadata(id, name, externalId, profileUrl, email, custom, includeCustom = true)
             .async { result: Result<PNUUIDMetadataResult> ->
                 callback(result.map { it: PNUUIDMetadataResult ->
-                    println("got: " + it.data)
                     it.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
-                        println("Received data for user ID: ${pnUUIDMetadata.id}")
                         createUserFromMetadata(this, pnUUIDMetadata)
                     } ?: run {
                         throw IllegalStateException("No data available to create User")
