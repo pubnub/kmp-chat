@@ -5,7 +5,7 @@ plugins {
     kotlin("multiplatform") version "1.9.22" //downgrade to 1.9.22 because mockmp uses Kotlin Symbol Processing (KSP) "com.google.devtools.ksp:symbol-processing-api:<new-version>"
 //    kotlin("native.cocoapods") version "1.9.23"
     id("org.kodein.mock.mockmp") version "1.17.0"
-//    id("dev.mokkery") version "1.9.22-1.5.0" // todo if we go with mokkery instead of mockmp check https://mokkery.dev/docs/Setup/#compatibility
+    id("dev.mokkery") version "1.9.22-1.5.0" // todo if we go with mokkery instead of mockmp check https://mokkery.dev/docs/Setup/#compatibility
 }
 
 group = "com.pubnub"
@@ -77,6 +77,7 @@ kotlin {
                 dependencies {
                     implementation(kotlin("test-common"))
                     implementation(kotlin("test-annotations-common"))
+                    implementation(kotlin("test-junit"))
                 }
             }
 
@@ -97,7 +98,6 @@ kotlin {
             }
 
             val jsTest by getting {
-                dependsOn(commonTest)
                 dependencies {
                     implementation(kotlin("test-js"))
                 }
