@@ -19,7 +19,7 @@ expect class PubNub(configuration: PNConfiguration) {
                 ttl: Int? = null,
     ): Endpoint<PNPublishResult>
 
-    fun setUUIDMetadata(
+    fun setUserMetadata(
         uuid: String? = null,
         name: String? = null,
         externalId: String? = null,
@@ -30,6 +30,9 @@ expect class PubNub(configuration: PNConfiguration) {
         type: String? = null,
         status: String? = null,
     ): Endpoint<PNUUIDMetadataResult>
+
+    fun removeUserMetadata(uuid: String? = null): Endpoint<PNRemoveMetadataResult>
+    fun getUserMetadata(uuid: String?, includeCustom: Boolean): Endpoint<PNUUIDMetadataResult>
 }
 
 expect class PNPublishResult {
@@ -52,4 +55,8 @@ expect class PNUUIDMetadata {
 expect class PNUUIDMetadataResult {
     val status: Int
     val data: PNUUIDMetadata?
+}
+
+expect class PNRemoveMetadataResult {
+    val status: Int
 }

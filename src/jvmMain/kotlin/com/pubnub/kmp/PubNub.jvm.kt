@@ -30,7 +30,7 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
         return pubNub.publish(channel, message, meta, shouldStore, usePost, replicate, ttl).toKmp()
     }
 
-    actual fun setUUIDMetadata(
+    actual fun setUserMetadata(
         uuid: String?,
         name: String?,
         externalId: String?,
@@ -42,6 +42,16 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
         status: String?,
     ): com.pubnub.kmp.Endpoint<PNUUIDMetadataResult> {
         return pubNub.setUUIDMetadata(uuid, name, externalId, profileUrl, email, custom, includeCustom, type, status).toKmp()
+    }
+
+    // todo
+    actual fun removeUserMetadata(uuid: String?): com.pubnub.kmp.Endpoint<PNRemoveMetadataResult>{
+        return pubNub.removeUUIDMetadata(uuid).toKmp()
+    }
+
+    // todo
+    actual fun getUserMetadata(uuid: String?, includeCustom: Boolean): com.pubnub.kmp.Endpoint<PNUUIDMetadataResult>{
+        return pubNub.getUUIDMetadata(uuid, includeCustom).toKmp()
     }
 }
 
@@ -61,3 +71,5 @@ actual typealias PNPublishResult = PNPublishResult
 actual typealias PNUUIDMetadata = PNUUIDMetadata
 
 actual typealias PNUUIDMetadataResult = com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
+
+actual typealias PNRemoveMetadataResult = com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult

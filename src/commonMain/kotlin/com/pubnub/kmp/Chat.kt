@@ -1,45 +1,32 @@
-@file:OptIn(ExperimentalJsExport::class)
+package com.pubnub.com.pubnub.kmp
 
-package com.pubnub.kmp
+import com.pubnub.kmp.User
 
-import kotlin.js.ExperimentalJsExport
-import kotlin.js.JsExport
-
-@JsExport
-class ChannelType {
-    var aaa = 0
-}
-
-@JsExport
-class ChatConfig(val pubnubConfig: PNConfiguration) {
-    var uuid: String = ""
-    var saveDebugLog: Boolean = false
-    var typingTimeout: Int = 0
-    var rateLimitPerChannel: Any = mutableMapOf<ChannelType, Int>()
-}
-
-class Chat(private val config: ChatConfig) {
-    private val pubNub = PubNub(config.pubnubConfig)
-
+interface Chat {
     fun createUser(
         id: String,
         name: String?,
         externalId: String? = null,
         profileUrl: String? = null,
         email: String? = null,
-        custom: Any?  = null,
+        custom: Any? = null,
         status: String? = null,
         type: String? = null,
         callback: (Result<User>) -> Unit,
-    ) {
-        pubNub.setUUIDMetadata(id, name, externalId, profileUrl, email, custom, includeCustom = true).async {
-            result -> callback(result.map { it: PNUUIDMetadataResult ->
-                println("got: " + it.data)
-                User()
-            })
-        }
-    }
-}
+    )
 
-@JsExport
-class User
+    fun updateUser(
+        id: String,
+        name: String?,
+        externalId: String?,
+        profileUrl: String?,
+        email: String?,
+        custom: Any?,
+        status: String?,
+        type: String?,
+        updated: String?, //todo do we need this?
+        callback: (Result<User>) -> Unit
+    )
+
+    fun deleteUser(id: String, softDelete: Boolean, callback: (Result<User>) -> Unit)
+}
