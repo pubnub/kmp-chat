@@ -34,7 +34,7 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
         }
     }
 
-    actual fun setUUIDMetadata(
+    actual fun setUserMetadata(
         uuid: String?,
         name: String?,
         externalId: String?,
@@ -67,6 +67,17 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
                 })
             }
         }
+    }
+
+    actual fun removeUserMetadata(uuid: String?): Endpoint<PNRemoveMetadataResult> {
+        TODO("Not yet implemented")
+    }
+
+    actual fun getUserMetadata(
+        uuid: String?,
+        includeCustom: Boolean
+    ): Endpoint<PNUUIDMetadataResult> {
+        TODO("Not yet implemented")
     }
 }
 

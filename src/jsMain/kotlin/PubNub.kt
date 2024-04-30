@@ -1,9 +1,9 @@
 @file:OptIn(ExperimentalJsExport::class)
 
-import com.pubnub.kmp.Chat
+import com.pubnub.com.pubnub.kmp.Chat
+import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.ChatConfig
 import com.pubnub.kmp.User
-import com.pubnub.kmp.UserId
 import kotlin.js.Promise
 
 
@@ -24,7 +24,7 @@ fun createPubNub(userId: String, subscribeKey: String, publishKey: String): PubN
 
 @JsExport
 class ChatJs(private val chatConfig: ChatConfig) {
-    private val chat: Chat = Chat(chatConfig)
+    private val chat: Chat = ChatImpl(chatConfig)
 
     fun createUser(id: String,
                    name: String?,

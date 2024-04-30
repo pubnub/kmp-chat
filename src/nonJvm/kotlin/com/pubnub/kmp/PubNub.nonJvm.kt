@@ -19,3 +19,7 @@ actual class PNUUIDMetadataResult(
     actual val status: Int,
     actual val data: PNUUIDMetadata?,
 )
+
+actual class PNRemoveMetadataResult(
+    actual val status: Int
+)
