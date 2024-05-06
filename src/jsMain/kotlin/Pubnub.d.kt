@@ -9,7 +9,6 @@ import PubNub.GetMembershipsParametersv2
 import PubNub.GetUUIDMetadataParameters
 import PubNub.MessageAction
 import PubNub.MessageEvent
-import PubNub.ObjectCustom
 import PubNub.PubnubStatus
 import PubNub.RemoveChannelMembersParameters
 import PubNub.RemoveChannelMetadataParameters
@@ -21,6 +20,7 @@ import PubNub.SetMembershipsParameters
 import PubNub.SetUUIDMetadataParameters
 import PubNub.UUIDMembershipObject
 import PubNub.UUIDMetadataObject
+import com.pubnub.kmp.Optional
 import org.khronos.webgl.ArrayBuffer
 import org.w3c.files.Blob
 import org.w3c.files.File
@@ -30,25 +30,25 @@ import kotlin.js.Promise
 
 typealias PubnubData = MessageEvent
 
-typealias SetUUIDMetadataResponse<Custom> = ObjectsResponse<UUIDMetadataObject<Custom>>
+typealias SetUUIDMetadataResponse = ObjectsResponse<UUIDMetadataObject>
 
 typealias RemoveUUIDMetadataResponse = ObjectsResponse<Any>
 
-typealias GetAllUUIDMetadataResponse<Custom> = PagedObjectsResponse<UUIDMetadataObject<Custom>>
+typealias GetAllUUIDMetadataResponse = PagedObjectsResponse<UUIDMetadataObject>
 
-typealias GetUUIDMetadataResponse<Custom> = ObjectsResponse<UUIDMetadataObject<Custom>>
+typealias GetUUIDMetadataResponse = ObjectsResponse<UUIDMetadataObject>
 
-typealias SetChannelMetadataResponse<Custom> = ObjectsResponse<ChannelMetadataObject<Custom>>
+typealias SetChannelMetadataResponse = ObjectsResponse<ChannelMetadataObject>
 
 typealias RemoveChannelMetadataResponse = ObjectsResponse<Any>
 
-typealias GetAllChannelMetadataResponse<Custom> = PagedObjectsResponse<ChannelMetadataObject<Custom>>
+typealias GetAllChannelMetadataResponse = PagedObjectsResponse<ChannelMetadataObject>
 
-typealias GetChannelMetadataResponse<Custom> = ObjectsResponse<ChannelMetadataObject<Custom>>
+typealias GetChannelMetadataResponse = ObjectsResponse<ChannelMetadataObject>
 
-typealias ManageChannelMembersResponse<MembershipCustom, UUIDCustom> = PagedObjectsResponse<UUIDMembershipObject<MembershipCustom, UUIDCustom>>
+typealias ManageChannelMembersResponse = PagedObjectsResponse<UUIDMembershipObject>
 
-typealias ManageMembershipsResponse<MembershipCustom, ChannelCustom> = PagedObjectsResponse<ChannelMembershipObject<MembershipCustom, ChannelCustom>>
+typealias ManageMembershipsResponse = PagedObjectsResponse<ChannelMembershipObject>
 
 typealias Callback<ResponseType> = (status: PubnubStatus, response: ResponseType) -> Unit
 
@@ -72,45 +72,45 @@ external interface PagedObjectsResponse<DataType> : ObjectsResponse<Array<DataTy
 }
 
 
-external interface `T$0`<Custom, MembershipCustom, ChannelCustom, UUIDCustom> {
-    fun <Custom : ObjectCustom> setUUIDMetadata(params: SetUUIDMetadataParameters<Custom>, callback: Callback<SetUUIDMetadataResponse<Custom>>)
-    fun <Custom : ObjectCustom> setUUIDMetadata(params: SetUUIDMetadataParameters<Custom>): Promise<SetUUIDMetadataResponse<Custom>>
+external interface ObjectsFunctions {
+    fun  setUUIDMetadata(params: SetUUIDMetadataParameters, callback: Callback<SetUUIDMetadataResponse>)
+    fun  setUUIDMetadata(params: SetUUIDMetadataParameters): Promise<SetUUIDMetadataResponse>
     fun removeUUIDMetadata(callback: Callback<RemoveUUIDMetadataResponse>)
     fun removeUUIDMetadata(params: RemoveUUIDMetadataParameters = definedExternally): Promise<RemoveUUIDMetadataResponse>
     fun removeUUIDMetadata(): Promise<RemoveUUIDMetadataResponse>
     fun removeUUIDMetadata(params: RemoveUUIDMetadataParameters, callback: Callback<RemoveUUIDMetadataResponse>)
-    fun <Custom : ObjectCustom> getAllUUIDMetadata(callback: Callback<GetAllUUIDMetadataResponse<Custom>>)
-    fun <Custom : ObjectCustom> getAllUUIDMetadata(params: GetAllMetadataParameters = definedExternally): Promise<GetAllUUIDMetadataResponse<Custom>>
-    fun <Custom : ObjectCustom> getAllUUIDMetadata(): Promise<GetAllUUIDMetadataResponse<Custom>>
-    fun <Custom : ObjectCustom> getAllUUIDMetadata(params: GetAllMetadataParameters, callback: Callback<GetAllUUIDMetadataResponse<Custom>>)
-    fun <Custom : ObjectCustom> getUUIDMetadata(callback: Callback<GetUUIDMetadataResponse<Custom>>)
-    fun <Custom : ObjectCustom> getUUIDMetadata(params: GetUUIDMetadataParameters = definedExternally): Promise<GetUUIDMetadataResponse<Custom>>
-    fun <Custom : ObjectCustom> getUUIDMetadata(): Promise<GetUUIDMetadataResponse<Custom>>
-    fun <Custom : ObjectCustom> getUUIDMetadata(params: GetUUIDMetadataParameters, callback: Callback<GetUUIDMetadataResponse<Custom>>)
-    fun <Custom : ObjectCustom> setChannelMetadata(params: SetChannelMetadataParameters<Custom>, callback: Callback<SetChannelMetadataResponse<Custom>>)
-    fun <Custom : ObjectCustom> setChannelMetadata(params: SetChannelMetadataParameters<Custom>): Promise<SetChannelMetadataResponse<Custom>>
+    fun  getAllUUIDMetadata(callback: Callback<GetAllUUIDMetadataResponse>)
+    fun  getAllUUIDMetadata(params: GetAllMetadataParameters = definedExternally): Promise<GetAllUUIDMetadataResponse>
+    fun  getAllUUIDMetadata(): Promise<GetAllUUIDMetadataResponse>
+    fun  getAllUUIDMetadata(params: GetAllMetadataParameters, callback: Callback<GetAllUUIDMetadataResponse>)
+    fun  getUUIDMetadata(callback: Callback<GetUUIDMetadataResponse>)
+    fun  getUUIDMetadata(params: GetUUIDMetadataParameters = definedExternally): Promise<GetUUIDMetadataResponse>
+    fun  getUUIDMetadata(): Promise<GetUUIDMetadataResponse>
+    fun  getUUIDMetadata(params: GetUUIDMetadataParameters, callback: Callback<GetUUIDMetadataResponse>)
+    fun  setChannelMetadata(params: SetChannelMetadataParameters, callback: Callback<SetChannelMetadataResponse>)
+    fun  setChannelMetadata(params: SetChannelMetadataParameters): Promise<SetChannelMetadataResponse>
     fun removeChannelMetadata(params: RemoveChannelMetadataParameters, callback: Callback<RemoveChannelMetadataResponse>)
     fun removeChannelMetadata(params: RemoveChannelMetadataParameters): Promise<RemoveChannelMetadataResponse>
-    fun <Custom : ObjectCustom> getAllChannelMetadata(callback: Callback<GetAllChannelMetadataResponse<Custom>>)
-    fun <Custom : ObjectCustom> getAllChannelMetadata(params: GetAllMetadataParameters = definedExternally): Promise<GetAllChannelMetadataResponse<Custom>>
-    fun <Custom : ObjectCustom> getAllChannelMetadata(): Promise<GetAllChannelMetadataResponse<Custom>>
-    fun <Custom : ObjectCustom> getAllChannelMetadata(params: GetAllMetadataParameters, callback: Callback<GetAllChannelMetadataResponse<Custom>>)
-    fun <Custom : ObjectCustom> getChannelMetadata(params: GetChannelMetadataParameters, callback: Callback<GetChannelMetadataResponse<Custom>>)
-    fun <Custom : ObjectCustom> getChannelMetadata(params: GetChannelMetadataParameters): Promise<GetChannelMetadataResponse<Custom>>
-    fun <MembershipCustom : ObjectCustom, ChannelCustom : ObjectCustom> getMemberships(callback: Callback<ManageMembershipsResponse<MembershipCustom, ChannelCustom>>)
-    fun <MembershipCustom : ObjectCustom, ChannelCustom : ObjectCustom> getMemberships(params: GetMembershipsParametersv2 = definedExternally): Promise<ManageMembershipsResponse<MembershipCustom, ChannelCustom>>
-    fun <MembershipCustom : ObjectCustom, ChannelCustom : ObjectCustom> getMemberships(): Promise<ManageMembershipsResponse<MembershipCustom, ChannelCustom>>
-    fun <MembershipCustom : ObjectCustom, ChannelCustom : ObjectCustom> getMemberships(params: GetMembershipsParametersv2, callback: Callback<ManageMembershipsResponse<MembershipCustom, ChannelCustom>>)
-    fun <MembershipCustom : ObjectCustom, ChannelCustom : ObjectCustom> setMemberships(params: SetMembershipsParameters<ChannelCustom>, callback: Callback<ManageMembershipsResponse<MembershipCustom, ChannelCustom>>)
-    fun <MembershipCustom : ObjectCustom, ChannelCustom : ObjectCustom> setMemberships(params: SetMembershipsParameters<ChannelCustom>): Promise<ManageMembershipsResponse<MembershipCustom, ChannelCustom>>
-    fun <MembershipCustom : ObjectCustom, ChannelCustom : ObjectCustom> removeMemberships(params: RemoveMembershipsParameters, callback: Callback<ManageMembershipsResponse<MembershipCustom, ChannelCustom>>)
-    fun <MembershipCustom : ObjectCustom, ChannelCustom : ObjectCustom> removeMemberships(params: RemoveMembershipsParameters): Promise<ManageMembershipsResponse<MembershipCustom, ChannelCustom>>
-    fun <MembershipCustom : ObjectCustom, UUIDCustom : ObjectCustom> getChannelMembers(params: GetChannelMembersParameters, callback: Callback<ManageChannelMembersResponse<MembershipCustom, UUIDCustom>>)
-    fun <MembershipCustom : ObjectCustom, UUIDCustom : ObjectCustom> getChannelMembers(params: GetChannelMembersParameters): Promise<ManageChannelMembersResponse<MembershipCustom, UUIDCustom>>
-    fun <MembershipCustom : ObjectCustom, UUIDCustom : ObjectCustom> setChannelMembers(params: SetChannelMembersParameters<MembershipCustom>, callback: Callback<ManageChannelMembersResponse<MembershipCustom, UUIDCustom>>)
-    fun <MembershipCustom : ObjectCustom, UUIDCustom : ObjectCustom> setChannelMembers(params: SetChannelMembersParameters<MembershipCustom>): Promise<ManageChannelMembersResponse<MembershipCustom, UUIDCustom>>
-    fun <MembershipCustom : ObjectCustom, UUIDCustom : ObjectCustom> removeChannelMembers(params: RemoveChannelMembersParameters, callback: Callback<ManageChannelMembersResponse<MembershipCustom, UUIDCustom>>)
-    fun <MembershipCustom : ObjectCustom, UUIDCustom : ObjectCustom> removeChannelMembers(params: RemoveChannelMembersParameters): Promise<ManageChannelMembersResponse<MembershipCustom, UUIDCustom>>
+    fun  getAllChannelMetadata(callback: Callback<GetAllChannelMetadataResponse>)
+    fun  getAllChannelMetadata(params: GetAllMetadataParameters = definedExternally): Promise<GetAllChannelMetadataResponse>
+    fun  getAllChannelMetadata(): Promise<GetAllChannelMetadataResponse>
+    fun  getAllChannelMetadata(params: GetAllMetadataParameters, callback: Callback<GetAllChannelMetadataResponse>)
+    fun  getChannelMetadata(params: GetChannelMetadataParameters, callback: Callback<GetChannelMetadataResponse>)
+    fun  getChannelMetadata(params: GetChannelMetadataParameters): Promise<GetChannelMetadataResponse>
+    fun  getMemberships(callback: Callback<ManageMembershipsResponse>)
+    fun  getMemberships(params: GetMembershipsParametersv2 = definedExternally): Promise<ManageMembershipsResponse>
+    fun  getMemberships(): Promise<ManageMembershipsResponse>
+    fun  getMemberships(params: GetMembershipsParametersv2, callback: Callback<ManageMembershipsResponse>)
+    fun  setMemberships(params: SetMembershipsParameters, callback: Callback<ManageMembershipsResponse>)
+    fun  setMemberships(params: SetMembershipsParameters): Promise<ManageMembershipsResponse>
+    fun  removeMemberships(params: RemoveMembershipsParameters, callback: Callback<ManageMembershipsResponse>)
+    fun  removeMemberships(params: RemoveMembershipsParameters): Promise<ManageMembershipsResponse>
+    fun  getChannelMembers(params: GetChannelMembersParameters, callback: Callback<ManageChannelMembersResponse>)
+    fun  getChannelMembers(params: GetChannelMembersParameters): Promise<ManageChannelMembersResponse>
+    fun  setChannelMembers(params: SetChannelMembersParameters, callback: Callback<ManageChannelMembersResponse>)
+    fun  setChannelMembers(params: SetChannelMembersParameters): Promise<ManageChannelMembersResponse>
+    fun  removeChannelMembers(params: RemoveChannelMembersParameters, callback: Callback<ManageChannelMembersResponse>)
+    fun  removeChannelMembers(params: RemoveChannelMembersParameters): Promise<ManageChannelMembersResponse>
 }
 
 external interface `T$1` {
@@ -122,7 +122,7 @@ external interface `T$2` {
 }
 
 //@JsModule("pubnub-js")
-external open class PubNub(config: Any /* UUID | UserId */) {
+open external class PubNub(config: Any /* UUID | UserId */) {
     open var channelGroups: ChannelGroups
     open var push: Push
     open fun setUUID(uuid: String)
@@ -181,7 +181,7 @@ external open class PubNub(config: Any /* UUID | UserId */) {
     open fun deleteFile(params: FileInputParameters): Promise<DeleteFileResponse>
     open fun publishFile(params: PublishFileParameters, callback: Callback<PublishFileResponse>)
     open fun publishFile(params: PublishFileParameters): Promise<PublishFileResponse>
-    open var objects: `T$0`<Any?, Any?, Any?, Any?>
+    open var objects: ObjectsFunctions
     open fun addMessageAction(params: AddMessageActionParameters, callback: Callback<`T$1`>)
     open fun addMessageAction(params: AddMessageActionParameters): Promise<`T$1`>
     open fun removeMessageAction(params: RemoveMessageActionParameters, callback: Callback<`T$2`>)
@@ -197,7 +197,7 @@ external open class PubNub(config: Any /* UUID | UserId */) {
     open fun decrypt(data: Any?, customCipherKey: String = definedExternally): Any
     open fun time(): Promise<FetchTimeResponse>
     open fun time(callback: Callback<FetchTimeResponse>)
-    interface `T$3` {
+    interface KeepAliveSettings {
         var keepAliveMsecs: Number?
             get() = definedExternally
             set(value) = definedExternally
@@ -214,77 +214,32 @@ external open class PubNub(config: Any /* UUID | UserId */) {
             get() = definedExternally
             set(value) = definedExternally
     }
-    interface `T$4` {
+    interface PNConfiguration: Partial {
+        var userId: String
         var subscribeKey: String
         var publishKey: String?
-            get() = definedExternally
-            set(value) = definedExternally
         var cipherKey: String?
-            get() = definedExternally
-            set(value) = definedExternally
         var authKey: String?
-            get() = definedExternally
-            set(value) = definedExternally
         var logVerbosity: Boolean?
-            get() = definedExternally
-            set(value) = definedExternally
         var ssl: Boolean?
-            get() = definedExternally
-            set(value) = definedExternally
         var origin: dynamic /* String? | Array<String>? */
-            get() = definedExternally
-            set(value) = definedExternally
         var presenceTimeout: Number?
-            get() = definedExternally
-            set(value) = definedExternally
         var heartbeatInterval: Number?
-            get() = definedExternally
-            set(value) = definedExternally
         var restore: Boolean?
-            get() = definedExternally
-            set(value) = definedExternally
         var keepAlive: Boolean?
-            get() = definedExternally
-            set(value) = definedExternally
-        var keepAliveSettings: `T$3`?
-            get() = definedExternally
-            set(value) = definedExternally
+        var keepAliveSettings: KeepAliveSettings?
         var subscribeRequestTimeout: Number?
-            get() = definedExternally
-            set(value) = definedExternally
         var suppressLeaveEvents: Boolean?
-            get() = definedExternally
-            set(value) = definedExternally
         var secretKey: String?
-            get() = definedExternally
-            set(value) = definedExternally
         var requestMessageCountThreshold: Number?
-            get() = definedExternally
-            set(value) = definedExternally
         var autoNetworkDetection: Boolean?
-            get() = definedExternally
-            set(value) = definedExternally
         var listenToBrowserNetworkEvents: Boolean?
-            get() = definedExternally
-            set(value) = definedExternally
         var useRandomIVs: Boolean?
-            get() = definedExternally
-            set(value) = definedExternally
         var dedupeOnSubscribe: Boolean?
-            get() = definedExternally
-            set(value) = definedExternally
         var cryptoModule: CryptoModule?
-            get() = definedExternally
-            set(value) = definedExternally
         var retryConfiguration: dynamic /* LinearRetryPolicyConfiguration? | ExponentialRetryPolicyConfiguration? */
-            get() = definedExternally
-            set(value) = definedExternally
         var enableEventEngine: Boolean?
-            get() = definedExternally
-            set(value) = definedExternally
         var maintainPresenceState: Boolean?
-            get() = definedExternally
-            set(value) = definedExternally
     }
     interface MessageEvent {
         var channel: String
@@ -376,12 +331,12 @@ external open class PubNub(config: Any /* UUID | UserId */) {
             set(value) = definedExternally
         var timetoken: Number
     }
-    interface `T$7`<UUIDCustom : ObjectCustom> {
+    interface `T$7` {
         var event: String /* "set" */
         var type: String /* "uuid" */
-        var data: UUIDMetadataObject<UUIDCustom>
+        var data: UUIDMetadataObject
     }
-    interface SetUUIDMetadataEvent<UUIDCustom : ObjectCustom> : BaseObjectsEvent
+    interface SetUUIDMetadataEvent : BaseObjectsEvent
     interface `T$8` {
         var id: String
     }
@@ -391,31 +346,31 @@ external open class PubNub(config: Any /* UUID | UserId */) {
         var data: `T$8`
     }
     interface RemoveUUIDMetadataEvent : BaseObjectsEvent
-    interface `T$10`<ChannelCustom : ObjectCustom> {
+    interface `T$10` {
         var event: String /* "set" */
         var type: String /* "channel" */
-        var data: ChannelMetadataObject<ChannelCustom>
+        var data: ChannelMetadataObject
     }
-    interface SetChannelMetadataEvent<ChannelCustom : ObjectCustom> : BaseObjectsEvent
+    interface SetChannelMetadataEvent : BaseObjectsEvent
     interface `T$11` {
         var event: String /* "delete" */
         var type: String /* "channel" */
         var data: `T$8`
     }
     interface RemoveChannelMetadataEvent : BaseObjectsEvent
-    interface `T$12`<MembershipCustom> {
+    interface `T$12` {
         var channel: `T$8`
         var uuid: `T$8`
-        var custom: MembershipCustom?
+        var custom: CustomObject?
         var updated: String
         var eTag: String
     }
     interface `T$13` {
         var event: String /* "set" */
         var type: String /* "membership" */
-        var data: `T$12`<Any?>
+        var data: `T$12`
     }
-    interface SetMembershipEvent<MembershipCustom : ObjectCustom> : BaseObjectsEvent
+    interface SetMembershipEvent : BaseObjectsEvent
     interface `T$14` {
         var channel: `T$8`
         var uuid: `T$8`
@@ -712,15 +667,15 @@ external open class PubNub(config: Any /* UUID | UserId */) {
     }
     interface `L$0` {
         @nativeInvoke
-        operator fun invoke(objectsEvent: SetUUIDMetadataEvent<ObjectCustom>)
+        operator fun invoke(objectsEvent: SetUUIDMetadataEvent)
         @nativeInvoke
         operator fun invoke(objectsEvent: RemoveUUIDMetadataEvent)
         @nativeInvoke
-        operator fun invoke(objectsEvent: SetChannelMetadataEvent<ObjectCustom>)
+        operator fun invoke(objectsEvent: SetChannelMetadataEvent)
         @nativeInvoke
         operator fun invoke(objectsEvent: RemoveChannelMetadataEvent)
         @nativeInvoke
-        operator fun invoke(objectsEvent: SetMembershipEvent<ObjectCustom>)
+        operator fun invoke(objectsEvent: SetMembershipEvent)
         @nativeInvoke
         operator fun invoke(objectsEvent: RemoveMembershipEvent)
     }
@@ -1054,35 +1009,37 @@ external open class PubNub(config: Any /* UUID | UserId */) {
     interface PublishFileResponse {
         var timetoken: String
     }
-    interface ObjectCustom {
-        @nativeGetter
-        operator fun get(key: String): dynamic /* String? | Number? | Boolean? */
-        @nativeSetter
-        operator fun set(key: String, value: String)
-        @nativeSetter
-        operator fun set(key: String, value: Number)
-        @nativeSetter
-        operator fun set(key: String, value: Boolean)
-    }
+//    interface ObjectCustom {
+//        @nativeGetter
+//        operator fun get(key: String): dynamic /* String? | Number? | Boolean? */
+//        @nativeSetter
+//        operator fun set(key: String, value: String)
+//        @nativeSetter
+//        operator fun set(key: String, value: Number)
+//        @nativeSetter
+//        operator fun set(key: String, value: Boolean)
+//    }
 
-    interface v2ObjectDataOmitId<Custom : ObjectCustom> {
+    interface CustomObject
+
+    interface v2ObjectDataOmitId {
         var eTag: String
         var updated: String
-        var custom: Custom?
+        var custom: CustomObject?
             get() = definedExternally
             set(value) = definedExternally
     }
 
-    interface v2ObjectData<Custom : ObjectCustom> {
+    interface v2ObjectData {
         var id: String
         var eTag: String
         var updated: String
-        var custom: Custom?
+        var custom: CustomObject?
             get() = definedExternally
             set(value) = definedExternally
     }
-    interface v2ObjectParam<Custom : ObjectCustom> {
-        var custom: Custom?
+    interface ObjectParam {
+        var custom: CustomObject?
             get() = definedExternally
             set(value) = definedExternally
     }
@@ -1096,18 +1053,18 @@ external open class PubNub(config: Any /* UUID | UserId */) {
         var type: String?
     }
 
-    interface UUIDMetadata<Custom : ObjectCustom> : v2ObjectParam<Custom>, Partial<UUIDMetadataFieldsNullable>
-    interface UUIDMetadataObject<Custom : ObjectCustom> : v2ObjectData<Custom>, UUIDMetadataFieldsNullable
+    interface UUIDMetadata : ObjectParam, UUIDMetadataFieldsNullable, Partial
+    interface UUIDMetadataObject : v2ObjectData, UUIDMetadataFieldsNullable
     interface `T$30` {
         var customFields: Boolean?
             get() = definedExternally
             set(value) = definedExternally
     }
-    interface SetUUIDMetadataParameters<Custom : ObjectCustom> {
+    interface SetUUIDMetadataParameters {
         var uuid: String?
             get() = definedExternally
             set(value) = definedExternally
-        var data: UUIDMetadata<Custom>
+        var data: UUIDMetadata
         var include: `T$30`?
             get() = definedExternally
             set(value) = definedExternally
@@ -1170,11 +1127,11 @@ external open class PubNub(config: Any /* UUID | UserId */) {
         var status: String?
         var type: String?
     }
-    interface ChannelMetadata<Custom : ObjectCustom> : v2ObjectParam<Custom>, ChannelMetadataFieldsPartial
-    interface ChannelMetadataObject<Custom : ObjectCustom> : v2ObjectData<Custom>, ChannelMetadataFieldsNullable
-    interface SetChannelMetadataParameters<Custom : ObjectCustom> {
+    interface ChannelMetadata : ObjectParam, ChannelMetadataFieldsPartial
+    interface ChannelMetadataObject : v2ObjectData, ChannelMetadataFieldsNullable
+    interface SetChannelMetadataParameters {
         var channel: String
-        var data: ChannelMetadata<Custom>
+        var data: ChannelMetadata
         var include: `T$30`?
             get() = definedExternally
             set(value) = definedExternally
@@ -1196,16 +1153,16 @@ external open class PubNub(config: Any /* UUID | UserId */) {
             get() = definedExternally
             set(value) = definedExternally
     }
-    interface UUIDMembershipObject<MembershipCustom : ObjectCustom, UUIDCustom : ObjectCustom> : v2ObjectDataOmitId<MembershipCustom> {
-        var uuid: dynamic /* UUIDMetadataObject<UUIDCustom> & `T$34` | `T$8` */
+    interface UUIDMembershipObject : v2ObjectDataOmitId {
+        var uuid: dynamic /* UUIDMetadataObject & `T$34` | `T$8` */
             get() = definedExternally
             set(value) = definedExternally
         var status: String?
             get() = definedExternally
             set(value) = definedExternally
     }
-    interface ChannelMembershipObject<MembershipCustom : ObjectCustom, ChannelCustom : ObjectCustom> : v2ObjectDataOmitId<MembershipCustom> {
-        var channel: dynamic /* ChannelMetadataObject<ChannelCustom> & `T$34` | `T$8` */
+    interface ChannelMembershipObject : v2ObjectDataOmitId {
+        var channel: dynamic /* ChannelMetadataObject & `T$34` | `T$8` */
             get() = definedExternally
             set(value) = definedExternally
         var status: String?
@@ -1300,17 +1257,17 @@ external open class PubNub(config: Any /* UUID | UserId */) {
             get() = definedExternally
             set(value) = definedExternally
     }
-    interface SetCustom<Custom : ObjectCustom> {
+    interface SetCustom {
         var id: String
-        var custom: Custom?
+        var custom: CustomObject?
             get() = definedExternally
             set(value) = definedExternally
     }
-    interface SetMembershipsParameters<Custom : ObjectCustom> : ChannelMembersParameters {
+    interface SetMembershipsParameters : ChannelMembersParameters {
         var uuid: String?
             get() = definedExternally
             set(value) = definedExternally
-        var channels: Array<dynamic /* String | SetCustom<Custom> */>?
+        var channels: Array<dynamic /* String | SetCustom */>?
             get() = definedExternally
             set(value) = definedExternally
     }
@@ -1320,9 +1277,9 @@ external open class PubNub(config: Any /* UUID | UserId */) {
             set(value) = definedExternally
         var channels: Array<String>
     }
-    interface SetChannelMembersParameters<Custom : ObjectCustom> : UUIDMembersParameters {
+    interface SetChannelMembersParameters : UUIDMembersParameters {
         var channel: String
-        var uuids: Array<dynamic /* String | SetCustom<Custom> */>
+        var uuids: Array<dynamic /* String | SetCustom */>
     }
     interface RemoveChannelMembersParameters : UUIDMembersParameters {
         var channel: String
@@ -1498,7 +1455,7 @@ external open class PubNub(config: Any /* UUID | UserId */) {
     }
 }
 
-external interface Partial<T>
+external interface Partial
 
 external interface UUID {
     var uuid: String
