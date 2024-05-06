@@ -4,9 +4,19 @@
     <meta charset="UTF-8">
     <title>JS Client</title>
 </head>
+<script>
+    (function(){
+    var oldLog = console.log;
+    console.log = function (message) {
+        document.body.innerText += message +"\n"
+        oldLog.apply(console, arguments);
+    };
+})();
+</script>
 <body>
 <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.6.2.js"></script>
 <script src="pubnub-chat.js"></script>
 
 </body>
+
 </html>

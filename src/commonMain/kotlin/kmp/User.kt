@@ -1,6 +1,6 @@
 package com.pubnub.kmp
 
-import com.pubnub.com.pubnub.kmp.Chat
+import com.pubnub.kmp.Chat
 
 data class User(
     val chat: Chat,
@@ -9,7 +9,7 @@ data class User(
     val externalId: String? = null,
     val profileUrl: String? = null,
     val email: String? = null,
-    val custom: Any? = null,
+    val custom: Map<String, Any?>? = null,
     val status: String? = null,
     val type: String? = null,
     val updated: String? = null,
@@ -20,7 +20,7 @@ data class User(
         externalId: String? = null,
         profileUrl: String? = null,
         email: String? = null,
-        custom: Any? = null,
+        custom: Map<String, Any?>? = null,
         status: String? = null,
         type: String? = null,
         updated: String? = null, // todo do we need this?
@@ -44,5 +44,5 @@ data class User(
 //# report
 
 
-//@JsExport
+//
 //interface ObjectCustom : Map<String, Any>

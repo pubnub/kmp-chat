@@ -2,16 +2,15 @@
 
 package com.pubnub.kmp
 
-import com.pubnub.com.pubnub.kmp.Chat
+import com.pubnub.kmp.Chat
 import kotlin.js.ExperimentalJsExport
-import kotlin.js.JsExport
 
-@JsExport
+
 class ChannelType {
     var aaa = 0
 }
 
-@JsExport
+
 class ChatConfig(val pubnubConfig: PNConfiguration) {
     var uuid: String = ""
     var saveDebugLog: Boolean = false
@@ -30,14 +29,14 @@ class ChatImpl(private val config: ChatConfig) : Chat {
         externalId: String?,
         profileUrl: String?,
         email: String?,
-        custom: Any?,
+        custom: Map<String, Any?>?,
         status: String?,
         type: String?,
         callback: (Result<User>) -> Unit,
     ) {
         pubNub.setUserMetadata(id, name, externalId, profileUrl, email, custom, includeCustom = true)
-            .async { result: Result<PNUUIDMetadataResult> ->
-                callback(result.map { it: PNUUIDMetadataResult ->
+            .async { result: Result<PNUserMetadataResult> ->
+                callback(result.map { it: PNUserMetadataResult ->
                     it.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
                         createUserFromMetadata(this, pnUUIDMetadata)
                     } ?: run {
@@ -53,7 +52,7 @@ class ChatImpl(private val config: ChatConfig) : Chat {
         externalId: String?,
         profileUrl: String?,
         email: String?,
-        custom: Any?,
+        custom: Map<String, Any?>?,
         status: String?,
         type: String?,
         updated: String?, //todo do we need this?
@@ -73,7 +72,7 @@ class ChatImpl(private val config: ChatConfig) : Chat {
                         includeCustom = false,
                         status = status,
                         type = type,
-                    ).async { result: Result<PNUUIDMetadataResult> ->
+                    ).async { result: Result<PNUserMetadataResult> ->
                         result.fold(
                             onSuccess = { pnUUIDMetadataResult ->
                                 pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
@@ -145,7 +144,7 @@ class ChatImpl(private val config: ChatConfig) : Chat {
             includeCustom = false,
             type = updatedUser.type,
             status = updatedUser.status,
-        ).async { resultOfUpdate: Result<PNUUIDMetadataResult> ->
+        ).async { resultOfUpdate: Result<PNUserMetadataResult> ->
             resultOfUpdate.fold(
                 onSuccess = { pnUUIDMetadataResult ->
                     pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
@@ -179,7 +178,7 @@ class ChatImpl(private val config: ChatConfig) : Chat {
             externalId = pnUUIDMetadata.externalId,
             profileUrl = pnUUIDMetadata.profileUrl,
             email = pnUUIDMetadata.email,
-            custom = pnUUIDMetadata.custom,
+            custom = pnUUIDMetadata.custom as Map<String, Any?>?,
             status = pnUUIDMetadata.status,
             type = pnUUIDMetadata.type,
             updated = pnUUIDMetadata.updated,
@@ -195,5 +194,5 @@ class ChatImpl(private val config: ChatConfig) : Chat {
 //    }
 }
 
-//@JsExport
+//
 //class User

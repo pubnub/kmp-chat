@@ -3,15 +3,18 @@
 
 package com.pubnub.kmp
 
-import Optional
-import createPubNub
+import Partial
+import com.pubnub.kmp.models.consumers.objects.PNKey
+import com.pubnub.kmp.models.consumers.objects.PNPage
+import com.pubnub.kmp.models.consumers.objects.PNSortKey
+import com.pubnub.kmp.models.consumers.objects.channel.PNChannelMetadataResult
 import toOptional
 import kotlin.js.Promise
 import PubNub as PubNubJs
 
 actual class PubNub actual constructor(configuration: PNConfiguration) {
 
-    private val jsPubNub: PubNubJs = createPubNub(configuration.userId.value, configuration.subscribeKey, configuration.publishKey)
+    private val jsPubNub: PubNubJs = PubNubJs(configuration.toJs())
 
     actual fun publish(
         channel: String,
@@ -43,16 +46,16 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
         externalId: String?,
         profileUrl: String?,
         email: String?,
-        custom: Any?,
+        custom: Map<String,Any?>?,
         includeCustom: Boolean,
         type: String?,
         status: String?
-    ): Endpoint<PNUUIDMetadataResult> {
-        return object : Endpoint<PNUUIDMetadataResult> {
-            override fun async(callback: (Result<PNUUIDMetadataResult>) -> Unit) {
-                val params = object : PubNubJs.SetUUIDMetadataParameters<PubNubJs.ObjectCustom> {
-                    override var data: PubNubJs.UUIDMetadata<PubNubJs.ObjectCustom> = UUIDMetadata(
-                        name.toOptional(), externalId.toOptional(), profileUrl.toOptional(), email.toOptional(), status.toOptional(), type.toOptional()
+    ): Endpoint<PNUserMetadataResult> {
+        return object : Endpoint<PNUserMetadataResult> {
+            override fun async(callback: (Result<PNUserMetadataResult>) -> Unit) {
+                val params = object : PubNubJs.SetUUIDMetadataParameters {
+                    override var data: PubNubJs.UUIDMetadata = UUIDMetadata(
+                        name.toOptional(), externalId.toOptional(), profileUrl.toOptional(), email.toOptional(), status.toOptional(), type.toOptional(), custom.toOptional()
                     )
 
                     override var uuid: String? = uuid
@@ -62,7 +65,7 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
                     }
                 }
 
-                jsPubNub.objects.setUUIDMetadata<dynamic>(params).then(onFulfilled = { it: dynamic ->
+                jsPubNub.objects.setUUIDMetadata(params).then(onFulfilled = { it: dynamic ->
                     callback(Result.success(it))
                 }, onRejected = { it: Throwable ->
                     callback(Result.failure(it))
@@ -78,7 +81,72 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
     actual fun getUserMetadata(
         uuid: String?,
         includeCustom: Boolean
-    ): Endpoint<PNUUIDMetadataResult> {
+    ): Endpoint<PNUserMetadataResult> {
+        TODO("Not yet implemented")
+    }
+
+    actual fun getAllUserMetadata(
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNKey>>,
+        includeCount: Boolean,
+        includeCustom: Boolean
+    ): Endpoint<PNUserMetadataArrayResult> {
+        TODO("Not yet implemented")
+    }
+
+    actual fun getAllChannelMetadata(
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNKey>>,
+        includeCount: Boolean,
+        includeCustom: Boolean
+    ): Endpoint<Unit> {
+        TODO("Not yet implemented")
+    }
+
+    /**
+     * Returns metadata for the specified Channel, optionally including the custom data object for each.
+     *
+     * @param channel Channel name.
+     * @param includeCustom Include respective additional fields in the response.
+     */
+    actual fun getChannelMetadata(
+        channel: String,
+        includeCustom: Boolean
+    ): Endpoint<PNChannelMetadataResult> {
+        TODO("Not yet implemented")
+    }
+
+    /**
+     * Set metadata for a Channel in the database, optionally including the custom data object for each.
+     *
+     * @param channel Channel name.
+     * @param name Name of a channel.
+     * @param description Description of a channel.
+     * @param custom Object with supported data types.
+     * @param includeCustom Include respective additional fields in the response.
+     */
+    actual fun setChannelMetadata(
+        channel: String,
+        name: String?,
+        description: String?,
+        custom: Any?,
+        includeCustom: Boolean,
+        type: String?,
+        status: String?
+    ): Endpoint<PNChannelMetadataResult> {
+        TODO("Not yet implemented")
+    }
+
+    /**
+     * Removes the metadata from a specified channel.
+     *
+     * @param channel Channel name.
+     */
+    actual fun removeChannelMetadata(channel: String): Endpoint<PNRemoveMetadataResult> {
         TODO("Not yet implemented")
     }
 }
@@ -102,13 +170,55 @@ fun UUIDMetadata(
     email: Optional<String?>,
     status: Optional<String?>,
     type: Optional<String?>,
-) : PubNubJs.UUIDMetadata<dynamic> {
-    val result = Any().asDynamic()
-    name.asValue()?.let { result.name = it.value }
-    externalId.asValue()?.let { result.externalId = it.value }
-    profileUrl.asValue()?.let { result.profileUrl = it.value }
-    email.asValue()?.let { result.email = it.value }
-    status.asValue()?.let { result.status = it.value }
-    type.asValue()?.let { result.type = it.value }
+    custom: Optional<Map<String,Any?>?>
+) : PubNubJs.UUIDMetadata {
+    val result: PubNubJs.UUIDMetadata = createJsObject()
+    name.onValue { result.name = it }
+    externalId.onValue { result.externalId = it }
+    profileUrl.onValue { result.profileUrl = it }
+    email.onValue { result.email = it }
+    status.onValue { result.status = it }
+    type.onValue { result.type = it }
+    custom.onValue { result.custom = it?.toCustomObject() }
     return result
+}
+
+fun Map<String,Any?>.toCustomObject(): PubNubJs.CustomObject {
+    val custom = Any().asDynamic()
+    entries.forEach {
+        custom[it.key] = it.value
+    }
+    return custom
+}
+
+fun <T: Partial> createJsObject(): T = Any().asDynamic() as T
+
+fun PNConfiguration.toJs(): PubNubJs.PNConfiguration {
+    val config: PubNubJs.PNConfiguration = createJsObject()
+    config.userId = userId.value
+    config.subscribeKey = subscribeKey
+    config.publishKey = publishKey
+//    config.cipherKey
+//    config.authKey: String?
+//    config.logVerbosity: Boolean?
+//    config.ssl: Boolean?
+//    config.origin: dynamic /* String? | Array<String>? */
+//    config.presenceTimeout: Number?
+//    config.heartbeatInterval: Number?
+//    config.restore: Boolean?
+//    config.keepAlive: Boolean?
+//    config.keepAliveSettings: KeepAliveSettings?
+//    config.subscribeRequestTimeout: Number?
+//    config.suppressLeaveEvents: Boolean?
+//    config.secretKey: String?
+//    config.requestMessageCountThreshold: Number?
+//    config.autoNetworkDetection: Boolean?
+//    config.listenToBrowserNetworkEvents: Boolean?
+//    config.useRandomIVs: Boolean?
+//    config.dedupeOnSubscribe: Boolean?
+//    config.cryptoModule: CryptoModule?
+//    config.retryConfiguration: dynamic /* LinearRetryPolicyConfiguration? | ExponentialRetryPolicyConfiguration? */
+//    config.enableEventEngine: Boolean?
+//    config.maintainPresenceState: Boolean?
+    return config
 }

@@ -1,4 +1,4 @@
-package com.pubnub.com.pubnub.kmp
+package com.pubnub.kmp
 
 import com.pubnub.kmp.User
 
@@ -9,7 +9,7 @@ interface Chat {
         externalId: String? = null,
         profileUrl: String? = null,
         email: String? = null,
-        custom: Any? = null,
+        custom: Map<String, Any?>? = null,
         status: String? = null,
         type: String? = null,
         callback: (Result<User>) -> Unit,
@@ -21,7 +21,7 @@ interface Chat {
         externalId: String?,
         profileUrl: String?,
         email: String?,
-        custom: Any?,
+        custom: Map<String, Any?>?,
         status: String?,
         type: String?,
         updated: String?, //todo do we need this?

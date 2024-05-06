@@ -2,9 +2,9 @@
 
 package com.pubnub.kmp
 
+import com.pubnub.kmp.models.consumers.objects.PNPage
 import kotlin.js.JsExport
 
-@JsExport
 actual class PNUUIDMetadata(
     actual val id: String,
     actual val name: String?,
@@ -18,12 +18,19 @@ actual class PNUUIDMetadata(
     actual val status: String?,
 )
 
-@JsExport
-actual class PNUUIDMetadataResult(
+actual class PNUserMetadataResult(
     actual val status: Int,
     actual val data: PNUUIDMetadata?,
 )
 
 actual class PNRemoveMetadataResult(
     actual val status: Int
+)
+
+actual data class PNUserMetadataArrayResult(
+    actual val status: Int,
+    actual val data: Collection<PNUUIDMetadata>,
+    actual val totalCount: Int?,
+    actual val next: PNPage.PNNext?,
+    actual val prev: PNPage.PNPrev?,
 )
