@@ -4,13 +4,16 @@ package com.pubnub.kmp
 
 import com.pubnub.kmp.Chat
 import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
+import kotlin.js.JsName
 
 
 class ChannelType {
     var aaa = 0
 }
 
-
+@JsExport
+@JsName("ChatConfig")
 class ChatConfig(val pubnubConfig: PNConfiguration) {
     var uuid: String = ""
     var saveDebugLog: Boolean = false

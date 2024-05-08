@@ -3,6 +3,7 @@
 
 package com.pubnub.kmp
 
+import ObjectsResponse
 import Partial
 import com.pubnub.kmp.models.consumers.objects.PNKey
 import com.pubnub.kmp.models.consumers.objects.PNPage
@@ -46,36 +47,60 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
         externalId: String?,
         profileUrl: String?,
         email: String?,
-        custom: Map<String,Any?>?,
+        custom: Map<String, Any?>?,
         includeCustom: Boolean,
         type: String?,
         status: String?
     ): Endpoint<PNUserMetadataResult> {
-        return object : Endpoint<PNUserMetadataResult> {
-            override fun async(callback: (Result<PNUserMetadataResult>) -> Unit) {
-                val params = object : PubNubJs.SetUUIDMetadataParameters {
-                    override var data: PubNubJs.UUIDMetadata = UUIDMetadata(
-                        name.toOptional(), externalId.toOptional(), profileUrl.toOptional(), email.toOptional(), status.toOptional(), type.toOptional(), custom.toOptional()
-                    )
+        return Endpoint({
+            val params = object : PubNubJs.SetUUIDMetadataParameters {
+                override var data: PubNubJs.UUIDMetadata = UUIDMetadata(
+                    name.toOptional(),
+                    externalId.toOptional(),
+                    profileUrl.toOptional(),
+                    email.toOptional(),
+                    status.toOptional(),
+                    type.toOptional(),
+                    custom.toOptional()
+                )
 
-                    override var uuid: String? = uuid
+                override var uuid: String? = uuid
 
-                    override var include: PubNubJs.`T$30`? = object : PubNubJs.`T$30` {
-                        override var customFields: Boolean? = includeCustom
-                    }
+                override var include: PubNubJs.`T$30`? = object : PubNubJs.`T$30` {
+                    override var customFields: Boolean? = includeCustom
                 }
-
-                jsPubNub.objects.setUUIDMetadata(params).then(onFulfilled = { it: dynamic ->
-                    callback(Result.success(it))
-                }, onRejected = { it: Throwable ->
-                    callback(Result.failure(it))
-                })
             }
+
+            jsPubNub.objects.setUUIDMetadata(params)
+        }) { it: ObjectsResponse<PubNubJs.UUIDMetadataObject> ->
+            PNUserMetadataResult(
+                it.status.toInt(),
+                with(it.data) {
+                    PNUUIDMetadata(
+                        id,
+                        name,
+                        externalId,
+                        profileUrl,
+                        email,
+                        custom,
+                        updated,
+                        eTag,
+                        type,
+                        status
+                    )
+                }
+            )
         }
     }
 
     actual fun removeUserMetadata(uuid: String?): Endpoint<PNRemoveMetadataResult> {
-        TODO("Not yet implemented")
+        return Endpoint({
+            jsPubNub.objects.removeUUIDMetadata(object : PubNubJs.RemoveUUIDMetadataParameters {
+                override var uuid: String? = uuid
+            })
+        }) { response ->
+            PNRemoveMetadataResult(response.status.toInt())
+        }
     }
 
     actual fun getUserMetadata(
@@ -155,13 +180,19 @@ actual class PNPublishResult(
     actual val timetoken: Long
 )
 
-private fun <T> Promise<T>.toKmp() : Endpoint<T>{
-    return object : Endpoint<T> {
-        override fun async(callback: (Result<T>) -> Unit) {
-            then { callback(Result.success(it))}
+private fun <T, U> Endpoint(promiseFactory: () -> Promise<T>, responseMapping: (T) -> U): Endpoint<U> =
+    object : Endpoint<U> {
+        override fun async(callback: (Result<U>) -> Unit) {
+            promiseFactory().then(
+                onFulfilled = { response: T ->
+                    callback(Result.success(responseMapping(response)))
+                },
+                onRejected = { throwable ->
+                    callback(Result.failure(throwable))
+                }
+            )
         }
     }
-}
 
 fun UUIDMetadata(
     name: Optional<String?>,
@@ -170,8 +201,8 @@ fun UUIDMetadata(
     email: Optional<String?>,
     status: Optional<String?>,
     type: Optional<String?>,
-    custom: Optional<Map<String,Any?>?>
-) : PubNubJs.UUIDMetadata {
+    custom: Optional<Map<String, Any?>?>
+): PubNubJs.UUIDMetadata {
     val result: PubNubJs.UUIDMetadata = createJsObject()
     name.onValue { result.name = it }
     externalId.onValue { result.externalId = it }
@@ -183,7 +214,7 @@ fun UUIDMetadata(
     return result
 }
 
-fun Map<String,Any?>.toCustomObject(): PubNubJs.CustomObject {
+fun Map<String, Any?>.toCustomObject(): PubNubJs.CustomObject {
     val custom = Any().asDynamic()
     entries.forEach {
         custom[it.key] = it.value
@@ -191,7 +222,7 @@ fun Map<String,Any?>.toCustomObject(): PubNubJs.CustomObject {
     return custom
 }
 
-fun <T: Partial> createJsObject(): T = Any().asDynamic() as T
+fun <T : Partial> createJsObject(): T = Any().asDynamic() as T
 
 fun PNConfiguration.toJs(): PubNubJs.PNConfiguration {
     val config: PubNubJs.PNConfiguration = createJsObject()
