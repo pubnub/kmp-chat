@@ -3,3 +3,4 @@ plugins {
 }
 rootProject.name = "pubnub-chat"
 
+includeBuild("pubnub-kotlin")

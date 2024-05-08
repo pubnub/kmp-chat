@@ -1,20 +1,35 @@
 package com.pubnub.kmp
 
 import com.pubnub.kmp.Chat
+import kotlin.js.JsExport
+
+@JsExport
+interface UserInfo {
+    val id: String
+    val name: String?
+    val externalId: String?
+    val profileUrl: String?
+    val email: String?
+    val custom: Map<String, Any?>?
+    val status: String?
+    val type: String?
+    val updated: String?
+    val lastActiveTimestamp: Long?
+}
 
 data class User(
     val chat: Chat,
-    val id: String,
-    val name: String? = null,
-    val externalId: String? = null,
-    val profileUrl: String? = null,
-    val email: String? = null,
-    val custom: Map<String, Any?>? = null,
-    val status: String? = null,
-    val type: String? = null,
-    val updated: String? = null,
-    val lastActiveTimestamp: Long? = null
-) {
+    override val id: String,
+    override val name: String? = null,
+    override val externalId: String? = null,
+    override val profileUrl: String? = null,
+    override val email: String? = null,
+    override val custom: Map<String, Any?>? = null,
+    override val status: String? = null,
+    override val type: String? = null,
+    override val updated: String? = null,
+    override val lastActiveTimestamp: Long? = null
+) : UserInfo {
     fun update(
         name: String? = null,
         externalId: String? = null,

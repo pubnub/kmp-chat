@@ -28,5 +28,5 @@ interface Chat {
         callback: (Result<User>) -> Unit
     )
 
-    fun deleteUser(id: String, softDelete: Boolean, callback: (Result<User>) -> Unit)
+    fun deleteUser(id: String, softDelete: Boolean = false, callback: (Result<User>) -> Unit)
 }
