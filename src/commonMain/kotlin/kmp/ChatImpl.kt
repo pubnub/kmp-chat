@@ -2,7 +2,9 @@
 
 package com.pubnub.kmp
 
-import com.pubnub.kmp.Chat
+import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 import kotlin.js.JsName
@@ -38,8 +40,8 @@ class ChatImpl(private val config: ChatConfig) : Chat {
         callback: (Result<User>) -> Unit,
     ) {
         pubNub.setUserMetadata(id, name, externalId, profileUrl, email, custom, includeCustom = true)
-            .async { result: Result<PNUserMetadataResult> ->
-                callback(result.map { it: PNUserMetadataResult ->
+            .async { result: Result<PNUUIDMetadataResult> ->
+                callback(result.map { it: PNUUIDMetadataResult ->
                     it.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
                         createUserFromMetadata(this, pnUUIDMetadata)
                     } ?: run {
@@ -75,7 +77,7 @@ class ChatImpl(private val config: ChatConfig) : Chat {
                         includeCustom = false,
                         status = status,
                         type = type,
-                    ).async { result: Result<PNUserMetadataResult> ->
+                    ).async { result: Result<PNUUIDMetadataResult> ->
                         result.fold(
                             onSuccess = { pnUUIDMetadataResult ->
                                 pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
@@ -147,7 +149,7 @@ class ChatImpl(private val config: ChatConfig) : Chat {
             includeCustom = false,
             type = updatedUser.type,
             status = updatedUser.status,
-        ).async { resultOfUpdate: Result<PNUserMetadataResult> ->
+        ).async { resultOfUpdate: Result<PNUUIDMetadataResult> ->
             resultOfUpdate.fold(
                 onSuccess = { pnUUIDMetadataResult ->
                     pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->

@@ -6,9 +6,14 @@ import com.pubnub.api.Endpoint
 import com.pubnub.api.PubNub
 import com.pubnub.api.UserId
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.objects.PNKey
+import com.pubnub.api.models.consumer.objects.PNPage
+import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
+import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.kmp.PNConfiguration
-import com.pubnub.kmp.models.consumers.objects.channel.PNChannelMetadataResult
 import java.util.function.Consumer
 
 actual class PubNub actual constructor(configuration: PNConfiguration) {
@@ -41,7 +46,7 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
         includeCustom: Boolean,
         type: String?,
         status: String?,
-    ): com.pubnub.kmp.Endpoint<PNUserMetadataResult> {
+    ): com.pubnub.kmp.Endpoint<PNUUIDMetadataResult> {
         return pubNub.setUUIDMetadata(uuid, name, externalId, profileUrl, email, custom, includeCustom, type, status).toKmp()
     }
 
@@ -51,28 +56,28 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
     }
 
     // todo
-    actual fun getUserMetadata(uuid: String?, includeCustom: Boolean): com.pubnub.kmp.Endpoint<PNUserMetadataResult> {
+    actual fun getUserMetadata(uuid: String?, includeCustom: Boolean): com.pubnub.kmp.Endpoint<PNUUIDMetadataResult> {
         return pubNub.getUUIDMetadata(uuid, includeCustom).toKmp()
     }
 
     actual fun getAllUserMetadata(
         limit: Int?,
-        page: com.pubnub.kmp.models.consumers.objects.PNPage?,
+        page: PNPage?,
         filter: String?,
-        sort: Collection<com.pubnub.kmp.models.consumers.objects.PNSortKey<com.pubnub.kmp.models.consumers.objects.PNKey>>,
+        sort: Collection<PNSortKey<PNKey>>,
         includeCount: Boolean,
         includeCustom: Boolean
-    ): com.pubnub.kmp.Endpoint<PNUserMetadataArrayResult> {
+    ): com.pubnub.kmp.Endpoint<PNUUIDMetadataArrayResult> {
         TODO("Not yet implemented")
     }
 
     actual fun getAllChannelMetadata(
-        limit: kotlin.Int?,
-        page: com.pubnub.kmp.models.consumers.objects.PNPage?,
-        filter: kotlin.String?,
-        sort: kotlin.collections.Collection<com.pubnub.kmp.models.consumers.objects.PNSortKey<com.pubnub.kmp.models.consumers.objects.PNKey>>,
-        includeCount: kotlin.Boolean,
-        includeCustom: kotlin.Boolean
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNKey>>,
+        includeCount: Boolean,
+        includeCustom: Boolean
     ): com.pubnub.kmp.Endpoint<Unit> {
         TODO("Not yet implemented")
     }
@@ -131,13 +136,3 @@ private fun <T> Endpoint<T>.toKmp() : com.pubnub.kmp.Endpoint<T> {
         }
     }
 }
-
-actual typealias PNPublishResult = PNPublishResult
-
-actual typealias PNUUIDMetadata = com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
-
-actual typealias PNUserMetadataResult = com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
-
-actual typealias PNRemoveMetadataResult = com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
-
-actual typealias PNUserMetadataArrayResult = com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult

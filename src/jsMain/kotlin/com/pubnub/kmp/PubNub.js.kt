@@ -5,10 +5,15 @@ package com.pubnub.kmp
 
 import ObjectsResponse
 import Partial
-import com.pubnub.kmp.models.consumers.objects.PNKey
-import com.pubnub.kmp.models.consumers.objects.PNPage
-import com.pubnub.kmp.models.consumers.objects.PNSortKey
-import com.pubnub.kmp.models.consumers.objects.channel.PNChannelMetadataResult
+import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.objects.PNKey
+import com.pubnub.api.models.consumer.objects.PNPage
+import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
+import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import toOptional
 import kotlin.js.Promise
 import PubNub as PubNubJs
@@ -51,7 +56,7 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
         includeCustom: Boolean,
         type: String?,
         status: String?
-    ): Endpoint<PNUserMetadataResult> {
+    ): Endpoint<PNUUIDMetadataResult> {
         return Endpoint({
             val params = object : PubNubJs.SetUUIDMetadataParameters {
                 override var data: PubNubJs.UUIDMetadata = UUIDMetadata(
@@ -73,7 +78,7 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
 
             jsPubNub.objects.setUUIDMetadata(params)
         }) { it: ObjectsResponse<PubNubJs.UUIDMetadataObject> ->
-            PNUserMetadataResult(
+            PNUUIDMetadataResult(
                 it.status.toInt(),
                 with(it.data) {
                     PNUUIDMetadata(
@@ -106,7 +111,7 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
     actual fun getUserMetadata(
         uuid: String?,
         includeCustom: Boolean
-    ): Endpoint<PNUserMetadataResult> {
+    ): Endpoint<PNUUIDMetadataResult> {
         TODO("Not yet implemented")
     }
 
@@ -117,7 +122,7 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
         sort: Collection<PNSortKey<PNKey>>,
         includeCount: Boolean,
         includeCustom: Boolean
-    ): Endpoint<PNUserMetadataArrayResult> {
+    ): Endpoint<PNUUIDMetadataArrayResult> {
         TODO("Not yet implemented")
     }
 
@@ -176,9 +181,6 @@ actual class PubNub actual constructor(configuration: PNConfiguration) {
     }
 }
 
-actual class PNPublishResult(
-    actual val timetoken: Long
-)
 
 private fun <T, U> Endpoint(promiseFactory: () -> Promise<T>, responseMapping: (T) -> U): Endpoint<U> =
     object : Endpoint<U> {
