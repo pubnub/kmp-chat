@@ -11,16 +11,9 @@ plugins {
 group = "com.pubnub"
 version = "1.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-//    testImplementation(kotlin("test"))
-}
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(8)
     js {
         browser {
 
@@ -73,24 +66,29 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
     sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation("com.pubnub:pubnub-core-api:9.2-DEV")
+                implementation("com.pubnub:pubnub-kotlin-api:9.2-DEV")
+            }
+        }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
-                implementation("com.pubnub:pubnub-core-api:9.2-DEV")
             }
         }
 
         val jvmMain by getting {
             dependencies {
-                implementation("com.pubnub:pubnub-kotlin-impl:9.2-DEV")
-                implementation("com.pubnub:pubnub-kotlin:9.2-DEV")
+//                implementation("com.pubnub:pubnub-kotlin-impl:9.2-DEV")
+//                implementation("com.pubnub:pubnub-kotlin:9.2-DEV")
                 implementation(kotlin("test-junit"))
             }
         }
 
         val nonJvm by creating {
-            dependsOn(commonMain.get())
+            dependsOn(commonMain)
         }
 
         val jsMain by getting {

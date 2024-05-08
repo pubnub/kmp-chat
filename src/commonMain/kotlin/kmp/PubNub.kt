@@ -2,12 +2,14 @@
 
 package com.pubnub.kmp
 
-import com.pubnub.kmp.models.consumers.objects.PNKey
-import com.pubnub.kmp.models.consumers.objects.PNMembershipKey
-import com.pubnub.kmp.models.consumers.objects.PNPage
-import com.pubnub.kmp.models.consumers.objects.PNSortKey
-import com.pubnub.kmp.models.consumers.objects.channel.PNChannelMetadataResult
-import com.pubnub.kmp.models.consumers.objects.memberships.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.objects.PNKey
+import com.pubnub.api.models.consumer.objects.PNPage
+import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
+import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 
 interface Endpoint<T> {
     fun async(callback: (Result<T>)-> Unit)
@@ -34,10 +36,10 @@ expect class PubNub(configuration: PNConfiguration) {
         includeCustom: Boolean = false,
         type: String? = null,
         status: String? = null,
-    ): Endpoint<PNUserMetadataResult>
+    ): Endpoint<PNUUIDMetadataResult>
 
     fun removeUserMetadata(uuid: String? = null): Endpoint<PNRemoveMetadataResult>
-    fun getUserMetadata(uuid: String?, includeCustom: Boolean): Endpoint<PNUserMetadataResult>
+    fun getUserMetadata(uuid: String?, includeCustom: Boolean): Endpoint<PNUUIDMetadataResult>
 
     fun getAllUserMetadata(
         limit: Int? = null,
@@ -46,7 +48,7 @@ expect class PubNub(configuration: PNConfiguration) {
         sort: Collection<PNSortKey<PNKey>> = listOf(),
         includeCount: Boolean = false,
         includeCustom: Boolean = false,
-    ): Endpoint<PNUserMetadataArrayResult>
+    ): Endpoint<PNUUIDMetadataArrayResult>
 
     fun getAllChannelMetadata(
         limit: Int? = null,
@@ -106,39 +108,3 @@ expect class PubNub(configuration: PNConfiguration) {
 //    ): Endpoint<PNChannelMembershipArrayResult>
 
 }
-
-expect class PNPublishResult {
-    val timetoken: Long
-}
-
-expect class PNUUIDMetadata {
-    val id: String
-    val name: String?
-    val externalId: String?
-    val profileUrl: String?
-    val email: String?
-    val custom: Any?
-    val updated: String?
-    val eTag: String?
-    val type: String?
-    val status: String?
-}
-
-expect class PNUserMetadataResult {
-    val status: Int
-    val data: PNUUIDMetadata?
-}
-
-expect class PNRemoveMetadataResult {
-    val status: Int
-}
-
-expect class PNUserMetadataArrayResult {
-    val status: Int
-    val data: Collection<PNUUIDMetadata>
-    val totalCount: Int?
-    val next: PNPage.PNNext?
-    val prev: PNPage.PNPrev?
-}
-
-

@@ -3,4 +3,13 @@ plugins {
 }
 rootProject.name = "pubnub-chat"
 
-includeBuild("pubnub-kotlin")
+dependencyResolutionManagement {
+    repositories {
+//        mavenLocal()
+        mavenCentral()
+    }
+}
+
+includeBuild("pubnub-kotlin") {
+    name = "pubnub"
+}
