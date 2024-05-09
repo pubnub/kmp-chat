@@ -5,29 +5,40 @@ package com.pubnub.kmp
 import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
+import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import kotlin.js.ExperimentalJsExport
-import kotlin.js.JsExport
-import kotlin.js.JsName
 
 
 class ChannelType {
     var aaa = 0
 }
 
-@JsExport
-@JsName("ChatConfig")
-class ChatConfig(val pubnubConfig: PNConfiguration) {
-    var uuid: String = ""
-    var saveDebugLog: Boolean = false
-    var typingTimeout: Int = 0
-    var rateLimitPerChannel: Any = mutableMapOf<ChannelType, Int>()
+interface ChatConfig{
+    val pubnubConfig: PNConfiguration
+    var uuid: String
+    var saveDebugLog: Boolean
+    var typingTimeout: Int
+    var rateLimitPerChannel: Any
+}
+
+class ChatConfigImpl(override val pubnubConfig: PNConfiguration): ChatConfig {
+    override var uuid: String = ""
+    override var saveDebugLog: Boolean = false
+    override var typingTimeout: Int = 0
+    override var rateLimitPerChannel: Any = mutableMapOf<ChannelType, Int>()
 }
 
 private const val DELETED = "Deleted"
 
-class ChatImpl(private val config: ChatConfig) : Chat {
-    private val pubNub = createCommonPubNub(config.pubnubConfig)
+private const val ID_IS_REQUIRED = "Id is required"
+private const val CHANNEL_ID_IS_REQUIRED = "Channel ID is required"
+
+class ChatImpl(
+    private val config: ChatConfig,
+    private val pubnub: CommonPubNub = createCommonPubNub(config.pubnubConfig)
+) : Chat {
+//    private val pubNub = createCommonPubNub(config.pubnubConfig)
 
     override fun createUser(
         id: String,
@@ -40,7 +51,7 @@ class ChatImpl(private val config: ChatConfig) : Chat {
         type: String?,
         callback: (Result<User>) -> Unit,
     ) {
-        pubNub.setUUIDMetadata(id, name, externalId, profileUrl, email, custom, includeCustom = true)
+        pubnub.setUUIDMetadata(id, name, externalId, profileUrl, email, custom, includeCustom = true)
             .async { result: Result<PNUUIDMetadataResult> ->
                 callback(result.map { it: PNUUIDMetadataResult ->
                     it.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
@@ -64,11 +75,14 @@ class ChatImpl(private val config: ChatConfig) : Chat {
         updated: String?, //todo do we need this?
         callback: (Result<User>) -> Unit
     ) {
-        validateId(id, callback)
+        if (id.isEmpty()) {
+            callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
+            return
+        }
         getUserData(id) { result ->
             result.fold(
                 onSuccess = { user ->
-                    pubNub.setUserMetadata(
+                    pubnub.setUUIDMetadata(
                         uuid = id,
                         name = name,
                         externalId = externalId,
@@ -100,7 +114,10 @@ class ChatImpl(private val config: ChatConfig) : Chat {
     }
 
     override fun deleteUser(id: String, softDelete: Boolean, callback: (Result<User>) -> Unit) {
-        validateId(id, callback)
+        if (id.isEmpty()) {
+            callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
+            return
+        }
         getUserData(id) { result: Result<User> ->
             result.fold(
                 onSuccess = { user ->
@@ -117,14 +134,48 @@ class ChatImpl(private val config: ChatConfig) : Chat {
         }
     }
 
-    private fun validateId(id: String, callback: (Result<User>) -> Unit) {
+    override fun wherePresent(id: String, callback: (Result<List<String>>) -> Unit) {
         if (id.isEmpty()) {
-            callback(Result.failure(IllegalArgumentException("Id is required")))
+            callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
+            return
+        }
+
+        pubnub.whereNow(uuid = id).async { result: Result<PNWhereNowResult> ->
+            result.fold(
+                onSuccess = { pnWhereNowResult ->
+                    callback(Result.success(pnWhereNowResult.channels))
+                },
+                onFailure = { error ->
+                    callback(Result.failure(Exception("Failed to retrieve wherePresent data: ${error.message}")))
+                }
+            )
+        }
+    }
+
+    override fun isPresent(id: String, channel: String, callback: (Result<Boolean>) -> Unit) {
+        if (id.isEmpty()) {
+            callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
+            return
+        }
+        if (channel.isEmpty()) {
+            callback(Result.failure(IllegalArgumentException(CHANNEL_ID_IS_REQUIRED)))
+            return
+        }
+
+        pubnub.whereNow(uuid = id).async { result: Result<PNWhereNowResult> ->
+            result.fold(
+                onSuccess = { pnWhereNowResult ->
+                    callback(Result.success(pnWhereNowResult.channels.contains(channel)))
+                },
+                onFailure = { error ->
+                    callback(Result.failure(Exception("Failed to retrieve isPresent data: ${error.message}")))
+                }
+            )
         }
     }
 
     private fun getUserData(id: String, callback: (Result<User>) -> Unit) {
-        pubNub.getUserMetadata(uuid = id, includeCustom = false).async { result ->
+        pubnub.getUUIDMetadata(uuid = id, includeCustom = false).async { result ->
             result.fold(
                 onSuccess = { pnUUIDMetadataResult ->
                     pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
@@ -140,7 +191,7 @@ class ChatImpl(private val config: ChatConfig) : Chat {
 
     private fun performSoftDelete(user: User, callback: (Result<User>) -> Unit) {
         val updatedUser = user.copy(status = DELETED)
-        pubNub.setUserMetadata(
+        pubnub.setUUIDMetadata(
             uuid = user.id,
             name = updatedUser.name,
             externalId = updatedUser.externalId,
@@ -166,7 +217,7 @@ class ChatImpl(private val config: ChatConfig) : Chat {
     }
 
     private fun performHardDelete(user: User, callback: (Result<User>) -> Unit) {
-        pubNub.removeUserMetadata(uuid = user.id)
+        pubnub.removeUUIDMetadata(uuid = user.id)
             .async { removeResult: Result<PNRemoveMetadataResult> ->
                 if (removeResult.isSuccess) {
                     callback(Result.success(user))
@@ -190,15 +241,4 @@ class ChatImpl(private val config: ChatConfig) : Chat {
             updated = pnUUIDMetadata.updated,
         )
     }
-
-//    fun updateUser(
-//        id: String,
-//        user: User,
-//        callback: (Result<User>) -> Unit,
-//    ): User {
-//       pubNub.
-//    }
 }
-
-//
-//class User

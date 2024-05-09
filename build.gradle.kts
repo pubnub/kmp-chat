@@ -5,7 +5,7 @@ plugins {
 //    kotlin("multiplatform") version "1.9.22" //downgrade to 1.9.22 because mockmp uses Kotlin Symbol Processing (KSP) "com.google.devtools.ksp:symbol-processing-api:<new-version>"
 //    kotlin("native.cocoapods") version "1.9.23"
 //    id("org.kodein.mock.mockmp") version "1.17.0"
-//    id("dev.mokkery") version "1.9.22-1.5.0" // todo if we go with mokkery instead of mockmp check https://mokkery.dev/docs/Setup/#compatibility
+    id("dev.mokkery") version "2.0.0-RC1"
 }
 
 group = "com.pubnub"
@@ -81,8 +81,7 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-//                implementation("com.pubnub:pubnub-kotlin-impl:9.2-DEV")
-//                implementation("com.pubnub:pubnub-kotlin:9.2-DEV")
+                implementation("com.pubnub:pubnub-kotlin:9.2-DEV")
                 implementation(kotlin("test-junit"))
             }
         }
