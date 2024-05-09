@@ -5,6 +5,7 @@ package com.pubnub.kmp
 import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
+import com.pubnub.api.v2.PNConfiguration
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 import kotlin.js.JsName
@@ -26,7 +27,7 @@ class ChatConfig(val pubnubConfig: PNConfiguration) {
 private const val DELETED = "Deleted"
 
 class ChatImpl(private val config: ChatConfig) : Chat {
-    private val pubNub = PubNub(config.pubnubConfig)
+    private val pubNub = createCommonPubNub(config.pubnubConfig)
 
     override fun createUser(
         id: String,
@@ -39,7 +40,7 @@ class ChatImpl(private val config: ChatConfig) : Chat {
         type: String?,
         callback: (Result<User>) -> Unit,
     ) {
-        pubNub.setUserMetadata(id, name, externalId, profileUrl, email, custom, includeCustom = true)
+        pubNub.setUUIDMetadata(id, name, externalId, profileUrl, email, custom, includeCustom = true)
             .async { result: Result<PNUUIDMetadataResult> ->
                 callback(result.map { it: PNUUIDMetadataResult ->
                     it.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
