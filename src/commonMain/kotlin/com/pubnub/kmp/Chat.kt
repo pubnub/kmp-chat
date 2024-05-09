@@ -1,7 +1,5 @@
 package com.pubnub.kmp
 
-import com.pubnub.kmp.User
-
 interface Chat {
     fun createUser(
         id: String,
@@ -29,4 +27,8 @@ interface Chat {
     )
 
     fun deleteUser(id: String, softDelete: Boolean = false, callback: (Result<User>) -> Unit)
+
+    fun wherePresent(id: String, callback: (Result<List<String>>) -> Unit)
+
+    fun isPresent(id: String, channel: String, callback: (Result<Boolean>) -> Unit)
 }
