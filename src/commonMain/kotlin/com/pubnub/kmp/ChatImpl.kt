@@ -2,13 +2,15 @@
 
 package com.pubnub.kmp
 
+import com.pubnub.api.PubNub
+import com.pubnub.api.async
+import com.pubnub.api.createCommonPubNub
 import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import kotlin.js.ExperimentalJsExport
-
 
 class ChannelType {
     var aaa = 0
@@ -36,7 +38,7 @@ private const val CHANNEL_ID_IS_REQUIRED = "Channel ID is required"
 
 class ChatImpl(
     private val config: ChatConfig,
-    private val pubnub: CommonPubNub = createCommonPubNub(config.pubnubConfig)
+    private val pubnub: PubNub = createCommonPubNub(config.pubnubConfig)
 ) : Chat {
 //    private val pubNub = createCommonPubNub(config.pubnubConfig)
 
@@ -175,10 +177,10 @@ class ChatImpl(
     }
 
     private fun getUserData(id: String, callback: (Result<User>) -> Unit) {
-        pubnub.getUUIDMetadata(uuid = id, includeCustom = false).async { result ->
+        pubnub.getUUIDMetadata(uuid = id, includeCustom = false).async { result: Result<PNUUIDMetadataResult> ->
             result.fold(
-                onSuccess = { pnUUIDMetadataResult ->
-                    pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
+                onSuccess = { pnUUIDMetadataResult: PNUUIDMetadataResult ->
+                    pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
                         callback(Result.success(createUserFromMetadata(this, pnUUIDMetadata)))
                     } ?: callback(Result.failure(Exception("User metadata is empty")))
                 },

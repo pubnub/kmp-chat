@@ -1,6 +1,6 @@
 
 plugins {
-    kotlin("multiplatform") version "2.0.0-RC2"
+    kotlin("multiplatform") version "2.0.0-RC3"
 //    kotlin("native.cocoapods") version "2.0.0-RC2"
 //    kotlin("multiplatform") version "1.9.22" //downgrade to 1.9.22 because mockmp uses Kotlin Symbol Processing (KSP) "com.google.devtools.ksp:symbol-processing-api:<new-version>"
 //    kotlin("native.cocoapods") version "1.9.23"
@@ -76,6 +76,8 @@ kotlin {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
+                implementation("com.pubnub:pubnub-kotlin-test:9.2-DEV")
+
             }
         }
 
