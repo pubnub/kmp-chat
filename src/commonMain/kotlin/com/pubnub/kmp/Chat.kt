@@ -1,5 +1,7 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.CustomObject
+
 interface Chat {
     fun createUser(
         id: String,
@@ -7,7 +9,7 @@ interface Chat {
         externalId: String? = null,
         profileUrl: String? = null,
         email: String? = null,
-        custom: Map<String, Any?>? = null,
+        custom: CustomObject? = null,
         status: String? = null,
         type: String? = null,
         callback: (Result<User>) -> Unit,
@@ -19,7 +21,7 @@ interface Chat {
         externalId: String?,
         profileUrl: String?,
         email: String?,
-        custom: Map<String, Any?>?,
+        custom: CustomObject?,
         status: String?,
         type: String?,
         updated: String?, //todo do we need this?

@@ -1,5 +1,7 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.CustomObject
+
 data class User(
     val chat: Chat,
     val id: String,
@@ -7,7 +9,7 @@ data class User(
     val externalId: String? = null,
     val profileUrl: String? = null,
     val email: String? = null,
-    val custom: Any? = null,
+    val custom: CustomObject? = null,
     val status: String? = null,
     val type: String? = null,
     val updated: String? = null,
@@ -18,7 +20,7 @@ data class User(
         externalId: String? = null,
         profileUrl: String? = null,
         email: String? = null,
-        custom: Map<String, Any?>? = null,
+        custom: CustomObject? = null,
         status: String? = null,
         type: String? = null,
         updated: String? = null, // todo do we need this?

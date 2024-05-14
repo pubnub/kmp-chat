@@ -4,6 +4,7 @@ import com.pubnub.api.Endpoint
 import com.pubnub.api.PubNub
 import com.pubnub.api.UserId
 import com.pubnub.api.async
+import com.pubnub.api.createCustomObject
 import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
@@ -41,7 +42,8 @@ class ChatTest {
     private val externalId = "testExternalId"
     private val profileUrl = "testProfileUrl"
     private val email = "testEmail"
-    private val custom = mapOf("testCustom" to "custom")
+    private val customData = mapOf("testCustom" to "custom")
+    private val custom = createCustomObject(customData)
     private val status = "testStatus"
     private val type = "testType"
     private val updated = "timeStamp"
@@ -129,7 +131,7 @@ class ChatTest {
             externalId = externalId,
             profileUrl = profileUrl,
             email = email,
-            custom = custom,
+            custom = customData,
             updated = updated,
             eTag = "eTag",
             type = type,
@@ -177,7 +179,7 @@ class ChatTest {
             externalId = externalId,
             profileUrl = profileUrl,
             email = email,
-            custom = custom,
+            custom = customData,
             updated = updated,
             eTag = "eTag",
             type = type,
