@@ -1,7 +1,13 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.Endpoint
+import com.pubnub.api.PubNub
 import com.pubnub.api.UserId
+import com.pubnub.api.async
+import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
+import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
+import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
+import com.pubnub.api.endpoints.presence.WhereNow
 import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
@@ -25,11 +31,11 @@ class ChatTest {
     private lateinit var objectUnderTest: ChatImpl
     private val chatConfig: ChatConfig = mock(MockMode.strict)
 
-    private val pubnub: CommonPubNub = mock(MockMode.strict)
+    private val pubnub: PubNub = mock(MockMode.strict)
     private lateinit var pnConfiguration: PNConfiguration
-    private val setUUIDMetadataEndpoint: Endpoint<PNUUIDMetadataResult> = mock(MockMode.strict)
-    private val getUUIDMetadataEndpoint: Endpoint<PNUUIDMetadataResult> = mock(MockMode.strict)
-    private val removeUUIDMetadataEndpoint: Endpoint<PNRemoveMetadataResult> = mock(MockMode.strict)
+    private val setUUIDMetadataEndpoint: SetUUIDMetadata = mock(MockMode.strict)
+    private val getUUIDMetadataEndpoint: GetUUIDMetadata = mock(MockMode.strict)
+    private val removeUUIDMetadataEndpoint: RemoveUUIDMetadata = mock(MockMode.strict)
     private val id = "testId"
     private val name = "testName"
     private val externalId = "testExternalId"
@@ -68,7 +74,7 @@ class ChatTest {
                 null
             )
         } returns setUUIDMetadataEndpoint
-        every { setUUIDMetadataEndpoint.async(action = any()) } returns Unit
+        every { setUUIDMetadataEndpoint.async(any()) } returns Unit
 
         // when
         objectUnderTest.createUser(
@@ -92,7 +98,7 @@ class ChatTest {
     fun canUpdateUser() {
         // given
         every { pubnub.getUUIDMetadata(any(), any()) } returns getUUIDMetadataEndpoint
-        every { getUUIDMetadataEndpoint.async(action = any()) } returns Unit
+        every { getUUIDMetadataEndpoint.async(any()) } returns Unit
 
         // when
         objectUnderTest.updateUser(
@@ -131,11 +137,12 @@ class ChatTest {
         )
         val pnUuidMetadataResult: PNUUIDMetadataResult = PNUUIDMetadataResult(status = 200, data = pnUUIDMetadata)
         every { pubnub.getUUIDMetadata(any(), any()) } returns getUUIDMetadataEndpoint
-        every { getUUIDMetadataEndpoint.async(action = any())  } calls { (callback1: (Result<PNUUIDMetadataResult>) -> Unit) ->
+        every { getUUIDMetadataEndpoint.async(any()) } calls
+                { (callback1: (Result<PNUUIDMetadataResult>) -> Unit) ->
             callback1(Result.success(pnUuidMetadataResult))
         }
         every { pubnub.removeUUIDMetadata(any()) } returns removeUUIDMetadataEndpoint
-        every { removeUUIDMetadataEndpoint.async(action = any()) } returns Unit
+        every { removeUUIDMetadataEndpoint.async(any()) } returns Unit
         val softDeleteFalse = false
 
         // when
@@ -161,7 +168,7 @@ class ChatTest {
                 any()
             )
         } returns setUUIDMetadataEndpoint
-        every { setUUIDMetadataEndpoint.async(action = any()) } returns Unit
+        every { setUUIDMetadataEndpoint.async(any()) } returns Unit
 
         // this is fine :| , I don't know why IntelliJ marks it as problematic
         val pnUUIDMetadata: PNUUIDMetadata = PNUUIDMetadata(
@@ -178,7 +185,7 @@ class ChatTest {
         )
         val pnUuidMetadataResult: PNUUIDMetadataResult = PNUUIDMetadataResult(status = 200, data = pnUUIDMetadata)
         every { pubnub.getUUIDMetadata(any(), any()) } returns getUUIDMetadataEndpoint
-        every { getUUIDMetadataEndpoint.async(action = any()) } calls { (callback1: (Result<PNUUIDMetadataResult>) -> Unit) ->
+        every { getUUIDMetadataEndpoint.async(any()) } calls { (callback1: (Result<PNUUIDMetadataResult>) -> Unit) ->
             callback1(Result.success(pnUuidMetadataResult))
         }
         val softDelete = true
@@ -222,12 +229,12 @@ class ChatTest {
     @Test
     fun when_wherePresent_executedCallbackResultShouldContainListOfChannels() {
         // given
-        val whereNowEndpoint: Endpoint<PNWhereNowResult> = mock(MockMode.strict)
+        val whereNowEndpoint: WhereNow = mock(MockMode.strict)
         val channel01 = "myChannel1"
         val channel02 = "myChannel02"
         val pnWhereNowResult: PNWhereNowResult = PNWhereNowResult(listOf(channel01, channel02))
         every { pubnub.whereNow(any()) } returns whereNowEndpoint
-        every {  whereNowEndpoint.async(action = any())} calls { (callback: (Result<PNWhereNowResult>) -> Unit) ->
+        every {  whereNowEndpoint.async(any())} calls { (callback: (Result<PNWhereNowResult>) -> Unit) ->
             callback(Result.success(pnWhereNowResult))
         }
 
@@ -246,13 +253,13 @@ class ChatTest {
     @Test
     fun when_isPresent_executedCallbackResultShouldContainsAnswer(){
         // given
-        val whereNowEndpoint: Endpoint<PNWhereNowResult> = mock(MockMode.strict)
+        val whereNowEndpoint: WhereNow = mock(MockMode.strict)
         val channel01 = "myChannel1"
         val channel02 = "myChannel02"
         val channelId = "myChannel1"
         val pnWhereNowResult: PNWhereNowResult = PNWhereNowResult(listOf(channel01, channel02))
         every { pubnub.whereNow(any()) } returns whereNowEndpoint
-        every {  whereNowEndpoint.async(action = any())} calls { (callback: (Result<PNWhereNowResult>) -> Unit) ->
+        every {  whereNowEndpoint.async(any())} calls { (callback: (Result<PNWhereNowResult>) -> Unit) ->
             callback(Result.success(pnWhereNowResult))
         }
 
