@@ -2,9 +2,11 @@
 
 package com.pubnub.kmp
 
+import com.pubnub.api.CustomObject
 import com.pubnub.api.PubNub
 import com.pubnub.api.async
 import com.pubnub.api.createCommonPubNub
+import com.pubnub.api.createCustomObject
 import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
@@ -48,7 +50,7 @@ class ChatImpl(
         externalId: String?,
         profileUrl: String?,
         email: String?,
-        custom: Map<String, Any?>?,
+        custom: CustomObject?,
         status: String?,
         type: String?,
         callback: (Result<User>) -> Unit,
@@ -71,7 +73,7 @@ class ChatImpl(
         externalId: String?,
         profileUrl: String?,
         email: String?,
-        custom: Map<String, Any?>?,
+        custom: CustomObject?,
         status: String?,
         type: String?,
         updated: String?, //todo do we need this?
@@ -237,7 +239,7 @@ class ChatImpl(
             externalId = pnUUIDMetadata.externalId,
             profileUrl = pnUUIDMetadata.profileUrl,
             email = pnUUIDMetadata.email,
-            custom = pnUUIDMetadata.custom as Map<String, Any?>?,
+            custom = pnUUIDMetadata.custom?.let { createCustomObject(it) },
             status = pnUUIDMetadata.status,
             type = pnUUIDMetadata.type,
             updated = pnUUIDMetadata.updated,

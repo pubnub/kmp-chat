@@ -1,5 +1,6 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.createCustomObject
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -17,7 +18,7 @@ class UserTest {
     private val externalId = "testExternalId"
     private val profileUrl = "testProfileUrl"
     private val email = "testEmail"
-    private val custom = mapOf("testCustom" to "custom")
+    private val custom = createCustomObject(mapOf("testCustom" to "custom"))
     private val status = "testStatus"
     private val type = "testType"
     private val updated = "testUpdated"
