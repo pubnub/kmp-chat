@@ -1,10 +1,7 @@
-@file:OptIn(ExperimentalJsExport::class)
-
 package com.pubnub.kmp
 
 import com.pubnub.api.CustomObject
 import com.pubnub.api.PubNub
-import com.pubnub.api.async
 import com.pubnub.api.createCommonPubNub
 import com.pubnub.api.createCustomObject
 import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
@@ -12,7 +9,9 @@ import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
-import kotlin.js.ExperimentalJsExport
+import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.api.v2.callbacks.fold
+import com.pubnub.api.v2.callbacks.map
 
 class ChannelType {
     var aaa = 0

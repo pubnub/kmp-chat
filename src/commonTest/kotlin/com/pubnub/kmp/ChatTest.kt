@@ -1,19 +1,17 @@
 package com.pubnub.kmp
 
-import com.pubnub.api.Endpoint
 import com.pubnub.api.PubNub
 import com.pubnub.api.UserId
-import com.pubnub.api.async
 import com.pubnub.api.createCustomObject
 import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
 import com.pubnub.api.endpoints.presence.WhereNow
-import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
+import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.createPNConfiguration
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -27,6 +25,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import com.pubnub.api.v2.callbacks.Result
 
 class ChatTest {
     private lateinit var objectUnderTest: ChatImpl
@@ -140,8 +139,8 @@ class ChatTest {
         val pnUuidMetadataResult: PNUUIDMetadataResult = PNUUIDMetadataResult(status = 200, data = pnUUIDMetadata)
         every { pubnub.getUUIDMetadata(any(), any()) } returns getUUIDMetadataEndpoint
         every { getUUIDMetadataEndpoint.async(any()) } calls
-                { (callback1: (Result<PNUUIDMetadataResult>) -> Unit) ->
-            callback1(Result.success(pnUuidMetadataResult))
+                { (callback1: Consumer<Result<PNUUIDMetadataResult>>) ->
+            callback1.accept(Result.success(pnUuidMetadataResult))
         }
         every { pubnub.removeUUIDMetadata(any()) } returns removeUUIDMetadataEndpoint
         every { removeUUIDMetadataEndpoint.async(any()) } returns Unit
@@ -187,8 +186,8 @@ class ChatTest {
         )
         val pnUuidMetadataResult: PNUUIDMetadataResult = PNUUIDMetadataResult(status = 200, data = pnUUIDMetadata)
         every { pubnub.getUUIDMetadata(any(), any()) } returns getUUIDMetadataEndpoint
-        every { getUUIDMetadataEndpoint.async(any()) } calls { (callback1: (Result<PNUUIDMetadataResult>) -> Unit) ->
-            callback1(Result.success(pnUuidMetadataResult))
+        every { getUUIDMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNUUIDMetadataResult>>) ->
+            callback1.accept(Result.success(pnUuidMetadataResult))
         }
         val softDelete = true
         val status = "Deleted"
@@ -236,8 +235,8 @@ class ChatTest {
         val channel02 = "myChannel02"
         val pnWhereNowResult: PNWhereNowResult = PNWhereNowResult(listOf(channel01, channel02))
         every { pubnub.whereNow(any()) } returns whereNowEndpoint
-        every {  whereNowEndpoint.async(any())} calls { (callback: (Result<PNWhereNowResult>) -> Unit) ->
-            callback(Result.success(pnWhereNowResult))
+        every {  whereNowEndpoint.async(any())} calls { (callback: Consumer<Result<PNWhereNowResult>>) ->
+            callback.accept(Result.success(pnWhereNowResult))
         }
 
         val callback: (Result<List<String>>) -> Unit = { result: Result<List<String>> ->
@@ -261,8 +260,8 @@ class ChatTest {
         val channelId = "myChannel1"
         val pnWhereNowResult: PNWhereNowResult = PNWhereNowResult(listOf(channel01, channel02))
         every { pubnub.whereNow(any()) } returns whereNowEndpoint
-        every {  whereNowEndpoint.async(any())} calls { (callback: (Result<PNWhereNowResult>) -> Unit) ->
-            callback(Result.success(pnWhereNowResult))
+        every {  whereNowEndpoint.async(any())} calls { (callback: Consumer<Result<PNWhereNowResult>>) ->
+            callback.accept(Result.success(pnWhereNowResult))
         }
 
         val callback: (Result<Boolean>) -> Unit = { result: Result<Boolean> ->

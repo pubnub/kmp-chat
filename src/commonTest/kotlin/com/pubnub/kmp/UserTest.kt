@@ -9,6 +9,7 @@ import dev.mokkery.mock
 import dev.mokkery.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import com.pubnub.api.v2.callbacks.Result
 
 class UserTest {
     private lateinit var objectUnderTest: User
