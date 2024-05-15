@@ -1,6 +1,7 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.CustomObject
+import com.pubnub.api.v2.callbacks.Result
 
 interface Chat {
     fun createUser(
