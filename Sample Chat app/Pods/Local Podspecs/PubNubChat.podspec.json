@@ -13,11 +13,6 @@
   "platforms": {
     "ios": "14"
   },
-  "dependencies": {
-    "PubNubSwift": [
-
-    ]
-  },
   "xcconfig": {
     "ENABLE_USER_SCRIPT_SANDBOXING": "NO"
   },
