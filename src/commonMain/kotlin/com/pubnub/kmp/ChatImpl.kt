@@ -2,7 +2,7 @@ package com.pubnub.kmp
 
 import com.pubnub.api.CustomObject
 import com.pubnub.api.PubNub
-import com.pubnub.api.createCommonPubNub
+import com.pubnub.api.createPubNub
 import com.pubnub.api.createCustomObject
 import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
@@ -39,7 +39,7 @@ private const val CHANNEL_ID_IS_REQUIRED = "Channel ID is required"
 
 class ChatImpl(
     private val config: ChatConfig,
-    private val pubnub: PubNub = createCommonPubNub(config.pubnubConfig)
+    private val pubnub: PubNub = createPubNub(config.pubnubConfig)
 ) : Chat {
 //    private val pubNub = createCommonPubNub(config.pubnubConfig)
 

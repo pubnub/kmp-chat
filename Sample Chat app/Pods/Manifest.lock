@@ -1,6 +1,5 @@
 PODS:
-  - PubNubChat (1.0):
-    - PubNubSwift
+  - PubNubChat (1.0)
   - PubNubSwift (7.1.0)
 
 DEPENDENCIES:
@@ -14,7 +13,7 @@ EXTERNAL SOURCES:
     :path: "../swift"
 
 SPEC CHECKSUMS:
-  PubNubChat: a4291515e5ca5ca5a49849ba18dd37e5d3d49eb5
+  PubNubChat: ec60a3666863d2e05717c0444af9e4947d84d946
   PubNubSwift: d20d42c99a035f8026e6df43e171bda9d719f46b
 
 PODFILE CHECKSUM: e8c859fa599e7549a81ee7163cc53ed15ac61bd8
