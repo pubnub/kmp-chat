@@ -204,7 +204,7 @@ class ChatTest {
                 externalId,
                 profileUrl,
                 email,
-                custom,
+                any(),
                 includeCustomFalse,
                 type,
                 status
