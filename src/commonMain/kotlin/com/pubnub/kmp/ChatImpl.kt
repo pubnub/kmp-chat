@@ -4,7 +4,13 @@ import com.pubnub.api.CustomObject
 import com.pubnub.api.PubNub
 import com.pubnub.api.createPubNub
 import com.pubnub.api.createCustomObject
+import com.pubnub.api.models.consumer.objects.PNMembershipKey
+import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
+import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
@@ -12,10 +18,10 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.callbacks.fold
 import com.pubnub.api.v2.callbacks.map
+import com.pubnub.kmp.membership.IncludeParameters
+import com.pubnub.kmp.membership.Membership
+import com.pubnub.kmp.membership.MembershipsResponse
 
-class ChannelType {
-    var aaa = 0
-}
 
 interface ChatConfig{
     val pubnubConfig: PNConfiguration
@@ -176,6 +182,86 @@ class ChatImpl(
             )
         }
     }
+
+    override fun getMembership(
+        user: User,
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNMembershipKey>>,
+        includeParameters: IncludeParameters,
+        callback: (kotlin.Result<MembershipsResponse>) -> Unit
+    ) {
+        val id = user.id
+        if (id.isEmpty()) {
+            callback(kotlin.Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
+            return
+        }
+
+        pubnub.getMemberships(
+            uuid = id,
+            limit = limit,
+            page = page,
+            filter = filter,
+            sort = sort,
+            includeCount = includeParameters.totalCount,
+            includeCustom = includeParameters.customFields,
+            includeChannelDetails = getChannelDetailsType(includeParameters.customChannelFields)
+        ).async { result: Result<PNChannelMembershipArrayResult> ->
+            result.fold(
+                onSuccess = { pnChannelMembershipArrayResult ->
+                    val membershipsResponse = MembershipsResponse(
+                        next = pnChannelMembershipArrayResult.next,
+                        prev = pnChannelMembershipArrayResult.prev,
+                        total = pnChannelMembershipArrayResult.totalCount ?: 0,
+                        status = pnChannelMembershipArrayResult.status.toString(),
+                        memberships = getMemberships(pnChannelMembershipArrayResult, user)
+                    )
+                    callback(kotlin.Result.success(membershipsResponse))
+                },
+                onFailure = { error ->
+                    callback(kotlin.Result.failure(Exception("Failed to retrieve getMembership data: ${error.message}")))
+                }
+            )
+        }
+    }
+
+    private fun getMemberships(
+        pnChannelMembershipArrayResult: PNChannelMembershipArrayResult,
+        user: User
+    ): List<Membership> {
+        val memberships: List<Membership> =
+            pnChannelMembershipArrayResult.data.map { pnChannelMembership: PNChannelMembership ->
+                Membership(
+                    channel = getChannel(pnChannelMembership),
+                    user = user,
+                    custom = pnChannelMembership.custom,
+                )
+            }
+        return memberships
+    }
+
+    private fun getChannel(pnChannelMembership: PNChannelMembership): Channel {
+        return Channel(
+            chat = this,
+            id = pnChannelMembership.channel?.id ?: "undefined", //todo not sure about this
+            name = pnChannelMembership.channel?.name,
+            custom = pnChannelMembership.custom,
+            description = pnChannelMembership.channel?.description,
+            updated = pnChannelMembership.channel?.updated,
+            status = pnChannelMembership.channel?.status,
+            type = ChannelType.DIRECT, //todo not sure about this
+        )
+    }
+
+    private fun getChannelDetailsType(includeChannelWithCustom: Boolean): PNChannelDetailsLevel {
+        return if (includeChannelWithCustom) {
+            PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM
+        } else {
+            PNChannelDetailsLevel.CHANNEL
+        }
+    }
+
 
     private fun getUserData(id: String, callback: (Result<User>) -> Unit) {
         pubnub.getUUIDMetadata(uuid = id, includeCustom = false).async { result: Result<PNUUIDMetadataResult> ->

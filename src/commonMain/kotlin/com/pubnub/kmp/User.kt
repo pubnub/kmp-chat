@@ -1,7 +1,12 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.CustomObject
+import com.pubnub.api.models.consumer.objects.PNMembershipKey
+import com.pubnub.api.models.consumer.objects.PNPage
+import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.kmp.membership.IncludeParameters
+import com.pubnub.kmp.membership.MembershipsResponse
 
 data class User(
     val chat: Chat,
@@ -40,6 +45,16 @@ data class User(
 
     fun isPresentOn(channelId: String, callback: (Result<Boolean>) -> Unit){
         return chat.isPresent(id, channelId, callback)
+    }
+
+    fun getMemberships(
+        limit: Int? = null,
+        page: PNPage? = null,
+        filter: String? = null,
+        sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
+        callback: (kotlin.Result<MembershipsResponse>) -> Unit
+    ) {
+        chat.getMembership(this, limit, page, filter, sort, IncludeParameters(), callback)
     }
 }
 
