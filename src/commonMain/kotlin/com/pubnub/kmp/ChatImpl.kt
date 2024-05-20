@@ -1,9 +1,6 @@
 package com.pubnub.kmp
 
-import com.pubnub.api.CustomObject
 import com.pubnub.api.PubNub
-import com.pubnub.api.createPubNub
-import com.pubnub.api.createCustomObject
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
