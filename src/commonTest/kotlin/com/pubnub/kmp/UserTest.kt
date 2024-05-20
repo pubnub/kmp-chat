@@ -62,7 +62,7 @@ class UserTest {
         every { chat.deleteUser(any(), any(), any()) } returns Unit
 
         // when
-        objectUnderTest.delete(softDelete = softDeleteFalse, callbackUser)
+        objectUnderTest.delete(soft = softDeleteFalse, callbackUser)
 
         // then
         verify { chat.deleteUser(id, softDeleteFalse, callbackUser) }
@@ -81,7 +81,6 @@ class UserTest {
                 custom = any(),
                 status = any(),
                 type = any(),
-                updated = any(),
                 callback = any()
             )
         } returns Unit
@@ -95,12 +94,11 @@ class UserTest {
             custom = custom,
             status = status,
             type = type,
-            updated = updated,
             callback = callbackUser
         )
 
         // then
-        verify { chat.updateUser(id, name, externalId, profileUrl, email, custom, status, type, updated, callbackUser) }
+        verify { chat.updateUser(id, name, externalId, profileUrl, email, custom, status, type, callbackUser) }
     }
 
     @Test

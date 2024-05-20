@@ -111,7 +111,6 @@ class ChatTest {
             custom = custom,
             status = status,
             type = type,
-            updated = updated,
             callback = callback
         )
 

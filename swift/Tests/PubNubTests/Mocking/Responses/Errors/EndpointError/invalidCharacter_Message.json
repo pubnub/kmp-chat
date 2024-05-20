@@ -1,8 +1,0 @@
-{
-  "code": 400,
-  "body": {"status": 400, "message": "Reserved character in input parameters.", "service": "channel-registry", "error": true}
-}
-
-
-
-

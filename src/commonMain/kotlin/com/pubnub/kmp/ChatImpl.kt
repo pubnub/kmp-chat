@@ -47,7 +47,6 @@ class ChatImpl(
     private val config: ChatConfig,
     private val pubnub: PubNub = createPubNub(config.pubnubConfig)
 ) : Chat {
-//    private val pubNub = createCommonPubNub(config.pubnubConfig)
 
     override fun createUser(
         id: String,
@@ -81,7 +80,6 @@ class ChatImpl(
         custom: CustomObject?,
         status: String?,
         type: String?,
-        updated: String?, //todo do we need this?
         callback: (Result<User>) -> Unit
     ) {
         if (id.isEmpty()) {
@@ -122,7 +120,7 @@ class ChatImpl(
         }
     }
 
-    override fun deleteUser(id: String, softDelete: Boolean, callback: (Result<User>) -> Unit) {
+    override fun deleteUser(id: String, soft: Boolean, callback: (Result<User>) -> Unit) {
         if (id.isEmpty()) {
             callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
             return
@@ -130,7 +128,7 @@ class ChatImpl(
         getUserData(id) { result: Result<User> ->
             result.fold(
                 onSuccess = { user ->
-                    if (softDelete) {
+                    if (soft) {
                         performSoftDelete(user, callback)
                     } else {
                         performHardDelete(user, callback)
