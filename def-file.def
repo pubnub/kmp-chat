@@ -1,0 +1,3 @@
+headers = PubNub-Swift.h
+language = Objective-C
+package = pubnubobjc

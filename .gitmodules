@@ -1,0 +1,4 @@
+[submodule "pubnub-kotlin"]
+	path = pubnub-kotlin
+	url = git@github.com:pubnub/kotlin.git
+	branch = wkal/kmpfication
