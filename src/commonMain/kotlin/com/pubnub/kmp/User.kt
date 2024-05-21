@@ -7,7 +7,6 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.api.v2.callbacks.fold
 import com.pubnub.kmp.membership.IncludeParameters
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.membership.MembershipsResponse
@@ -33,20 +32,23 @@ data class User(
         custom: CustomObject? = null,
         status: String? = null,
         type: String? = null,
-        callback: (Result<User>) -> Unit) {
-        return chat.updateUser(id, name, externalId, profileUrl, email,
-            custom, status, type, callback)
+        callback: (Result<User>) -> Unit
+    ) {
+        return chat.updateUser(
+            id, name, externalId, profileUrl, email,
+            custom, status, type, callback
+        )
     }
 
     fun delete(soft: Boolean = false, callback: (Result<User>) -> Unit) {
-        return chat.deleteUser(id, soft, callback )
+        return chat.deleteUser(id, soft, callback)
     }
 
-    fun wherePresent(callback: (Result<List<String>>) -> Unit){
+    fun wherePresent(callback: (Result<List<String>>) -> Unit) {
         return chat.wherePresent(id, callback)
     }
 
-    fun isPresentOn(channelId: String, callback: (Result<Boolean>) -> Unit){
+    fun isPresentOn(channelId: String, callback: (Result<Boolean>) -> Unit) {
         return chat.isPresent(id, channelId, callback)
     }
 
@@ -69,21 +71,19 @@ data class User(
             includeCustom = includeParameters.customFields,
             includeChannelDetails = getChannelDetailsType(includeParameters.customChannelFields)
         ).async { result: Result<PNChannelMembershipArrayResult> ->
-            result.fold(
-                onSuccess = { pnChannelMembershipArrayResult ->
-                    val membershipsResponse = MembershipsResponse(
-                        next = pnChannelMembershipArrayResult.next,
-                        prev = pnChannelMembershipArrayResult.prev,
-                        total = pnChannelMembershipArrayResult.totalCount ?: 0,
-                        status = pnChannelMembershipArrayResult.status.toString(),
-                        memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this)
-                    )
-                    callback(Result.success(membershipsResponse))
-                },
-                onFailure = { error ->
-                    callback(Result.failure(Exception("Failed to retrieve getMembership data: ${error.message}")))
-                }
-            )
+            result.onSuccess { pnChannelMembershipArrayResult ->
+                val membershipsResponse = MembershipsResponse(
+                    next = pnChannelMembershipArrayResult.next,
+                    prev = pnChannelMembershipArrayResult.prev,
+                    total = pnChannelMembershipArrayResult.totalCount ?: 0,
+                    status = pnChannelMembershipArrayResult.status.toString(),
+                    memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this)
+                )
+                callback(Result.success(membershipsResponse))
+            }.onFailure { error ->
+                callback(Result.failure(Exception("Failed to retrieve getMembership data: ${error.message}")))
+            }
+
         }
     }
 

@@ -9,7 +9,6 @@ import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.api.v2.callbacks.fold
 import com.pubnub.api.v2.callbacks.map
 
 
@@ -76,36 +75,30 @@ class ChatImpl(
             return
         }
         getUserData(id) { result ->
-            result.fold(
-                onSuccess = { _ ->
-                    pubNub.setUUIDMetadata(
-                        uuid = id,
-                        name = name,
-                        externalId = externalId,
-                        profileUrl = profileUrl,
-                        email = email,
-                        custom = custom,
-                        includeCustom = false,
-                        status = status,
-                        type = type,
-                    ).async { result: Result<PNUUIDMetadataResult> ->
-                        result.fold(
-                            onSuccess = { pnUUIDMetadataResult ->
-                                pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
-                                    val updatedUser = createUserFromMetadata(this, pnUUIDMetadata)
-                                    callback(Result.success(updatedUser))
-                                }
-                            },
-                            onFailure = { error ->
-                                callback(Result.failure(Exception("Failed to update user metadata: ${error.message}")))
-                            }
-                        )
+            result.onSuccess { _ ->
+                pubNub.setUUIDMetadata(
+                    uuid = id,
+                    name = name,
+                    externalId = externalId,
+                    profileUrl = profileUrl,
+                    email = email,
+                    custom = custom,
+                    includeCustom = false,
+                    status = status,
+                    type = type,
+                ).async { result: Result<PNUUIDMetadataResult> ->
+                    result.onSuccess { pnUUIDMetadataResult ->
+                        pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
+                            val updatedUser = createUserFromMetadata(this, pnUUIDMetadata)
+                            callback(Result.success(updatedUser))
+                        }
+                    }.onFailure { error ->
+                        callback(Result.failure(Exception("Failed to update user metadata: ${error.message}")))
                     }
-                },
-                onFailure = { error ->
-                    callback(Result.failure(Exception(error)))
                 }
-            )
+            }.onFailure { error ->
+                callback(Result.failure(Exception(error)))
+            }
         }
     }
 
@@ -115,18 +108,15 @@ class ChatImpl(
             return
         }
         getUserData(id) { result: Result<User> ->
-            result.fold(
-                onSuccess = { user ->
-                    if (soft) {
-                        performSoftDelete(user, callback)
-                    } else {
-                        performHardDelete(user, callback)
-                    }
-                },
-                onFailure = { error ->
-                    callback(Result.failure(error))
+            result.onSuccess { user ->
+                if (soft) {
+                    performSoftDelete(user, callback)
+                } else {
+                    performHardDelete(user, callback)
                 }
-            )
+            }.onFailure { error ->
+                callback(Result.failure(error))
+            }
         }
     }
 
@@ -137,14 +127,11 @@ class ChatImpl(
         }
 
         pubNub.whereNow(uuid = userId).async { result: Result<PNWhereNowResult> ->
-            result.fold(
-                onSuccess = { pnWhereNowResult ->
-                    callback(Result.success(pnWhereNowResult.channels))
-                },
-                onFailure = { error ->
-                    callback(Result.failure(Exception("Failed to retrieve wherePresent data: ${error.message}")))
-                }
-            )
+            result.onSuccess { pnWhereNowResult ->
+                callback(Result.success(pnWhereNowResult.channels))
+            }.onFailure { error ->
+                callback(Result.failure(Exception("Failed to retrieve wherePresent data: ${error.message}")))
+            }
         }
     }
 
@@ -159,14 +146,11 @@ class ChatImpl(
         }
 
         pubNub.whereNow(uuid = userId).async { result: Result<PNWhereNowResult> ->
-            result.fold(
-                onSuccess = { pnWhereNowResult ->
-                    callback(Result.success(pnWhereNowResult.channels.contains(channel)))
-                },
-                onFailure = { error ->
-                    callback(Result.failure(Exception("Failed to retrieve isPresent data: ${error.message}")))
-                }
-            )
+            result.onSuccess { pnWhereNowResult ->
+                callback(Result.success(pnWhereNowResult.channels.contains(channel)))
+            }.onFailure { error ->
+                callback(Result.failure(Exception("Failed to retrieve isPresent data: ${error.message}")))
+            }
         }
     }
 
@@ -193,32 +177,26 @@ class ChatImpl(
             type = type.toString(),
             status = status
         ).async { result: Result<PNChannelMetadataResult> ->
-            result.fold(
-                onSuccess = { pnChannelMetadataResult: PNChannelMetadataResult ->
-                    pnChannelMetadataResult.data?.let { pnChannelMetadata ->
-                        val updatedChannel: Channel = createChannelFromMetadata(this, pnChannelMetadata)
-                        callback(Result.success(updatedChannel))
-                    }
-                },
-                onFailure = { error ->
-                    callback(Result.failure(Exception("Failed to update channel metadata: ${error.message}")))
+            result.onSuccess { pnChannelMetadataResult: PNChannelMetadataResult ->
+                pnChannelMetadataResult.data?.let { pnChannelMetadata ->
+                    val updatedChannel: Channel = createChannelFromMetadata(this, pnChannelMetadata)
+                    callback(Result.success(updatedChannel))
                 }
-            )
+            }.onFailure { error ->
+                callback(Result.failure(Exception("Failed to update channel metadata: ${error.message}")))
+            }
         }
     }
 
     private fun getUserData(id: String, callback: (Result<User>) -> Unit) {
         pubNub.getUUIDMetadata(uuid = id, includeCustom = false).async { result: Result<PNUUIDMetadataResult> ->
-            result.fold(
-                onSuccess = { pnUUIDMetadataResult: PNUUIDMetadataResult ->
-                    pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
-                        callback(Result.success(createUserFromMetadata(this, pnUUIDMetadata)))
-                    } ?: callback(Result.failure(Exception("User metadata is empty")))
-                },
-                onFailure = { error ->
-                    callback(Result.failure(Exception("Failed to retrieve user data: ${error.message}")))
-                }
-            )
+            result.onSuccess { pnUUIDMetadataResult: PNUUIDMetadataResult ->
+                pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
+                    callback(Result.success(createUserFromMetadata(this, pnUUIDMetadata)))
+                } ?: callback(Result.failure(Exception("User metadata is empty")))
+            }.onFailure { error ->
+                callback(Result.failure(Exception("Failed to retrieve user data: ${error.message}")))
+            }
         }
     }
 
@@ -235,17 +213,14 @@ class ChatImpl(
             type = updatedUser.type,
             status = updatedUser.status,
         ).async { resultOfUpdate: Result<PNUUIDMetadataResult> ->
-            resultOfUpdate.fold(
-                onSuccess = { pnUUIDMetadataResult ->
-                    pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
-                        val updatedUserFromResponse = createUserFromMetadata(this, pnUUIDMetadata)
-                        callback(Result.success(updatedUserFromResponse))
-                    }
-                },
-                onFailure = { it: Throwable ->
-                    callback(Result.failure(Exception("Failed to update user metadata: ${it.message}")))
+            resultOfUpdate.onSuccess { pnUUIDMetadataResult ->
+                pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
+                    val updatedUserFromResponse = createUserFromMetadata(this, pnUUIDMetadata)
+                    callback(Result.success(updatedUserFromResponse))
                 }
-            )
+            }.onFailure { it: Throwable ->
+                callback(Result.failure(Exception("Failed to update user metadata: ${it.message}")))
+            }
         }
     }
 
@@ -284,7 +259,7 @@ class ChatImpl(
             description = pnChannelMetadata.description,
             updated = pnChannelMetadata.updated,
             status = pnChannelMetadata.status,
-            type = pnChannelMetadata.type?.let { ChannelType.valueOf(pnChannelMetadata.type!!) }
+            type = pnChannelMetadata.type?.let { ChannelType.valueOf(it) }
         )
     }
 }
