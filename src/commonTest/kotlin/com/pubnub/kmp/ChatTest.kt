@@ -2,11 +2,13 @@ package com.pubnub.kmp
 
 import com.pubnub.api.PubNub
 import com.pubnub.api.UserId
-import com.pubnub.api.createCustomObject
+import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
 import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
 import com.pubnub.api.endpoints.presence.WhereNow
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
@@ -50,11 +52,12 @@ class ChatTest {
     private val userId = "myUserId"
     private val subscribeKey = "mySubscribeKey"
     private val publishKey = "myPublishKey"
+    private val description = "testDescription"
 
 
     @BeforeTest
     fun setUp() {
-        pnConfiguration = createPNConfiguration(UserId(userId), subscribeKey)
+        pnConfiguration = createPNConfiguration(UserId(userId), subscribeKey, publishKey)
         every { chatConfig.pubnubConfig } returns pnConfiguration
         objectUnderTest = ChatImpl(chatConfig, pubnub)
     }
@@ -285,5 +288,86 @@ class ChatTest {
 
         // when
         objectUnderTest.isPresent(id, emptyChannelId, callback)
+    }
+
+    @Test
+    fun whenChannelIdIsEmptyResultShouldContainException(){
+        // given
+        val channelId = ""
+        val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
+        // then
+            assertTrue(result.isFailure)
+            assertEquals("Channel ID is required", result.exceptionOrNull()?.message)
+        }
+
+        // when
+        objectUnderTest.updateChannel(id = channelId, callback = callback)
+    }
+
+    @Test
+    fun shouldResultErrorWhenSetChannelMetadataResultError(){
+        val setChannelMetadataEndpoint: SetChannelMetadata = mock(MockMode.strict)
+        every { pubnub.setChannelMetadata(any(), any(), any(), any(), any(), any(), any()) } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.failure(Exception("Error calling setChannelMetadata")))
+        }
+        val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
+        // then
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull()?.message!!.contains("Failed to update channel metadata"))
+        }
+
+        // when
+        objectUnderTest.updateChannel(id = id, callback = callback)
+    }
+
+    @Test
+    fun shouldResultSuccessWhenSetChannelMetadataResultSuccess(){
+        val updatedName = "updatedName"
+        val updatedDescription = "updatedDescription"
+        val updatedCustom = mapOf("cos" to "cos1")
+        val updatedUpdated = "updatedUpdated"
+        val updatedType = "GROUP"
+        val updatedStatus = "updatedStatus"
+        val setChannelMetadataEndpoint: SetChannelMetadata = mock(MockMode.strict)
+        every { pubnub.setChannelMetadata(any(), any(), any(), any(), any(), any(), any()) } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.success(getPNChannelMetadataResult(updatedName, updatedDescription, updatedCustom, updatedUpdated,updatedType, updatedStatus )))
+        }
+        val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
+        // then
+            assertTrue(result.isSuccess)
+            assertEquals(id, result.getOrNull()!!.id)
+            assertEquals(updatedName, result.getOrNull()!!.name)
+            assertEquals(updatedDescription, result.getOrNull()!!.description)
+            assertTrue(result.getOrNull()!!.custom is CustomObject)
+            assertEquals(updatedUpdated, result.getOrNull()!!.updated)
+            assertEquals(ChannelType.valueOf(updatedType), result.getOrNull()!!.type)
+            assertEquals(updatedStatus, result.getOrNull()!!.status)
+        }
+
+        // when
+        objectUnderTest.updateChannel(id = id, name= name, description = description, callback = callback)
+    }
+
+    private fun getPNChannelMetadataResult(
+        updatedName: String,
+        updatedDescription: String,
+        updatedCustom: Map<String,Any?>?,
+        updatedUpdated: String,
+        updatedType: String,
+        updatedStatus: String,
+    ): PNChannelMetadataResult{
+        val pnChannelMetadata = PNChannelMetadata(
+            id = id,
+            name = updatedName,
+            description = updatedDescription,
+            custom = updatedCustom,
+            updated = updatedUpdated,
+            eTag = "updatedETag",
+            type = updatedType,
+            status = updatedStatus
+        )
+        return PNChannelMetadataResult(status = 200, data = pnChannelMetadata)
     }
 }

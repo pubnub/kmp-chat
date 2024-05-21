@@ -1,13 +1,9 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNub
-import com.pubnub.api.models.consumer.objects.PNMembershipKey
-import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
-import com.pubnub.api.models.consumer.objects.PNSortKey
-import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
-import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
-import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
@@ -15,12 +11,9 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.callbacks.fold
 import com.pubnub.api.v2.callbacks.map
-import com.pubnub.kmp.membership.IncludeParameters
-import com.pubnub.kmp.membership.Membership
-import com.pubnub.kmp.membership.MembershipsResponse
 
 
-interface ChatConfig{
+interface ChatConfig {
     val pubnubConfig: PNConfiguration
     var uuid: String
     var saveDebugLog: Boolean
@@ -28,7 +21,7 @@ interface ChatConfig{
     var rateLimitPerChannel: Any
 }
 
-class ChatConfigImpl(override val pubnubConfig: PNConfiguration): ChatConfig {
+class ChatConfigImpl(override val pubnubConfig: PNConfiguration) : ChatConfig {
     override var uuid: String = ""
     override var saveDebugLog: Boolean = false
     override var typingTimeout: Int = 0
@@ -42,9 +35,8 @@ private const val CHANNEL_ID_IS_REQUIRED = "Channel ID is required"
 
 class ChatImpl(
     private val config: ChatConfig,
-    private val pubnub: PubNub = createPubNub(config.pubnubConfig)
+    override val pubNub: PubNub = createPubNub(config.pubnubConfig)
 ) : Chat {
-
     override fun createUser(
         id: String,
         name: String?,
@@ -56,7 +48,7 @@ class ChatImpl(
         type: String?,
         callback: (Result<User>) -> Unit,
     ) {
-        pubnub.setUUIDMetadata(id, name, externalId, profileUrl, email, custom, includeCustom = true)
+        pubNub.setUUIDMetadata(id, name, externalId, profileUrl, email, custom, includeCustom = true)
             .async { result: Result<PNUUIDMetadataResult> ->
                 callback(result.map { it: PNUUIDMetadataResult ->
                     it.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
@@ -85,8 +77,8 @@ class ChatImpl(
         }
         getUserData(id) { result ->
             result.fold(
-                onSuccess = { user ->
-                    pubnub.setUUIDMetadata(
+                onSuccess = { _ ->
+                    pubNub.setUUIDMetadata(
                         uuid = id,
                         name = name,
                         externalId = externalId,
@@ -138,13 +130,13 @@ class ChatImpl(
         }
     }
 
-    override fun wherePresent(id: String, callback: (Result<List<String>>) -> Unit) {
-        if (id.isEmpty()) {
+    override fun wherePresent(userId: String, callback: (Result<List<String>>) -> Unit) {
+        if (userId.isEmpty()) {
             callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
             return
         }
 
-        pubnub.whereNow(uuid = id).async { result: Result<PNWhereNowResult> ->
+        pubNub.whereNow(uuid = userId).async { result: Result<PNWhereNowResult> ->
             result.fold(
                 onSuccess = { pnWhereNowResult ->
                     callback(Result.success(pnWhereNowResult.channels))
@@ -156,8 +148,8 @@ class ChatImpl(
         }
     }
 
-    override fun isPresent(id: String, channel: String, callback: (Result<Boolean>) -> Unit) {
-        if (id.isEmpty()) {
+    override fun isPresent(userId: String, channel: String, callback: (Result<Boolean>) -> Unit) {
+        if (userId.isEmpty()) {
             callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
             return
         }
@@ -166,7 +158,7 @@ class ChatImpl(
             return
         }
 
-        pubnub.whereNow(uuid = id).async { result: Result<PNWhereNowResult> ->
+        pubNub.whereNow(uuid = userId).async { result: Result<PNWhereNowResult> ->
             result.fold(
                 onSuccess = { pnWhereNowResult ->
                     callback(Result.success(pnWhereNowResult.channels.contains(channel)))
@@ -178,88 +170,45 @@ class ChatImpl(
         }
     }
 
-    override fun getMembership(
-        user: User,
-        limit: Int?,
-        page: PNPage?,
-        filter: String?,
-        sort: Collection<PNSortKey<PNMembershipKey>>,
-        includeParameters: IncludeParameters,
-        callback: (kotlin.Result<MembershipsResponse>) -> Unit
+    override fun updateChannel(
+        id: String,
+        name: String?,
+        custom: CustomObject?,
+        description: String?,
+        updated: String?,
+        status: String?,
+        type: ChannelType?,
+        callback: (Result<Channel>) -> Unit
     ) {
-        val id = user.id
         if (id.isEmpty()) {
-            callback(kotlin.Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
+            callback(Result.failure(IllegalArgumentException(CHANNEL_ID_IS_REQUIRED)))
             return
         }
-
-        pubnub.getMemberships(
-            uuid = id,
-            limit = limit,
-            page = page,
-            filter = filter,
-            sort = sort,
-            includeCount = includeParameters.totalCount,
-            includeCustom = includeParameters.customFields,
-            includeChannelDetails = getChannelDetailsType(includeParameters.customChannelFields)
-        ).async { result: Result<PNChannelMembershipArrayResult> ->
+        pubNub.setChannelMetadata(
+            channel = id,
+            name = name,
+            description = description,
+            custom = custom,
+            includeCustom = true,
+            type = type.toString(),
+            status = status
+        ).async { result: Result<PNChannelMetadataResult> ->
             result.fold(
-                onSuccess = { pnChannelMembershipArrayResult ->
-                    val membershipsResponse = MembershipsResponse(
-                        next = pnChannelMembershipArrayResult.next,
-                        prev = pnChannelMembershipArrayResult.prev,
-                        total = pnChannelMembershipArrayResult.totalCount ?: 0,
-                        status = pnChannelMembershipArrayResult.status.toString(),
-                        memberships = getMemberships(pnChannelMembershipArrayResult, user)
-                    )
-                    callback(kotlin.Result.success(membershipsResponse))
+                onSuccess = { pnChannelMetadataResult: PNChannelMetadataResult ->
+                    pnChannelMetadataResult.data?.let { pnChannelMetadata ->
+                        val updatedChannel: Channel = createChannelFromMetadata(this, pnChannelMetadata)
+                        callback(Result.success(updatedChannel))
+                    }
                 },
                 onFailure = { error ->
-                    callback(kotlin.Result.failure(Exception("Failed to retrieve getMembership data: ${error.message}")))
+                    callback(Result.failure(Exception("Failed to update channel metadata: ${error.message}")))
                 }
             )
         }
     }
 
-    private fun getMemberships(
-        pnChannelMembershipArrayResult: PNChannelMembershipArrayResult,
-        user: User
-    ): List<Membership> {
-        val memberships: List<Membership> =
-            pnChannelMembershipArrayResult.data.map { pnChannelMembership: PNChannelMembership ->
-                Membership(
-                    channel = getChannel(pnChannelMembership),
-                    user = user,
-                    custom = pnChannelMembership.custom,
-                )
-            }
-        return memberships
-    }
-
-    private fun getChannel(pnChannelMembership: PNChannelMembership): Channel {
-        return Channel(
-            chat = this,
-            id = pnChannelMembership.channel?.id ?: "undefined", //todo not sure about this
-            name = pnChannelMembership.channel?.name,
-            custom = pnChannelMembership.custom,
-            description = pnChannelMembership.channel?.description,
-            updated = pnChannelMembership.channel?.updated,
-            status = pnChannelMembership.channel?.status,
-            type = ChannelType.DIRECT, //todo not sure about this
-        )
-    }
-
-    private fun getChannelDetailsType(includeChannelWithCustom: Boolean): PNChannelDetailsLevel {
-        return if (includeChannelWithCustom) {
-            PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM
-        } else {
-            PNChannelDetailsLevel.CHANNEL
-        }
-    }
-
-
     private fun getUserData(id: String, callback: (Result<User>) -> Unit) {
-        pubnub.getUUIDMetadata(uuid = id, includeCustom = false).async { result: Result<PNUUIDMetadataResult> ->
+        pubNub.getUUIDMetadata(uuid = id, includeCustom = false).async { result: Result<PNUUIDMetadataResult> ->
             result.fold(
                 onSuccess = { pnUUIDMetadataResult: PNUUIDMetadataResult ->
                     pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
@@ -275,7 +224,7 @@ class ChatImpl(
 
     private fun performSoftDelete(user: User, callback: (Result<User>) -> Unit) {
         val updatedUser = user.copy(status = DELETED)
-        pubnub.setUUIDMetadata(
+        pubNub.setUUIDMetadata(
             uuid = user.id,
             name = updatedUser.name,
             externalId = updatedUser.externalId,
@@ -301,7 +250,7 @@ class ChatImpl(
     }
 
     private fun performHardDelete(user: User, callback: (Result<User>) -> Unit) {
-        pubnub.removeUUIDMetadata(uuid = user.id)
+        pubNub.removeUUIDMetadata(uuid = user.id)
             .async { removeResult: Result<PNRemoveMetadataResult> ->
                 if (removeResult.isSuccess) {
                     callback(Result.success(user))
@@ -323,6 +272,19 @@ class ChatImpl(
             status = pnUUIDMetadata.status,
             type = pnUUIDMetadata.type,
             updated = pnUUIDMetadata.updated,
+        )
+    }
+
+    private fun createChannelFromMetadata(chat: ChatImpl, pnChannelMetadata: PNChannelMetadata): Channel {
+        return Channel(
+            chat = chat,
+            id = pnChannelMetadata.id,
+            name = pnChannelMetadata.name,
+            custom = pnChannelMetadata.custom?.let { createCustomObject(it) },
+            description = pnChannelMetadata.description,
+            updated = pnChannelMetadata.updated,
+            status = pnChannelMetadata.status,
+            type = pnChannelMetadata.type?.let { ChannelType.valueOf(pnChannelMetadata.type!!) }
         )
     }
 }

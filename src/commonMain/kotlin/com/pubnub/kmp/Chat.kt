@@ -1,13 +1,11 @@
 package com.pubnub.kmp
 
-import com.pubnub.api.models.consumer.objects.PNMembershipKey
-import com.pubnub.api.models.consumer.objects.PNPage
-import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.PubNub
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.kmp.membership.IncludeParameters
-import com.pubnub.kmp.membership.MembershipsResponse
 
 interface Chat {
+    val pubNub: PubNub
+
     fun createUser(
         id: String,
         name: String? = null,
@@ -35,17 +33,19 @@ interface Chat {
 
     fun deleteUser(id: String, soft: Boolean = false, callback: (Result<User>) -> Unit)
 
-    fun wherePresent(id: String, callback: (Result<List<String>>) -> Unit)
+    fun wherePresent(userId: String, callback: (Result<List<String>>) -> Unit)
 
-    fun isPresent(id: String, channel: String, callback: (Result<Boolean>) -> Unit)
+    fun isPresent(userId: String, channel: String, callback: (Result<Boolean>) -> Unit)
 
-    fun getMembership(
-        user: User,
-        limit: Int?,
-        page: PNPage?,
-        filter: String?,
-        sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
-        includeParameters: IncludeParameters,
-        callback: (kotlin.Result<MembershipsResponse>) -> Unit
+    fun updateChannel(
+        id: String,
+        // TODO change nulls to Optionals when there is support
+        name: String? = null,
+        custom: CustomObject? = null,
+        description: String? = null,
+        updated: String? = null,
+        status: String? = null,
+        type: ChannelType? = null,
+        callback: (Result<Channel>) -> Unit
     )
 }
