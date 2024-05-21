@@ -57,4 +57,13 @@ class ChannelTest {
         // then
         verify { chat.updateChannel(id, name, custom, description, updated, status, type, callback) }
     }
+    @Test
+    fun canSoftDeleteChannel() {
+        val softDelete = true
+        every { chat.deleteChannel(any(), any(), any()) } returns Unit
+
+        objectUnderTest.delete(soft = softDelete, callback)
+
+        verify { chat.deleteChannel(id = id, soft = softDelete, callback = callback) }
+    }
 }

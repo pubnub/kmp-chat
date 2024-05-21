@@ -2,6 +2,8 @@ package com.pubnub.kmp
 
 import com.pubnub.api.PubNub
 import com.pubnub.api.UserId
+import com.pubnub.api.endpoints.objects.channel.GetChannelMetadata
+import com.pubnub.api.endpoints.objects.channel.RemoveChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
 import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
@@ -36,8 +38,11 @@ class ChatTest {
     private val pubnub: PubNub = mock(MockMode.strict)
     private lateinit var pnConfiguration: PNConfiguration
     private val setUUIDMetadataEndpoint: SetUUIDMetadata = mock(MockMode.strict)
+    private val setChannelMetadataEndpoint: SetChannelMetadata = mock(MockMode.strict)
     private val getUUIDMetadataEndpoint: GetUUIDMetadata = mock(MockMode.strict)
+    private val getChannelMetadataEndpoint: GetChannelMetadata = mock(MockMode.strict)
     private val removeUUIDMetadataEndpoint: RemoveUUIDMetadata = mock(MockMode.strict)
+    private val removeChannelMetadataEndpoint: RemoveChannelMetadata = mock(MockMode.strict)
     private val id = "testId"
     private val name = "testName"
     private val externalId = "testExternalId"
@@ -46,7 +51,7 @@ class ChatTest {
     private val customData = mapOf("testCustom" to "custom")
     private val custom = createCustomObject(customData)
     private val status = "testStatus"
-    private val type = "testType"
+    private val type = "DIRECT"
     private val updated = "timeStamp"
     private val callback: (Result<User>) -> Unit = { }
     private val userId = "myUserId"
@@ -125,7 +130,6 @@ class ChatTest {
     @Test
     fun canHardDeleteUser() {
         // given
-        // this is fine :| don't know why IntelliJ mark it as problematic
         val pnUUIDMetadata: PNUUIDMetadata = PNUUIDMetadata(
             id = id,
             name = name,
@@ -173,7 +177,6 @@ class ChatTest {
         } returns setUUIDMetadataEndpoint
         every { setUUIDMetadataEndpoint.async(any()) } returns Unit
 
-        // this is fine :| , I don't know why IntelliJ marks it as problematic
         val pnUUIDMetadata: PNUUIDMetadata = PNUUIDMetadata(
             id = id,
             name = name,
@@ -350,6 +353,55 @@ class ChatTest {
         objectUnderTest.updateChannel(id = id, name= name, description = description, callback = callback)
     }
 
+    @Test
+    fun canHardDeleteChannel() {
+        val callback: (Result<Channel>) -> Unit = {}
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.success(getPNChannelMetadataResult(name, description, customData, updated, type, status)))
+        }
+        every { pubnub.removeChannelMetadata(any()) } returns removeChannelMetadataEndpoint
+        every { removeChannelMetadataEndpoint.async(any()) } returns Unit
+
+        objectUnderTest.deleteChannel(id = id, soft = false, callback = callback)
+
+        verify { pubnub.removeChannelMetadata(channel = id) }
+    }
+
+    @Test
+    fun canSoftDeleteChannel() {
+        // given
+        val callback: (Result<Channel>) -> Unit = {}
+        every {
+            pubnub.setChannelMetadata(any(), any(), any(), any(), any(), any(), any())
+        } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } returns Unit
+        val pnChannelMetadataResult: PNChannelMetadataResult = getPNChannelMetadataResult(name, description, customData, updated, type, status)
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.success(pnChannelMetadataResult))
+        }
+        val softDelete = true
+        val status = "Deleted"
+        val includeCustomFalse = false
+
+        // when
+        objectUnderTest.deleteChannel(id, softDelete, callback)
+
+        // then
+        verify {
+            pubnub.setChannelMetadata(
+                channel = id,
+                name = name,
+                description = description,
+                custom = any(),
+                includeCustom = includeCustomFalse,
+                type = type,
+                status = status
+
+            )
+        }
+    }
     private fun getPNChannelMetadataResult(
         updatedName: String,
         updatedDescription: String,
