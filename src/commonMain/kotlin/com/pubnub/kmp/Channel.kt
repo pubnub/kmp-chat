@@ -1,12 +1,13 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.membership.Membership
 
 class Channel(
     private val chat: Chat,
     val id: String,
     val name: String? = null,
-    val custom: Any? = null,
+    val custom: CustomObject? = null,
     val description: String? = null,
     val updated: String? = null,
     val status: String? = null,
@@ -18,6 +19,18 @@ class Channel(
     private var typingSentTimer: String? = null //todo type should be something like TimerTask instead of String maybe use expect/actual ?
     private var typingIndicators = mutableMapOf<String, String>() //todo probably should be something like mutableMapOf<String, TimerTask>()
     private val sendTextRateLimiter: String? = null // todo should be ExponentialRateLimiter instead of String
+
+    fun update(
+        name: String? = null,
+        custom: CustomObject? = null,
+        description: String? = null,
+        updated: String? = null,
+        status: String? = null,
+        type: ChannelType? = null,
+        callback: (Result<Channel>) -> Unit
+    ) {
+        return chat.updateChannel(id, name, custom, description, updated, status, type, callback)
+    }
 }
 
 
