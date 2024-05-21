@@ -286,7 +286,7 @@ class ChatTest {
         val callback: (Result<Boolean>) -> Unit = { result: Result<Boolean> ->
         // then
             assertTrue(result.isFailure)
-            assertEquals("Channel ID is required", result.exceptionOrNull()?.message)
+            assertEquals("Id is required", result.exceptionOrNull()?.message)
         }
 
         // when
@@ -300,7 +300,7 @@ class ChatTest {
         val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
         // then
             assertTrue(result.isFailure)
-            assertEquals("Channel ID is required", result.exceptionOrNull()?.message)
+            assertEquals("Id is required", result.exceptionOrNull()?.message)
         }
 
         // when

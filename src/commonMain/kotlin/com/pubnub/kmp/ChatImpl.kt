@@ -70,8 +70,7 @@ class ChatImpl(
         type: String?,
         callback: (Result<User>) -> Unit
     ) {
-        if (id.isEmpty()) {
-            callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
+        if(!isValidId(id, callback)){
             return
         }
         getUserData(id) { result ->
@@ -103,8 +102,7 @@ class ChatImpl(
     }
 
     override fun deleteUser(id: String, soft: Boolean, callback: (Result<User>) -> Unit) {
-        if (id.isEmpty()) {
-            callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
+        if(!isValidId(id, callback)){
             return
         }
         getUserData(id) { result: Result<User> ->
@@ -121,8 +119,7 @@ class ChatImpl(
     }
 
     override fun wherePresent(userId: String, callback: (Result<List<String>>) -> Unit) {
-        if (userId.isEmpty()) {
-            callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
+        if(!isValidId(userId, callback)){
             return
         }
 
@@ -136,12 +133,10 @@ class ChatImpl(
     }
 
     override fun isPresent(userId: String, channel: String, callback: (Result<Boolean>) -> Unit) {
-        if (userId.isEmpty()) {
-            callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
+        if(!isValidId(userId, callback)){
             return
         }
-        if (channel.isEmpty()) {
-            callback(Result.failure(IllegalArgumentException(CHANNEL_ID_IS_REQUIRED)))
+        if(!isValidId(channel, callback)){
             return
         }
 
@@ -164,8 +159,7 @@ class ChatImpl(
         type: ChannelType?,
         callback: (Result<Channel>) -> Unit
     ) {
-        if (id.isEmpty()) {
-            callback(Result.failure(IllegalArgumentException(CHANNEL_ID_IS_REQUIRED)))
+        if(!isValidId(id, callback)){
             return
         }
         pubNub.setChannelMetadata(
@@ -189,8 +183,8 @@ class ChatImpl(
     }
 
     override fun deleteChannel(id: String, soft: Boolean, callback: (Result<Channel>) -> Unit) {
-        if (id.isEmpty()) {
-            callback(Result.failure(IllegalArgumentException(CHANNEL_ID_IS_REQUIRED)))
+        if(!isValidId(id, callback)){
+            return
         }
         getChannelData(id) { result: Result<Channel> ->
             result.onSuccess { channel: Channel ->
@@ -202,6 +196,15 @@ class ChatImpl(
                 }.onFailure { error ->
                     callback(Result.failure(error))
                 }
+        }
+    }
+
+    private fun <T> isValidId(id: String, callback: (Result<T>) -> Unit): Boolean{
+        return if (id.isEmpty()){
+            callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
+            false
+        } else {
+            true
         }
     }
 
