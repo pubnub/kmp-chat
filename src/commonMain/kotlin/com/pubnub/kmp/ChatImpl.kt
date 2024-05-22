@@ -9,7 +9,7 @@ import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.api.v2.callbacks.map
+import com.pubnub.api.v2.callbacks.mapCatching
 
 
 interface ChatConfig {
@@ -49,12 +49,10 @@ class ChatImpl(
     ) {
         pubNub.setUUIDMetadata(id, name, externalId, profileUrl, email, custom, includeCustom = true)
             .async { result: Result<PNUUIDMetadataResult> ->
-                callback(result.map { it: PNUUIDMetadataResult ->
+                callback(result.mapCatching { it: PNUUIDMetadataResult ->
                     it.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
                         createUserFromMetadata(this, pnUUIDMetadata)
-                    } ?: run {
-                        throw IllegalStateException("No data available to create User")
-                    }
+                    } ?: throw IllegalStateException("No data available to create User")
                 })
             }
     }
@@ -70,7 +68,7 @@ class ChatImpl(
         type: String?,
         callback: (Result<User>) -> Unit
     ) {
-        if(!isValidId(id, callback)){
+        if (!isValidId(id, callback)) {
             return
         }
         getUserData(id) { result ->
@@ -102,7 +100,7 @@ class ChatImpl(
     }
 
     override fun deleteUser(id: String, soft: Boolean, callback: (Result<User>) -> Unit) {
-        if(!isValidId(id, callback)){
+        if (!isValidId(id, callback)) {
             return
         }
         getUserData(id) { result: Result<User> ->
@@ -119,7 +117,7 @@ class ChatImpl(
     }
 
     override fun wherePresent(userId: String, callback: (Result<List<String>>) -> Unit) {
-        if(!isValidId(userId, callback)){
+        if (!isValidId(userId, callback)) {
             return
         }
 
@@ -133,10 +131,10 @@ class ChatImpl(
     }
 
     override fun isPresent(userId: String, channel: String, callback: (Result<Boolean>) -> Unit) {
-        if(!isValidId(userId, callback)){
+        if (!isValidId(userId, callback)) {
             return
         }
-        if(!isValidId(channel, callback)){
+        if (!isValidId(channel, callback)) {
             return
         }
 
@@ -159,7 +157,7 @@ class ChatImpl(
         type: ChannelType?,
         callback: (Result<Channel>) -> Unit
     ) {
-        if(!isValidId(id, callback)){
+        if (!isValidId(id, callback)) {
             return
         }
         pubNub.setChannelMetadata(
@@ -183,24 +181,24 @@ class ChatImpl(
     }
 
     override fun deleteChannel(id: String, soft: Boolean, callback: (Result<Channel>) -> Unit) {
-        if(!isValidId(id, callback)){
+        if (!isValidId(id, callback)) {
             return
         }
         getChannelData(id) { result: Result<Channel> ->
             result.onSuccess { channel: Channel ->
-                    if (soft) {
-                        performSoftChannelDelete(channel, callback)
-                    } else {
-                        performChannelDelete(channel, callback)
-                    }
-                }.onFailure { error ->
-                    callback(Result.failure(error))
+                if (soft) {
+                    performSoftChannelDelete(channel, callback)
+                } else {
+                    performChannelDelete(channel, callback)
                 }
+            }.onFailure { error ->
+                callback(Result.failure(error))
+            }
         }
     }
 
-    private fun <T> isValidId(id: String, callback: (Result<T>) -> Unit): Boolean{
-        return if (id.isEmpty()){
+    private fun <T> isValidId(id: String, callback: (Result<T>) -> Unit): Boolean {
+        return if (id.isEmpty()) {
             callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
             false
         } else {
@@ -224,12 +222,12 @@ class ChatImpl(
         pubNub.getChannelMetadata(channel = id, includeCustom = false)
             .async { result: Result<PNChannelMetadataResult> ->
                 result.onSuccess { pnChannelMetadataResult: PNChannelMetadataResult ->
-                        pnChannelMetadataResult.data?.let { pnChannelMetadata ->
-                            callback(Result.success(createChannelFromMetadata(this, pnChannelMetadata)))
-                        } ?: callback(Result.failure(Exception("Channel metadata is empty")))
-                    }.onFailure { error ->
-                        callback(Result.failure(Exception("Failed to retrieve channel data: ${error.message}")))
-                    }
+                    pnChannelMetadataResult.data?.let { pnChannelMetadata ->
+                        callback(Result.success(createChannelFromMetadata(this, pnChannelMetadata)))
+                    } ?: callback(Result.failure(Exception("Channel metadata is empty")))
+                }.onFailure { error ->
+                    callback(Result.failure(Exception("Failed to retrieve channel data: ${error.message}")))
+                }
             }
     }
 
@@ -299,7 +297,7 @@ class ChatImpl(
     private fun performSoftChannelDelete(channel: Channel, callback: (Result<Channel>) -> Unit) {
         val updatedChannel = channel.copy(status = DELETED)
         pubNub.setChannelMetadata(
-          channel = channel.id,
+            channel = channel.id,
             name = updatedChannel.name,
             description = updatedChannel.description,
             custom = updatedChannel.custom,
@@ -308,23 +306,23 @@ class ChatImpl(
             status = updatedChannel.status
         ).async { result: Result<PNChannelMetadataResult> ->
             result.onSuccess { pnChannelMetadataResult: PNChannelMetadataResult ->
-                    pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
-                        val updatedChannelFromResponse = createChannelFromMetadata(this, pnChannelMetadata)
-                        callback(Result.success(updatedChannelFromResponse))
-                    } ?: callback(Result.failure(Exception("Failed to update channel metadata. PNChannelMetadata is null.")))
-                }.onFailure { exception: Throwable ->
-                    callback(Result.failure(Exception("Failed to soft delete channel: ${exception.message}")))
-                }
+                pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
+                    val updatedChannelFromResponse = createChannelFromMetadata(this, pnChannelMetadata)
+                    callback(Result.success(updatedChannelFromResponse))
+                } ?: callback(Result.failure(Exception("Failed to update channel metadata. PNChannelMetadata is null.")))
+            }.onFailure { exception: Throwable ->
+                callback(Result.failure(Exception("Failed to soft delete channel: ${exception.message}")))
+            }
         }
     }
 
     private fun performChannelDelete(channel: Channel, callback: (Result<Channel>) -> Unit) {
         pubNub.removeChannelMetadata(channel = channel.id).async { result: Result<PNRemoveMetadataResult> ->
             result.onSuccess { pnRemoveMetadataResult: PNRemoveMetadataResult ->
-                    callback(Result.success(channel))
-                }.onFailure { exception ->
-                    callback(Result.failure(Exception("Failed to delete channel: ${exception.message}")))
-                }
+                callback(Result.success(channel))
+            }.onFailure { exception ->
+                callback(Result.failure(Exception("Failed to delete channel: ${exception.message}")))
+            }
         }
     }
 
