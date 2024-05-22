@@ -90,7 +90,7 @@ class ChatImpl(
                         pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
                             val updatedUser = createUserFromMetadata(this, pnUUIDMetadata)
                             callback(Result.success(updatedUser))
-                        }
+                        } ?: callback(Result.failure(Exception("Failed to update user metadata. PNUUIDMetadata is null.")))
                     }.onFailure { error ->
                         callback(Result.failure(Exception("Failed to update user metadata: ${error.message}")))
                     }
@@ -175,7 +175,7 @@ class ChatImpl(
                 pnChannelMetadataResult.data?.let { pnChannelMetadata ->
                     val updatedChannel: Channel = createChannelFromMetadata(this, pnChannelMetadata)
                     callback(Result.success(updatedChannel))
-                } ?: callback(Result.failure(Exception("Channel metadata is null")))
+                } ?: callback(Result.failure(Exception("Failed to update channel metadata. PNChannelMetadata is null.")))
             }.onFailure { error ->
                 callback(Result.failure(Exception("Failed to update channel metadata: ${error.message}")))
             }
@@ -250,7 +250,7 @@ class ChatImpl(
                 pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
                     val updatedUserFromResponse = createUserFromMetadata(this, pnUUIDMetadata)
                     callback(Result.success(updatedUserFromResponse))
-                }
+                } ?: callback(Result.failure(Exception("Failed to update user metadata. PNUUIDMetadata is null.")))
             }.onFailure { it: Throwable ->
                 callback(Result.failure(Exception("Failed to update user metadata: ${it.message}")))
             }
@@ -311,7 +311,7 @@ class ChatImpl(
                     pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
                         val updatedChannelFromResponse = createChannelFromMetadata(this, pnChannelMetadata)
                         callback(Result.success(updatedChannelFromResponse))
-                    }
+                    } ?: callback(Result.failure(Exception("Failed to update channel metadata. PNChannelMetadata is null.")))
                 }.onFailure { exception: Throwable ->
                     callback(Result.failure(Exception("Failed to soft delete channel: ${exception.message}")))
                 }
