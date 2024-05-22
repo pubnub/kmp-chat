@@ -35,6 +35,10 @@ data class Channel(
     fun delete(soft: Boolean = false, callback: (Result<Channel>) -> Unit ){
         return chat.deleteChannel(id, soft, callback)
     }
+
+    fun forwardMessage(message: Message, callback: (Result<Unit>) -> Unit){
+        return chat.forwardMessage(message, this.id, callback)
+    }
 }
 
 

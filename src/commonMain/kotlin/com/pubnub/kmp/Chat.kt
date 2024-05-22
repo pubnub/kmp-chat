@@ -50,4 +50,7 @@ interface Chat {
     )
 
     fun deleteChannel(id: String, soft: Boolean, callback: (Result<Channel>) -> Unit)
+
+    fun forwardMessage(message: Message, id: String, callback: (Result<Unit>) -> Unit)
+
 }

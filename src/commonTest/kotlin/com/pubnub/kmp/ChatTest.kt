@@ -9,6 +9,8 @@ import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
 import com.pubnub.api.endpoints.presence.WhereNow
+import com.pubnub.api.endpoints.pubsub.Publish
+import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
@@ -30,11 +32,17 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.kmp.types.MessageType
+import com.pubnub.kmp.types.TextMessageContent
+import dev.mokkery.matcher.capture.Capture
+import dev.mokkery.matcher.capture.capture
+import dev.mokkery.matcher.capture.get
 
 class ChatTest {
     private lateinit var objectUnderTest: ChatImpl
     private val chatConfig: ChatConfig = mock(MockMode.strict)
 
+    private val chatMock: Chat = mock(MockMode.strict)
     private val pubnub: PubNub = mock(MockMode.strict)
     private lateinit var pnConfiguration: PNConfiguration
     private val setUUIDMetadataEndpoint: SetUUIDMetadata = mock(MockMode.strict)
@@ -43,6 +51,7 @@ class ChatTest {
     private val getChannelMetadataEndpoint: GetChannelMetadata = mock(MockMode.strict)
     private val removeUUIDMetadataEndpoint: RemoveUUIDMetadata = mock(MockMode.strict)
     private val removeChannelMetadataEndpoint: RemoveChannelMetadata = mock(MockMode.strict)
+    private val publishEndpoint: Publish = mock(MockMode.strict)
     private val id = "testId"
     private val name = "testName"
     private val externalId = "testExternalId"
@@ -58,7 +67,7 @@ class ChatTest {
     private val subscribeKey = "mySubscribeKey"
     private val publishKey = "myPublishKey"
     private val description = "testDescription"
-
+    private val channelId = "myChannelId"
 
     @BeforeTest
     fun setUp() {
@@ -286,7 +295,7 @@ class ChatTest {
         val callback: (Result<Boolean>) -> Unit = { result: Result<Boolean> ->
         // then
             assertTrue(result.isFailure)
-            assertEquals("Id is required", result.exceptionOrNull()?.message)
+            assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
 
         // when
@@ -300,7 +309,7 @@ class ChatTest {
         val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
         // then
             assertTrue(result.isFailure)
-            assertEquals("Id is required", result.exceptionOrNull()?.message)
+            assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
 
         // when
@@ -402,6 +411,51 @@ class ChatTest {
             )
         }
     }
+
+    @Test
+    fun whenForwardedChannelIdIsEqualOriginalChannelIDShouldResultError() {
+        // given
+        val message = createMessage()
+        val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
+        // then
+            assertTrue(result.isFailure)
+            assertEquals("You cannot forward the message to the same channel", result.exceptionOrNull()!!.message)
+        }
+
+        // when
+        objectUnderTest.forwardMessage(message, channelId, callback)
+    }
+
+    @Test
+    fun forwardedMessageShouldContainOriginalPublisherLocatedInMeta(){
+        val message = createMessage()
+        val channelId = "forwardedChannelId"
+        val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
+            assertTrue(result.isSuccess)
+        }
+        val metaSlot = Capture.slot<Any>()
+        every { pubnub.publish(
+            channel = any(),
+            message = any(),
+            meta = capture(metaSlot),
+//            meta = any(),
+            shouldStore = any(),
+            usePost = any(),
+            replicate = any(),
+            ttl = any()
+        ) } returns publishEndpoint
+        every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
+            callback1.accept(Result.success(PNPublishResult(123457)))
+        }
+
+        objectUnderTest.forwardMessage(message, channelId, callback)
+
+        val actualMeta: Map<String, String> = metaSlot.get() as Map<String, String>
+        val mapEntry = mapOf("originalPublisher" to userId).entries.first()
+        assertTrue(actualMeta.entries.contains(mapEntry))
+    }
+
+
     private fun getPNChannelMetadataResult(
         updatedName: String,
         updatedDescription: String,
@@ -421,5 +475,21 @@ class ChatTest {
             status = updatedStatus
         )
         return PNChannelMetadataResult(status = 200, data = pnChannelMetadata)
+    }
+
+    private fun createMessage(): Message {
+        return Message(
+            chat = chatMock,
+            timetoken = "123345",
+            content = TextMessageContent(
+                type = MessageType.TEXT,
+                text = "justo",
+                files = listOf()
+            ),
+            channelId = channelId,
+            userId = userId,
+            actions = mapOf(),
+            meta = mapOf()
+        )
     }
 }
