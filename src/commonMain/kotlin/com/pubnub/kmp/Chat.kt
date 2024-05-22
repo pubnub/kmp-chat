@@ -48,4 +48,6 @@ interface Chat {
         type: ChannelType? = null,
         callback: (Result<Channel>) -> Unit
     )
+
+    fun deleteChannel(id: String, soft: Boolean, callback: (Result<Channel>) -> Unit)
 }

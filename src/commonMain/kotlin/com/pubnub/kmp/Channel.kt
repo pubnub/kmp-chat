@@ -3,7 +3,7 @@ package com.pubnub.kmp
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.membership.Membership
 
-class Channel(
+data class Channel(
     private val chat: Chat,
     val id: String,
     val name: String? = null,
@@ -30,6 +30,10 @@ class Channel(
         callback: (Result<Channel>) -> Unit
     ) {
         return chat.updateChannel(id, name, custom, description, updated, status, type, callback)
+    }
+
+    fun delete(soft: Boolean = false, callback: (Result<Channel>) -> Unit ){
+        return chat.deleteChannel(id, soft, callback)
     }
 }
 
