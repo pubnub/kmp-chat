@@ -1,6 +1,8 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.kmp.types.MessageType
+import com.pubnub.kmp.types.TextMessageContent
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -40,10 +42,8 @@ class ChannelTest {
 
     @Test
     fun canUpdateChannel() {
-        // given
         every { chat.updateChannel(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
-        // when
         objectUnderTest.update(
             name = name,
             custom = custom,
@@ -54,9 +54,9 @@ class ChannelTest {
             callback = callback
         )
 
-        // then
         verify { chat.updateChannel(id, name, custom, description, updated, status, type, callback) }
     }
+
     @Test
     fun canSoftDeleteChannel() {
         val softDelete = true
@@ -65,5 +65,32 @@ class ChannelTest {
         objectUnderTest.delete(soft = softDelete, callback)
 
         verify { chat.deleteChannel(id = id, soft = softDelete, callback = callback) }
+    }
+
+    @Test
+    fun canForwardMessage() {
+        val message = createMessage()
+        val callback: (Result<Unit>) -> Unit = { }
+        every { chat.forwardMessage(any(), any(), any()) } returns Unit
+
+        objectUnderTest.forwardMessage(message, callback)
+
+        verify { chat.forwardMessage(message, id, callback) }
+    }
+
+    private fun createMessage(): Message {
+        return Message(
+            chat = chat,
+            timetoken = "123345",
+            content = TextMessageContent(
+                type = MessageType.TEXT,
+                text = "justo",
+                files = listOf()
+            ),
+            channelId = "noster",
+            userId = "myUserId",
+            actions = mapOf(),
+            meta = mapOf()
+        )
     }
 }

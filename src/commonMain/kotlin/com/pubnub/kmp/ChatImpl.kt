@@ -1,6 +1,8 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNub
+import com.pubnub.api.PubNubException
+import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
@@ -10,6 +12,7 @@ import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.callbacks.mapCatching
+import com.pubnub.kmp.types.TextMessageContent
 
 
 interface ChatConfig {
@@ -30,7 +33,8 @@ class ChatConfigImpl(override val pubnubConfig: PNConfiguration) : ChatConfig {
 private const val DELETED = "Deleted"
 
 private const val ID_IS_REQUIRED = "Id is required"
-private const val CHANNEL_ID_IS_REQUIRED = "Channel ID is required"
+private const val CHANNEL_ID_IS_REQUIRED = "Channel Id is required"
+private const val ORIGINAL_PUBLISHER = "originalPublisher"
 
 class ChatImpl(
     private val config: ChatConfig,
@@ -68,7 +72,7 @@ class ChatImpl(
         type: String?,
         callback: (Result<User>) -> Unit
     ) {
-        if (!isValidId(id, callback)) {
+        if (!isValidId(id, ID_IS_REQUIRED, callback)) {
             return
         }
         getUserData(id) { result ->
@@ -100,7 +104,7 @@ class ChatImpl(
     }
 
     override fun deleteUser(id: String, soft: Boolean, callback: (Result<User>) -> Unit) {
-        if (!isValidId(id, callback)) {
+        if (!isValidId(id, ID_IS_REQUIRED, callback)) {
             return
         }
         getUserData(id) { result: Result<User> ->
@@ -117,7 +121,7 @@ class ChatImpl(
     }
 
     override fun wherePresent(userId: String, callback: (Result<List<String>>) -> Unit) {
-        if (!isValidId(userId, callback)) {
+        if (!isValidId(userId, ID_IS_REQUIRED, callback)) {
             return
         }
 
@@ -131,10 +135,10 @@ class ChatImpl(
     }
 
     override fun isPresent(userId: String, channel: String, callback: (Result<Boolean>) -> Unit) {
-        if (!isValidId(userId, callback)) {
+        if (!isValidId(userId, ID_IS_REQUIRED, callback)) {
             return
         }
-        if (!isValidId(channel, callback)) {
+        if (!isValidId(channel, CHANNEL_ID_IS_REQUIRED, callback)) {
             return
         }
 
@@ -157,7 +161,7 @@ class ChatImpl(
         type: ChannelType?,
         callback: (Result<Channel>) -> Unit
     ) {
-        if (!isValidId(id, callback)) {
+        if (!isValidId(id, CHANNEL_ID_IS_REQUIRED, callback)) {
             return
         }
         pubNub.setChannelMetadata(
@@ -181,7 +185,7 @@ class ChatImpl(
     }
 
     override fun deleteChannel(id: String, soft: Boolean, callback: (Result<Channel>) -> Unit) {
-        if (!isValidId(id, callback)) {
+        if (!isValidId(id, CHANNEL_ID_IS_REQUIRED, callback)) {
             return
         }
         getChannelData(id) { result: Result<Channel> ->
@@ -197,9 +201,64 @@ class ChatImpl(
         }
     }
 
-    private fun <T> isValidId(id: String, callback: (Result<T>) -> Unit): Boolean {
+    override fun forwardMessage(message: Message, channelId: String, callback: (Result<Unit>) -> Unit) {
+        if (!isValidId(channelId, CHANNEL_ID_IS_REQUIRED, callback)) {
+            return
+        }
+        if (message.channelId == channelId) {
+            callback(Result.failure(IllegalArgumentException("You cannot forward the message to the same channel")))
+            return
+        }
+
+        val meta = message.meta?.toMutableMap() ?: mutableMapOf()
+        meta[ORIGINAL_PUBLISHER] = message.userId
+
+        publish(
+            message = message.content,
+            channel = channelId,
+            storeInHistory = null,
+            sendByPost = null,
+            meta = meta,
+            ttl = message.timetoken.toInt(),
+            callback = { result: Result<PNPublishResult> ->
+                result.onSuccess {
+                    callback(Result.success(Unit))
+                }.onFailure { exception: PubNubException ->
+                    callback(Result.failure(exception))
+                }
+            }
+        )
+    }
+
+    private fun publish(
+        message: TextMessageContent,
+        channel: String,
+        storeInHistory: Boolean?,
+        sendByPost: Boolean?,
+        meta: Any?,
+        ttl: Int?,
+        callback: (Result<PNPublishResult>) -> Unit
+    ) {
+        pubNub.publish(
+            channel = channel,
+            message = message,
+            meta = meta,
+            shouldStore = storeInHistory,
+            usePost = sendByPost?.let { it } ?: false,
+            replicate = true,
+            ttl = ttl
+        ).async { result: Result<PNPublishResult> ->
+            result.onSuccess {
+                callback(result)
+            }.onFailure { exception: PubNubException ->
+                callback(Result.failure(exception))
+            }
+        }
+    }
+
+    private fun <T> isValidId(id: String, errorMessage: String, callback: (Result<T>) -> Unit): Boolean {
         return if (id.isEmpty()) {
-            callback(Result.failure(IllegalArgumentException(ID_IS_REQUIRED)))
+            callback(Result.failure(IllegalArgumentException(errorMessage)))
             false
         } else {
             true
