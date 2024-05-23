@@ -223,8 +223,8 @@ class ChatImpl(
             callback = { result: Result<PNPublishResult> ->
                 result.onSuccess {
                     callback(Result.success(Unit))
-                }.onFailure {
-                    callback(Result.failure(result.exceptionOrNull()!!))
+                }.onFailure { exception: PubNubException ->
+                    callback(Result.failure(exception))
                 }
             }
         )
@@ -250,8 +250,8 @@ class ChatImpl(
         ).async { result: Result<PNPublishResult> ->
             result.onSuccess {
                 callback(result)
-            }.onFailure { error: PubNubException ->
-                callback(Result.failure(Exception(error)))
+            }.onFailure { exception: PubNubException ->
+                callback(Result.failure(exception))
             }
         }
     }
