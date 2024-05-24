@@ -12,7 +12,14 @@ import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.callbacks.mapCatching
-import com.pubnub.kmp.types.TextMessageContent
+import com.pubnub.kmp.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_IS_PRESENT_DATA
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHERE_PRESENT_DATA
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_CHANNEL_META_DATA
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
+import com.pubnub.kmp.error.PubNubErrorMessage.FOR_PUBLISH_PAYLOAD_SHOULD_BE_OF_TYPE_TEXT_MESSAGE_CONTENT
+import com.pubnub.kmp.types.EmitEventMethod
+import com.pubnub.kmp.types.EventContent
 
 
 interface ChatConfig {
@@ -37,7 +44,7 @@ private const val CHANNEL_ID_IS_REQUIRED = "Channel Id is required"
 private const val ORIGINAL_PUBLISHER = "originalPublisher"
 
 class ChatImpl(
-    private val config: ChatConfig,
+    override val config: ChatConfig,
     override val pubNub: PubNub = createPubNub(config.pubnubConfig)
 ) : Chat {
     override fun createUser(
@@ -94,7 +101,7 @@ class ChatImpl(
                             callback(Result.success(updatedUser))
                         } ?: callback(Result.failure(Exception("Failed to update user metadata. PNUUIDMetadata is null.")))
                     }.onFailure { error ->
-                        callback(Result.failure(Exception("Failed to update user metadata: ${error.message}")))
+                        callback(Result.failure(Exception(FAILED_TO_UPDATE_USER_METADATA.message.plus(error.message ?: "Unknown error"))))
                     }
                 }
             }.onFailure { error ->
@@ -129,7 +136,7 @@ class ChatImpl(
             result.onSuccess { pnWhereNowResult ->
                 callback(Result.success(pnWhereNowResult.channels))
             }.onFailure { error ->
-                callback(Result.failure(Exception("Failed to retrieve wherePresent data: ${error.message}")))
+                callback(Result.failure(Exception(FAILED_TO_RETRIEVE_WHERE_PRESENT_DATA.message.plus(error.message ?: "Unknown error"))))
             }
         }
     }
@@ -146,7 +153,7 @@ class ChatImpl(
             result.onSuccess { pnWhereNowResult ->
                 callback(Result.success(pnWhereNowResult.channels.contains(channel)))
             }.onFailure { error ->
-                callback(Result.failure(Exception("Failed to retrieve isPresent data: ${error.message}")))
+                callback(Result.failure(Exception(FAILED_TO_RETRIEVE_IS_PRESENT_DATA.message.plus(error.message ?: "Unknown error"))))
             }
         }
     }
@@ -177,9 +184,9 @@ class ChatImpl(
                 pnChannelMetadataResult.data?.let { pnChannelMetadata ->
                     val updatedChannel: Channel = createChannelFromMetadata(this, pnChannelMetadata)
                     callback(Result.success(updatedChannel))
-                } ?: callback(Result.failure(Exception("Failed to update channel metadata. PNChannelMetadata is null.")))
+                } ?: callback(Result.failure(Exception(FAILED_TO_UPDATE_CHANNEL_META_DATA.message.plus("PNChannelMetadata is null"))))
             }.onFailure { error ->
-                callback(Result.failure(Exception("Failed to update channel metadata: ${error.message}")))
+                callback(Result.failure(Exception(FAILED_TO_UPDATE_CHANNEL_META_DATA.message.plus(error.message ?: "Unknown error"))))
             }
         }
     }
@@ -206,7 +213,7 @@ class ChatImpl(
             return
         }
         if (message.channelId == channelId) {
-            callback(Result.failure(IllegalArgumentException("You cannot forward the message to the same channel")))
+            callback(Result.failure(IllegalArgumentException(CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL.message)))
             return
         }
 
@@ -230,13 +237,34 @@ class ChatImpl(
         )
     }
 
-    private fun publish(
-        message: TextMessageContent,
+    override fun <T : EventContent> emitEvent(
         channel: String,
-        storeInHistory: Boolean?,
-        sendByPost: Boolean?,
-        meta: Any?,
-        ttl: Int?,
+        method: EmitEventMethod,
+        type: String,
+        payload: T,
+        callback: (Result<PNPublishResult>) -> Unit
+    ) {
+        if (method == EmitEventMethod.SIGNAL) {
+            signal(channel = channel, message = payload, callback = callback)
+        } else {
+            val message: EventContent.TextMessageContent
+            try {
+                message = payload as EventContent.TextMessageContent
+            } catch (e: ClassCastException){
+                callback(Result.failure(Exception(FOR_PUBLISH_PAYLOAD_SHOULD_BE_OF_TYPE_TEXT_MESSAGE_CONTENT.message)))
+                return
+            }
+            publish(channel = channel, message = message, callback = callback)
+        }
+    }
+
+    internal fun publish(
+        message: EventContent.TextMessageContent,
+        channel: String,
+        storeInHistory: Boolean? = null,
+        sendByPost: Boolean? = null,
+        meta: Any? = null,
+        ttl: Int? = null,
         callback: (Result<PNPublishResult>) -> Unit
     ) {
         pubNub.publish(
@@ -248,6 +276,16 @@ class ChatImpl(
             replicate = true,
             ttl = ttl
         ).async { result: Result<PNPublishResult> ->
+            result.onSuccess {
+                callback(result)
+            }.onFailure { exception: PubNubException ->
+                callback(Result.failure(exception))
+            }
+        }
+    }
+
+    internal fun signal(channel: String, message: Any, callback: (Result<PNPublishResult>) -> Unit) {
+        pubNub.signal(channel = channel, message = message).async { result: Result<PNPublishResult> ->
             result.onSuccess {
                 callback(result)
             }.onFailure { exception: PubNubException ->
@@ -368,7 +406,8 @@ class ChatImpl(
                 pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
                     val updatedChannelFromResponse = createChannelFromMetadata(this, pnChannelMetadata)
                     callback(Result.success(updatedChannelFromResponse))
-                } ?: callback(Result.failure(Exception("Failed to update channel metadata. PNChannelMetadata is null.")))
+                }
+                    ?: callback(Result.failure(Exception("Failed to update channel metadata. PNChannelMetadata is null.")))
             }.onFailure { exception: Throwable ->
                 callback(Result.failure(Exception("Failed to soft delete channel: ${exception.message}")))
             }
@@ -384,5 +423,6 @@ class ChatImpl(
             }
         }
     }
+
 
 }

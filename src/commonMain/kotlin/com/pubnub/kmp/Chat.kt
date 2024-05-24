@@ -1,9 +1,13 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNub
+import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.kmp.types.EmitEventMethod
+import com.pubnub.kmp.types.EventContent
 
 interface Chat {
+    val config: ChatConfig
     val pubNub: PubNub
 
     fun createUser(
@@ -37,6 +41,9 @@ interface Chat {
 
     fun isPresent(userId: String, channel: String, callback: (Result<Boolean>) -> Unit)
 
+    // todo
+//    fun createChannel()
+
     fun updateChannel(
         id: String,
         // TODO change nulls to Optionals when there is support
@@ -53,4 +60,11 @@ interface Chat {
 
     fun forwardMessage(message: Message, channelId: String, callback: (Result<Unit>) -> Unit)
 
+    fun <T: EventContent> emitEvent(
+        channel: String,
+        method: EmitEventMethod = EmitEventMethod.SIGNAL,
+        type: String = "custom",
+        payload: T,
+        callback: (Result<PNPublishResult>) -> Unit
+    )
 }

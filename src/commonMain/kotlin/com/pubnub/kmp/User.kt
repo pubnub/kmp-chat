@@ -34,22 +34,22 @@ data class User(
         type: String? = null,
         callback: (Result<User>) -> Unit
     ) {
-        return chat.updateUser(
+        chat.updateUser(
             id, name, externalId, profileUrl, email,
             custom, status, type, callback
         )
     }
 
     fun delete(soft: Boolean = false, callback: (Result<User>) -> Unit) {
-        return chat.deleteUser(id, soft, callback)
+        chat.deleteUser(id, soft, callback)
     }
 
     fun wherePresent(callback: (Result<List<String>>) -> Unit) {
-        return chat.wherePresent(id, callback)
+        chat.wherePresent(id, callback)
     }
 
     fun isPresentOn(channelId: String, callback: (Result<Boolean>) -> Unit) {
-        return chat.isPresent(id, channelId, callback)
+        chat.isPresent(id, channelId, callback)
     }
 
     fun getMemberships(

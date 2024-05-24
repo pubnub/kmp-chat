@@ -10,6 +10,7 @@ import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
 import com.pubnub.api.endpoints.presence.WhereNow
 import com.pubnub.api.endpoints.pubsub.Publish
+import com.pubnub.api.endpoints.pubsub.Signal
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
@@ -32,8 +33,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.kmp.types.EmitEventMethod
+import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.types.EventContent.TextMessageContent
 import com.pubnub.kmp.types.MessageType
-import com.pubnub.kmp.types.TextMessageContent
 import dev.mokkery.matcher.capture.Capture
 import dev.mokkery.matcher.capture.capture
 import dev.mokkery.matcher.capture.get
@@ -52,6 +55,7 @@ class ChatTest {
     private val removeUUIDMetadataEndpoint: RemoveUUIDMetadata = mock(MockMode.strict)
     private val removeChannelMetadataEndpoint: RemoveChannelMetadata = mock(MockMode.strict)
     private val publishEndpoint: Publish = mock(MockMode.strict)
+    private val signalEndpoint: Signal = mock(MockMode.strict)
     private val id = "testId"
     private val name = "testName"
     private val externalId = "testExternalId"
@@ -68,6 +72,9 @@ class ChatTest {
     private val publishKey = "myPublishKey"
     private val description = "testDescription"
     private val channelId = "myChannelId"
+    private val meta = mapOf("one" to "ten")
+    private val ttl = 10
+    val timetoken: Long = 123457
 
     @BeforeTest
     fun setUp() {
@@ -438,14 +445,13 @@ class ChatTest {
             channel = any(),
             message = any(),
             meta = capture(metaSlot),
-//            meta = any(),
             shouldStore = any(),
             usePost = any(),
             replicate = any(),
             ttl = any()
         ) } returns publishEndpoint
         every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
-            callback1.accept(Result.success(PNPublishResult(123457)))
+            callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
 
         objectUnderTest.forwardMessage(message, channelId, callback)
@@ -455,6 +461,99 @@ class ChatTest {
         assertTrue(actualMeta.entries.contains(mapEntry))
     }
 
+    @Test
+    fun canPublish(){
+        val message: TextMessageContent = TextMessageContent(type = MessageType.TEXT, text = "text")
+        val callback: (Result<PNPublishResult>) -> Unit = { result ->
+            assertTrue(result.isSuccess)
+            assertEquals(timetoken, result.getOrNull()?.timetoken)
+        }
+        every { pubnub.publish(any(), any(), any(), any(), any(), any(), any()) } returns publishEndpoint
+        every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>> ) ->
+            callback1.accept(Result.success(PNPublishResult(timetoken)))
+        }
+
+        objectUnderTest.publish(
+            message = message,
+            channel = channelId,
+            meta = meta,
+            ttl = ttl,
+            callback = callback
+        )
+        verify { pubnub.publish(
+            channel = channelId,
+            message = message,
+            meta = meta,
+            shouldStore = null,
+            usePost = false,
+            replicate = true,
+            ttl = ttl
+        ) }
+    }
+
+    @Test
+    fun canSignal(){
+        val message = "signal message"
+        every { pubnub.signal(any(), any()) } returns signalEndpoint
+        every { signalEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
+            callback1.accept(Result.success(PNPublishResult(timetoken)))
+        }
+        val callback: (Result<PNPublishResult>) -> Unit = { result ->
+            assertTrue(result.isSuccess)
+            assertEquals(timetoken, result.getOrNull()?.timetoken)
+        }
+        objectUnderTest.signal(channel = channelId, message = message, callback = callback)
+
+        verify { pubnub.signal(channel = channelId, message = message) }
+    }
+
+    @Test
+    fun shouldCalSignalWhenEmitEventWithMethodSignal(){
+        every { pubnub.signal(any(), any()) } returns signalEndpoint
+        every { signalEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
+            callback1.accept(Result.success(PNPublishResult(timetoken)))
+        }
+        val method = EmitEventMethod.SIGNAL
+        val payload = EventContent.Typing(true)
+        val callback: (Result<PNPublishResult>) -> Unit = { result ->
+            assertTrue(result.isSuccess)
+            assertEquals(timetoken, result.getOrNull()?.timetoken)
+        }
+
+        objectUnderTest.emitEvent(channel = channelId,method = method, type = type, payload = payload, callback = callback)
+
+        verify { pubnub.signal(channel = channelId, message = payload) }
+    }
+
+    @Test
+    fun shouldCalPublishWhenEmitEventWithMethodPublish(){
+        every { pubnub.publish(any(), any(), any(), any(), any(), any(),any()) } returns publishEndpoint
+        every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
+            callback1.accept(Result.success(PNPublishResult(timetoken)))
+        }
+        val method = EmitEventMethod.PUBLISH
+        val payload = EventContent.TextMessageContent(type = MessageType.TEXT, text = "messageContent")
+        val callback: (Result<PNPublishResult>) -> Unit = { result ->
+            assertTrue(result.isSuccess)
+            assertEquals(timetoken, result.getOrNull()?.timetoken)
+        }
+
+        objectUnderTest.emitEvent(channel = channelId, method = method, type = type, payload = payload, callback = callback)
+
+        verify { pubnub.publish(channel = channelId, message = payload) }
+    }
+
+    @Test
+    fun whenEmitEventMethodIsPublishPayloadShouldBeOfTypeTextMessage(){
+        val payload = EventContent.Typing(true)
+        val method = EmitEventMethod.PUBLISH
+        val callback: (Result<PNPublishResult>) -> Unit = { result ->
+            assertTrue(result.isFailure)
+            assertEquals("When emitEvent method is PUBLISH payload should be of type EventContent.TextMessageContent", result.exceptionOrNull()?.message)
+        }
+
+        objectUnderTest.emitEvent(channel = channelId, method = method, type = type, payload = payload, callback = callback)
+    }
 
     private fun getPNChannelMetadataResult(
         updatedName: String,
@@ -476,6 +575,8 @@ class ChatTest {
         )
         return PNChannelMetadataResult(status = 200, data = pnChannelMetadata)
     }
+
+
 
     private fun createMessage(): Message {
         return Message(
