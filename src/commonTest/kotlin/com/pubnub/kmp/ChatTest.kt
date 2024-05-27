@@ -333,7 +333,7 @@ class ChatTest {
         val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
         // then
             assertTrue(result.isFailure)
-            assertTrue(result.exceptionOrNull()?.message!!.contains("Failed to update channel metadata"))
+            assertTrue(result.exceptionOrNull()?.message!!.contains("Failed to update channel data"))
         }
 
         // when
@@ -426,7 +426,7 @@ class ChatTest {
         val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
         // then
             assertTrue(result.isFailure)
-            assertEquals("You cannot forward the message to the same channel", result.exceptionOrNull()!!.message)
+            assertEquals("You cannot forward the message to the same channel.", result.exceptionOrNull()!!.message)
         }
 
         // when
@@ -461,53 +461,7 @@ class ChatTest {
         assertTrue(actualMeta.entries.contains(mapEntry))
     }
 
-    @Test
-    fun canPublish(){
-        val message: TextMessageContent = TextMessageContent(type = MessageType.TEXT, text = "text")
-        val callback: (Result<PNPublishResult>) -> Unit = { result ->
-            assertTrue(result.isSuccess)
-            assertEquals(timetoken, result.getOrNull()?.timetoken)
-        }
-        every { pubnub.publish(any(), any(), any(), any(), any(), any(), any()) } returns publishEndpoint
-        every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>> ) ->
-            callback1.accept(Result.success(PNPublishResult(timetoken)))
-        }
-
-        objectUnderTest.publish(
-            message = message,
-            channel = channelId,
-            meta = meta,
-            ttl = ttl,
-            callback = callback
-        )
-        verify { pubnub.publish(
-            channel = channelId,
-            message = message,
-            meta = meta,
-            shouldStore = null,
-            usePost = false,
-            replicate = true,
-            ttl = ttl
-        ) }
-    }
-
-    @Test
-    fun canSignal(){
-        val message = "signal message"
-        every { pubnub.signal(any(), any()) } returns signalEndpoint
-        every { signalEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
-            callback1.accept(Result.success(PNPublishResult(timetoken)))
-        }
-        val callback: (Result<PNPublishResult>) -> Unit = { result ->
-            assertTrue(result.isSuccess)
-            assertEquals(timetoken, result.getOrNull()?.timetoken)
-        }
-        objectUnderTest.signal(channel = channelId, message = message, callback = callback)
-
-        verify { pubnub.signal(channel = channelId, message = message) }
-    }
-
-    @Test
+      @Test
     fun shouldCalSignalWhenEmitEventWithMethodSignal(){
         every { pubnub.signal(any(), any()) } returns signalEndpoint
         every { signalEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->

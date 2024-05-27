@@ -152,7 +152,7 @@ class UserTest {
         val callback: (Result<MembershipsResponse>) -> Unit = { result ->
         // then
             assertTrue(result.isFailure)
-            assertEquals("Failed to retrieve getMembership data: $errorMessage", result.exceptionOrNull()?.message)
+            assertEquals("Failed to retrieve getMembership data.", result.exceptionOrNull()?.message)
         }
         val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub

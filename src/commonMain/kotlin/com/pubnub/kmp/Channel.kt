@@ -7,12 +7,16 @@ import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.types.PlatformTimer
+import com.pubnub.kmp.types.Timer
+import com.pubnub.kmp.types.TimerImpl
 
 private const val EVENT_TYPE_TYPING = "typing"
 
+internal const val ONE_SECOND = 1000L
+
 data class Channel(
     private val chat: Chat,
+    private val time: Timer = TimerImpl(),
     val id: String,
     val name: String? = null,
     val custom: CustomObject? = null,
@@ -23,8 +27,7 @@ data class Channel(
 ) {
     private val suggestedNames = mutableMapOf<String, List<Membership>>()
     private var disconnect: (() -> Unit)? = null
-    private var typingSent = false
-    private var typingSentTimer: PlatformTimer? = null
+    private var typingSent: Long? = null
     private var typingIndicators =
         mutableMapOf<String, String>() //todo probably should be something like mutableMapOf<String, TimerTask>()
     private val sendTextRateLimiter: String? = null // todo should be ExponentialRateLimiter instead of String
@@ -54,15 +57,14 @@ data class Channel(
             callback(Result.failure(Exception(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message)))
             return
         }
-        if (typingSent) {
+
+        val currentTimeStampInMillis = time.getCurrentTimeStampInMillis()
+        if (typingSent != null && typingSent!! > currentTimeStampInMillis - chat.config.typingTimeout - ONE_SECOND) {
             callback(Result.success(Unit))
             return
         }
-        typingSent = true
-        typingSentTimer?.cancel()
-        typingSentTimer?.schedule(chat.config.typingTimeout - 1000L) {
-            typingSent = false
-        }
+
+        typingSent = currentTimeStampInMillis
         sendTypingSignal(true, callback)
     }
 
@@ -71,12 +73,11 @@ data class Channel(
             callback(Result.failure(Exception(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message)))
             return
         }
-        typingSentTimer?.cancel()
-        if (!typingSent) {
+        if (typingSent == null) {
             callback(Result.success(Unit))
             return
         }
-        typingSent = false
+        typingSent = null
         sendTypingSignal(false, callback)
     }
 
@@ -96,15 +97,10 @@ data class Channel(
         )
     }
 
-    internal fun setTypingSent(value: Boolean) {
+    internal fun setTypingSent(value: Long) {
         typingSent = value
     }
-
-    internal fun setTypingSentTimer(typingSentTimer: PlatformTimer){
-        this.typingSentTimer = typingSentTimer
-    }
 }
-
 
 enum class ChannelType {
     DIRECT, GROUP, PUBLIC;

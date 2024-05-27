@@ -7,6 +7,7 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA
 import com.pubnub.kmp.membership.IncludeParameters
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.membership.MembershipsResponse
@@ -81,7 +82,7 @@ data class User(
                 )
                 callback(Result.success(membershipsResponse))
             }.onFailure { error ->
-                callback(Result.failure(Exception("Failed to retrieve getMembership data: ${error.message}")))
+                callback(Result.failure(Exception(FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA.message, error)))
             }
 
         }
