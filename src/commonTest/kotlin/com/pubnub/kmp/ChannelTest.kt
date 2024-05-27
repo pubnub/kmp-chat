@@ -42,7 +42,7 @@ class ChannelTest {
 
     private fun createChannel(type: ChannelType, timer: Timer = TimerImpl()) = Channel(
         chat = chat,
-        time = timer,
+        clock = timer,
         id = channelId,
         name = name,
         custom = custom,
