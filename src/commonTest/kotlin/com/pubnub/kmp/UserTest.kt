@@ -27,6 +27,7 @@ import kotlin.test.assertTrue
 class UserTest {
     private lateinit var objectUnderTest: User
     private val chat: Chat = mock(MockMode.strict)
+    private val chatConfig: ChatConfig = mock(MockMode.strict)
     private val pubNub: PubNub = mock(MockMode.strict)
     private val id = "testId"
     private val name = "testName"
@@ -42,6 +43,8 @@ class UserTest {
 
     @BeforeTest
     fun setUp() {
+        every { chatConfig.typingTimeout } returns 2000
+        every { chat.config } returns chatConfig
         objectUnderTest = User(
             chat = chat,
             id = id,

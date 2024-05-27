@@ -31,9 +31,12 @@ class ChannelTest {
     private val type = ChannelType.DIRECT
     private val updated = "testUpdated"
     private val callback: (Result<Channel>) -> Unit = {}
+    private val typingTimeout = 1001
 
     @BeforeTest
     fun setUp() {
+        every { chat.config } returns chatConfig
+        every { chatConfig.typingTimeout } returns typingTimeout
         objectUnderTest = createChannel(type)
     }
 
@@ -101,10 +104,8 @@ class ChannelTest {
 
     @Test
     fun whenTypingSentAlreadyStartTypingShouldImmediatelyResultSuccess() {
-        every { chat.config } returns chatConfig
-        every { chatConfig.typingTimeout } returns 1001
         val typingSent = 1234567890000
-        val currentTimeStampInMillis = 1234567890000 + 1
+        val currentTimeStampInMillis = typingSent + 1
         objectUnderTest = createChannel(type, TimerTestImpl(currentTimeStampInMillis))
         objectUnderTest.setTypingSent(typingSent)
         val callback: (Result<Unit>) -> Unit = { result ->
@@ -119,12 +120,9 @@ class ChannelTest {
 
     @Test
     fun whenTypingSentAlreadyButTimeoutExpiredStartTypingShouldEmitStartTypingEvent() {
-        every { chat.config } returns chatConfig
-        val typingTimeout = 1001
-        every { chatConfig.typingTimeout } returns typingTimeout
         every { chat.emitEvent(any(), any(), any(), any(), any()) } returns Unit
         val typingSent = 1234567890000
-        val currentTimeStampInMillis = 1234567890000 + typingTimeout + ONE_SECOND +1
+        val currentTimeStampInMillis = typingSent + typingTimeout + MINIMAL_TYPING_INDICATOR_TIMEOUT.inWholeMilliseconds +1
         objectUnderTest = createChannel(type, TimerTestImpl(currentTimeStampInMillis))
         objectUnderTest.setTypingSent(typingSent)
         val callback: (Result<Unit>) -> Unit = { result ->
@@ -147,8 +145,6 @@ class ChannelTest {
 
     @Test
     fun whenTypingNotSendShouldEmitStartTypingEvent() {
-        every { chat.config } returns chatConfig
-        every { chatConfig.typingTimeout } returns 1001
         every { chat.emitEvent(any(), any(), any(), any(), any()) } returns Unit
         val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
             // then
@@ -169,6 +165,23 @@ class ChannelTest {
                 callback = any()
             )
         }
+    }
+
+    @Test
+    fun whenTypingTimoutSetToZeroShouldNotEmitSignalWithinFirstSecond() {
+        every { chatConfig.typingTimeout } returns 0
+        val typingSent = 1234567890000
+        val currentTimeStampInMillis = typingSent + 1
+        objectUnderTest = createChannel(type, TimerTestImpl(currentTimeStampInMillis))
+        objectUnderTest.setTypingSent(typingSent)
+        val callback: (Result<Unit>) -> Unit = { result ->
+            // then
+            assertTrue(result.isSuccess)
+            assertEquals(Unit, result.getOrNull())
+        }
+        objectUnderTest.startTyping(callback)
+
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any(), any()) }
     }
 
     @Test

@@ -80,6 +80,7 @@ class ChatTest {
     fun setUp() {
         pnConfiguration = createPNConfiguration(UserId(userId), subscribeKey, publishKey)
         every { chatConfig.pubnubConfig } returns pnConfiguration
+        every { chatConfig.typingTimeout } returns 2000
         objectUnderTest = ChatImpl(chatConfig, pubnub)
     }
 

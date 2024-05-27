@@ -9,10 +9,11 @@ import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.Timer
 import com.pubnub.kmp.types.TimerImpl
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val EVENT_TYPE_TYPING = "typing"
-
-internal const val ONE_SECOND = 1000L
+internal val MINIMAL_TYPING_INDICATOR_TIMEOUT: Duration = 1000.milliseconds
 
 data class Channel(
     private val chat: Chat,
@@ -31,6 +32,7 @@ data class Channel(
     private var typingIndicators =
         mutableMapOf<String, String>() //todo probably should be something like mutableMapOf<String, TimerTask>()
     private val sendTextRateLimiter: String? = null // todo should be ExponentialRateLimiter instead of String
+    private val typingTimeoutDuration: Duration = chat.config.typingTimeout.milliseconds
 
     fun update(
         name: String? = null,
@@ -59,7 +61,9 @@ data class Channel(
         }
 
         val currentTimeStampInMillis = time.getCurrentTimeStampInMillis()
-        if (typingSent != null && typingSent!! > currentTimeStampInMillis - chat.config.typingTimeout - ONE_SECOND) {
+        // todo currently in TypeScript there is "this.chat.config.typingTimeout - 1000". Typing timeout is actually 1sec shorter than this.chat.config.typingTimeout
+        //  Writing TypeScript wrapper make sure to mimic this behaviour. In KMP the lowest possible value for this timeout is 1000
+        if (typingSent != null && !timeoutElapsed(currentTimeStampInMillis)) {
             callback(Result.success(Unit))
             return
         }
@@ -79,6 +83,15 @@ data class Channel(
         }
         typingSent = null
         sendTypingSignal(false, callback)
+    }
+
+    private fun timeoutElapsed(currentTimeStampInMillis: Long): Boolean{
+        return typingSent?.let { typingSentNotNull ->
+            typingSentNotNull < currentTimeStampInMillis - maxOf(
+                chat.config.typingTimeout.milliseconds,
+                MINIMAL_TYPING_INDICATOR_TIMEOUT
+            ).inWholeMilliseconds
+        } ?: true
     }
 
     private fun sendTypingSignal(value: Boolean, callback: (Result<Unit>) -> Unit) {

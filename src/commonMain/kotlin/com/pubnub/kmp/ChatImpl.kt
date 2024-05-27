@@ -38,7 +38,7 @@ interface ChatConfig {
 class ChatConfigImpl(override val pubnubConfig: PNConfiguration) : ChatConfig {
     override var uuid: String = ""
     override var saveDebugLog: Boolean = false
-    override var typingTimeout: Int = 0
+    override var typingTimeout: Int = 5000 //millis
     override var rateLimitPerChannel: Any = mutableMapOf<ChannelType, Int>()
 }
 
@@ -111,7 +111,7 @@ class ChatImpl(
                     }
                 }
             }.onFailure { exception: PubNubException ->
-                callback(Result.failure(Exception(exception)))
+                callback(Result.failure(exception))
             }
         }
     }
