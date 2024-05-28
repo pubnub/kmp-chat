@@ -273,6 +273,21 @@ class ChatImpl(
         }
     }
 
+    override fun whoIsPresent(channelId: String, callback: (Result<Collection<String>>) -> Unit) {
+        if (!isValidId(channelId, CHANNEL_ID_IS_REQUIRED, callback)) {
+            return
+        }
+        pubNub.hereNow(listOf(channelId)).async { result ->
+            result.onSuccess {
+                val occupants =
+                    it.channels[channelId]?.occupants?.map(PNHereNowOccupantData::uuid) ?: emptyList()
+                callback(Result.success(occupants))
+            }.onFailure { exception: PubNubException ->
+                callback(Result.failure(Exception(PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA.message, exception)))
+            }
+        }
+    }
+
     private fun <T> isValidId(id: String, errorMessage: String, callback: (Result<T>) -> Unit): Boolean {
         return if (id.isEmpty()) {
             callback(Result.failure(IllegalArgumentException(errorMessage)))
@@ -399,22 +414,6 @@ class ChatImpl(
                 callback(Result.success(channel))
             }.onFailure { exception ->
                 callback(Result.failure(Exception("Failed to delete channel: ${exception.message}")))
-            }
-        }
-    }
-
-    override fun whoIsPresent(channelId: String, callback: (Result<Collection<String>>) -> Unit) {
-        if (channelId.isEmpty()) {
-            callback(Result.failure(IllegalArgumentException(CHANNEL_ID_IS_REQUIRED)))
-            return
-        }
-        pubNub.hereNow(listOf(channelId)).async { result ->
-            result.onSuccess {
-                val occupants =
-                    it.channels[channelId]?.occupants?.map(PNHereNowOccupantData::uuid) ?: emptyList()
-                callback(Result.success(occupants))
-            }.onFailure { exception: PubNubException ->
-                callback(Result.failure(Exception(PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA.message, exception)))
             }
         }
     }

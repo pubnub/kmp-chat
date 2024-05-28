@@ -323,7 +323,7 @@ class ChatTest {
         val channelId = "myChannel1"
         val user01 = "user1"
         val user02 = "user2"
-        val pnHereNowResult = PNHereNowResult(2, 3, mutableMapOf(
+        val pnHereNowResult = PNHereNowResult(1, 2, mutableMapOf(
             channel01 to PNHereNowChannelData(
                 channel01, 2, listOf(PNHereNowOccupantData(user01), PNHereNowOccupantData(user02))
             )
