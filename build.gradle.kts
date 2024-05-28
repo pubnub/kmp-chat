@@ -70,6 +70,7 @@ kotlin {
             dependencies {
                 implementation("com.pubnub:pubnub-core-api:9.2-DEV")
                 implementation("com.pubnub:pubnub-kotlin-api:9.2-DEV")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
             }
         }
         val commonTest by getting {

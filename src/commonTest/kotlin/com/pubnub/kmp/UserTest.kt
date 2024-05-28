@@ -23,10 +23,12 @@ import com.pubnub.kmp.membership.MembershipsResponse
 import dev.mokkery.answering.calls
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 class UserTest {
     private lateinit var objectUnderTest: User
     private val chat: Chat = mock(MockMode.strict)
+    private val chatConfig: ChatConfig = mock(MockMode.strict)
     private val pubNub: PubNub = mock(MockMode.strict)
     private val id = "testId"
     private val name = "testName"
@@ -42,6 +44,8 @@ class UserTest {
 
     @BeforeTest
     fun setUp() {
+        every { chatConfig.typingTimeout } returns 2000.milliseconds
+        every { chat.config } returns chatConfig
         objectUnderTest = User(
             chat = chat,
             id = id,
@@ -152,7 +156,7 @@ class UserTest {
         val callback: (Result<MembershipsResponse>) -> Unit = { result ->
         // then
             assertTrue(result.isFailure)
-            assertEquals("Failed to retrieve getMembership data: $errorMessage", result.exceptionOrNull()?.message)
+            assertEquals("Failed to retrieve getMembership data.", result.exceptionOrNull()?.message)
         }
         val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub

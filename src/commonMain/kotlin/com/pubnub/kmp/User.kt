@@ -7,6 +7,7 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA
 import com.pubnub.kmp.membership.IncludeParameters
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.membership.MembershipsResponse
@@ -34,22 +35,22 @@ data class User(
         type: String? = null,
         callback: (Result<User>) -> Unit
     ) {
-        return chat.updateUser(
+        chat.updateUser(
             id, name, externalId, profileUrl, email,
             custom, status, type, callback
         )
     }
 
     fun delete(soft: Boolean = false, callback: (Result<User>) -> Unit) {
-        return chat.deleteUser(id, soft, callback)
+        chat.deleteUser(id, soft, callback)
     }
 
     fun wherePresent(callback: (Result<List<String>>) -> Unit) {
-        return chat.wherePresent(id, callback)
+        chat.wherePresent(id, callback)
     }
 
     fun isPresentOn(channelId: String, callback: (Result<Boolean>) -> Unit) {
-        return chat.isPresent(id, channelId, callback)
+        chat.isPresent(id, channelId, callback)
     }
 
     fun getMemberships(
@@ -81,7 +82,7 @@ data class User(
                 )
                 callback(Result.success(membershipsResponse))
             }.onFailure { error ->
-                callback(Result.failure(Exception("Failed to retrieve getMembership data: ${error.message}")))
+                callback(Result.failure(Exception(FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA.message, error)))
             }
 
         }
