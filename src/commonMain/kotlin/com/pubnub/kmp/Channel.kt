@@ -116,6 +116,14 @@ data class Channel(
     internal fun setTypingSent(value: Instant) {
         typingSent = value
     }
+
+    fun whoIsPresent(callback: (Result<Collection<String>>) -> Unit) {
+        chat.whoIsPresent(id, callback)
+    }
+
+    fun isPresent(userId: String, callback: (Result<Boolean>) -> Unit) {
+        chat.isPresent(userId, id, callback)
+    }
 }
 
 enum class ChannelType {

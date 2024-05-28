@@ -8,6 +8,7 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
+import com.pubnub.api.models.consumer.presence.PNHereNowOccupantData
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
@@ -401,5 +402,17 @@ class ChatImpl(
         }
     }
 
-
+    override fun whoIsPresent(channelId: String, callback: (Result<Collection<String>>) -> Unit) {
+        if (channelId.isEmpty()) {
+            callback(Result.failure(IllegalArgumentException(CHANNEL_ID_IS_REQUIRED)))
+            return
+        }
+        pubNub.hereNow(listOf(channelId)).async { result ->
+            result.onSuccess {
+                val occupants =
+                    it.channels[channelId]?.occupants?.map(PNHereNowOccupantData::uuid) ?: emptyList()
+                callback(Result.success(occupants))
+            }
+        }
+    }
 }

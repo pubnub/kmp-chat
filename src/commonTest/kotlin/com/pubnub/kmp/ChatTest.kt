@@ -8,6 +8,7 @@ import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
 import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
+import com.pubnub.api.endpoints.presence.HereNow
 import com.pubnub.api.endpoints.presence.WhereNow
 import com.pubnub.api.endpoints.pubsub.Publish
 import com.pubnub.api.endpoints.pubsub.Signal
@@ -16,6 +17,9 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
+import com.pubnub.api.models.consumer.presence.PNHereNowChannelData
+import com.pubnub.api.models.consumer.presence.PNHereNowOccupantData
+import com.pubnub.api.models.consumer.presence.PNHereNowResult
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
@@ -309,6 +313,49 @@ class ChatTest {
 
         // when
         objectUnderTest.isPresent(id, emptyChannelId, callback)
+    }
+
+    @Test
+    fun when_whoIsPresent_executedCallbackResultShouldContainsAnswer(){
+        // given
+        val hereNowEndpoint: HereNow = mock(MockMode.strict)
+        val channel01 = "myChannel1"
+        val channelId = "myChannel1"
+        val user01 = "user1"
+        val user02 = "user2"
+        val pnHereNowResult = PNHereNowResult(2, 3, mutableMapOf(
+            channel01 to PNHereNowChannelData(
+                channel01, 2, listOf(PNHereNowOccupantData(user01), PNHereNowOccupantData(user02))
+            )
+        ))
+        every { pubnub.hereNow(any()) } returns hereNowEndpoint
+        every {  hereNowEndpoint.async(any())} calls { (callback: Consumer<Result<PNHereNowResult>>) ->
+            callback.accept(Result.success(pnHereNowResult))
+        }
+
+        val callback: (Result<Collection<String>>) -> Unit = { result: Result<Collection<String>> ->
+            // then
+            assertTrue(result.isSuccess)
+            assertTrue { result.getOrNull()?.contains(user01) == true }
+            assertTrue { result.getOrNull()?.contains(user02) == true }
+        }
+
+        // when
+        objectUnderTest.whoIsPresent(channelId, callback)
+    }
+
+    @Test
+    fun whenChannelIdIsEmptyThen_whoIsPresent_shouldResultsFailure() {
+        // given
+        val emptyChannelId = ""
+        val callback: (Result<Collection<String>>) -> Unit = { result: Result<Collection<String>> ->
+            // then
+            assertTrue(result.isFailure)
+            assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
+        }
+
+        // when
+        objectUnderTest.whoIsPresent(emptyChannelId, callback)
     }
 
     @Test
