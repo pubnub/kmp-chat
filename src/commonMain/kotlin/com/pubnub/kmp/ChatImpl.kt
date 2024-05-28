@@ -13,6 +13,7 @@ import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.callbacks.mapCatching
+import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_META_DATA_IS_EMPTY
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_FORWARD_MESSAGE
@@ -412,6 +413,8 @@ class ChatImpl(
                 val occupants =
                     it.channels[channelId]?.occupants?.map(PNHereNowOccupantData::uuid) ?: emptyList()
                 callback(Result.success(occupants))
+            }.onFailure { exception: PubNubException ->
+                callback(Result.failure(Exception(PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA.message, exception)))
             }
         }
     }
