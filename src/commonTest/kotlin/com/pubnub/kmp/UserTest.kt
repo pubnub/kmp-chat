@@ -23,6 +23,7 @@ import com.pubnub.kmp.membership.MembershipsResponse
 import dev.mokkery.answering.calls
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 class UserTest {
     private lateinit var objectUnderTest: User
@@ -43,7 +44,7 @@ class UserTest {
 
     @BeforeTest
     fun setUp() {
-        every { chatConfig.typingTimeout } returns 2000
+        every { chatConfig.typingTimeout } returns 2000.milliseconds
         every { chat.config } returns chatConfig
         objectUnderTest = User(
             chat = chat,

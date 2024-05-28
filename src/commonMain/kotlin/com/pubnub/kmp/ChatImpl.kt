@@ -25,20 +25,22 @@ import com.pubnub.kmp.error.PubNubErrorMessage.FOR_PUBLISH_PAYLOAD_SHOULD_BE_OF_
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_META_DATA_IS_EMPTY
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 
 interface ChatConfig {
     val pubnubConfig: PNConfiguration
     var uuid: String
     var saveDebugLog: Boolean
-    var typingTimeout: Int
+    var typingTimeout: Duration
     var rateLimitPerChannel: Any
 }
 
 class ChatConfigImpl(override val pubnubConfig: PNConfiguration) : ChatConfig {
     override var uuid: String = ""
     override var saveDebugLog: Boolean = false
-    override var typingTimeout: Int = 5000 //millis
+    override var typingTimeout: Duration = 5.seconds //millis
     override var rateLimitPerChannel: Any = mutableMapOf<ChannelType, Int>()
 }
 

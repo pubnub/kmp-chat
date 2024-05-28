@@ -4,8 +4,6 @@ import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.MessageType
-import com.pubnub.kmp.types.Timer
-import com.pubnub.kmp.types.TimerImpl
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -13,10 +11,13 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode.Companion.exactly
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 class ChannelTest {
     private lateinit var objectUnderTest: Channel
@@ -31,7 +32,7 @@ class ChannelTest {
     private val type = ChannelType.DIRECT
     private val updated = "testUpdated"
     private val callback: (Result<Channel>) -> Unit = {}
-    private val typingTimeout = 1001
+    private val typingTimeout = 1001.milliseconds
 
     @BeforeTest
     fun setUp() {
@@ -40,9 +41,9 @@ class ChannelTest {
         objectUnderTest = createChannel(type)
     }
 
-    private fun createChannel(type: ChannelType, timer: Timer = TimerImpl()) = Channel(
+    private fun createChannel(type: ChannelType, clock: Clock = Clock.System,) = Channel(
         chat = chat,
-        time = timer,
+        clock = clock,
         id = channelId,
         name = name,
         custom = custom,
@@ -104,9 +105,14 @@ class ChannelTest {
 
     @Test
     fun whenTypingSentAlreadyStartTypingShouldImmediatelyResultSuccess() {
-        val typingSent = 1234567890000
-        val currentTimeStampInMillis = typingSent + 1
-        objectUnderTest = createChannel(type, TimerTestImpl(currentTimeStampInMillis))
+        val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val currentTimeStampInMillis = typingSent.plus(1.milliseconds)
+        val customClock = object : Clock {
+            override fun now(): Instant {
+                return currentTimeStampInMillis
+            }
+        }
+        objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
         val callback: (Result<Unit>) -> Unit = { result ->
             // then
@@ -121,9 +127,14 @@ class ChannelTest {
     @Test
     fun whenTypingSentAlreadyButTimeoutExpiredStartTypingShouldEmitStartTypingEvent() {
         every { chat.emitEvent(any(), any(), any(), any(), any()) } returns Unit
-        val typingSent = 1234567890000
-        val currentTimeStampInMillis = typingSent + typingTimeout + MINIMAL_TYPING_INDICATOR_TIMEOUT.inWholeMilliseconds +1
-        objectUnderTest = createChannel(type, TimerTestImpl(currentTimeStampInMillis))
+        val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val currentTimeStampInMillis = typingSent.plus(typingTimeout).plus(MINIMAL_TYPING_INDICATOR_TIMEOUT).plus(1.milliseconds)
+        val customClock = object : Clock {
+            override fun now(): Instant {
+                return currentTimeStampInMillis
+            }
+        }
+        objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
         val callback: (Result<Unit>) -> Unit = { result ->
             // then
@@ -169,10 +180,15 @@ class ChannelTest {
 
     @Test
     fun whenTypingTimoutSetToZeroShouldNotEmitSignalWithinFirstSecond() {
-        every { chatConfig.typingTimeout } returns 0
-        val typingSent = 1234567890000
-        val currentTimeStampInMillis = typingSent + 1
-        objectUnderTest = createChannel(type, TimerTestImpl(currentTimeStampInMillis))
+        every { chatConfig.typingTimeout } returns 0.milliseconds
+        val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val currentTimeStampInMillis = typingSent.plus(1.milliseconds)
+        val customClock = object : Clock {
+            override fun now(): Instant {
+                return currentTimeStampInMillis
+            }
+        }
+        objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
         val callback: (Result<Unit>) -> Unit = { result ->
             // then
@@ -208,8 +224,38 @@ class ChannelTest {
     }
 
     @Test
-    fun whenStopTypingNotSentShouldEmitStopTypingEvent() {
-        val typingSent = 1234567890000
+    fun whenTimeElapsedShouldNotSendSignalButReturnImmediately(){
+        val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val currentTimeStampInMillis = typingSent.plus(2001.milliseconds)
+        val customClock = object : Clock {
+            override fun now(): Instant {
+                return currentTimeStampInMillis
+            }
+        }
+        objectUnderTest = createChannel(type, customClock)
+        objectUnderTest.setTypingSent(typingSent)
+        val callback: (Result<Unit>) -> Unit = { result ->
+            // then
+            assertTrue(result.isSuccess)
+            assertEquals(Unit, result.getOrNull())
+        }
+
+        objectUnderTest.stopTyping(callback)
+
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any(), any()) }
+
+    }
+
+    @Test
+    fun whenTimeNotElapsedShouldSendSignal() {
+        val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val currentTimeStampInMillis = typingSent.plus(1.milliseconds)
+        val customClock = object : Clock {
+            override fun now(): Instant {
+                return currentTimeStampInMillis
+            }
+        }
+        objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
         every { chat.emitEvent(any(), any(), any(), any(), any()) } returns Unit
         val callback: (Result<Unit>) -> Unit = { result ->
@@ -246,11 +292,5 @@ class ChannelTest {
             actions = mapOf(),
             meta = mapOf()
         )
-    }
-}
-
-class TimerTestImpl(private val currentTimeStampInMillis: Long): Timer{
-    override fun getCurrentTimeStampInMillis(): Long {
-        return currentTimeStampInMillis
     }
 }

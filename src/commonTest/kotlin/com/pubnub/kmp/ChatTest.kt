@@ -40,6 +40,7 @@ import com.pubnub.kmp.types.MessageType
 import dev.mokkery.matcher.capture.Capture
 import dev.mokkery.matcher.capture.capture
 import dev.mokkery.matcher.capture.get
+import kotlin.time.Duration.Companion.milliseconds
 
 class ChatTest {
     private lateinit var objectUnderTest: ChatImpl
@@ -80,7 +81,7 @@ class ChatTest {
     fun setUp() {
         pnConfiguration = createPNConfiguration(UserId(userId), subscribeKey, publishKey)
         every { chatConfig.pubnubConfig } returns pnConfiguration
-        every { chatConfig.typingTimeout } returns 2000
+        every { chatConfig.typingTimeout } returns 2000.milliseconds
         objectUnderTest = ChatImpl(chatConfig, pubnub)
     }
 
