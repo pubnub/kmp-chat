@@ -60,6 +60,8 @@ interface Chat {
 
     fun forwardMessage(message: Message, channelId: String, callback: (Result<Unit>) -> Unit)
 
+    fun whoIsPresent(channelId: String, callback: (Result<Collection<String>>) -> Unit)
+
     fun <T: EventContent> emitEvent(
         channel: String,
         method: EmitEventMethod = EmitEventMethod.SIGNAL,

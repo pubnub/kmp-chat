@@ -293,4 +293,29 @@ class ChannelTest {
             meta = mapOf()
         )
     }
+
+    @Test
+    fun canCallIsPresent() {
+        every { chat.isPresent(any(), any(), any()) } returns Unit
+
+        val callback = { _: Result<Boolean> -> }
+        objectUnderTest.isPresent(
+            userId = "user",
+            callback = callback
+        )
+
+        verify { chat.isPresent("user", channelId, callback) }
+    }
+
+    @Test
+    fun canCallWhoIsPresent() {
+        every { chat.whoIsPresent(any(), any()) } returns Unit
+
+        val callback = { _: Result<Collection<String>> -> }
+        objectUnderTest.whoIsPresent (
+            callback = callback
+        )
+
+        verify { chat.whoIsPresent(channelId, callback) }
+    }
 }

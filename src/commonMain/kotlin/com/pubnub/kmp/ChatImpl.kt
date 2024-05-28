@@ -8,10 +8,12 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
+import com.pubnub.api.models.consumer.presence.PNHereNowOccupantData
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.callbacks.mapCatching
+import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_META_DATA_IS_EMPTY
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_FORWARD_MESSAGE
@@ -271,6 +273,21 @@ class ChatImpl(
         }
     }
 
+    override fun whoIsPresent(channelId: String, callback: (Result<Collection<String>>) -> Unit) {
+        if (!isValidId(channelId, CHANNEL_ID_IS_REQUIRED, callback)) {
+            return
+        }
+        pubNub.hereNow(listOf(channelId)).async { result ->
+            result.onSuccess {
+                val occupants =
+                    it.channels[channelId]?.occupants?.map(PNHereNowOccupantData::uuid) ?: emptyList()
+                callback(Result.success(occupants))
+            }.onFailure { exception: PubNubException ->
+                callback(Result.failure(Exception(PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA.message, exception)))
+            }
+        }
+    }
+
     private fun <T> isValidId(id: String, errorMessage: String, callback: (Result<T>) -> Unit): Boolean {
         return if (id.isEmpty()) {
             callback(Result.failure(IllegalArgumentException(errorMessage)))
@@ -400,6 +417,4 @@ class ChatImpl(
             }
         }
     }
-
-
 }

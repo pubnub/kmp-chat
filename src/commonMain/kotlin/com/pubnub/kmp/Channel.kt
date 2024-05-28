@@ -93,6 +93,14 @@ data class Channel(
         sendTypingSignal(false, callback)
     }
 
+    fun whoIsPresent(callback: (Result<Collection<String>>) -> Unit) {
+        chat.whoIsPresent(id, callback)
+    }
+
+    fun isPresent(userId: String, callback: (Result<Boolean>) -> Unit) {
+        chat.isPresent(userId, id, callback)
+    }
+
     private fun timeoutElapsed(lastTypingSent: Instant, now: Instant): Boolean {
         return lastTypingSent < now - maxOf(chat.config.typingTimeout, MINIMAL_TYPING_INDICATOR_TIMEOUT)
     }
