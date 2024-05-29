@@ -23,12 +23,20 @@ import com.pubnub.api.models.consumer.presence.PNHereNowResult
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
+import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.kmp.types.EmitEventMethod
+import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.types.EventContent.TextMessageContent
+import com.pubnub.kmp.types.MessageType
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.capture.Capture
+import dev.mokkery.matcher.capture.capture
+import dev.mokkery.matcher.capture.get
 import dev.mokkery.mock
 import dev.mokkery.verify
 import kotlin.test.BeforeTest
@@ -36,14 +44,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.kmp.types.EmitEventMethod
-import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.types.EventContent.TextMessageContent
-import com.pubnub.kmp.types.MessageType
-import dev.mokkery.matcher.capture.Capture
-import dev.mokkery.matcher.capture.capture
-import dev.mokkery.matcher.capture.get
 import kotlin.time.Duration.Companion.milliseconds
 
 class ChatTest {
@@ -168,8 +168,8 @@ class ChatTest {
         every { pubnub.getUUIDMetadata(any(), any()) } returns getUUIDMetadataEndpoint
         every { getUUIDMetadataEndpoint.async(any()) } calls
                 { (callback1: Consumer<Result<PNUUIDMetadataResult>>) ->
-            callback1.accept(Result.success(pnUuidMetadataResult))
-        }
+                    callback1.accept(Result.success(pnUuidMetadataResult))
+                }
         every { pubnub.removeUUIDMetadata(any()) } returns removeUUIDMetadataEndpoint
         every { removeUUIDMetadataEndpoint.async(any()) } returns Unit
         val softDeleteFalse = false
@@ -245,7 +245,7 @@ class ChatTest {
         val emptyID = ""
         val softDelete = true
         val callback: (Result<User>) -> Unit = { result: Result<User> ->
-        // then
+            // then
             assertTrue(result.isFailure)
             assertEquals("Id is required", result.exceptionOrNull()?.message)
         }
@@ -262,12 +262,12 @@ class ChatTest {
         val channel02 = "myChannel02"
         val pnWhereNowResult: PNWhereNowResult = PNWhereNowResult(listOf(channel01, channel02))
         every { pubnub.whereNow(any()) } returns whereNowEndpoint
-        every {  whereNowEndpoint.async(any())} calls { (callback: Consumer<Result<PNWhereNowResult>>) ->
+        every { whereNowEndpoint.async(any()) } calls { (callback: Consumer<Result<PNWhereNowResult>>) ->
             callback.accept(Result.success(pnWhereNowResult))
         }
 
         val callback: (Result<List<String>>) -> Unit = { result: Result<List<String>> ->
-        // then
+            // then
             assertTrue(result.isSuccess)
             assertFalse(result.getOrNull()!!.isEmpty())
             assertTrue(result.getOrNull()!!.contains(channel01))
@@ -279,7 +279,7 @@ class ChatTest {
     }
 
     @Test
-    fun when_isPresent_executedCallbackResultShouldContainsAnswer(){
+    fun when_isPresent_executedCallbackResultShouldContainsAnswer() {
         // given
         val whereNowEndpoint: WhereNow = mock(MockMode.strict)
         val channel01 = "myChannel1"
@@ -287,12 +287,12 @@ class ChatTest {
         val channelId = "myChannel1"
         val pnWhereNowResult: PNWhereNowResult = PNWhereNowResult(listOf(channel01, channel02))
         every { pubnub.whereNow(any()) } returns whereNowEndpoint
-        every {  whereNowEndpoint.async(any())} calls { (callback: Consumer<Result<PNWhereNowResult>>) ->
+        every { whereNowEndpoint.async(any()) } calls { (callback: Consumer<Result<PNWhereNowResult>>) ->
             callback.accept(Result.success(pnWhereNowResult))
         }
 
         val callback: (Result<Boolean>) -> Unit = { result: Result<Boolean> ->
-        // then
+            // then
             assertTrue(result.isSuccess)
             assertTrue(result.getOrNull()!!)
         }
@@ -306,7 +306,7 @@ class ChatTest {
         // given
         val emptyChannelId = ""
         val callback: (Result<Boolean>) -> Unit = { result: Result<Boolean> ->
-        // then
+            // then
             assertTrue(result.isFailure)
             assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
@@ -316,20 +316,22 @@ class ChatTest {
     }
 
     @Test
-    fun when_whoIsPresent_executedCallbackResultShouldContainsAnswer(){
+    fun when_whoIsPresent_executedCallbackResultShouldContainsAnswer() {
         // given
         val hereNowEndpoint: HereNow = mock(MockMode.strict)
         val channel01 = "myChannel1"
         val channelId = "myChannel1"
         val user01 = "user1"
         val user02 = "user2"
-        val pnHereNowResult = PNHereNowResult(1, 2, mutableMapOf(
-            channel01 to PNHereNowChannelData(
-                channel01, 2, listOf(PNHereNowOccupantData(user01), PNHereNowOccupantData(user02))
+        val pnHereNowResult = PNHereNowResult(
+            1, 2, mutableMapOf(
+                channel01 to PNHereNowChannelData(
+                    channel01, 2, listOf(PNHereNowOccupantData(user01), PNHereNowOccupantData(user02))
+                )
             )
-        ))
+        )
         every { pubnub.hereNow(any()) } returns hereNowEndpoint
-        every {  hereNowEndpoint.async(any())} calls { (callback: Consumer<Result<PNHereNowResult>>) ->
+        every { hereNowEndpoint.async(any()) } calls { (callback: Consumer<Result<PNHereNowResult>>) ->
             callback.accept(Result.success(pnHereNowResult))
         }
 
@@ -359,11 +361,11 @@ class ChatTest {
     }
 
     @Test
-    fun whenChannelIdIsEmptyResultShouldContainException(){
+    fun whenChannelIdIsEmptyResultShouldContainException() {
         // given
         val channelId = ""
         val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
-        // then
+            // then
             assertTrue(result.isFailure)
             assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
@@ -373,16 +375,29 @@ class ChatTest {
     }
 
     @Test
-    fun shouldResultErrorWhenSetChannelMetadataResultError(){
-        val setChannelMetadataEndpoint: SetChannelMetadata = mock(MockMode.strict)
-        every { pubnub.setChannelMetadata(any(), any(), any(), any(), any(), any(), any()) } returns setChannelMetadataEndpoint
+    fun shouldResultErrorWhenSetChannelMetadataResultError() {
+        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.success(getPNChannelMetadataResult()))
+        }
+        every {
+            pubnub.setChannelMetadata(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns setChannelMetadataEndpoint
         every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(Exception("Error calling setChannelMetadata")))
         }
         val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
-        // then
+            // then
             assertTrue(result.isFailure)
-            assertTrue(result.exceptionOrNull()?.message!!.contains("Failed to update channel data"))
+            assertTrue(result.exceptionOrNull()?.message!!.contains("Failed to create/update channel data"))
         }
 
         // when
@@ -390,20 +405,75 @@ class ChatTest {
     }
 
     @Test
-    fun shouldResultSuccessWhenSetChannelMetadataResultSuccess(){
+    fun shouldResultErrorWhenUpdatingChannelThatDoesNotExist() {
+        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.failure(Exception("""{"status":404,"error":{"message":"Requested object was not found.","source":"objects"}}""")))
+        }
+        every {
+            pubnub.setChannelMetadata(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.failure(Exception("Error calling setChannelMetadata")))
+        }
+        val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
+            // then
+            assertTrue(result.isFailure)
+            assertEquals("Channel does not exists", result.exceptionOrNull()?.message)
+        }
+
+        // when
+        objectUnderTest.updateChannel(id = id, callback = callback)
+    }
+
+    @Test
+    fun shouldResultSuccessWhenSetChannelMetadataResultSuccess() {
         val updatedName = "updatedName"
         val updatedDescription = "updatedDescription"
         val updatedCustom = mapOf("cos" to "cos1")
         val updatedUpdated = "updatedUpdated"
         val updatedType = "GROUP"
         val updatedStatus = "updatedStatus"
-        val setChannelMetadataEndpoint: SetChannelMetadata = mock(MockMode.strict)
-        every { pubnub.setChannelMetadata(any(), any(), any(), any(), any(), any(), any()) } returns setChannelMetadataEndpoint
+
+        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>)->
+            callback1.accept(Result.success(getPNChannelMetadataResult()))
+        }
+        every {
+            pubnub.setChannelMetadata(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns setChannelMetadataEndpoint
         every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
-            callback1.accept(Result.success(getPNChannelMetadataResult(updatedName, updatedDescription, updatedCustom, updatedUpdated,updatedType, updatedStatus )))
+            callback1.accept(
+                Result.success(
+                    getPNChannelMetadataResult(
+                        updatedName,
+                        updatedDescription,
+                        updatedCustom,
+                        updatedUpdated,
+                        updatedType,
+                        updatedStatus
+                    )
+                )
+            )
         }
         val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
-        // then
+            // then
             assertTrue(result.isSuccess)
             assertEquals(id, result.getOrNull()!!.id)
             assertEquals(updatedName, result.getOrNull()!!.name)
@@ -415,7 +485,7 @@ class ChatTest {
         }
 
         // when
-        objectUnderTest.updateChannel(id = id, name= name, description = description, callback = callback)
+        objectUnderTest.updateChannel(id = id, name = name, description = description, callback = callback)
     }
 
     @Test
@@ -423,7 +493,18 @@ class ChatTest {
         val callback: (Result<Channel>) -> Unit = {}
         every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
-            callback1.accept(Result.success(getPNChannelMetadataResult(name, description, customData, updated, type, status)))
+            callback1.accept(
+                Result.success(
+                    getPNChannelMetadataResult(
+                        name,
+                        description,
+                        customData,
+                        updated,
+                        type,
+                        status
+                    )
+                )
+            )
         }
         every { pubnub.removeChannelMetadata(any()) } returns removeChannelMetadataEndpoint
         every { removeChannelMetadataEndpoint.async(any()) } returns Unit
@@ -441,7 +522,8 @@ class ChatTest {
             pubnub.setChannelMetadata(any(), any(), any(), any(), any(), any(), any())
         } returns setChannelMetadataEndpoint
         every { setChannelMetadataEndpoint.async(any()) } returns Unit
-        val pnChannelMetadataResult: PNChannelMetadataResult = getPNChannelMetadataResult(name, description, customData, updated, type, status)
+        val pnChannelMetadataResult: PNChannelMetadataResult =
+            getPNChannelMetadataResult(name, description, customData, updated, type, status)
         every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.success(pnChannelMetadataResult))
@@ -473,7 +555,7 @@ class ChatTest {
         // given
         val message = createMessage()
         val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
-        // then
+            // then
             assertTrue(result.isFailure)
             assertEquals("You cannot forward the message to the same channel.", result.exceptionOrNull()!!.message)
         }
@@ -483,22 +565,24 @@ class ChatTest {
     }
 
     @Test
-    fun forwardedMessageShouldContainOriginalPublisherLocatedInMeta(){
+    fun forwardedMessageShouldContainOriginalPublisherLocatedInMeta() {
         val message = createMessage()
         val channelId = "forwardedChannelId"
         val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
             assertTrue(result.isSuccess)
         }
         val metaSlot = Capture.slot<Any>()
-        every { pubnub.publish(
-            channel = any(),
-            message = any(),
-            meta = capture(metaSlot),
-            shouldStore = any(),
-            usePost = any(),
-            replicate = any(),
-            ttl = any()
-        ) } returns publishEndpoint
+        every {
+            pubnub.publish(
+                channel = any(),
+                message = any(),
+                meta = capture(metaSlot),
+                shouldStore = any(),
+                usePost = any(),
+                replicate = any(),
+                ttl = any()
+            )
+        } returns publishEndpoint
         every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
@@ -510,8 +594,8 @@ class ChatTest {
         assertTrue(actualMeta.entries.contains(mapEntry))
     }
 
-      @Test
-    fun shouldCalSignalWhenEmitEventWithMethodSignal(){
+    @Test
+    fun shouldCalSignalWhenEmitEventWithMethodSignal() {
         every { pubnub.signal(any(), any()) } returns signalEndpoint
         every { signalEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
             callback1.accept(Result.success(PNPublishResult(timetoken)))
@@ -523,14 +607,20 @@ class ChatTest {
             assertEquals(timetoken, result.getOrNull()?.timetoken)
         }
 
-        objectUnderTest.emitEvent(channel = channelId,method = method, type = type, payload = payload, callback = callback)
+        objectUnderTest.emitEvent(
+            channel = channelId,
+            method = method,
+            type = type,
+            payload = payload,
+            callback = callback
+        )
 
         verify { pubnub.signal(channel = channelId, message = payload) }
     }
 
     @Test
-    fun shouldCalPublishWhenEmitEventWithMethodPublish(){
-        every { pubnub.publish(any(), any(), any(), any(), any(), any(),any()) } returns publishEndpoint
+    fun shouldCalPublishWhenEmitEventWithMethodPublish() {
+        every { pubnub.publish(any(), any(), any(), any(), any(), any(), any()) } returns publishEndpoint
         every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
@@ -541,31 +631,159 @@ class ChatTest {
             assertEquals(timetoken, result.getOrNull()?.timetoken)
         }
 
-        objectUnderTest.emitEvent(channel = channelId, method = method, type = type, payload = payload, callback = callback)
+        objectUnderTest.emitEvent(
+            channel = channelId,
+            method = method,
+            type = type,
+            payload = payload,
+            callback = callback
+        )
 
         verify { pubnub.publish(channel = channelId, message = payload) }
     }
 
     @Test
-    fun whenEmitEventMethodIsPublishPayloadShouldBeOfTypeTextMessage(){
+    fun whenEmitEventMethodIsPublishPayloadShouldBeOfTypeTextMessage() {
         val payload = EventContent.Typing(true)
         val method = EmitEventMethod.PUBLISH
         val callback: (Result<PNPublishResult>) -> Unit = { result ->
             assertTrue(result.isFailure)
-            assertEquals("When emitEvent method is PUBLISH payload should be of type EventContent.TextMessageContent", result.exceptionOrNull()?.message)
+            assertEquals(
+                "When emitEvent method is PUBLISH payload should be of type EventContent.TextMessageContent",
+                result.exceptionOrNull()?.message
+            )
         }
 
-        objectUnderTest.emitEvent(channel = channelId, method = method, type = type, payload = payload, callback = callback)
+        objectUnderTest.emitEvent(
+            channel = channelId,
+            method = method,
+            type = type,
+            payload = payload,
+            callback = callback
+        )
+    }
+
+    @Test
+    fun canCheckExceptionStatus404() {
+        val jsonResponse = """{"status":404,"error":{"message":"Requested object was not found.","source":"objects"}}"""
+        val exceptionStatus = objectUnderTest.checkExceptionStatus(jsonResponse)
+
+        assertEquals(404, exceptionStatus)
+    }
+
+    @Test
+    fun canCheckExceptionStatus200() {
+        val jsonResponse = """{"status":200,"error":{"message":"All good.","source":"system"}}"""
+        val exceptionStatus = objectUnderTest.checkExceptionStatus(jsonResponse)
+
+        assertEquals(200, exceptionStatus)
+    }
+
+    @Test
+    fun whenChannelIdIsEmptyThenGetChannelShouldResultFailure() {
+        val emptyChannelId = ""
+        val callback: (Result<Channel>) -> Unit = { result ->
+            assertTrue(result.isFailure)
+            assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
+        }
+        objectUnderTest.getChannel(emptyChannelId, callback)
+    }
+
+    @Test
+    fun whenChannelNotFoundShouldReturnProperMessage() {
+        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.failure(Exception("""{"status":404,"error":{"message":"Requested object was not found.","source":"objects"}}""")))
+        }
+        val callback: (Result<Channel>) -> Unit = { result ->
+            assertTrue(result.isFailure)
+            assertEquals("Channel does not exists", result.exceptionOrNull()?.message)
+        }
+
+        objectUnderTest.getChannel(channelId, callback)
+    }
+
+    @Test
+    fun getChannelShouldResultSuccessWhenChannelExists() {
+        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(
+                Result.success(
+                    getPNChannelMetadataResult(
+                        name,
+                        description,
+                        customData,
+                        updated,
+                        type,
+                        status
+                    )
+                )
+            )
+        }
+
+        val callback: (Result<Channel>) -> Unit = { result ->
+            assertTrue(result.isSuccess)
+            assertEquals(id, result.getOrNull()?.id)
+            assertEquals(name, result.getOrNull()?.name)
+            assertEquals(description, result.getOrNull()?.description)
+            assertEquals(updated, result.getOrNull()?.updated)
+            assertEquals(type, result.getOrNull()?.type.toString())
+            assertEquals(status, result.getOrNull()?.status)
+        }
+
+        objectUnderTest.getChannel(channelId, callback)
+    }
+
+    @Test
+    fun createChannelShouldResultFailureWhenChannelExists() {
+        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.success(getPNChannelMetadataResult()))
+        }
+//        every { pubnub.setChannelMetadata(any()) } returns setChannelMetadataEndpoint
+//        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+
+//        }
+        val callback: (Result<Channel>) -> Unit = { result ->
+            assertTrue(result.isFailure)
+            assertEquals("Channel with this ID already exists", result.exceptionOrNull()?.message)
+        }
+
+        objectUnderTest.createChannel(id = id, name = name, callback = callback)
+    }
+
+    @Test
+    fun createChannelShouldResultSuccessWhenChannelDoesNotExist() {
+        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.failure(Exception("""{"status":404,"error":{"message":"Requested object was not found.","source":"objects"}}""")))
+        }
+        every { pubnub.setChannelMetadata(any(), any(), any(), any(), any(), any(), any()) } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.success(getPNChannelMetadataResult(name, description, customData, updated,type, status)))
+        }
+
+        val callback: (Result<Channel>) -> Unit = { result ->
+            assertTrue(result.isSuccess)
+            assertEquals(id, result.getOrNull()?.id)
+            assertEquals(name, result.getOrNull()?.name)
+            assertEquals(description, result.getOrNull()?.description)
+            assertEquals(updated, result.getOrNull()?.updated)
+            assertEquals(type, result.getOrNull()?.type.toString())
+            assertEquals(status, result.getOrNull()?.status)
+        }
+
+        objectUnderTest.createChannel(id = id, name = name, callback = callback)
     }
 
     private fun getPNChannelMetadataResult(
-        updatedName: String,
-        updatedDescription: String,
-        updatedCustom: Map<String,Any?>?,
-        updatedUpdated: String,
-        updatedType: String,
-        updatedStatus: String,
-    ): PNChannelMetadataResult{
+        updatedName: String = "",
+        updatedDescription: String = "",
+        updatedCustom: Map<String, Any?>? = null,
+        updatedUpdated: String = "",
+        updatedType: String = ChannelType.GROUP.toString(),
+        updatedStatus: String = "",
+    ): PNChannelMetadataResult {
         val pnChannelMetadata = PNChannelMetadata(
             id = id,
             name = updatedName,
@@ -578,7 +796,6 @@ class ChatTest {
         )
         return PNChannelMetadataResult(status = 200, data = pnChannelMetadata)
     }
-
 
 
     private fun createMessage(): Message {

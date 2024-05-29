@@ -13,15 +13,17 @@ import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.callbacks.mapCatching
-import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
+import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_META_DATA_IS_EMPTY
+import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_NOT_EXIST
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_CHANNEL_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_FORWARD_MESSAGE
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_CHANNEL_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_IS_PRESENT_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_USER_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHERE_PRESENT_DATA
-import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_CHANNEL_DATA
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FOR_PUBLISH_PAYLOAD_SHOULD_BE_OF_TYPE_TEXT_MESSAGE_CONTENT
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_META_DATA_IS_EMPTY
@@ -51,6 +53,8 @@ private const val DELETED = "Deleted"
 private const val ID_IS_REQUIRED = "Id is required"
 private const val CHANNEL_ID_IS_REQUIRED = "Channel Id is required"
 private const val ORIGINAL_PUBLISHER = "originalPublisher"
+
+private const val HTTP_ERROR_404 = 404
 
 class ChatImpl(
     override val config: ChatConfig,
@@ -168,6 +172,54 @@ class ChatImpl(
         }
     }
 
+    override fun createChannel(
+        id: String,
+        name: String?,
+        description: String?,
+        custom: CustomObject?,
+        type: ChannelType?,
+        status: String?,
+        callback: (Result<Channel>) -> Unit
+    ) {
+        if (!isValidId(id, CHANNEL_ID_IS_REQUIRED, callback)) {
+            return
+        }
+        getChannel(id) { result: Result<Channel> ->
+            result.onSuccess {
+                callback(Result.failure(Exception(CHANNEL_ID_ALREADY_EXIST.message)))
+            }.onFailure { exception: PubNubException ->
+                if(exception.message == CHANNEL_NOT_EXIST.message){
+                    setChannelMetadata(id, name, description, custom, type, status, callback)
+                } else{
+                    callback(Result.failure(exception))
+                }
+            }
+        }
+    }
+
+    override fun getChannel(channelId: String, callback: (Result<Channel>) -> Unit) {
+        if (!isValidId(channelId, CHANNEL_ID_IS_REQUIRED, callback)) {
+            return
+        }
+        pubNub.getChannelMetadata(channel = channelId).async { result: Result<PNChannelMetadataResult> ->
+            result.onSuccess { pnChannelMetadataResult: PNChannelMetadataResult ->
+                pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
+                    val createdChannel: Channel = createChannelFromMetadata(this, pnChannelMetadata)
+                    callback(Result.success(createdChannel))
+                }
+                    ?: callback(Result.failure(Exception(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA.message.plus("PNChannelMetadata is null"))))
+            }.onFailure { exception: PubNubException ->
+                exception.message?.let { exceptionMessage ->
+                    if (checkExceptionStatus(exceptionMessage) == HTTP_ERROR_404) {
+                        callback(Result.failure(Exception(CHANNEL_NOT_EXIST.message)))
+                    } else {
+                        callback(Result.failure(exception))
+                    }
+                } ?: callback(Result.failure(exception))
+            }
+        }
+    }
+
     override fun updateChannel(
         id: String,
         name: String?,
@@ -181,23 +233,11 @@ class ChatImpl(
         if (!isValidId(id, CHANNEL_ID_IS_REQUIRED, callback)) {
             return
         }
-        pubNub.setChannelMetadata(
-            channel = id,
-            name = name,
-            description = description,
-            custom = custom,
-            includeCustom = true,
-            type = type.toString(),
-            status = status
-        ).async { result: Result<PNChannelMetadataResult> ->
-            result.onSuccess { pnChannelMetadataResult: PNChannelMetadataResult ->
-                pnChannelMetadataResult.data?.let { pnChannelMetadata ->
-                    val updatedChannel: Channel = createChannelFromMetadata(this, pnChannelMetadata)
-                    callback(Result.success(updatedChannel))
-                }
-                    ?: callback(Result.failure(Exception(FAILED_TO_UPDATE_CHANNEL_DATA.message.plus("PNChannelMetadata is null"))))
-            }.onFailure { exception ->
-                callback(Result.failure(Exception(FAILED_TO_UPDATE_CHANNEL_DATA.message, exception)))
+        getChannel(id) { result: Result<Channel> ->
+            result.onSuccess {
+                setChannelMetadata(id, name, description, custom, type, status, callback)
+            }.onFailure { exception: PubNubException ->
+                callback(Result.failure(exception))
             }
         }
     }
@@ -283,7 +323,14 @@ class ChatImpl(
                     it.channels[channelId]?.occupants?.map(PNHereNowOccupantData::uuid) ?: emptyList()
                 callback(Result.success(occupants))
             }.onFailure { exception: PubNubException ->
-                callback(Result.failure(Exception(PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA.message, exception)))
+                callback(
+                    Result.failure(
+                        Exception(
+                            FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA.message,
+                            exception
+                        )
+                    )
+                )
             }
         }
     }
@@ -410,11 +457,49 @@ class ChatImpl(
 
     private fun performChannelDelete(channel: Channel, callback: (Result<Channel>) -> Unit) {
         pubNub.removeChannelMetadata(channel = channel.id).async { result: Result<PNRemoveMetadataResult> ->
-            result.onSuccess { pnRemoveMetadataResult: PNRemoveMetadataResult ->
+            result.onSuccess {
                 callback(Result.success(channel))
             }.onFailure { exception ->
                 callback(Result.failure(Exception("Failed to delete channel: ${exception.message}")))
             }
         }
     }
+
+    private fun setChannelMetadata(
+        id: String,
+        name: String?,
+        description: String?,
+        custom: CustomObject?,
+        type: ChannelType?,
+        status: String?,
+        callback: (Result<Channel>) -> Unit
+    ) {
+        pubNub.setChannelMetadata(
+            channel = id,
+            name = name,
+            description = description,
+            custom = custom,
+            includeCustom = true,
+            type = type.toString(),
+            status = status
+        ).async { result: Result<PNChannelMetadataResult> ->
+            result.onSuccess { pnChannelMetadataResult: PNChannelMetadataResult ->
+                pnChannelMetadataResult.data?.let { pnChannelMetadata ->
+                    val updatedChannel: Channel = createChannelFromMetadata(this, pnChannelMetadata)
+                    callback(Result.success(updatedChannel))
+                }
+                    ?: callback(Result.failure(Exception(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA.message.plus("PNChannelMetadata is null"))))
+            }.onFailure { exception ->
+                callback(Result.failure(Exception(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA.message, exception)))
+            }
+        }
+    }
+
+    internal fun checkExceptionStatus(jsonString: String): Int {
+        val statusRegex = """"status"\s*:\s*(\d+)""".toRegex()
+        val matchResult = statusRegex.find(jsonString)
+        val status = matchResult?.groups?.get(1)?.value?.toIntOrNull()
+        return status ?: 0
+    }
+
 }

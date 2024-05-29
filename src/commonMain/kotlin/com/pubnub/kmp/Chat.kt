@@ -41,8 +41,17 @@ interface Chat {
 
     fun isPresent(userId: String, channel: String, callback: (Result<Boolean>) -> Unit)
 
-    // todo
-//    fun createChannel()
+    fun createChannel(
+        id: String,
+        name: String? = null,
+        description: String? = null,
+        custom: CustomObject? = null,
+        type: ChannelType? = null,
+        status: String? = null,
+        callback: (Result<Channel>) -> Unit
+    )
+
+    fun getChannel(channelId: String, callback: (Result<Channel>) -> Unit)
 
     fun updateChannel(
         id: String,
@@ -62,7 +71,7 @@ interface Chat {
 
     fun whoIsPresent(channelId: String, callback: (Result<Collection<String>>) -> Unit)
 
-    fun <T: EventContent> emitEvent(
+    fun <T : EventContent> emitEvent(
         channel: String,
         method: EmitEventMethod = EmitEventMethod.SIGNAL,
         type: String = "custom",
