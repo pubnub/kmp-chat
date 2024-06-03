@@ -495,6 +495,7 @@ class ChatImpl(
         }
     }
 
+    // TODO: this needs to change when we get access to status code in PubNubException
     internal fun checkExceptionStatus(jsonString: String): Int {
         val statusRegex = """"status"\s*:\s*(\d+)""".toRegex()
         val matchResult = statusRegex.find(jsonString)
