@@ -1,20 +1,8 @@
 package com.pubnub.kmp.types
 
 import kotlinx.serialization.Contextual
-import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
-//data class TextMessageContent(
-//    val type: MessageType = MessageType.TEXT,
-//    val text: String,
-//    val files: List<File>? = null
-//) {
-//}
-
-enum class MessageType(val value: String) {
-    TEXT("text")
-}
 
 @Serializable
 data class File(
@@ -23,13 +11,6 @@ data class File(
     val url: String,
     val type: String? = null
 )
-
-data class Action(
-    val uuid: String,
-    val actionTimetoken: Any // Can be String or Number
-)
-
-typealias MessageActions = Map<String, Map<String, List<Action>>>
 
 @Serializable
 sealed class EventContent {

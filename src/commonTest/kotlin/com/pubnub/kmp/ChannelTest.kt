@@ -3,7 +3,6 @@ package com.pubnub.kmp
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.types.MessageType
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every

@@ -6,6 +6,10 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.api.v2.callbacks.mapCatching
+import com.pubnub.api.v2.callbacks.wrapException
+import com.pubnub.internal.PNDataEncoder
+import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.types.EmitEventMethod
@@ -15,7 +19,6 @@ import kotlinx.datetime.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-private const val EVENT_TYPE_TYPING = "typing"
 internal val MINIMAL_TYPING_INDICATOR_TIMEOUT: Duration = 1.seconds
 
 data class Channel(
@@ -111,13 +114,25 @@ data class Channel(
             includeMessageActions = true,
             includeMeta = true
         ).async { result: Result<PNFetchMessagesResult> ->
-//            result.onSuccess { value ->
-//                callback(Result.success(value.channels[id]?.map { messageItem: PNFetchMessageItem ->
-//                    Message(chat, messageItem.timetoken,EventContent.TextMessageContent() )
-//                }))
-//            }.onFailure {
-//                callback(Result.failure(Exception(ERROR_MSG, it)))
-//            }
+            callback(result.mapCatching { value ->
+                value.channels[id]?.mapNotNull { messageItem: PNFetchMessageItem ->
+                    try {
+                        Message(
+                            chat,
+                            messageItem.timetoken!!,
+                            PNDataEncoder.decode(messageItem.message),
+                            id,
+                            messageItem.uuid!!,
+                            messageItem.actions,
+                            messageItem.meta
+                        )
+                    } catch (e: Exception) {
+                        null // todo log unknown message format?
+                    }
+                } ?: error("Unable to read messages")
+            }.wrapException {
+                PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA.message, it)
+            })
         }
     }
 

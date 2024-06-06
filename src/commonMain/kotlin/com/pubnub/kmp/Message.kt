@@ -1,7 +1,8 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.JsonElement
+import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.types.MessageActions
 
 data class Message(
     private val chat: Chat,
@@ -9,8 +10,6 @@ data class Message(
     val content: EventContent.TextMessageContent,
     val channelId: String,
     val userId: String,
-    val actions: MessageActions? = null,
-    val meta: Map<String, Any>? = null
-){
-
-}
+    val actions: Map<String, Map<String, List<Action>>>? = null,
+    val meta: JsonElement? = null
+)

@@ -28,7 +28,6 @@ import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
-import com.pubnub.kmp.types.MessageType
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
