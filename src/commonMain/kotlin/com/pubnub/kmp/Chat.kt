@@ -74,7 +74,6 @@ interface Chat {
     fun <T : EventContent> emitEvent(
         channel: String,
         method: EmitEventMethod = EmitEventMethod.SIGNAL,
-        type: String = "custom",
         payload: T,
         callback: (Result<PNPublishResult>) -> Unit
     )

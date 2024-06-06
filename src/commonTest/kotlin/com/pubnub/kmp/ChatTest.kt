@@ -610,7 +610,6 @@ class ChatTest {
         objectUnderTest.emitEvent(
             channel = channelId,
             method = method,
-            type = type,
             payload = payload,
             callback = callback
         )
@@ -625,7 +624,7 @@ class ChatTest {
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
         val method = EmitEventMethod.PUBLISH
-        val payload = EventContent.TextMessageContent(type = MessageType.TEXT, text = "messageContent")
+        val payload = EventContent.TextMessageContent(text = "messageContent")
         val callback: (Result<PNPublishResult>) -> Unit = { result ->
             assertTrue(result.isSuccess)
             assertEquals(timetoken, result.getOrNull()?.timetoken)
@@ -634,7 +633,6 @@ class ChatTest {
         objectUnderTest.emitEvent(
             channel = channelId,
             method = method,
-            type = type,
             payload = payload,
             callback = callback
         )
@@ -657,7 +655,6 @@ class ChatTest {
         objectUnderTest.emitEvent(
             channel = channelId,
             method = method,
-            type = type,
             payload = payload,
             callback = callback
         )
@@ -801,9 +798,8 @@ class ChatTest {
     private fun createMessage(): Message {
         return Message(
             chat = chatMock,
-            timetoken = "123345",
+            timetoken = 123345,
             content = TextMessageContent(
-                type = MessageType.TEXT,
                 text = "justo",
                 files = listOf()
             ),

@@ -289,7 +289,6 @@ class ChatImpl(
     override fun <T : EventContent> emitEvent(
         channel: String,
         method: EmitEventMethod,
-        type: String,
         payload: T,
         callback: (Result<PNPublishResult>) -> Unit
     ) {

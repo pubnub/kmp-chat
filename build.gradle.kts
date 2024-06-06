@@ -1,12 +1,13 @@
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 
 plugins {
-    kotlin("multiplatform") version "2.0.0-RC3"
+    kotlin("multiplatform") version "2.0.0"
+    kotlin("plugin.serialization") version "2.0.0"
 //    kotlin("native.cocoapods") version "2.0.0-RC3"
 //    kotlin("multiplatform") version "1.9.22" //downgrade to 1.9.22 because mockmp uses Kotlin Symbol Processing (KSP) "com.google.devtools.ksp:symbol-processing-api:<new-version>"
 //    kotlin("native.cocoapods") version "1.9.23"
 //    id("org.kodein.mock.mockmp") version "1.17.0"
-    id("dev.mokkery") version "2.0.0-RC1"
+    id("dev.mokkery") version "2.0.0"
 }
 
 group = "com.pubnub"
@@ -71,6 +72,7 @@ kotlin {
                 implementation("com.pubnub:pubnub-core-api:9.2-DEV")
                 implementation("com.pubnub:pubnub-kotlin-api:9.2-DEV")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.0-RC")
             }
         }
         val commonTest by getting {

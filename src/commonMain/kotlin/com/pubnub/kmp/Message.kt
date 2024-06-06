@@ -5,7 +5,7 @@ import com.pubnub.kmp.types.MessageActions
 
 data class Message(
     private val chat: Chat,
-    val timetoken: String,
+    val timetoken: Long,
     val content: EventContent.TextMessageContent,
     val channelId: String,
     val userId: String,

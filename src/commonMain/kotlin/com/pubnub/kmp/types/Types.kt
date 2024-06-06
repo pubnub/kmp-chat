@@ -1,5 +1,10 @@
 package com.pubnub.kmp.types
 
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Polymorphic
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
 //data class TextMessageContent(
 //    val type: MessageType = MessageType.TEXT,
 //    val text: String,
@@ -7,10 +12,11 @@ package com.pubnub.kmp.types
 //) {
 //}
 
-enum class MessageType(type: String) {
+enum class MessageType(val value: String) {
     TEXT("text")
 }
 
+@Serializable
 data class File(
     val name: String,
     val id: String,
@@ -25,29 +31,41 @@ data class Action(
 
 typealias MessageActions = Map<String, Map<String, List<Action>>>
 
+@Serializable
 sealed class EventContent {
-    data class Typing(val value: Boolean, val type: String = "typing") : EventContent()
+    @Serializable
+    @SerialName("typing")
+    data class Typing(val value: Boolean) : EventContent()
+
+    @Serializable
+    @SerialName("report")
     data class Report(
         val text: String?,
         val reason: String,
         val reportedMessageTimetoken: String?,
         val reportedMessageChannelId: String?,
         val reportedUserId: String?,
-        val type: String = "report"
     ) : EventContent()
-    data class Receipt(val messageTimetoken: String, val type: String = "receipt") : EventContent()
-    data class Mention(val messageTimetoken: String, val channel: String, val type: String = "mention") : EventContent()
-    data class Custom(val data: Any, val type: String = "custom") : EventContent()
+
+    @Serializable
+    @SerialName("receipt")
+    data class Receipt(val messageTimetoken: String) : EventContent()
+
+    @Serializable
+    @SerialName("mention")
+    data class Mention(val messageTimetoken: String, val channel: String) : EventContent()
+
+    @Serializable
+    @SerialName("custom")
+    data class Custom(@Contextual val data: Any) : EventContent()
+
+    @Serializable
+    @SerialName("text")
     data class TextMessageContent(
-        val type: MessageType,
         val text: String,
         val files: List<File>? = null,
     ) : EventContent()
 }
-
-//enum class EventType {
-//    TYPING, REPORT, RECEIPT, MENTION, CUSTOM
-//}
 
 enum class EmitEventMethod{
     SIGNAL, PUBLISH;

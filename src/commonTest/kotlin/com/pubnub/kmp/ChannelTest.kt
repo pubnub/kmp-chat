@@ -121,12 +121,12 @@ class ChannelTest {
         }
         objectUnderTest.startTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any()) }
     }
 
     @Test
     fun whenTypingSentAlreadyButTimeoutExpiredStartTypingShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any(), any(), any(), any()) } returns Unit
+        every { chat.emitEvent(any(), any(), any(), any()) } returns Unit
         val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val currentTimeStampInMillis = typingSent.plus(typingTimeout).plus(MINIMAL_TYPING_INDICATOR_TIMEOUT).plus(1.milliseconds)
         val customClock = object : Clock {
@@ -147,7 +147,6 @@ class ChannelTest {
             chat.emitEvent(
                 channel = channelId,
                 method = EmitEventMethod.SIGNAL,
-                type = "typing",
                 payload = EventContent.Typing(true),
                 callback = any()
             )
@@ -156,7 +155,7 @@ class ChannelTest {
 
     @Test
     fun whenTypingNotSendShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any(), any(), any(), any()) } returns Unit
+        every { chat.emitEvent(any(), any(), any(), any()) } returns Unit
         val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
             // then
             assertTrue(result.isSuccess)
@@ -171,7 +170,6 @@ class ChannelTest {
             chat.emitEvent(
                 channel = channelId,
                 method = EmitEventMethod.SIGNAL,
-                type = "typing",
                 payload = EventContent.Typing(true),
                 callback = any()
             )
@@ -197,7 +195,7 @@ class ChannelTest {
         }
         objectUnderTest.startTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any()) }
     }
 
     @Test
@@ -220,7 +218,7 @@ class ChannelTest {
 
         objectUnderTest.stopTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any()) }
     }
 
     @Test
@@ -242,7 +240,7 @@ class ChannelTest {
 
         objectUnderTest.stopTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any()) }
 
     }
 
@@ -257,7 +255,7 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        every { chat.emitEvent(any(), any(), any(), any(), any()) } returns Unit
+        every { chat.emitEvent(any(), any(), any(), any()) } returns Unit
         val callback: (Result<Unit>) -> Unit = { result ->
             // then
             assertTrue(result.isSuccess)
@@ -271,7 +269,6 @@ class ChannelTest {
             chat.emitEvent(
                 channel = channelId,
                 method = EmitEventMethod.SIGNAL,
-                type = "typing",
                 payload = EventContent.Typing(false),
                 callback = any()
             )
@@ -281,9 +278,8 @@ class ChannelTest {
     private fun createMessage(): Message {
         return Message(
             chat = chat,
-            timetoken = "123345",
+            timetoken = 123345,
             content = EventContent.TextMessageContent(
-                type = MessageType.TEXT,
                 text = "justo",
                 files = listOf()
             ),

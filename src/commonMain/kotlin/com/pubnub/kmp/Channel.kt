@@ -1,7 +1,10 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
+import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.history.PNFetchMessageItem
+import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.kmp.membership.Membership
@@ -101,6 +104,23 @@ data class Channel(
         chat.isPresent(userId, id, callback)
     }
 
+    fun getHistory(startTimetoken: Long? = null, endTimetoken: Long? = null, count: Int? = 25, callback: (Result<List<Message>>) -> Unit) {
+        chat.pubNub.fetchMessages(
+            listOf(id),
+            PNBoundedPage(startTimetoken, endTimetoken, count),
+            includeMessageActions = true,
+            includeMeta = true
+        ).async { result: Result<PNFetchMessagesResult> ->
+//            result.onSuccess { value ->
+//                callback(Result.success(value.channels[id]?.map { messageItem: PNFetchMessageItem ->
+//                    Message(chat, messageItem.timetoken,EventContent.TextMessageContent() )
+//                }))
+//            }.onFailure {
+//                callback(Result.failure(Exception(ERROR_MSG, it)))
+//            }
+        }
+    }
+
     private fun timeoutElapsed(lastTypingSent: Instant, now: Instant): Boolean {
         return lastTypingSent < now - maxOf(chat.config.typingTimeout, MINIMAL_TYPING_INDICATOR_TIMEOUT)
     }
@@ -109,7 +129,6 @@ data class Channel(
         chat.emitEvent(
             channel = this.id,
             method = EmitEventMethod.SIGNAL,
-            type = EVENT_TYPE_TYPING,
             payload = EventContent.Typing(value),
             callback = { result: Result<PNPublishResult> ->
                 result.onSuccess {
