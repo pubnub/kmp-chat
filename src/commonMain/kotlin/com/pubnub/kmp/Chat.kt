@@ -6,6 +6,7 @@ import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.kmp.channel.GetChannelsResponse
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.user.GetUsersResponse
@@ -69,8 +70,13 @@ interface Chat {
 
     fun getChannel(channelId: String, callback: (Result<Channel>) -> Unit)
 
-    // todo
-//    fun getChannels(filter: String, )
+    fun getChannels(
+        filter: String? = null,
+        sort: Collection<PNSortKey<PNKey>> = listOf(),
+        limit: Int? = null,
+        page: PNPage? = null,
+        callback: (Result<GetChannelsResponse>) -> Unit
+    )
 
     fun updateChannel(
         id: String,

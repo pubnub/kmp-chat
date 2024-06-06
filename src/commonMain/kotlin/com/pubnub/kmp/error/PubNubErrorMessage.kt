@@ -11,6 +11,7 @@ enum class PubNubErrorMessage(val message: String) {
     FAILED_TO_RETRIEVE_USER_DATA("Failed to retrieve user data."),
     FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA("Failed to retrieve getMembership data."),
     FAILED_TO_GET_USERS("Failed to get users."),
+    FAILED_TO_GET_CHANNELS("Failed to get channels."),
     FAILED_TO_FORWARD_MESSAGE("Failed to forward message."),
     USER_META_DATA_IS_EMPTY("User metadata is empty."),
     CHANNEL_META_DATA_IS_EMPTY("Channel metadata is empty."),

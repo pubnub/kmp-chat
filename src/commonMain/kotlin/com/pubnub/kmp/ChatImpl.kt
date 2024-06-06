@@ -8,6 +8,7 @@ import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNRemoveMetadataResult
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
@@ -17,6 +18,7 @@ import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.callbacks.mapCatching
+import com.pubnub.kmp.channel.GetChannelsResponse
 import com.pubnub.kmp.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_META_DATA_IS_EMPTY
@@ -24,6 +26,7 @@ import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_NOT_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_CHANNEL_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_USER_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_FORWARD_MESSAGE
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_GET_CHANNELS
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_GET_USERS
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_CHANNEL_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_IS_PRESENT_DATA
@@ -129,14 +132,15 @@ class ChatImpl(
         ).async { result: Result<PNUUIDMetadataArrayResult> ->
             result.onSuccess { pnUUIDMetadataArrayResult: PNUUIDMetadataArrayResult ->
                 val users: MutableSet<User> = pnUUIDMetadataArrayResult.data.map { pnUUIDMetadata ->
-                    createUserFromMetadata(this, pnUUIDMetadata)}.toMutableSet()
+                    createUserFromMetadata(this, pnUUIDMetadata)
+                }.toMutableSet()
                 val response = GetUsersResponse(
                     users = users,
                     next = pnUUIDMetadataArrayResult.next,
                     prev = pnUUIDMetadataArrayResult.prev,
                     total = pnUUIDMetadataArrayResult.totalCount ?: 0
                 )
-                callback(Result.success (response))
+                callback(Result.success(response))
             }.onFailure { exception: PubNubException ->
                 callback(Result.failure(Exception(FAILED_TO_GET_USERS.message, exception)))
             }
@@ -278,6 +282,38 @@ class ChatImpl(
                         callback(Result.failure(exception))
                     }
                 } ?: callback(Result.failure(exception))
+            }
+        }
+    }
+
+    override fun getChannels(
+        filter: String?,
+        sort: Collection<PNSortKey<PNKey>>,
+        limit: Int?,
+        page: PNPage?,
+        callback: (Result<GetChannelsResponse>) -> Unit
+    ) {
+        pubNub.getAllChannelMetadata(
+            limit = limit,
+            page = page,
+            filter = filter,
+            sort = sort,
+            includeCount = true,
+            includeCustom = true
+        ).async { result: Result<PNChannelMetadataArrayResult> ->
+            result.onSuccess { pnChannelMetadataArrayResult ->
+                val channels: MutableSet<Channel> = pnChannelMetadataArrayResult.data.map { pnChannelMetadata ->
+                    createChannelFromMetadata(this, pnChannelMetadata)
+                }.toMutableSet()
+                val response = GetChannelsResponse(
+                    channels = channels,
+                    next = pnChannelMetadataArrayResult.next,
+                    prev = pnChannelMetadataArrayResult.prev,
+                    total = pnChannelMetadataArrayResult.totalCount ?: 0
+                )
+                callback(Result.success(response))
+            }.onFailure { exception: PubNubException ->
+                callback(Result.failure(Exception(FAILED_TO_GET_CHANNELS.message, exception)))
             }
         }
     }

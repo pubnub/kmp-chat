@@ -2,6 +2,7 @@ package com.pubnub.kmp
 
 import com.pubnub.api.PubNub
 import com.pubnub.api.UserId
+import com.pubnub.api.endpoints.objects.channel.GetAllChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.GetChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.RemoveChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
@@ -15,6 +16,7 @@ import com.pubnub.api.endpoints.pubsub.Publish
 import com.pubnub.api.endpoints.pubsub.Signal
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
@@ -27,6 +29,7 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.kmp.channel.GetChannelsResponse
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
@@ -60,6 +63,7 @@ class ChatTest {
     private val setChannelMetadataEndpoint: SetChannelMetadata = mock(MockMode.strict)
     private val getUUIDMetadataEndpoint: GetUUIDMetadata = mock(MockMode.strict)
     private val getAllUUIDMetadataEndpoint: GetAllUUIDMetadata = mock(MockMode.strict)
+    private val getAllChannelMetadataEndpoint: GetAllChannelMetadata = mock(MockMode.strict)
     private val getChannelMetadataEndpoint: GetChannelMetadata = mock(MockMode.strict)
     private val removeUUIDMetadataEndpoint: RemoveUUIDMetadata = mock(MockMode.strict)
     private val removeChannelMetadataEndpoint: RemoveChannelMetadata = mock(MockMode.strict)
@@ -845,6 +849,46 @@ class ChatTest {
         objectUnderTest.getUsers(callback = callback)
     }
 
+    @Test
+    fun getChannelsShouldResultSuccessWhenUserExists(){
+        val totalCount = 1
+        val pnChannelMetadataSet: Collection<PNChannelMetadata> = setOf(getPNChannelMetadata())
+        val pnChannelMetadataArrayResult = PNChannelMetadataArrayResult(status = 200, data = pnChannelMetadataSet, totalCount = totalCount, null, null)
+        every { pubnub.getAllChannelMetadata(any(), any(), any(), any(), any(), any()) } returns getAllChannelMetadataEndpoint
+        every { getAllChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataArrayResult>>) ->
+            callback1.accept(Result.success(pnChannelMetadataArrayResult))
+        }
+
+        val callback: (Result<GetChannelsResponse>) -> Unit = { result ->
+            assertTrue(result.isSuccess)
+            val channel: Channel = result.getOrNull()?.channels?.first()!!
+            assertEquals(totalCount,  result.getOrNull()?.total)
+            assertTrue(result.isSuccess)
+            assertEquals(id, channel.id)
+            assertEquals(name, channel.name)
+            assertEquals(description, channel.description)
+            assertEquals(updated, channel.updated)
+            assertEquals(type, channel.type.toString())
+            assertEquals(status, channel.status)
+        }
+        val filter = "description LIKE '*support*'"
+        objectUnderTest.getChannels(filter = filter, callback = callback)
+    }
+
+    @Test
+    fun getChannelsShouldResultFailureWhenUserCanNotBeRetrieved(){
+        every { pubnub.getAllChannelMetadata(any(), any(), any(), any(), any(), any()) } returns getAllChannelMetadataEndpoint
+        every { getAllChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataArrayResult>>) ->
+            callback1.accept(Result.failure(Exception("Error calling getAllChannelMetadata")))
+        }
+
+        val callback: (Result<GetChannelsResponse>) -> Unit = { result ->
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull()?.message!!.contains("Failed to get channels."))
+        }
+
+        objectUnderTest.getChannels(callback = callback)
+    }
 
     private fun getPNChannelMetadataResult(
         updatedName: String = "",
@@ -893,6 +937,17 @@ class ChatTest {
         custom = customData,
         updated = updated,
         eTag = "eTag",
+        type = type,
+        status = status
+    )
+
+    private fun getPNChannelMetadata() = PNChannelMetadata(
+        id = id,
+        name = name,
+        description = description,
+        custom = customData,
+        updated = updated,
+        eTag = "updatedETag",
         type = type,
         status = status
     )
