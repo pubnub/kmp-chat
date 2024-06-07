@@ -13,7 +13,6 @@ import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.callbacks.mapCatching
-import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_META_DATA_IS_EMPTY
@@ -287,13 +286,12 @@ class ChatImpl(
     }
 
     override fun <T : EventContent> emitEvent(
-        channel: String,
-        method: EmitEventMethod,
+        channelOrUser: String,
         payload: T,
         callback: (Result<PNPublishResult>) -> Unit
     ) {
-        if (method == EmitEventMethod.SIGNAL) {
-            pubNub.signal(channel = channel, message = payload).async(callback)
+        if (payload.method == EmitEventMethod.SIGNAL) {
+            pubNub.signal(channel = channelOrUser, message = payload).async(callback)
         } else {
             val message: EventContent.TextMessageContent
             try {
@@ -309,7 +307,7 @@ class ChatImpl(
                 )
                 return
             }
-            pubNub.publish(channel = channel, message = message).async(callback)
+            pubNub.publish(channel = channelOrUser, message = message).async(callback)
         }
     }
 
@@ -333,6 +331,19 @@ class ChatImpl(
                 )
             }
         }
+    }
+
+    override fun publish(
+        channelId: String,
+        message: EventContent,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean?,
+        usePost: Boolean,
+        replicate: Boolean,
+        ttl: Int?,
+        callback: (Result<PNPublishResult>) -> Unit
+    ) {
+        pubNub.publish(channelId, message, meta, shouldStore, usePost, replicate, ttl).async(callback)
     }
 
     private fun <T> isValidId(id: String, errorMessage: String, callback: (Result<T>) -> Unit): Boolean {

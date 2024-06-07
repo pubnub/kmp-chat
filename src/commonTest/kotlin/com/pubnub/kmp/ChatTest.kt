@@ -607,7 +607,7 @@ class ChatTest {
         }
 
         objectUnderTest.emitEvent(
-            channel = channelId,
+            channelOrUser = channelId,
             method = method,
             payload = payload,
             callback = callback
@@ -630,7 +630,7 @@ class ChatTest {
         }
 
         objectUnderTest.emitEvent(
-            channel = channelId,
+            channelOrUser = channelId,
             method = method,
             payload = payload,
             callback = callback
@@ -652,7 +652,7 @@ class ChatTest {
         }
 
         objectUnderTest.emitEvent(
-            channel = channelId,
+            channelOrUser = channelId,
             method = method,
             payload = payload,
             callback = callback
@@ -805,7 +805,7 @@ class ChatTest {
             channelId = channelId,
             userId = userId,
             actions = mapOf(),
-            meta = mapOf()
+            meta = null
         )
     }
 }

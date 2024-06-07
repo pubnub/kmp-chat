@@ -26,9 +26,10 @@ class JsonElementDecoder(
     private var currentList: List<JsonElement>? = null
 ) : Decoder, CompositeDecoder {
 //    init {
-//        println("JsonElementDecoder created with JSON: $jsonElement,\n MAP: $currentMap,\n LIST: $currentList")
+//        //println("JsonElementDecoder created with JSON: $jsonElement,\n MAP: $currentMap,\n LIST: $currentList")
 //    }
     private var counter = 0
+//    private val mapKeys = currentMap?.keys?.toList()
 //    private var startedPolymorphicStructure: Boolean = false
 
 
@@ -54,7 +55,7 @@ class JsonElementDecoder(
     }
 
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
-        println("beginStructure $descriptor")
+        //println("beginStructure $descriptor")
         return when (descriptor.kind) {
             is PolymorphicKind -> {
 //                startedPolymorphicStructure = true
@@ -155,7 +156,7 @@ class JsonElementDecoder(
             }
 
             StructureKind.CLASS -> {
-                val maxCounter = currentMap?.size ?: error("Illegal state")
+                val maxCounter = descriptor.elementsCount
                 if (counter < maxCounter) {
                     return counter++
                 }
@@ -201,7 +202,7 @@ class JsonElementDecoder(
         previousValue: T?
     ): T? {
         val key = descriptor.getElementName(index)
-        return if (currentMap?.get(key)?.isNull() == true || currentList?.elementAt(index)?.isNull() == true) {
+        return if (currentMap?.containsKey(key) == false || currentMap?.get(key)?.isNull() == true || currentList?.elementAt(index)?.isNull() == true) {
             null
         } else {
             decodeSerializableElement(descriptor, index, deserializer)
@@ -214,10 +215,9 @@ class JsonElementDecoder(
         deserializer: DeserializationStrategy<T>,
         previousValue: T?
     ): T {
-        println("decodeSerializableElement $descriptor $index $deserializer $currentMap $currentList")
+        //println("decodeSerializableElement $descriptor $index $deserializer $currentMap $currentList")
         when (descriptor.kind) {
             is PolymorphicKind -> {
-
                 return deserializer.deserialize(
                     JsonElementDecoder(
                         currentMap = currentMap
@@ -260,7 +260,10 @@ class JsonElementDecoder(
             is PolymorphicKind -> {
                 val type = currentMap?.get(descriptor.getElementName(index))?.asString()
                     ?: error("Can't find class name for polymorphic decode")
-                currentMap = currentMap?.toMutableMap().also { it?.remove(descriptor.getElementName(index)) }
+//                currentMap = currentMap?.toMutableMap().also {
+//                    it?.remove(descriptor.getElementName(index))
+//                    mapKeys?.remove(descriptor.getElementName(index))
+//                }
                 return type
             }
 

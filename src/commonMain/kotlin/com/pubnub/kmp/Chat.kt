@@ -3,7 +3,6 @@ package com.pubnub.kmp
 import com.pubnub.api.PubNub
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 
 interface Chat {
@@ -71,9 +70,18 @@ interface Chat {
 
     fun whoIsPresent(channelId: String, callback: (Result<Collection<String>>) -> Unit)
 
+    fun publish(channelId: String,
+                message: EventContent,
+                meta: Map<String,Any>? = null,
+                shouldStore: Boolean? = null,
+                usePost: Boolean = false,
+                replicate: Boolean = true,
+                ttl: Int? = null,
+                callback: (Result<PNPublishResult>) -> Unit,
+    )
+
     fun <T : EventContent> emitEvent(
-        channel: String,
-        method: EmitEventMethod = EmitEventMethod.SIGNAL,
+        channelOrUser: String,
         payload: T,
         callback: (Result<PNPublishResult>) -> Unit
     )

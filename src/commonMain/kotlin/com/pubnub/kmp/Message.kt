@@ -11,5 +11,5 @@ data class Message(
     val channelId: String,
     val userId: String,
     val actions: Map<String, Map<String, List<Action>>>? = null,
-    val meta: JsonElement? = null
+    val meta: Map<String, Any>? = null
 )

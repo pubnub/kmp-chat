@@ -1,6 +1,7 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
+import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
@@ -12,8 +13,11 @@ import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.kmp.membership.Membership
-import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.types.File
+import com.pubnub.kmp.types.MessageMentionedUser
+import com.pubnub.kmp.types.MessageReferencedChannel
+import com.pubnub.kmp.types.TextLink
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -124,9 +128,10 @@ data class Channel(
                             id,
                             messageItem.uuid!!,
                             messageItem.actions,
-                            messageItem.meta
+                            messageItem.meta?.decode()?.let { it as Map<String,Any>? }
                         )
                     } catch (e: Exception) {
+                        e.printStackTrace()
                         null // todo log unknown message format?
                     }
                 } ?: error("Unable to read messages")
@@ -136,14 +141,70 @@ data class Channel(
         }
     }
 
+    fun sendText(
+        text: String,
+        meta: Map<String,Any>? = null,
+        shouldStore: Boolean? = null,
+        usePost: Boolean = false,
+        replicate: Boolean = true,
+        ttl: Int? = null,
+        mentionedUsers: Map<Int, MessageMentionedUser>? = null,
+        referencedChannels: Map<Int, MessageReferencedChannel>? = null,
+        textLinks: List<TextLink>? = null,
+        quotedMessage: Message? = null,
+        files: List<File>? = null,
+        callback: (Result<PNPublishResult>) -> Unit
+    ) {
+        if (quotedMessage != null && quotedMessage.channelId != id) {
+            callback(Result.failure(IllegalArgumentException("You cannot quote messages from other channels")))
+            return
+        }
+        files?.forEach {
+            //chat.pubNub todo sendFile here once implemented
+        }
+        val newMeta = buildMap<String, Any> {
+            meta?.let { putAll(it) }
+            mentionedUsers?.let { put("mentionedUsers", PNDataEncoder.encode(it)!!) }
+            referencedChannels?.let { put("referencedChannels", PNDataEncoder.encode(it)!!) }
+            textLinks?.let { put("textLinks", PNDataEncoder.encode(it)!!) }
+        }
+        chat.publish(
+            channelId = id,
+            message = EventContent.TextMessageContent(text, null), //todo files
+            meta = newMeta,
+            shouldStore = shouldStore,
+            usePost = usePost,
+            replicate = replicate,
+            ttl = ttl,
+        ) { result: Result<PNPublishResult> ->
+            result.onSuccess { publishResult: PNPublishResult ->
+                //todo chat SDK seems to ignore results of emitting these events?
+                try {
+                    mentionedUsers?.forEach {
+                        emitUserMention(it.value.id, publishResult.timetoken, text) { }
+                    }
+                } catch (_: Exception) {}
+            }
+            callback(result)
+        }
+    }
+
+    private fun emitUserMention(
+        userId: String,
+        timetoken: Long,
+        text: String, //todo need to add pushpayload including this once implemented here
+        callback: (Result<PNPublishResult>) -> Unit
+    ) {
+        chat.emitEvent(userId, EventContent.Mention(timetoken, id), callback)
+    }
+
     private fun timeoutElapsed(lastTypingSent: Instant, now: Instant): Boolean {
         return lastTypingSent < now - maxOf(chat.config.typingTimeout, MINIMAL_TYPING_INDICATOR_TIMEOUT)
     }
 
     private fun sendTypingSignal(value: Boolean, callback: (Result<Unit>) -> Unit) {
         chat.emitEvent(
-            channel = this.id,
-            method = EmitEventMethod.SIGNAL,
+            channelOrUser = this.id,
             payload = EventContent.Typing(value),
             callback = { result: Result<PNPublishResult> ->
                 result.onSuccess {

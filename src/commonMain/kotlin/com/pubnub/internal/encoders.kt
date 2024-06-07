@@ -17,7 +17,6 @@ import kotlinx.serialization.serializer
 
 class AnyEncoder : Encoder, CompositeEncoder {
     var returnValue: Any? = null
-    private var startedPolymorphicStructure = false
     private var nextSerialNameValue: Pair<String, String>? = null
     override val serializersModule: SerializersModule = EmptySerializersModule()
 
@@ -65,16 +64,15 @@ class AnyEncoder : Encoder, CompositeEncoder {
 
     override fun beginStructure(descriptor: SerialDescriptor): CompositeEncoder {
         return when (descriptor.kind) {
-            StructureKind.CLASS, StructureKind.MAP -> MapEncoder(this.nextSerialNameValue).apply {
-                returnValue = this.map
+            StructureKind.CLASS, StructureKind.MAP -> MapEncoder(this.nextSerialNameValue).also {
+                returnValue = it.map
             }
 
-            StructureKind.LIST -> ListEncoder().apply {
-                returnValue = this.list
+            StructureKind.LIST -> ListEncoder().also {
+                returnValue = it.list
             }
 
             is PolymorphicKind -> {
-                startedPolymorphicStructure = true
                 this
             }
 
@@ -145,7 +143,6 @@ class AnyEncoder : Encoder, CompositeEncoder {
 
     override fun encodeStringElement(descriptor: SerialDescriptor, index: Int, value: String) {
         if (descriptor.kind is PolymorphicKind) {
-            require(startedPolymorphicStructure)
             nextSerialNameValue = descriptor.getElementName(index) to value
         } else {
             returnValue = value
@@ -153,10 +150,8 @@ class AnyEncoder : Encoder, CompositeEncoder {
     }
 
     override fun endStructure(descriptor: SerialDescriptor) {
-        if (startedPolymorphicStructure) {
-            require(descriptor.kind is PolymorphicKind)
+        if (descriptor.kind is PolymorphicKind) {
             nextSerialNameValue = null
-            startedPolymorphicStructure = false
         }
     }
 }
@@ -179,7 +174,7 @@ object PNDataEncoder {
 }
 
 class MapEncoder(polymorphicType: Pair<String, String>? = null) : CompositeEncoder {
-    var lastKey: String? = null
+    private var lastKey: String? = null
     val map: MutableMap<String, Any?> = mutableMapOf<String, Any?>().apply {
         if (polymorphicType != null) {
             put(polymorphicType.first, polymorphicType.second)
@@ -304,7 +299,7 @@ class ListEncoder : CompositeEncoder {
         descriptor: SerialDescriptor, index: Int, serializer: SerializationStrategy<T>, value: T?
     ) {
         if (value != null) {
-            list.add(PNDataEncoder.encode(serializer, value))
+            encodeSerializableElement(descriptor, index, serializer, value)
         } else {
             list.add(null)
         }
