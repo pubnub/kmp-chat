@@ -1,6 +1,7 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNub
+import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.endpoints.objects.channel.GetAllChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.GetChannelMetadata
@@ -49,6 +50,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -392,9 +394,10 @@ class ChatTest {
 
     @Test
     fun shouldResultErrorWhenUpdatingChannelThatDoesNotExist() {
+        val pnException = PubNubException(statusCode = 404,  errorMessage = "Requested object was not found.")
         every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
-            callback1.accept(Result.failure(Exception("""{"status":404,"error":{"message":"Requested object was not found.","source":"objects"}}""")))
+            callback1.accept(Result.failure(pnException))
         }
         every {
             pubnub.setChannelMetadata(
@@ -413,7 +416,7 @@ class ChatTest {
         val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
             // then
             assertTrue(result.isFailure)
-            assertEquals("Channel does not exist", result.exceptionOrNull()?.message)
+            assertEquals("Channel not found", result.exceptionOrNull()?.message)
         }
 
         // when
@@ -650,25 +653,9 @@ class ChatTest {
     }
 
     @Test
-    fun canCheckExceptionStatus404() {
-        val jsonResponse = """{"status":404,"error":{"message":"Requested object was not found.","source":"objects"}}"""
-        val exceptionStatus = objectUnderTest.checkExceptionStatus(jsonResponse)
-
-        assertEquals(404, exceptionStatus)
-    }
-
-    @Test
-    fun canCheckExceptionStatus200() {
-        val jsonResponse = """{"status":200,"error":{"message":"All good.","source":"system"}}"""
-        val exceptionStatus = objectUnderTest.checkExceptionStatus(jsonResponse)
-
-        assertEquals(200, exceptionStatus)
-    }
-
-    @Test
     fun whenChannelIdIsEmptyThenGetChannelShouldResultFailure() {
         val emptyChannelId = ""
-        val callback: (Result<Channel>) -> Unit = { result ->
+        val callback: (Result<Channel?>) -> Unit = { result ->
             assertTrue(result.isFailure)
             assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
@@ -677,13 +664,14 @@ class ChatTest {
 
     @Test
     fun whenChannelNotFoundShouldReturnProperMessage() {
+        val pnException = PubNubException(statusCode = 404,  errorMessage = "Requested object was not found.")
         every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
-            callback1.accept(Result.failure(Exception("""{"status":404,"error":{"message":"Requested object was not found.","source":"objects"}}""")))
+            callback1.accept(Result.failure(pnException))
         }
-        val callback: (Result<Channel>) -> Unit = { result ->
-            assertTrue(result.isFailure)
-            assertEquals("Channel does not exist", result.exceptionOrNull()?.message)
+        val callback: (Result<Channel?>) -> Unit = { result ->
+            assertTrue(result.isSuccess)
+            assertNull(result.getOrNull())
         }
 
         objectUnderTest.getChannel(channelId, callback)
@@ -707,7 +695,7 @@ class ChatTest {
             )
         }
 
-        val callback: (Result<Channel>) -> Unit = { result ->
+        val callback: (Result<Channel?>) -> Unit = { result ->
             assertTrue(result.isSuccess)
             assertEquals(id, result.getOrNull()?.id)
             assertEquals(name, result.getOrNull()?.name)
@@ -737,9 +725,10 @@ class ChatTest {
 
     @Test
     fun createChannelShouldResultSuccessWhenChannelDoesNotExist() {
+        val pnException = PubNubException(statusCode = 404,  errorMessage = "Requested object was not found.")
         every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
-            callback1.accept(Result.failure(Exception("""{"status":404,"error":{"message":"Requested object was not found.","source":"objects"}}""")))
+            callback1.accept(Result.failure(pnException))
         }
         every { pubnub.setChannelMetadata(any(), any(), any(), any(), any(), any(), any()) } returns setChannelMetadataEndpoint
         every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
@@ -762,7 +751,7 @@ class ChatTest {
     @Test
     fun whenUserIdIsEmptyThenGetChannelShouldResultFailure() {
         val emptyUserId = ""
-        val callback: (Result<User>) -> Unit = { result: Result<User> ->
+        val callback: (Result<User?>) -> Unit = { result: Result<User?> ->
             assertTrue(result.isFailure)
             assertEquals("Id is required" , result.exceptionOrNull()?.message)
         }
@@ -772,14 +761,15 @@ class ChatTest {
 
     @Test
     fun whenUserNotFoundShouldReturnProperMessage() {
+        val pnException = PubNubException(statusCode = 404,  errorMessage = "Requested object was not found.")
         every { pubnub.getUUIDMetadata(any(), any()) } returns getUUIDMetadataEndpoint
         every { getUUIDMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNUUIDMetadataResult>>) ->
-            callback1.accept(Result.failure(Exception("""{"status":404,"error":{"message":"Requested object was not found.","source":"objects"}}""")))
+            callback1.accept(Result.failure(pnException))
         }
 
-        val callback: (Result<User>) -> Unit = { result: Result<User> ->
-            assertTrue(result.isFailure)
-            assertEquals("User does not exist" , result.exceptionOrNull()?.message)
+        val callback: (Result<User?>) -> Unit = { result: Result<User?> ->
+            assertTrue(result.isSuccess)
+            assertNull(result.getOrNull())
         }
 
         objectUnderTest.getUser(userId, callback)
@@ -794,7 +784,7 @@ class ChatTest {
             callback1.accept(Result.success(pnUuidMetadataResult))
         }
 
-        val callback: (Result<User>) -> Unit = { result: Result<User> ->
+        val callback: (Result<User?>) -> Unit = { result: Result<User?> ->
             assertTrue(result.isSuccess)
             assertEquals(id, result.getOrNull()?.id)
             assertEquals(name, result.getOrNull()?.name)

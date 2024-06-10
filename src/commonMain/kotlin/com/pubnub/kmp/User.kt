@@ -125,14 +125,3 @@ data class User(
     }
 
 }
-
-// todo
-//v# update user
-//v# delete user
-//v# wherePresent()
-//v# isPresentOn
-//v# getMemberships
-//# create user from server response object
-//# streamUpdatesOn
-//# streamUpdates
-//# report

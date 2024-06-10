@@ -27,7 +27,7 @@ interface Chat {
         callback: (Result<User>) -> Unit,
     )
 
-    fun getUser(userId: String, callback: (Result<User>) -> Unit)
+    fun getUser(userId: String, callback: (Result<User?>) -> Unit)
 
 
     fun getUsers(
@@ -68,7 +68,7 @@ interface Chat {
         callback: (Result<Channel>) -> Unit
     )
 
-    fun getChannel(channelId: String, callback: (Result<Channel>) -> Unit)
+    fun getChannel(channelId: String, callback: (Result<Channel?>) -> Unit)
 
     fun getChannels(
         filter: String? = null,

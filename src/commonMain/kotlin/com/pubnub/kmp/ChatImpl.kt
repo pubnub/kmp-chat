@@ -18,13 +18,14 @@ import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.callbacks.mapCatching
+import com.pubnub.api.v2.callbacks.wrapException
 import com.pubnub.kmp.channel.GetChannelsResponse
 import com.pubnub.kmp.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_META_DATA_IS_EMPTY
-import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_NOT_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_CHANNEL_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_USER_DATA
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_DELETE_USER
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_FORWARD_MESSAGE
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_GET_CHANNELS
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_GET_USERS
@@ -33,10 +34,9 @@ import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_IS_PRESENT_DAT
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_USER_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHERE_PRESENT_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FOR_PUBLISH_PAYLOAD_SHOULD_BE_OF_TYPE_TEXT_MESSAGE_CONTENT
-import com.pubnub.kmp.error.PubNubErrorMessage.USER_META_DATA_IS_EMPTY
-import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.user.GetUsersResponse
@@ -84,15 +84,18 @@ class ChatImpl(
     ) {
         pubNub.setUUIDMetadata(id, name, externalId, profileUrl, email, custom, includeCustom = true)
             .async { result: Result<PNUUIDMetadataResult> ->
-                callback(result.mapCatching { it: PNUUIDMetadataResult ->
-                    it.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
+                val res: Result<User> = result.mapCatching { pnUUIDMetadataResult ->
+                    pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
                         createUserFromMetadata(this, pnUUIDMetadata)
-                    } ?: throw IllegalStateException("No data available to create User")
-                })
+                    } ?: error("No data available to create User")
+                }.wrapException { pubNubException ->
+                    PubNubException(FAILED_TO_CREATE_UPDATE_USER_DATA.message, pubNubException)
+                }
+                callback(res)
             }
     }
 
-    override fun getUser(userId: String, callback: (Result<User>) -> Unit) {
+    override fun getUser(userId: String, callback: (Result<User?>) -> Unit) {
         if (!isValidId(userId, ID_IS_REQUIRED, callback)) {
             return
         }
@@ -104,13 +107,11 @@ class ChatImpl(
                 }
                     ?: callback(Result.failure(Exception(FAILED_TO_CREATE_UPDATE_USER_DATA.message.plus("PNUUIDMetadataResult is null"))))
             }.onFailure { exception: PubNubException ->
-                exception.message?.let { exceptionMessage ->
-                    if (checkExceptionStatus(exceptionMessage) == HTTP_ERROR_404) {
-                        callback(Result.failure(Exception(USER_NOT_EXIST.message)))
-                    } else {
-                        callback(Result.failure(exception))
-                    }
-                } ?: callback(Result.failure(exception))
+                if (exception.statusCode == HTTP_ERROR_404) {
+                    callback(Result.success(null))
+                } else {
+                    callback(Result.failure(exception))
+                }
             }
         }
     }
@@ -130,20 +131,20 @@ class ChatImpl(
             includeCount = true,
             includeCustom = true
         ).async { result: Result<PNUUIDMetadataArrayResult> ->
-            result.onSuccess { pnUUIDMetadataArrayResult: PNUUIDMetadataArrayResult ->
+            val res: Result<GetUsersResponse> = result.mapCatching { pnUUIDMetadataArrayResult ->
                 val users: MutableSet<User> = pnUUIDMetadataArrayResult.data.map { pnUUIDMetadata ->
                     createUserFromMetadata(this, pnUUIDMetadata)
                 }.toMutableSet()
-                val response = GetUsersResponse(
+                GetUsersResponse(
                     users = users,
                     next = pnUUIDMetadataArrayResult.next,
                     prev = pnUUIDMetadataArrayResult.prev,
                     total = pnUUIDMetadataArrayResult.totalCount ?: 0
                 )
-                callback(Result.success(response))
-            }.onFailure { exception: PubNubException ->
-                callback(Result.failure(Exception(FAILED_TO_GET_USERS.message, exception)))
+            }.wrapException { exception ->
+                PubNubException(FAILED_TO_GET_USERS.message, exception)
             }
+            callback(res)
         }
     }
 
@@ -174,15 +175,14 @@ class ChatImpl(
                     status = status,
                     type = type,
                 ).async { result: Result<PNUUIDMetadataResult> ->
-                    result.onSuccess { pnUUIDMetadataResult ->
+                    val res: Result<User> = result.mapCatching { pnUUIDMetadataResult ->
                         pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
-                            val updatedUser = createUserFromMetadata(this, pnUUIDMetadata)
-                            callback(Result.success(updatedUser))
-                        }
-                            ?: callback(Result.failure(Exception("Failed to update user metadata. PNUUIDMetadata is null.")))
-                    }.onFailure { exception: PubNubException ->
-                        callback(Result.failure(Exception(FAILED_TO_UPDATE_USER_METADATA.message, exception)))
+                            createUserFromMetadata(this, pnUUIDMetadata)
+                        } ?: error("Failed to update user metadata. PNUUIDMetadata is null.")
+                    }.wrapException { pubNubException ->
+                        PubNubException(FAILED_TO_UPDATE_USER_METADATA.message, pubNubException)
                     }
+                    callback(res)
                 }
             }.onFailure { exception: PubNubException ->
                 callback(Result.failure(exception))
@@ -250,20 +250,20 @@ class ChatImpl(
         if (!isValidId(id, CHANNEL_ID_IS_REQUIRED, callback)) {
             return
         }
-        getChannel(id) { result: Result<Channel> ->
+        getChannel(id) { result: Result<Channel?> ->
             result.onSuccess {
-                callback(Result.failure(Exception(CHANNEL_ID_ALREADY_EXIST.message)))
-            }.onFailure { exception: PubNubException ->
-                if (exception.message == CHANNEL_NOT_EXIST.message) {
-                    setChannelMetadata(id, name, description, custom, type, status, callback)
+                if (result.getOrNull() != null) {
+                    callback(Result.failure(Exception(CHANNEL_ID_ALREADY_EXIST.message)))
                 } else {
-                    callback(Result.failure(exception))
+                    setChannelMetadata(id, name, description, custom, type, status, callback)
                 }
+            }.onFailure { exception: PubNubException ->
+                callback(Result.failure(exception))
             }
         }
     }
 
-    override fun getChannel(channelId: String, callback: (Result<Channel>) -> Unit) {
+    override fun getChannel(channelId: String, callback: (Result<Channel?>) -> Unit) {
         if (!isValidId(channelId, CHANNEL_ID_IS_REQUIRED, callback)) {
             return
         }
@@ -275,13 +275,11 @@ class ChatImpl(
                 }
                     ?: callback(Result.failure(Exception(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA.message.plus("PNChannelMetadata is null"))))
             }.onFailure { exception: PubNubException ->
-                exception.message?.let { exceptionMessage ->
-                    if (checkExceptionStatus(exceptionMessage) == HTTP_ERROR_404) {
-                        callback(Result.failure(Exception(CHANNEL_NOT_EXIST.message)))
-                    } else {
-                        callback(Result.failure(exception))
-                    }
-                } ?: callback(Result.failure(exception))
+                if (exception.statusCode == HTTP_ERROR_404) {
+                    callback(Result.success(null))
+                } else {
+                    callback(Result.failure(exception))
+                }
             }
         }
     }
@@ -331,9 +329,13 @@ class ChatImpl(
         if (!isValidId(id, CHANNEL_ID_IS_REQUIRED, callback)) {
             return
         }
-        getChannel(id) { result: Result<Channel> ->
+        getChannel(id) { result: Result<Channel?> ->
             result.onSuccess {
-                setChannelMetadata(id, name, description, custom, type, status, callback)
+                if (result.getOrNull() != null) {
+                    setChannelMetadata(id, name, description, custom, type, status, callback)
+                } else {
+                    callback(Result.failure(Exception("Channel not found")))
+                }
             }.onFailure { exception: PubNubException ->
                 callback(Result.failure(exception))
             }
@@ -444,13 +446,14 @@ class ChatImpl(
 
     private fun getUserData(id: String, callback: (Result<User>) -> Unit) {
         pubNub.getUUIDMetadata(uuid = id, includeCustom = false).async { result: Result<PNUUIDMetadataResult> ->
-            result.onSuccess { pnUUIDMetadataResult: PNUUIDMetadataResult ->
+            val res: Result<User> = result.mapCatching { pnUUIDMetadataResult: PNUUIDMetadataResult ->
                 pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
-                    callback(Result.success(createUserFromMetadata(this, pnUUIDMetadata)))
-                } ?: callback(Result.failure(Exception(USER_META_DATA_IS_EMPTY.message)))
-            }.onFailure { exception ->
-                callback(Result.failure(Exception(FAILED_TO_RETRIEVE_USER_DATA.message, exception)))
+                    createUserFromMetadata(this, pnUUIDMetadata)
+                } ?: error("PNUUIDMetadataResult is null")
+            }.wrapException { exception ->
+                PubNubException(FAILED_TO_RETRIEVE_USER_DATA.message, exception)
             }
+            callback(res)
         }
     }
 
@@ -480,14 +483,14 @@ class ChatImpl(
             type = updatedUser.type,
             status = updatedUser.status,
         ).async { resultOfUpdate: Result<PNUUIDMetadataResult> ->
-            resultOfUpdate.onSuccess { pnUUIDMetadataResult ->
+            val res: Result<User> = resultOfUpdate.mapCatching { pnUUIDMetadataResult ->
                 pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
-                    val updatedUserFromResponse = createUserFromMetadata(this, pnUUIDMetadata)
-                    callback(Result.success(updatedUserFromResponse))
-                } ?: callback(Result.failure(Exception("Failed to update user metadata. PNUUIDMetadata is null.")))
-            }.onFailure { it: Throwable ->
-                callback(Result.failure(Exception("Failed to update user metadata: ${it.message}")))
+                    createUserFromMetadata(this, pnUUIDMetadata)
+                } ?: error("Failed to update user metadata. PNUUIDMetadata is null.")
+            }.wrapException { pubNubException ->
+                PubNubException(FAILED_TO_UPDATE_USER_METADATA.message, pubNubException)
             }
+            callback(res)
         }
     }
 
@@ -497,7 +500,14 @@ class ChatImpl(
                 if (removeResult.isSuccess) {
                     callback(Result.success(user))
                 } else {
-                    callback(Result.failure(Exception("Unable to delete user")))
+                    callback(
+                        Result.failure(
+                            PubNubException(
+                                FAILED_TO_DELETE_USER.message,
+                                removeResult.exceptionOrNull()
+                            )
+                        )
+                    )
                 }
             }
     }
@@ -541,15 +551,14 @@ class ChatImpl(
             type = updatedChannel.type.toString(),
             status = updatedChannel.status
         ).async { result: Result<PNChannelMetadataResult> ->
-            result.onSuccess { pnChannelMetadataResult: PNChannelMetadataResult ->
+            val res: Result<Channel> = result.mapCatching { pnChannelMetadataResult ->
                 pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
-                    val updatedChannelFromResponse = createChannelFromMetadata(this, pnChannelMetadata)
-                    callback(Result.success(updatedChannelFromResponse))
-                }
-                    ?: callback(Result.failure(Exception("Failed to update channel metadata. PNChannelMetadata is null.")))
-            }.onFailure { exception: Throwable ->
-                callback(Result.failure(Exception("Failed to soft delete channel: ${exception.message}")))
+                    createChannelFromMetadata(this, pnChannelMetadata)
+                } ?: error("Failed to update channel metadata. PNChannelMetadata is null.")
+            }.wrapException { pubNubException ->
+                PubNubException(FAILED_TO_SOFT_DELETE_CHANNEL.message, pubNubException)
             }
+            callback(res)
         }
     }
 
@@ -581,24 +590,14 @@ class ChatImpl(
             type = type.toString(),
             status = status
         ).async { result: Result<PNChannelMetadataResult> ->
-            result.onSuccess { pnChannelMetadataResult: PNChannelMetadataResult ->
+            val res: Result<Channel> = result.mapCatching { pnChannelMetadataResult ->
                 pnChannelMetadataResult.data?.let { pnChannelMetadata ->
-                    val updatedChannel: Channel = createChannelFromMetadata(this, pnChannelMetadata)
-                    callback(Result.success(updatedChannel))
-                }
-                    ?: callback(Result.failure(Exception(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA.message.plus("PNChannelMetadata is null"))))
-            }.onFailure { exception ->
-                callback(Result.failure(Exception(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA.message, exception)))
+                    createChannelFromMetadata(this, pnChannelMetadata)
+                } ?: error(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA.message.plus("PNChannelMetadata is null"))
+            }.wrapException { pubNubException ->
+                PubNubException(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA.message, pubNubException)
             }
+            callback(res)
         }
     }
-
-    // TODO: this needs to change when we get access to status code in PubNubException
-    internal fun checkExceptionStatus(jsonString: String): Int {
-        val statusRegex = """"status"\s*:\s*(\d+)""".toRegex()
-        val matchResult = statusRegex.find(jsonString)
-        val status = matchResult?.groups?.get(1)?.value?.toIntOrNull()
-        return status ?: 0
-    }
-
 }
