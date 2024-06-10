@@ -7,6 +7,7 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.api.v2.callbacks.map
 import com.pubnub.api.v2.callbacks.mapCatching
 import com.pubnub.api.v2.callbacks.wrapException
 import com.pubnub.internal.PNDataEncoder
@@ -167,6 +168,13 @@ data class Channel(
             mentionedUsers?.let { put("mentionedUsers", PNDataEncoder.encode(it)!!) }
             referencedChannels?.let { put("referencedChannels", PNDataEncoder.encode(it)!!) }
             textLinks?.let { put("textLinks", PNDataEncoder.encode(it)!!) }
+            quotedMessage?.let {
+                put("quotedMessage", mapOf(
+                    "timetoken" to it.timetoken,
+                    "text" to it.text,
+                    "userId" to it.userId
+                ))
+            }
         }
         chat.publish(
             channelId = id,
@@ -192,7 +200,7 @@ data class Channel(
     private fun emitUserMention(
         userId: String,
         timetoken: Long,
-        text: String, //todo need to add pushpayload including this once implemented here
+        text: String, //todo need to add push payload including this once push is implemented here
         callback: (Result<PNPublishResult>) -> Unit
     ) {
         chat.emitEvent(userId, EventContent.Mention(timetoken, id), callback)
@@ -207,11 +215,7 @@ data class Channel(
             channelOrUser = this.id,
             payload = EventContent.Typing(value),
             callback = { result: Result<PNPublishResult> ->
-                result.onSuccess {
-                    callback(Result.success(Unit))
-                }.onFailure { exception: PubNubException ->
-                    callback(Result.failure(exception))
-                }
+                callback(result.map { Unit })
             }
         )
     }

@@ -12,4 +12,7 @@ data class Message(
     val userId: String,
     val actions: Map<String, Map<String, List<Action>>>? = null,
     val meta: Map<String, Any>? = null
-)
+) {
+    val text: String
+        get() = content.text // todo implement Message.text() method from TS
+}

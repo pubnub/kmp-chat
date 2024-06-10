@@ -608,7 +608,6 @@ class ChatTest {
 
         objectUnderTest.emitEvent(
             channelOrUser = channelId,
-            method = method,
             payload = payload,
             callback = callback
         )
@@ -631,32 +630,11 @@ class ChatTest {
 
         objectUnderTest.emitEvent(
             channelOrUser = channelId,
-            method = method,
             payload = payload,
             callback = callback
         )
 
         verify { pubnub.publish(channel = channelId, message = payload) }
-    }
-
-    @Test
-    fun whenEmitEventMethodIsPublishPayloadShouldBeOfTypeTextMessage() {
-        val payload = EventContent.Typing(true)
-        val method = EmitEventMethod.PUBLISH
-        val callback: (Result<PNPublishResult>) -> Unit = { result ->
-            assertTrue(result.isFailure)
-            assertEquals(
-                "When emitEvent method is PUBLISH payload should be of type EventContent.TextMessageContent",
-                result.exceptionOrNull()?.message
-            )
-        }
-
-        objectUnderTest.emitEvent(
-            channelOrUser = channelId,
-            method = method,
-            payload = payload,
-            callback = callback
-        )
     }
 
     @Test

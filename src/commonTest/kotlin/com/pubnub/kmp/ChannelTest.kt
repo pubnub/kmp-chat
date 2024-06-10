@@ -11,11 +11,15 @@ import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.types.MessageMentionedUser
+import com.pubnub.kmp.types.MessageReferencedChannel
+import com.pubnub.kmp.types.TextLink
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode.Companion.exactly
@@ -129,12 +133,12 @@ class ChannelTest {
         }
         objectUnderTest.startTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any()) }
     }
 
     @Test
     fun whenTypingSentAlreadyButTimeoutExpiredStartTypingShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any(), any(), any()) } returns Unit
+        every { chat.emitEvent(any(), any(), any()) } returns Unit
         val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val currentTimeStampInMillis =
             typingSent.plus(typingTimeout).plus(MINIMAL_TYPING_INDICATOR_TIMEOUT).plus(1.milliseconds)
@@ -155,7 +159,6 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channelOrUser = channelId,
-                method = EmitEventMethod.SIGNAL,
                 payload = EventContent.Typing(true),
                 callback = any()
             )
@@ -164,7 +167,7 @@ class ChannelTest {
 
     @Test
     fun whenTypingNotSendShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any(), any(), any()) } returns Unit
+        every { chat.emitEvent(any(), any(), any()) } returns Unit
         val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
             // then
             assertTrue(result.isSuccess)
@@ -178,7 +181,6 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channelOrUser = channelId,
-                method = EmitEventMethod.SIGNAL,
                 payload = EventContent.Typing(true),
                 callback = any()
             )
@@ -204,7 +206,7 @@ class ChannelTest {
         }
         objectUnderTest.startTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any()) }
     }
 
     @Test
@@ -227,7 +229,7 @@ class ChannelTest {
 
         objectUnderTest.stopTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any()) }
     }
 
     @Test
@@ -249,7 +251,7 @@ class ChannelTest {
 
         objectUnderTest.stopTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any()) }
 
     }
 
@@ -264,7 +266,7 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        every { chat.emitEvent(any(), any(), any(), any()) } returns Unit
+        every { chat.emitEvent(any(), any(), any()) } returns Unit
         val callback: (Result<Unit>) -> Unit = { result ->
             // then
             assertTrue(result.isSuccess)
@@ -277,7 +279,6 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channelOrUser = channelId,
-                method = EmitEventMethod.SIGNAL,
                 payload = EventContent.Typing(false),
                 callback = any()
             )
@@ -388,5 +389,55 @@ class ChannelTest {
                 )
             }
         }
+    }
+
+    @Test
+    fun sendTextAllParametersArePassedToPublish() {
+        every { chat.publish(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
+        val message = Message(chat, 1000L, EventContent.TextMessageContent("some text"), channelId, "some user", null, null)
+        objectUnderTest.sendText(
+            text = "someText",
+            meta = mapOf("custom_meta" to "custom"),
+            shouldStore = true,
+            usePost = false,
+            replicate = true,
+            ttl = 100,
+            mentionedUsers = mapOf(0 to MessageMentionedUser("mention1", "someName")),
+            referencedChannels = mapOf(0 to MessageReferencedChannel("referenced1", "someChannel")),
+            textLinks = listOf(TextLink(1, 20, "some link")),
+            quotedMessage = message,
+            null, // todo when files work
+        ) {}
+
+        verify { chat.publish(
+            channelId,
+            EventContent.TextMessageContent("someText"),
+            mapOf(
+                "custom_meta" to "custom",
+                "mentionedUsers" to mapOf(
+                    "0" to mapOf("id" to "mention1", "name" to "someName")
+                ),
+                "referencedChannels" to mapOf(
+                    "0" to mapOf("id" to "referenced1", "name" to "someChannel")
+                ),
+                "textLinks" to listOf(
+                    mapOf(
+                        "startIndex" to 1,
+                        "endIndex" to 20,
+                        "link" to "some link"
+                    )
+                ),
+                "quotedMessage" to mapOf(
+                    "timetoken" to message.timetoken,
+                    "text" to message.text,
+                    "userId" to message.userId
+                )
+            ),
+            true,
+            false,
+            true,
+            100,
+            any()
+        ) }
     }
 }
