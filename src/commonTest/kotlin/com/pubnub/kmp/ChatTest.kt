@@ -607,7 +607,7 @@ class ChatTest {
         }
 
         objectUnderTest.emitEvent(
-            channelOrUser = channelId,
+            channel = channelId,
             payload = payload,
             callback = callback
         )
@@ -629,7 +629,7 @@ class ChatTest {
         }
 
         objectUnderTest.emitEvent(
-            channelOrUser = channelId,
+            channel = channelId,
             payload = payload,
             callback = callback
         )

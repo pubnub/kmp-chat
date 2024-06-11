@@ -1,6 +1,7 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
+import com.pubnub.api.asString
 import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
@@ -120,21 +121,24 @@ data class Channel(
             includeMeta = true
         ).async { result: Result<PNFetchMessagesResult> ->
             callback(result.mapCatching { value ->
-                value.channels[id]?.mapNotNull { messageItem: PNFetchMessageItem ->
-                    try {
-                        Message(
-                            chat,
-                            messageItem.timetoken!!,
-                            PNDataEncoder.decode(messageItem.message),
-                            id,
-                            messageItem.uuid!!,
-                            messageItem.actions,
-                            messageItem.meta?.decode()?.let { it as Map<String,Any>? }
-                        )
+                value.channels[id]?.map { messageItem: PNFetchMessageItem ->
+                    val eventContent = try {
+                        messageItem.message.asString()?.let { text ->
+                            EventContent.TextMessageContent(text, null)
+                        } ?: PNDataEncoder.decode(messageItem.message)
                     } catch (e: Exception) {
-                        e.printStackTrace()
-                        null // todo log unknown message format?
+                        EventContent.UnknownMessageFormat(messageItem.message)
                     }
+
+                    Message(
+                        chat,
+                        messageItem.timetoken!!,
+                        eventContent,
+                        id,
+                        messageItem.uuid!!,
+                        messageItem.actions,
+                        messageItem.meta?.decode()?.let { it as Map<String,Any>? }
+                    )
                 } ?: error("Unable to read messages")
             }.wrapException {
                 PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA.message, it)
@@ -147,7 +151,6 @@ data class Channel(
         meta: Map<String,Any>? = null,
         shouldStore: Boolean? = null,
         usePost: Boolean = false,
-        replicate: Boolean = true,
         ttl: Int? = null,
         mentionedUsers: Map<Int, MessageMentionedUser>? = null,
         referencedChannels: Map<Int, MessageReferencedChannel>? = null,
@@ -163,7 +166,7 @@ data class Channel(
         files?.forEach {
             //chat.pubNub todo sendFile here once implemented
         }
-        val newMeta = buildMap<String, Any> {
+        val newMeta = buildMap {
             meta?.let { putAll(it) }
             mentionedUsers?.let { put("mentionedUsers", PNDataEncoder.encode(it)!!) }
             referencedChannels?.let { put("referencedChannels", PNDataEncoder.encode(it)!!) }
@@ -182,7 +185,6 @@ data class Channel(
             meta = newMeta,
             shouldStore = shouldStore,
             usePost = usePost,
-            replicate = replicate,
             ttl = ttl,
         ) { result: Result<PNPublishResult> ->
             result.onSuccess { publishResult: PNPublishResult ->
@@ -212,7 +214,7 @@ data class Channel(
 
     private fun sendTypingSignal(value: Boolean, callback: (Result<Unit>) -> Unit) {
         chat.emitEvent(
-            channelOrUser = this.id,
+            channel = this.id,
             payload = EventContent.Typing(value),
             callback = { result: Result<PNPublishResult> ->
                 callback(result.map { Unit })

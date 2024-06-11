@@ -1,6 +1,5 @@
 package com.pubnub.kmp
 
-import com.pubnub.api.JsonElement
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.kmp.types.EventContent
 

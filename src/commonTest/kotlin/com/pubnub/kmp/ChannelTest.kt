@@ -9,7 +9,6 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
@@ -19,7 +18,6 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode.Companion.exactly
@@ -158,7 +156,7 @@ class ChannelTest {
 
         verify {
             chat.emitEvent(
-                channelOrUser = channelId,
+                channel = channelId,
                 payload = EventContent.Typing(true),
                 callback = any()
             )
@@ -180,7 +178,7 @@ class ChannelTest {
         // then
         verify {
             chat.emitEvent(
-                channelOrUser = channelId,
+                channel = channelId,
                 payload = EventContent.Typing(true),
                 callback = any()
             )
@@ -278,7 +276,7 @@ class ChannelTest {
         // then
         verify {
             chat.emitEvent(
-                channelOrUser = channelId,
+                channel = channelId,
                 payload = EventContent.Typing(false),
                 callback = any()
             )
@@ -345,14 +343,23 @@ class ChannelTest {
             )
         } returns fetchMessages
 
+        val message1 = "message text"
+        val message2 = "second message"
+        val user1 = "myUser"
+        val user2 = "myUser2"
+        val timetoken1 = 10000L
+        val timetoken2 = 10001L
+
         every { fetchMessages.async(any()) } calls { (callback1: Consumer<Result<PNFetchMessagesResult>>) ->
             callback1.accept(
                 Result.success(
                     PNFetchMessagesResult(
                         mapOf(
                             channelId to listOf(
-                                PNFetchMessageItem("myUser", createJsonElement(mapOf("type" to "text", "text" to "message text")), null, 10000L, null, HistoryMessageType.Message, null),
-                                PNFetchMessageItem("myUser2", createJsonElement(mapOf("text" to "second message", "files" to null)), null, 10001L, null, HistoryMessageType.Message, null),
+                                PNFetchMessageItem(user1, createJsonElement(mapOf("type" to "text", "text" to message1)), null,
+                                    timetoken1, null, HistoryMessageType.Message, null),
+                                PNFetchMessageItem(user2, createJsonElement(mapOf("text" to message2, "files" to null)), null,
+                                    timetoken2, null, HistoryMessageType.Message, null),
                             )
                         ), null
                     )
@@ -369,19 +376,19 @@ class ChannelTest {
                     listOf(
                         Message(
                             chat,
-                            10000L,
-                            EventContent.TextMessageContent("message text"),
+                            timetoken1,
+                            EventContent.TextMessageContent(message1),
                             channelId,
-                            "myUser",
+                            user1,
                             null,
                             null
                         ),
                         Message(
                             chat,
-                            10001L,
-                            EventContent.TextMessageContent("second message"),
+                            timetoken2,
+                            EventContent.TextMessageContent(message2),
                             channelId,
-                            "myUser2",
+                            user2,
                             null,
                             null
                         ),
@@ -394,37 +401,43 @@ class ChannelTest {
     @Test
     fun sendTextAllParametersArePassedToPublish() {
         every { chat.publish(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
-        val message = Message(chat, 1000L, EventContent.TextMessageContent("some text"), channelId, "some user", null, null)
+        val messageText = "someText"
+        val message = Message(chat, 1000L, EventContent.TextMessageContent(messageText), channelId, "some user", null, null)
+        val mentionedUser1 = "mention1"
+        val referencedChannel1 = "referenced1"
+        val userName = "someName"
+        val channelName = "someChannel"
+        val link = "some link"
+        val ttl = 100
         objectUnderTest.sendText(
-            text = "someText",
+            text = messageText,
             meta = mapOf("custom_meta" to "custom"),
             shouldStore = true,
             usePost = false,
-            replicate = true,
-            ttl = 100,
-            mentionedUsers = mapOf(0 to MessageMentionedUser("mention1", "someName")),
-            referencedChannels = mapOf(0 to MessageReferencedChannel("referenced1", "someChannel")),
-            textLinks = listOf(TextLink(1, 20, "some link")),
+            ttl = ttl,
+            mentionedUsers = mapOf(0 to MessageMentionedUser(mentionedUser1, userName)),
+            referencedChannels = mapOf(0 to MessageReferencedChannel(referencedChannel1, channelName)),
+            textLinks = listOf(TextLink(1, 20, link)),
             quotedMessage = message,
             null, // todo when files work
         ) {}
 
         verify { chat.publish(
             channelId,
-            EventContent.TextMessageContent("someText"),
+            EventContent.TextMessageContent(messageText),
             mapOf(
                 "custom_meta" to "custom",
                 "mentionedUsers" to mapOf(
-                    "0" to mapOf("id" to "mention1", "name" to "someName")
+                    "0" to mapOf("id" to mentionedUser1, "name" to userName)
                 ),
                 "referencedChannels" to mapOf(
-                    "0" to mapOf("id" to "referenced1", "name" to "someChannel")
+                    "0" to mapOf("id" to referencedChannel1, "name" to channelName)
                 ),
                 "textLinks" to listOf(
                     mapOf(
                         "startIndex" to 1,
                         "endIndex" to 20,
-                        "link" to "some link"
+                        "link" to link
                     )
                 ),
                 "quotedMessage" to mapOf(
@@ -436,7 +449,7 @@ class ChannelTest {
             true,
             false,
             true,
-            100,
+            ttl,
             any()
         ) }
     }

@@ -286,12 +286,12 @@ class ChatImpl(
     }
 
     override fun <T : EventContent> emitEvent(
-        channelOrUser: String,
+        channel: String,
         payload: T,
         callback: (Result<PNPublishResult>) -> Unit
     ) {
         if (payload.method == EmitEventMethod.SIGNAL) {
-            pubNub.signal(channel = channelOrUser, message = payload).async(callback)
+            pubNub.signal(channel = channel, message = payload).async(callback)
         } else {
             val message: EventContent.TextMessageContent
             try {
@@ -307,7 +307,7 @@ class ChatImpl(
                 )
                 return
             }
-            pubNub.publish(channel = channelOrUser, message = message).async(callback)
+            pubNub.publish(channel = channel, message = message).async(callback)
         }
     }
 

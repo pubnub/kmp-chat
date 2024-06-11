@@ -1,5 +1,6 @@
 package com.pubnub.kmp.types
 
+import com.pubnub.api.JsonElement
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -43,10 +44,12 @@ sealed class EventContent(@Transient open val method: EmitEventMethod = EmitEven
 
     @Serializable
     @SerialName("text")
-    data class TextMessageContent(
+    open class TextMessageContent(
         val text: String,
         val files: List<File>? = null,
     ) : EventContent()
+
+    class UnknownMessageFormat(val jsonElement: JsonElement): TextMessageContent("", null)
 }
 
 enum class EmitEventMethod{

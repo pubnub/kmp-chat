@@ -29,9 +29,6 @@ class JsonElementDecoder(
 //        //println("JsonElementDecoder created with JSON: $jsonElement,\n MAP: $currentMap,\n LIST: $currentList")
 //    }
     private var counter = 0
-//    private val mapKeys = currentMap?.keys?.toList()
-//    private var startedPolymorphicStructure: Boolean = false
-
 
     override val serializersModule: SerializersModule = EmptySerializersModule()
 
@@ -58,7 +55,6 @@ class JsonElementDecoder(
         //println("beginStructure $descriptor")
         return when (descriptor.kind) {
             is PolymorphicKind -> {
-//                startedPolymorphicStructure = true
                 currentMap = jsonElement?.asMap()
                 this
             }
@@ -71,11 +67,6 @@ class JsonElementDecoder(
                 currentMap?.let {
                     this
                 } ?: JsonElementDecoder(currentMap = jsonElement?.asMap())
-//                if (startedPolymorphicStructure) {
-//                    JsonElementDecoder(currentMap = currentMap)
-//                } else {
-//                    JsonElementDecoder(currentMap = jsonElement?.asMap() ?: currentMap)
-
             }
 
             StructureKind.LIST -> {
@@ -260,10 +251,6 @@ class JsonElementDecoder(
             is PolymorphicKind -> {
                 val type = currentMap?.get(descriptor.getElementName(index))?.asString()
                     ?: error("Can't find class name for polymorphic decode")
-//                currentMap = currentMap?.toMutableMap().also {
-//                    it?.remove(descriptor.getElementName(index))
-//                    mapKeys?.remove(descriptor.getElementName(index))
-//                }
                 return type
             }
 
