@@ -78,7 +78,7 @@ data class User(
                     prev = pnChannelMembershipArrayResult.prev,
                     total = pnChannelMembershipArrayResult.totalCount ?: 0,
                     status = pnChannelMembershipArrayResult.status.toString(),
-                    memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this)
+                    memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this).toSet()
                 )
                 callback(Result.success(membershipsResponse))
             }.onFailure { error ->
@@ -125,14 +125,3 @@ data class User(
     }
 
 }
-
-// todo
-//v# update user
-//v# delete user
-//v# wherePresent()
-//v# isPresentOn
-//v# getMemberships
-//# create user from server response object
-//# streamUpdatesOn
-//# streamUpdates
-//# report
