@@ -396,12 +396,10 @@ class ChatImpl(
 
     override fun <T : EventContent> emitEvent(
         channel: String,
-        method: EmitEventMethod,
-        type: String,
         payload: T,
         callback: (Result<PNPublishResult>) -> Unit
     ) {
-        if (method == EmitEventMethod.SIGNAL) {
+        if (payload.method == EmitEventMethod.SIGNAL) {
             pubNub.signal(channel = channel, message = payload).async(callback)
         } else {
             val message: EventContent.TextMessageContent
@@ -442,6 +440,19 @@ class ChatImpl(
                 )
             }
         }
+    }
+
+    override fun publish(
+        channelId: String,
+        message: EventContent,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean?,
+        usePost: Boolean,
+        replicate: Boolean,
+        ttl: Int?,
+        callback: (Result<PNPublishResult>) -> Unit
+    ) {
+        pubNub.publish(channelId, message, meta, shouldStore, usePost, replicate, ttl).async(callback)
     }
 
     private fun <T> isValidId(id: String, errorMessage: String, callback: (Result<T>) -> Unit): Boolean {

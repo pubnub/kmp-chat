@@ -4,6 +4,7 @@ enum class PubNubErrorMessage(val message: String) {
     TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS("Typing indicators are not supported in Public chats."),
     FAILED_TO_RETRIEVE_WHERE_PRESENT_DATA("Failed to retrieve wherePresent data. "),
     FAILED_TO_RETRIEVE_IS_PRESENT_DATA("Failed to retrieve isPresent data."),
+    FAILED_TO_RETRIEVE_HISTORY_DATA("Failed to retrieve getHistory data."),
     FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA("Failed to retrieve whoIsPresent data."),
     FAILED_TO_CREATE_UPDATE_CHANNEL_DATA("Failed to create/update channel data."),
     FAILED_TO_CREATE_UPDATE_USER_DATA("Failed to create/update user data."),

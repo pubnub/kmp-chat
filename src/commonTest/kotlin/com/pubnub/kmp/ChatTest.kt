@@ -31,10 +31,8 @@ import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.kmp.channel.GetChannelsResponse
-import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
-import com.pubnub.kmp.types.MessageType
 import com.pubnub.kmp.user.GetUsersResponse
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -621,7 +619,6 @@ class ChatTest {
         every { signalEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
-        val method = EmitEventMethod.SIGNAL
         val payload = EventContent.Typing(true)
         val callback: (Result<PNPublishResult>) -> Unit = { result ->
             assertTrue(result.isSuccess)
@@ -630,8 +627,6 @@ class ChatTest {
 
         objectUnderTest.emitEvent(
             channel = channelId,
-            method = method,
-            type = typeAsString,
             payload = payload,
             callback = callback
         )
@@ -645,8 +640,7 @@ class ChatTest {
         every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
-        val method = EmitEventMethod.PUBLISH
-        val payload = EventContent.TextMessageContent(type = MessageType.TEXT, text = "messageContent")
+        val payload = EventContent.TextMessageContent(text = "messageContent")
         val callback: (Result<PNPublishResult>) -> Unit = { result ->
             assertTrue(result.isSuccess)
             assertEquals(timetoken, result.getOrNull()?.timetoken)
@@ -654,34 +648,11 @@ class ChatTest {
 
         objectUnderTest.emitEvent(
             channel = channelId,
-            method = method,
-            type = typeAsString,
             payload = payload,
             callback = callback
         )
 
         verify { pubnub.publish(channel = channelId, message = payload) }
-    }
-
-    @Test
-    fun whenEmitEventMethodIsPublishPayloadShouldBeOfTypeTextMessage() {
-        val payload = EventContent.Typing(true)
-        val method = EmitEventMethod.PUBLISH
-        val callback: (Result<PNPublishResult>) -> Unit = { result ->
-            assertTrue(result.isFailure)
-            assertEquals(
-                "When emitEvent method is PUBLISH payload should be of type EventContent.TextMessageContent",
-                result.exceptionOrNull()?.message
-            )
-        }
-
-        objectUnderTest.emitEvent(
-            channel = channelId,
-            method = method,
-            type = typeAsString,
-            payload = payload,
-            callback = callback
-        )
     }
 
     @Test
@@ -973,16 +944,15 @@ class ChatTest {
     private fun createMessage(): Message {
         return Message(
             chat = chatMock,
-            timetoken = "123345",
+            timetoken = 123345,
             content = TextMessageContent(
-                type = MessageType.TEXT,
                 text = "justo",
                 files = listOf()
             ),
             channelId = channelId,
             userId = userId,
             actions = mapOf(),
-            meta = mapOf()
+            meta = null
         )
     }
 

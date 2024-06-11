@@ -1,16 +1,12 @@
 package com.pubnub.kmp.types
 
-//data class TextMessageContent(
-//    val type: MessageType = MessageType.TEXT,
-//    val text: String,
-//    val files: List<File>? = null
-//) {
-//}
+import com.pubnub.api.JsonElement
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
-enum class MessageType(type: String) {
-    TEXT("text")
-}
-
+@Serializable
 data class File(
     val name: String,
     val id: String,
@@ -18,36 +14,64 @@ data class File(
     val type: String? = null
 )
 
-data class Action(
-    val uuid: String,
-    val actionTimetoken: Any // Can be String or Number
-)
+@Serializable
+sealed class EventContent(@Transient open val method: EmitEventMethod = EmitEventMethod.PUBLISH) {
+    @Serializable
+    @SerialName("typing")
+    data class Typing(val value: Boolean) : EventContent(EmitEventMethod.SIGNAL)
 
-typealias MessageActions = Map<String, Map<String, List<Action>>>
-
-sealed class EventContent {
-    data class Typing(val value: Boolean, val type: String = "typing") : EventContent()
+    @Serializable
+    @SerialName("report")
     data class Report(
         val text: String?,
         val reason: String,
-        val reportedMessageTimetoken: String?,
+        val reportedMessageTimetoken: Long?,
         val reportedMessageChannelId: String?,
         val reportedUserId: String?,
-        val type: String = "report"
     ) : EventContent()
-    data class Receipt(val messageTimetoken: String, val type: String = "receipt") : EventContent()
-    data class Mention(val messageTimetoken: String, val channel: String, val type: String = "mention") : EventContent()
-    data class Custom(val data: Any, val type: String = "custom") : EventContent()
-    data class TextMessageContent(
-        val type: MessageType,
+
+    @Serializable
+    @SerialName("receipt")
+    data class Receipt(val messageTimetoken: Long) : EventContent(EmitEventMethod.SIGNAL)
+
+    @Serializable
+    @SerialName("mention")
+    data class Mention(val messageTimetoken: Long, val channel: String) : EventContent()
+
+    @Serializable
+    @SerialName("custom")
+    data class Custom(@Contextual val data: Any, @Transient override val method: EmitEventMethod = EmitEventMethod.PUBLISH) : EventContent(method)
+
+    @Serializable
+    @SerialName("text")
+    open class TextMessageContent(
         val text: String,
         val files: List<File>? = null,
-    ) : EventContent()
-}
+    ) : EventContent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is TextMessageContent) return false
 
-//enum class EventType {
-//    TYPING, REPORT, RECEIPT, MENTION, CUSTOM
-//}
+            if (text != other.text) return false
+            if (files != other.files) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = text.hashCode()
+            result = 31 * result + (files?.hashCode() ?: 0)
+            return result
+        }
+
+        override fun toString(): String {
+            return "TextMessageContent(text='$text', files=$files)"
+        }
+
+    }
+
+    class UnknownMessageFormat(val jsonElement: JsonElement): TextMessageContent("", null)
+}
 
 enum class EmitEventMethod{
     SIGNAL, PUBLISH;

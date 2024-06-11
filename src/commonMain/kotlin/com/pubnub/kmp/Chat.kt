@@ -96,10 +96,19 @@ interface Chat {
 
     fun whoIsPresent(channelId: String, callback: (Result<Collection<String>>) -> Unit)
 
+    fun publish(
+        channelId: String,
+        message: EventContent,
+        meta: Map<String, Any>? = null,
+        shouldStore: Boolean? = null,
+        usePost: Boolean = false,
+        replicate: Boolean = true,
+        ttl: Int? = null,
+        callback: (Result<PNPublishResult>) -> Unit,
+    )
+
     fun <T : EventContent> emitEvent(
         channel: String,
-        method: EmitEventMethod = EmitEventMethod.SIGNAL,
-        type: String = "custom",
         payload: T,
         callback: (Result<PNPublishResult>) -> Unit
     )

@@ -1,10 +1,20 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.PubNub
+import com.pubnub.api.createJsonElement
+import com.pubnub.api.endpoints.FetchMessages
+import com.pubnub.api.models.consumer.PNBoundedPage
+import com.pubnub.api.models.consumer.history.HistoryMessageType
+import com.pubnub.api.models.consumer.history.PNFetchMessageItem
+import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
+import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.types.MessageType
+import com.pubnub.kmp.types.MessageMentionedUser
+import com.pubnub.kmp.types.MessageReferencedChannel
+import com.pubnub.kmp.types.TextLink
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
@@ -41,7 +51,7 @@ class ChannelTest {
         objectUnderTest = createChannel(type)
     }
 
-    private fun createChannel(type: ChannelType, clock: Clock = Clock.System,) = Channel(
+    private fun createChannel(type: ChannelType, clock: Clock = Clock.System) = Channel(
         chat = chat,
         clock = clock,
         id = channelId,
@@ -121,14 +131,15 @@ class ChannelTest {
         }
         objectUnderTest.startTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any()) }
     }
 
     @Test
     fun whenTypingSentAlreadyButTimeoutExpiredStartTypingShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any(), any(), any(), any()) } returns Unit
+        every { chat.emitEvent(any(), any(), any()) } returns Unit
         val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
-        val currentTimeStampInMillis = typingSent.plus(typingTimeout).plus(MINIMAL_TYPING_INDICATOR_TIMEOUT).plus(1.milliseconds)
+        val currentTimeStampInMillis =
+            typingSent.plus(typingTimeout).plus(MINIMAL_TYPING_INDICATOR_TIMEOUT).plus(1.milliseconds)
         val customClock = object : Clock {
             override fun now(): Instant {
                 return currentTimeStampInMillis
@@ -146,8 +157,6 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channel = channelId,
-                method = EmitEventMethod.SIGNAL,
-                type = "typing",
                 payload = EventContent.Typing(true),
                 callback = any()
             )
@@ -156,7 +165,7 @@ class ChannelTest {
 
     @Test
     fun whenTypingNotSendShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any(), any(), any(), any()) } returns Unit
+        every { chat.emitEvent(any(), any(), any()) } returns Unit
         val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
             // then
             assertTrue(result.isSuccess)
@@ -170,8 +179,6 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channel = channelId,
-                method = EmitEventMethod.SIGNAL,
-                type = "typing",
                 payload = EventContent.Typing(true),
                 callback = any()
             )
@@ -197,7 +204,7 @@ class ChannelTest {
         }
         objectUnderTest.startTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any()) }
     }
 
     @Test
@@ -220,11 +227,11 @@ class ChannelTest {
 
         objectUnderTest.stopTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any()) }
     }
 
     @Test
-    fun whenTimeElapsedShouldNotSendSignalButReturnImmediately(){
+    fun whenTimeElapsedShouldNotSendSignalButReturnImmediately() {
         val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val currentTimeStampInMillis = typingSent.plus(2001.milliseconds)
         val customClock = object : Clock {
@@ -242,7 +249,7 @@ class ChannelTest {
 
         objectUnderTest.stopTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(), any()) }
 
     }
 
@@ -257,7 +264,7 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        every { chat.emitEvent(any(), any(), any(), any(), any()) } returns Unit
+        every { chat.emitEvent(any(), any(), any()) } returns Unit
         val callback: (Result<Unit>) -> Unit = { result ->
             // then
             assertTrue(result.isSuccess)
@@ -270,8 +277,6 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channel = channelId,
-                method = EmitEventMethod.SIGNAL,
-                type = "typing",
                 payload = EventContent.Typing(false),
                 callback = any()
             )
@@ -281,9 +286,8 @@ class ChannelTest {
     private fun createMessage(): Message {
         return Message(
             chat = chat,
-            timetoken = "123345",
+            timetoken = 123345,
             content = EventContent.TextMessageContent(
-                type = MessageType.TEXT,
                 text = "justo",
                 files = listOf()
             ),
@@ -312,10 +316,141 @@ class ChannelTest {
         every { chat.whoIsPresent(any(), any()) } returns Unit
 
         val callback = { _: Result<Collection<String>> -> }
-        objectUnderTest.whoIsPresent (
+        objectUnderTest.whoIsPresent(
             callback = callback
         )
 
         verify { chat.whoIsPresent(channelId, callback) }
+    }
+
+    @Test
+    fun getHistoryReturnsMessages() {
+        // given
+        val startToken = 1L
+        val endToken = 2000L
+        val pubNub: PubNub = mock(MockMode.strict)
+        val fetchMessages: FetchMessages = mock(MockMode.strict)
+
+        every { chat.pubNub } returns pubNub
+        every {
+            pubNub.fetchMessages(
+                any(),
+                PNBoundedPage(startToken, endToken, 25),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns fetchMessages
+
+        val message1 = "message text"
+        val message2 = "second message"
+        val user1 = "myUser"
+        val user2 = "myUser2"
+        val timetoken1 = 10000L
+        val timetoken2 = 10001L
+
+        every { fetchMessages.async(any()) } calls { (callback1: Consumer<Result<PNFetchMessagesResult>>) ->
+            callback1.accept(
+                Result.success(
+                    PNFetchMessagesResult(
+                        mapOf(
+                            channelId to listOf(
+                                PNFetchMessageItem(user1, createJsonElement(mapOf("type" to "text", "text" to message1)), null,
+                                    timetoken1, null, HistoryMessageType.Message, null),
+                                PNFetchMessageItem(user2, createJsonElement(mapOf("text" to message2, "files" to null)), null,
+                                    timetoken2, null, HistoryMessageType.Message, null),
+                            )
+                        ), null
+                    )
+                )
+            )
+        }
+
+        // when
+        objectUnderTest.getHistory(startToken, endToken) {
+            // then
+            assertTrue { it.isSuccess }
+            it.onSuccess { result ->
+                assertEquals(
+                    listOf(
+                        Message(
+                            chat,
+                            timetoken1,
+                            EventContent.TextMessageContent(message1),
+                            channelId,
+                            user1,
+                            null,
+                            null
+                        ),
+                        Message(
+                            chat,
+                            timetoken2,
+                            EventContent.TextMessageContent(message2),
+                            channelId,
+                            user2,
+                            null,
+                            null
+                        ),
+                    ), result
+                )
+            }
+        }
+    }
+
+    @Test
+    fun sendTextAllParametersArePassedToPublish() {
+        every { chat.publish(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
+        val messageText = "someText"
+        val message = Message(chat, 1000L, EventContent.TextMessageContent(messageText), channelId, "some user", null, null)
+        val mentionedUser1 = "mention1"
+        val referencedChannel1 = "referenced1"
+        val userName = "someName"
+        val channelName = "someChannel"
+        val link = "some link"
+        val ttl = 100
+        objectUnderTest.sendText(
+            text = messageText,
+            meta = mapOf("custom_meta" to "custom"),
+            shouldStore = true,
+            usePost = false,
+            ttl = ttl,
+            mentionedUsers = mapOf(0 to MessageMentionedUser(mentionedUser1, userName)),
+            referencedChannels = mapOf(0 to MessageReferencedChannel(referencedChannel1, channelName)),
+            textLinks = listOf(TextLink(1, 20, link)),
+            quotedMessage = message,
+            null, // todo when files work
+        ) {}
+
+        verify { chat.publish(
+            channelId,
+            EventContent.TextMessageContent(messageText),
+            mapOf(
+                "custom_meta" to "custom",
+                "mentionedUsers" to mapOf(
+                    "0" to mapOf("id" to mentionedUser1, "name" to userName)
+                ),
+                "referencedChannels" to mapOf(
+                    "0" to mapOf("id" to referencedChannel1, "name" to channelName)
+                ),
+                "textLinks" to listOf(
+                    mapOf(
+                        "startIndex" to 1,
+                        "endIndex" to 20,
+                        "link" to link
+                    )
+                ),
+                "quotedMessage" to mapOf(
+                    "timetoken" to message.timetoken,
+                    "text" to message.text,
+                    "userId" to message.userId
+                )
+            ),
+            true,
+            false,
+            true,
+            ttl,
+            any()
+        ) }
     }
 }
