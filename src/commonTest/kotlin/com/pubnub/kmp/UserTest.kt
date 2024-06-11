@@ -201,7 +201,7 @@ class UserTest {
             // then
             assertTrue(result.isSuccess)
             assertEquals(1, result.getOrNull()!!.memberships.size)
-            assertEquals(channelId, result.getOrNull()!!.memberships[0].channel.id)
+            assertEquals(channelId, result.getOrNull()!!.memberships.first().channel.id)
         }
         val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub

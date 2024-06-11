@@ -7,5 +7,5 @@ data class MembershipsResponse(
     val prev: PNPage?,
     val total: Int,
     val status: String,
-    val memberships: List<Membership>
+    val memberships: Set<Membership>
 )
