@@ -47,7 +47,28 @@ sealed class EventContent(@Transient open val method: EmitEventMethod = EmitEven
     open class TextMessageContent(
         val text: String,
         val files: List<File>? = null,
-    ) : EventContent()
+    ) : EventContent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is TextMessageContent) return false
+
+            if (text != other.text) return false
+            if (files != other.files) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = text.hashCode()
+            result = 31 * result + (files?.hashCode() ?: 0)
+            return result
+        }
+
+        override fun toString(): String {
+            return "TextMessageContent(text='$text', files=$files)"
+        }
+
+    }
 
     class UnknownMessageFormat(val jsonElement: JsonElement): TextMessageContent("", null)
 }

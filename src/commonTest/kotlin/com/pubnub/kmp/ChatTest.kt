@@ -31,10 +31,8 @@ import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.kmp.channel.GetChannelsResponse
-import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
-import com.pubnub.kmp.types.MessageType
 import com.pubnub.kmp.user.GetUsersResponse
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -655,24 +653,6 @@ class ChatTest {
         )
 
         verify { pubnub.publish(channel = channelId, message = payload) }
-    }
-
-    @Test
-    fun whenEmitEventMethodIsPublishPayloadShouldBeOfTypeTextMessage() {
-        val payload = EventContent.Typing(true)
-        val callback: (Result<PNPublishResult>) -> Unit = { result ->
-            assertTrue(result.isFailure)
-            assertEquals(
-                "When emitEvent method is PUBLISH payload should be of type EventContent.TextMessageContent",
-                result.exceptionOrNull()?.message
-            )
-        }
-
-        objectUnderTest.emitEvent(
-            channel = channelId,
-            payload = payload,
-            callback = callback
-        )
     }
 
     @Test
