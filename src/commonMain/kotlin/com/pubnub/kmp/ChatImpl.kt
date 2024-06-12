@@ -36,7 +36,6 @@ import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.user.GetUsersResponse
-import com.pubnub.kmp.utils.cyrb53a
 import kotlin.js.JsExport
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -387,20 +386,21 @@ class ChatImpl(
         channelData: Any?,
         membershipData: Any?
     ): PNFuture<CreateDirectConversationResult> {
-        val user = this.user ?: error("Chat user is not set. Set them by calling setChatUser on the Chat instance.")
-        val sortedUsers = listOf(invitedUser.id, user.id).sorted()
-        val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
-
-
-        return getChannel(finalChannelId).thenAsync { channel -> // big fat TODO
-            if (channel == null) {
-                createChannel(finalChannelId, type = ChannelType.DIRECT).then {
-                    CreateDirectConversationResult()
-                }
-            } else {
-                CreateDirectConversationResult().asFuture()
-            }
-        }
+        TODO("Not implemented yet")
+//        val user = this.user ?: error("Chat user is not set. Set them by calling setChatUser on the Chat instance.")
+//        val sortedUsers = listOf(invitedUser.id, user.id).sorted()
+//        val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
+//
+//
+//        return getChannel(finalChannelId).thenAsync { channel -> // big fat TODO
+//            if (channel == null) {
+//                createChannel(finalChannelId, type = ChannelType.DIRECT).then {
+//                    CreateDirectConversationResult()
+//                }
+//            } else {
+//                CreateDirectConversationResult().asFuture()
+//            }
+//        }
     }
 
 
@@ -435,7 +435,7 @@ class ChatImpl(
     }
 
     private fun isValidId(id: String): Boolean {
-        return id.isEmpty()
+        return id.isNotEmpty()
     }
 
     private fun getChannelData(id: String): PNFuture<Channel> {

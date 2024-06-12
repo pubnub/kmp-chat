@@ -181,7 +181,9 @@ class ChatTest {
             custom = custom,
             status = status,
             type = typeAsString
-        ).async {}
+        ).async {
+
+        }
 
         // then
         verify { pubnub.getUUIDMetadata(uuid = id, includeCustom = false) }
@@ -236,7 +238,7 @@ class ChatTest {
         val includeCustomFalse = false
 
         // when
-        objectUnderTest.deleteUser(id, softDelete)
+        objectUnderTest.deleteUser(id, softDelete).async {}
 
         // then
         verify {
@@ -611,7 +613,7 @@ class ChatTest {
             assertEquals(timetoken, result.getOrNull()?.timetoken)
         }
 
-        verify { pubnub.signal(channel = channelId, message = payload) }
+        verify { pubnub.signal(channel = channelId, message = mapOf("type" to "typing", "value" to true)) }
     }
 
     @Test
@@ -620,7 +622,7 @@ class ChatTest {
         every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
-        val payload = EventContent.TextMessageContent(text = "messageContent")
+        val payload = TextMessageContent(text = "messageContent")
 
         objectUnderTest.emitEvent(
             channel = channelId,
@@ -630,7 +632,7 @@ class ChatTest {
             assertEquals(timetoken, result.getOrNull()?.timetoken)
         }
 
-        verify { pubnub.publish(channel = channelId, message = payload) }
+        verify { pubnub.publish(channel = channelId, message = mapOf("type" to "text", "text" to "messageContent", "files" to null)) }
     }
 
     @Test
