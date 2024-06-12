@@ -16,6 +16,7 @@ version = "1.0-SNAPSHOT"
 kotlin {
     jvmToolchain(8)
     js {
+        useEsModules()
         browser {
 
         }
@@ -73,6 +74,7 @@ kotlin {
                 implementation("com.pubnub:pubnub-kotlin-api:9.2-DEV")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.0-RC")
+//                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0-RC")
             }
         }
         val commonTest by getting {

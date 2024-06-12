@@ -5,15 +5,25 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
-import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.channel.GetChannelsResponse
-import com.pubnub.kmp.types.EmitEventMethod
+import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.user.GetUsersResponse
 
 interface Chat {
     val config: ChatConfig
     val pubNub: PubNub
+//
+//    suspend fun createUser(
+//        id: String,
+//        name: String? = null,
+//        externalId: String? = null,
+//        profileUrl: String? = null,
+//        email: String? = null,
+//        custom: CustomObject? = null,
+//        status: String? = null,
+//        type: String? = null
+//    ): User
 
     fun createUser(
         id: String,
@@ -24,10 +34,9 @@ interface Chat {
         custom: CustomObject? = null,
         status: String? = null,
         type: String? = null,
-        callback: (Result<User>) -> Unit,
-    )
+    ): PNFuture<User>
 
-    fun getUser(userId: String, callback: (Result<User?>) -> Unit)
+    fun getUser(userId: String): PNFuture<User?>
 
 
     fun getUsers(
@@ -35,8 +44,7 @@ interface Chat {
         sort: Collection<PNSortKey<PNKey>> = listOf(),
         limit: Int? = null,
         page: PNPage? = null,
-        callback: (Result<GetUsersResponse>) -> Unit
-    )
+    ): PNFuture<GetUsersResponse>
 
 
     fun updateUser(
@@ -49,14 +57,13 @@ interface Chat {
         custom: CustomObject? = null,
         status: String? = null,
         type: String? = null,
-        callback: (Result<User>) -> Unit
-    )
+    ): PNFuture<User>
 
-    fun deleteUser(id: String, soft: Boolean = false, callback: (Result<User>) -> Unit)
+    fun deleteUser(id: String, soft: Boolean = false): PNFuture<User>
 
-    fun wherePresent(userId: String, callback: (Result<List<String>>) -> Unit)
+    fun wherePresent(userId: String): PNFuture<List<String>>
 
-    fun isPresent(userId: String, channel: String, callback: (Result<Boolean>) -> Unit)
+    fun isPresent(userId: String, channel: String): PNFuture<Boolean>
 
     fun createChannel(
         id: String,
@@ -65,18 +72,16 @@ interface Chat {
         custom: CustomObject? = null,
         type: ChannelType? = null,
         status: String? = null,
-        callback: (Result<Channel>) -> Unit
-    )
+    ): PNFuture<Channel>
 
-    fun getChannel(channelId: String, callback: (Result<Channel?>) -> Unit)
+    fun getChannel(channelId: String): PNFuture<Channel?>
 
     fun getChannels(
         filter: String? = null,
         sort: Collection<PNSortKey<PNKey>> = listOf(),
         limit: Int? = null,
         page: PNPage? = null,
-        callback: (Result<GetChannelsResponse>) -> Unit
-    )
+    ): PNFuture<GetChannelsResponse>
 
     fun updateChannel(
         id: String,
@@ -87,14 +92,13 @@ interface Chat {
         updated: String? = null,
         status: String? = null,
         type: ChannelType? = null,
-        callback: (Result<Channel>) -> Unit
-    )
+    ): PNFuture<Channel>
 
-    fun deleteChannel(id: String, soft: Boolean, callback: (Result<Channel>) -> Unit)
+    fun deleteChannel(id: String, soft: Boolean): PNFuture<Channel>
 
-    fun forwardMessage(message: Message, channelId: String, callback: (Result<Unit>) -> Unit)
+    fun forwardMessage(message: Message, channelId: String): PNFuture<Unit>
 
-    fun whoIsPresent(channelId: String, callback: (Result<Collection<String>>) -> Unit)
+    fun whoIsPresent(channelId: String): PNFuture<Collection<String>>
 
     fun publish(
         channelId: String,
@@ -104,12 +108,19 @@ interface Chat {
         usePost: Boolean = false,
         replicate: Boolean = true,
         ttl: Int? = null,
-        callback: (Result<PNPublishResult>) -> Unit,
-    )
+    ): PNFuture<PNPublishResult>
 
     fun <T : EventContent> emitEvent(
         channel: String,
         payload: T,
-        callback: (Result<PNPublishResult>) -> Unit
-    )
+    ): PNFuture<PNPublishResult>
+
+    fun createDirectConversation(
+        invitedUser: User,
+        channelId: String? = null,
+        channelData: Any? = null,
+        membershipData: Any? = null,
+    ): PNFuture<CreateDirectConversationResult>
+    
+    fun signal(channelId: String, message: EventContent): PNFuture<PNPublishResult>
 }

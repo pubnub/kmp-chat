@@ -10,7 +10,9 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.v2.callbacks.Consumer
+import com.pubnub.api.v2.callbacks.Result
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
@@ -18,9 +20,6 @@ import dev.mokkery.mock
 import dev.mokkery.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.kmp.membership.MembershipsResponse
-import dev.mokkery.answering.calls
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
@@ -64,26 +63,26 @@ class UserTest {
     fun canSoftDeleteUser() {
         // given
         val softDeleteTrue = true
-        every { chat.deleteUser(any(), any(), any())} returns Unit
+        every { chat.deleteUser(any(), any())} returns objectUnderTest.asFuture()
 
         // when
-        objectUnderTest.delete(softDeleteTrue, callbackUser)
+        objectUnderTest.delete(softDeleteTrue).async {}
 
         // then
-        verify { chat.deleteUser(id, softDeleteTrue, callbackUser) }
+        verify { chat.deleteUser(id, softDeleteTrue) }
     }
 
     @Test
     fun canHardDeleteUser() {
         // given
         val softDeleteFalse = false
-        every { chat.deleteUser(any(), any(), any()) } returns Unit
+        every { chat.deleteUser(any(), any()) } returns objectUnderTest.asFuture()
 
         // when
-        objectUnderTest.delete(soft = softDeleteFalse, callbackUser)
+        objectUnderTest.delete(soft = softDeleteFalse).async {}
 
         // then
-        verify { chat.deleteUser(id, softDeleteFalse, callbackUser) }
+        verify { chat.deleteUser(id, softDeleteFalse) }
     }
 
     @Test
@@ -98,10 +97,9 @@ class UserTest {
                 email = any(),
                 custom = any(),
                 status = any(),
-                type = any(),
-                callback = any()
+                type = any()
             )
-        } returns Unit
+        } returns objectUnderTest.asFuture()
 
         // when
         objectUnderTest.update(
@@ -111,38 +109,37 @@ class UserTest {
             email = email,
             custom = custom,
             status = status,
-            type = type,
-            callback = callbackUser
-        )
+            type = type
+        ).async {}
 
         // then
-        verify { chat.updateUser(id, name, externalId, profileUrl, email, custom, status, type, callbackUser) }
+        verify { chat.updateUser(id, name, externalId, profileUrl, email, custom, status, type) }
     }
 
     @Test
     fun canWherePresent() {
         // given
         val callback: (Result<List<String>>) -> Unit = {}
-        every { chat.wherePresent(any(), any()) } returns Unit
+        every { chat.wherePresent(any()) } returns emptyList<String>().asFuture()
 
         // when
-        objectUnderTest.wherePresent(callback)
+        objectUnderTest.wherePresent().async {}
 
         // then
-        verify { chat.wherePresent(id, callback) }
+        verify { chat.wherePresent(id) }
     }
 
     @Test
     fun canIsPresentOn() {
         // given
         val callback: (Result<Boolean>) -> Unit = {}
-        every { chat.isPresent(any(), any(), any()) } returns Unit
+        every { chat.isPresent(any(), any()) } returns true.asFuture()
 
         // when
-        objectUnderTest.isPresentOn(channelId = channelId, callback = callback)
+        objectUnderTest.isPresentOn(channelId = channelId).async {}
 
         // then
-        verify { chat.isPresent(id, channelId, callback) }
+        verify { chat.isPresent(id, channelId) }
     }
 
     @Test
@@ -153,11 +150,6 @@ class UserTest {
         val filter = "channel.name LIKE '*super*'"
         val errorMessage = "Strange exception"
         val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
-        val callback: (Result<MembershipsResponse>) -> Unit = { result ->
-        // then
-            assertTrue(result.isFailure)
-            assertEquals("Failed to retrieve getMembership data.", result.exceptionOrNull()?.message)
-        }
         val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub
         every { pubNub.getMemberships(
@@ -175,7 +167,11 @@ class UserTest {
         }
 
         // when
-        objectUnderTest.getMemberships(limit = limit, page = page, filter = filter, sort = sort, callback = callback)
+        objectUnderTest.getMemberships(limit = limit, page = page, filter = filter, sort = sort).async { result ->
+            // then
+            assertTrue(result.isFailure)
+            assertEquals("Failed to retrieve getMembership data.", result.exceptionOrNull()?.message)
+        }
 
         // then
         verify { pubNub.getMemberships(
@@ -197,12 +193,6 @@ class UserTest {
         val page = PNPage.PNNext("nextPageHash")
         val filter = "channel.name LIKE '*super*'"
         val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
-        val callback: (Result<MembershipsResponse>) -> Unit = { result ->
-            // then
-            assertTrue(result.isSuccess)
-            assertEquals(1, result.getOrNull()!!.memberships.size)
-            assertEquals(channelId, result.getOrNull()!!.memberships.first().channel.id)
-        }
         val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub
         every { pubNub.getMemberships(
@@ -220,7 +210,12 @@ class UserTest {
         }
 
         // when
-        objectUnderTest.getMemberships(limit = limit, page = page, filter = filter, sort = sort, callback = callback)
+        objectUnderTest.getMemberships(limit = limit, page = page, filter = filter, sort = sort).async { result ->
+            // then
+            assertTrue(result.isSuccess)
+            assertEquals(1, result.getOrNull()!!.memberships.size)
+            assertEquals(channelId, result.getOrNull()!!.memberships.first().channel.id)
+        }
 
         // then
         verify { pubNub.getMemberships(

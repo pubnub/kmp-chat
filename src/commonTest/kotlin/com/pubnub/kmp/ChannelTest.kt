@@ -4,6 +4,7 @@ import com.pubnub.api.PubNub
 import com.pubnub.api.createJsonElement
 import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.models.consumer.PNBoundedPage
+import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.HistoryMessageType
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
@@ -44,6 +45,7 @@ class ChannelTest {
     private val callback: (Result<Channel>) -> Unit = {}
     private val typingTimeout = 1001.milliseconds
 
+
     @BeforeTest
     fun setUp() {
         every { chat.config } returns chatConfig
@@ -65,7 +67,7 @@ class ChannelTest {
 
     @Test
     fun canUpdateChannel() {
-        every { chat.updateChannel(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
+        every { chat.updateChannel(any(), any(), any(), any(), any(), any(), any()) } returns objectUnderTest.asFuture()
 
         objectUnderTest.update(
             name = name,
@@ -74,43 +76,40 @@ class ChannelTest {
             updated = updated,
             status = status,
             type = type,
-            callback = callback
-        )
+        ).async {}
 
-        verify { chat.updateChannel(channelId, name, custom, description, updated, status, type, callback) }
+        verify { chat.updateChannel(channelId, name, custom, description, updated, status, type) }
     }
 
     @Test
     fun canSoftDeleteChannel() {
         val softDelete = true
-        every { chat.deleteChannel(any(), any(), any()) } returns Unit
+        every { chat.deleteChannel(any(), any()) } returns objectUnderTest.asFuture()
 
-        objectUnderTest.delete(soft = softDelete, callback)
+        objectUnderTest.delete(soft = softDelete).async {}
 
-        verify { chat.deleteChannel(id = channelId, soft = softDelete, callback = callback) }
+        verify { chat.deleteChannel(id = channelId, soft = softDelete) }
     }
 
     @Test
     fun canForwardMessage() {
         val message = createMessage()
         val callback: (Result<Unit>) -> Unit = { }
-        every { chat.forwardMessage(any(), any(), any()) } returns Unit
+        every { chat.forwardMessage(any(), any()) } returns Unit.asFuture()
 
-        objectUnderTest.forwardMessage(message, callback)
+        objectUnderTest.forwardMessage(message).async {}
 
-        verify { chat.forwardMessage(message, channelId, callback) }
+        verify { chat.forwardMessage(message, channelId) }
     }
 
     @Test
     fun whenChannelIsPublicStartTypingShouldResultFailure() {
         objectUnderTest = createChannel(ChannelType.PUBLIC)
-        val callback: (Result<Unit>) -> Unit = { result ->
+        objectUnderTest.startTyping().async { result ->
             // then
             assertTrue(result.isFailure)
             assertEquals("Typing indicators are not supported in Public chats.", result.exceptionOrNull()?.message)
         }
-
-        objectUnderTest.startTyping(callback)
     }
 
     @Test
@@ -124,19 +123,18 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        val callback: (Result<Unit>) -> Unit = { result ->
+        objectUnderTest.startTyping().async { result ->
             // then
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-        objectUnderTest.startTyping(callback)
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any()) }
     }
 
     @Test
     fun whenTypingSentAlreadyButTimeoutExpiredStartTypingShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any(), any()) } returns Unit
+        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
         val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val currentTimeStampInMillis =
             typingSent.plus(typingTimeout).plus(MINIMAL_TYPING_INDICATOR_TIMEOUT).plus(1.milliseconds)
@@ -147,25 +145,23 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        val callback: (Result<Unit>) -> Unit = { result ->
+        objectUnderTest.startTyping().async  { result ->
             // then
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-        objectUnderTest.startTyping(callback)
 
         verify {
             chat.emitEvent(
                 channel = channelId,
-                payload = EventContent.Typing(true),
-                callback = any()
+                payload = EventContent.Typing(true)
             )
         }
     }
 
     @Test
     fun whenTypingNotSendShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any(), any()) } returns Unit
+        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
         val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
             // then
             assertTrue(result.isSuccess)
@@ -173,14 +169,13 @@ class ChannelTest {
         }
 
         // when
-        objectUnderTest.startTyping(callback)
+        objectUnderTest.startTyping().async {}
 
         // then
         verify {
             chat.emitEvent(
                 channel = channelId,
-                payload = EventContent.Typing(true),
-                callback = any()
+                payload = EventContent.Typing(true)
             )
         }
     }
@@ -202,9 +197,9 @@ class ChannelTest {
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-        objectUnderTest.startTyping(callback)
+        objectUnderTest.startTyping().async {}
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any()) }
     }
 
     @Test
@@ -214,7 +209,7 @@ class ChannelTest {
             assertTrue(result.isFailure)
             assertEquals("Typing indicators are not supported in Public chats.", result.exceptionOrNull()?.message)
         }
-        objectUnderTest.stopTyping(callback)
+        objectUnderTest.stopTyping().async {}
     }
 
     @Test
@@ -225,9 +220,9 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        objectUnderTest.stopTyping(callback)
+        objectUnderTest.stopTyping().async {}
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any()) }
     }
 
     @Test
@@ -247,9 +242,9 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        objectUnderTest.stopTyping(callback)
+        objectUnderTest.stopTyping().async {}
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any()) }
 
     }
 
@@ -264,21 +259,20 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        every { chat.emitEvent(any(), any(), any()) } returns Unit
+        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
         val callback: (Result<Unit>) -> Unit = { result ->
             // then
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
         // when
-        objectUnderTest.stopTyping(callback)
+        objectUnderTest.stopTyping().async {}
 
         // then
         verify {
             chat.emitEvent(
                 channel = channelId,
-                payload = EventContent.Typing(false),
-                callback = any()
+                payload = EventContent.Typing(false)
             )
         }
     }
@@ -300,27 +294,24 @@ class ChannelTest {
 
     @Test
     fun canCallIsPresent() {
-        every { chat.isPresent(any(), any(), any()) } returns Unit
+        every { chat.isPresent(any(), any()) } returns true.asFuture()
 
         val callback = { _: Result<Boolean> -> }
         objectUnderTest.isPresent(
-            userId = "user",
-            callback = callback
+            userId = "user"
         )
 
-        verify { chat.isPresent("user", channelId, callback) }
+        verify { chat.isPresent("user", channelId) }
     }
 
     @Test
     fun canCallWhoIsPresent() {
-        every { chat.whoIsPresent(any(), any()) } returns Unit
+        every { chat.whoIsPresent(any()) } returns emptyList<String>().asFuture()
 
         val callback = { _: Result<Collection<String>> -> }
-        objectUnderTest.whoIsPresent(
-            callback = callback
-        )
+        objectUnderTest.whoIsPresent().async {}
 
-        verify { chat.whoIsPresent(channelId, callback) }
+        verify { chat.whoIsPresent(channelId) }
     }
 
     @Test
@@ -368,7 +359,7 @@ class ChannelTest {
         }
 
         // when
-        objectUnderTest.getHistory(startToken, endToken) {
+        objectUnderTest.getHistory(startToken, endToken).async {
             // then
             assertTrue { it.isSuccess }
             it.onSuccess { result ->
@@ -400,7 +391,7 @@ class ChannelTest {
 
     @Test
     fun sendTextAllParametersArePassedToPublish() {
-        every { chat.publish(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
+        every { chat.publish(any(), any(), any(), any(), any(), any(), any()) } returns PNPublishResult(1L).asFuture()
         val messageText = "someText"
         val message = Message(chat, 1000L, EventContent.TextMessageContent(messageText), channelId, "some user", null, null)
         val mentionedUser1 = "mention1"
@@ -420,7 +411,7 @@ class ChannelTest {
             textLinks = listOf(TextLink(1, 20, link)),
             quotedMessage = message,
             null, // todo when files work
-        ) {}
+        ).async {}
 
         verify { chat.publish(
             channelId,
@@ -449,8 +440,7 @@ class ChannelTest {
             true,
             false,
             true,
-            ttl,
-            any()
+            ttl
         ) }
     }
 }
