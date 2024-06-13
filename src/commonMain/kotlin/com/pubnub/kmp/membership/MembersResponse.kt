@@ -2,10 +2,10 @@ package com.pubnub.kmp.membership
 
 import com.pubnub.api.models.consumer.objects.PNPage
 
-data class MembershipsResponse(
+data class MembersResponse(
     val next: PNPage?,
     val prev: PNPage?,
     val total: Int,
     val status: Int,
-    val memberships: Set<Membership>
+    val members: Set<Membership>
 )

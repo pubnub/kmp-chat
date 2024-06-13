@@ -1,6 +1,7 @@
 package com.pubnub.kmp.types
 
 import com.pubnub.api.JsonElement
+import com.pubnub.kmp.ChannelType
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -37,6 +38,10 @@ sealed class EventContent(@Transient open val method: EmitEventMethod = EmitEven
     @Serializable
     @SerialName("mention")
     data class Mention(val messageTimetoken: Long, val channel: String) : EventContent()
+
+    @Serializable
+    @SerialName("invite")
+    data class Invite(val channelType: ChannelType, val channelId: String) : EventContent()
 
     @Serializable
     @SerialName("custom")

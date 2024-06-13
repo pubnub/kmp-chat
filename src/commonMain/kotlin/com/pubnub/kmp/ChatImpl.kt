@@ -8,6 +8,9 @@ import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
+import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
@@ -32,10 +35,12 @@ import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
+import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.user.GetUsersResponse
+import com.pubnub.kmp.utils.cyrb53a
 import kotlin.js.JsExport
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -384,25 +389,34 @@ class ChatImpl(
         invitedUser: User,
         channelId: String?,
         channelData: Any?,
-        membershipData: Any?
+        custom: CustomObject?,
     ): PNFuture<CreateDirectConversationResult> {
-        TODO("Not implemented yet")
-//        val user = this.user ?: error("Chat user is not set. Set them by calling setChatUser on the Chat instance.")
-//        val sortedUsers = listOf(invitedUser.id, user.id).sorted()
-//        val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
-//
-//
-//        return getChannel(finalChannelId).thenAsync { channel -> // big fat TODO
-//            if (channel == null) {
-//                createChannel(finalChannelId, type = ChannelType.DIRECT).then {
-//                    CreateDirectConversationResult()
-//                }
-//            } else {
-//                CreateDirectConversationResult().asFuture()
-//            }
-//        }
-    }
+        val user = this.user ?: error("Chat user is not set. Set them by calling setChatUser on the Chat instance.")
+        val sortedUsers = listOf(invitedUser.id, user.id).sorted()
+        val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
 
+        return getChannel(finalChannelId).thenAsync { channel ->
+            channel?.asFuture() ?: createChannel(finalChannelId, type = ChannelType.DIRECT)
+        }.thenAsync { channel: Channel ->
+            val hostMembershipFuture = pubNub.setMemberships(
+                listOf(PNChannelMembership.Partial(channel.id, custom)),
+                filter = "channel.id == '${channel.id}'",
+                includeCustom = true,
+                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+                includeCount = true
+            )
+            awaitAll(
+                hostMembershipFuture,
+                channel.invite(invitedUser)
+            ).then { (hostMembershipResponse: PNChannelMembershipArrayResult, inviteeMembership: Membership) ->
+                CreateDirectConversationResult(
+                    channel,
+                    Membership.fromMembershipDTO(this, hostMembershipResponse.data.first(), user),
+                    Membership(this, channel, invitedUser, inviteeMembership),
+                )
+            }
+        }
+    }
 
     override fun whoIsPresent(channelId: String): PNFuture<Collection<String>> {
         if (!isValidId(channelId)) {

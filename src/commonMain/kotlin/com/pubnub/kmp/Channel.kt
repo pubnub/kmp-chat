@@ -6,10 +6,19 @@ import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
+import com.pubnub.api.models.consumer.objects.PNMemberKey
+import com.pubnub.api.models.consumer.objects.PNPage
+import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
+import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
+import com.pubnub.kmp.membership.MembersResponse
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.File
@@ -186,6 +195,52 @@ data class Channel(
         }
 
 
+    fun invite(user: User) : PNFuture<Membership> {
+        if (this.type == ChannelType.PUBLIC) {
+            return PubNubException("Channel invites are not supported in Public chats.").asFuture()
+        }
+        return getMembers(filter = "uuid.id == '${user.id}'").thenAsync { channelMembers: MembersResponse ->
+            if (channelMembers.members.isNotEmpty()) {
+                return@thenAsync channelMembers.members.first().asFuture()
+            } else {
+                chat.pubNub.setMemberships(
+                    channels = listOf(PNChannelMembership.Partial(this.id)),
+                    uuid = user.id,
+                    includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+                    includeCustom = true,
+                    includeCount = true,
+                    filter = "channel.id == '${this.id}"
+                ).then { setMembershipsResult ->
+                    Membership.fromMembershipDTO(chat, setMembershipsResult.data.first(), user)
+                }.thenAsync { membership ->
+                    chat.pubNub.time().thenAsync { time ->
+                        membership.setLastReadMessageTimetoken(time.timetoken)
+                    }
+                }.alsoAsync {
+                    chat.emitEvent(user.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
+                }
+            }
+        }
+    }
+
+    fun getMembers(limit: Int? = null, page: PNPage? = null, filter: String? = null, sort: Collection<PNSortKey<PNMemberKey>> = listOf()): PNFuture<MembersResponse> {
+        return chat.pubNub.getChannelMembers(
+            this.id,
+            limit = limit,
+            page = page,
+            filter = filter,
+            sort = sort,
+            includeCustom = true,
+            includeCount = true,
+            includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
+        ).then { it: PNMemberArrayResult ->
+            MembersResponse(it.next, it.prev, it.totalCount!!, it.status, it.data.map {
+                Membership.fromChannelMemberDTO(chat, it, this)
+            }.toSet() )
+        }
+    }
+
+
     private fun emitUserMention(
         userId: String,
         timetoken: Long,
@@ -208,8 +263,34 @@ data class Channel(
     internal fun setTypingSent(value: Instant) {
         typingSent = value
     }
+
+    companion object {
+        fun fromDTO(chat: Chat, channel: PNChannelMetadata): Channel {
+            return Channel(chat,
+                id = channel.id,
+                name = channel.name,
+                custom = channel.custom?.let { createCustomObject(it) },
+                description = channel.description,
+                updated = channel.updated,
+                status = channel.status,
+                type = ChannelType.parse(channel.type)
+            )
+        }
+    }
 }
 
 enum class ChannelType {
-    DIRECT, GROUP, PUBLIC;
+    DIRECT, GROUP, PUBLIC, UNKNOWN;
+    companion object {
+        fun parse(type: String?): ChannelType {
+            if (type == null) {
+                return UNKNOWN
+            }
+            return try {
+                valueOf(type.uppercase())
+            } catch (e: Exception) {
+                UNKNOWN
+            }
+        }
+    }
 }
