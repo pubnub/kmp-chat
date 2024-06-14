@@ -6,12 +6,14 @@ import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
+import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.types.EventParams
 import com.pubnub.kmp.types.File
 import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
@@ -37,8 +39,7 @@ data class Channel(
     private val suggestedNames = mutableMapOf<String, List<Membership>>()
     private var disconnect: (() -> Unit)? = null
     private var typingSent: Instant? = null
-    private var typingIndicators =
-        mutableMapOf<String, String>() //todo probably should be something like mutableMapOf<String, TimerTask>()
+    private var typingIndicators = mutableMapOf<String, Instant>()
     private val sendTextRateLimiter: String? = null // todo should be ExponentialRateLimiter instead of String
 
     fun update(
@@ -94,6 +95,30 @@ data class Channel(
         return sendTypingSignal(false)
     }
 
+    fun getTyping(callback: (typingUserIds: Result<Collection<String>>) -> Unit){
+        if (type == ChannelType.PUBLIC) {
+            callback(Result.failure(Exception(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message))) //todo change to PubNub exception
+            return
+        }
+        val eventCallback: (Result<Event<EventContent.Typing>>) -> Unit = { result: Result<Event<EventContent.Typing>> ->
+            result.onSuccess { event: Event<EventContent.Typing> ->
+                if(event.channelId != id){
+                    result
+                }
+                val now = clock.now()
+                val userId = event.userId
+                val isTyping = event.payload.value
+                updateUserTypingStatus(userId, isTyping, now)
+                removeExpiredTypingIndicators(now)
+                callback(Result.success(typingIndicators.keys.toList()))
+            }.onFailure {
+                callback(Result.failure(it))
+            }
+        }
+
+        chat.listenForEvents(eventParams = EventParams.Typing(this.id), callback = eventCallback )
+    }
+
     fun whoIsPresent(): PNFuture<Collection<String>> {
         return chat.whoIsPresent(id)
     }
@@ -108,8 +133,8 @@ data class Channel(
             PNBoundedPage(startTimetoken, endTimetoken, count),
             includeMessageActions = true,
             includeMeta = true
-        ).then { value ->
-                value.channels[id]?.map { messageItem: PNFetchMessageItem ->
+        ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
+                pnFetchMessagesResult.channels[id]?.map { messageItem: PNFetchMessageItem ->
                     val eventContent = try {
                         messageItem.message.asString()?.let { text ->
                             EventContent.TextMessageContent(text, null)
@@ -207,6 +232,30 @@ data class Channel(
 
     internal fun setTypingSent(value: Instant) {
         typingSent = value
+    }
+
+    private fun updateUserTypingStatus(userId: String, isTyping: Boolean, now: Instant) {
+        if (typingIndicators[userId] != null) {
+            if (isTyping) {
+                typingIndicators[userId] = now
+            } else {
+                typingIndicators.remove(userId)
+            }
+        } else {
+            if (isTyping) {
+                typingIndicators[userId] = now
+            }
+        }
+    }
+
+    private fun removeExpiredTypingIndicators(now: Instant) {
+        val iterator = typingIndicators.entries.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (timeoutElapsed(entry.value, now)) {
+                iterator.remove()
+            }
+        }
     }
 }
 

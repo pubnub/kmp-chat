@@ -5,9 +5,11 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.channel.GetChannelsResponse
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.types.EventParams
 import com.pubnub.kmp.user.GetUsersResponse
 
 interface Chat {
@@ -123,4 +125,6 @@ interface Chat {
     ): PNFuture<CreateDirectConversationResult>
     
     fun signal(channelId: String, message: EventContent): PNFuture<PNPublishResult>
+
+    fun <T: EventContent> listenForEvents(eventParams: EventParams, callback: (event: Result<Event<T>>) -> Unit) : (Unit) -> Unit
 }

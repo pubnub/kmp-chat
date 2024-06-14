@@ -15,10 +15,10 @@ data class File(
 )
 
 @Serializable
-sealed class EventContent(@Transient open val method: EmitEventMethod = EmitEventMethod.PUBLISH) {
+sealed class EventContent(open val type: String, @Transient open val method: EmitEventMethod = EmitEventMethod.PUBLISH) {
     @Serializable
     @SerialName("typing")
-    data class Typing(val value: Boolean) : EventContent(EmitEventMethod.SIGNAL)
+    data class Typing(val value: Boolean) : EventContent("typing", EmitEventMethod.SIGNAL)
 
     @Serializable
     @SerialName("report")
@@ -28,26 +28,26 @@ sealed class EventContent(@Transient open val method: EmitEventMethod = EmitEven
         val reportedMessageTimetoken: Long?,
         val reportedMessageChannelId: String?,
         val reportedUserId: String?,
-    ) : EventContent()
+    ) : EventContent("report")
 
     @Serializable
     @SerialName("receipt")
-    data class Receipt(val messageTimetoken: Long) : EventContent(EmitEventMethod.SIGNAL)
+    data class Receipt(val messageTimetoken: Long) : EventContent("receipt", EmitEventMethod.SIGNAL)
 
     @Serializable
     @SerialName("mention")
-    data class Mention(val messageTimetoken: Long, val channel: String) : EventContent()
+    data class Mention(val messageTimetoken: Long, val channel: String) : EventContent("mention")
 
     @Serializable
     @SerialName("custom")
-    data class Custom(@Contextual val data: Any, @Transient override val method: EmitEventMethod = EmitEventMethod.PUBLISH) : EventContent(method)
+    data class Custom(@Contextual val data: Any, @Transient override val method: EmitEventMethod = EmitEventMethod.PUBLISH) : EventContent("custom", method)
 
     @Serializable
     @SerialName("text")
     open class TextMessageContent(
         val text: String,
         val files: List<File>? = null,
-    ) : EventContent() {
+    ) : EventContent("text") {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is TextMessageContent) return false

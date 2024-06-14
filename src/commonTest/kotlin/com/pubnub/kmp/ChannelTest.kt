@@ -443,4 +443,35 @@ class ChannelTest {
             ttl
         ) }
     }
+
+
+    @Test
+    fun whenChannelIsPublicGetTypingShouldResultFailure() {
+        objectUnderTest = createChannel(ChannelType.PUBLIC)
+        val callback: (Result<Collection<String>>) -> Unit = { result ->
+            assertTrue(result.isFailure)
+            assertEquals("Typing indicators are not supported in Public chats.", result.exceptionOrNull()?.message)
+        }
+        objectUnderTest.getTyping(callback)
+    }
+
+    @Test
+    fun shouldUpdateTypingTimeWhenUserIsTyping() {
+        //todo whenTypingStatusIndicateThatUserIsTypingAndTypingEventReceiveGetTypingShouldUpdateTime
+    }
+
+    @Test
+    fun shouldRemoveTypingStatusWhenUserStopsTyping() {
+        //todo whenTypingStatusIndicateThatUserIsTypingAndNotTypingEventReceiveGetTypingShouldRemoveTypingStatus
+    }
+
+    @Test
+    fun shouldCreateTypingStatusWhenUserStartsTyping() {
+        //todo whenThereIsNoTypingStatusForUserAndTypingEventReceiveGetTypingShouldCreateTypingStatus
+    }
+
+    @Test
+    fun getTypingShouldRemoveExpiredTypingIndicators() {
+        //todo
+    }
 }
