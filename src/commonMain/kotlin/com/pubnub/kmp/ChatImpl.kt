@@ -388,7 +388,10 @@ class ChatImpl(
     override fun createDirectConversation(
         invitedUser: User,
         channelId: String?,
-        channelData: Any?,
+        channelName: String?,
+        channelDescription: String?,
+        channelCustom: CustomObject?,
+        channelStatus: String?,
         custom: CustomObject?,
     ): PNFuture<CreateDirectConversationResult> {
         val user = this.user ?: error("Chat user is not set. Set them by calling setChatUser on the Chat instance.")
@@ -396,14 +399,21 @@ class ChatImpl(
         val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
 
         return getChannel(finalChannelId).thenAsync { channel ->
-            channel?.asFuture() ?: createChannel(finalChannelId, type = ChannelType.DIRECT)
+            channel?.asFuture() ?: createChannel(
+                finalChannelId,
+                channelName,
+                channelDescription,
+                channelCustom,
+                ChannelType.DIRECT,
+                channelStatus
+            )
         }.thenAsync { channel: Channel ->
             val hostMembershipFuture = pubNub.setMemberships(
                 listOf(PNChannelMembership.Partial(channel.id, custom)),
                 filter = "channel.id == '${channel.id}'",
                 includeCustom = true,
                 includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-                includeCount = true
+                includeCount = true,
             )
             awaitAll(
                 hostMembershipFuture,
@@ -412,7 +422,7 @@ class ChatImpl(
                 CreateDirectConversationResult(
                     channel,
                     Membership.fromMembershipDTO(this, hostMembershipResponse.data.first(), user),
-                    Membership(this, channel, invitedUser, inviteeMembership),
+                    inviteeMembership,
                 )
             }
         }

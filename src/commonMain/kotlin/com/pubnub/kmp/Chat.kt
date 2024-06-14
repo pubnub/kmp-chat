@@ -118,8 +118,11 @@ interface Chat {
     fun createDirectConversation(
         invitedUser: User,
         channelId: String?,
-        channelData: Any?,
-        custom: CustomObject?,
+        channelName: String? = null,
+        channelDescription: String? = null,
+        channelCustom: CustomObject? = null,
+        channelStatus: String? = null,
+        custom: CustomObject? = null,
     ): PNFuture<CreateDirectConversationResult>
     
     fun signal(channelId: String, message: EventContent): PNFuture<PNPublishResult>
