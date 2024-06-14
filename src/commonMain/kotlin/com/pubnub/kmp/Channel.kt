@@ -5,11 +5,13 @@ import com.pubnub.api.asString
 import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.PNTimeResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
 import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
@@ -199,7 +201,7 @@ data class Channel(
         if (this.type == ChannelType.PUBLIC) {
             return PubNubException("Channel invites are not supported in Public chats.").asFuture()
         }
-        return getMembers(filter = "uuid.id == '${user.id}'").thenAsync { channelMembers: MembersResponse ->
+        return getMembers(filter = user.uuidFilterString).thenAsync { channelMembers: MembersResponse ->
             if (channelMembers.members.isNotEmpty()) {
                 return@thenAsync channelMembers.members.first().asFuture()
             } else {
@@ -209,7 +211,7 @@ data class Channel(
                     includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
                     includeCustom = true,
                     includeCount = true,
-                    filter = "channel.id == '${this.id}"
+                    filter = channelFilterString
                 ).then { setMembershipsResult ->
                     Membership.fromMembershipDTO(chat, setMembershipsResult.data.first(), user)
                 }.thenAsync { membership ->
@@ -220,6 +222,29 @@ data class Channel(
                     chat.emitEvent(user.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
                 }
             }
+        }
+    }
+
+    fun inviteMultiple(users: Collection<User>) : PNFuture<Array<Membership>> {
+        if (this.type == ChannelType.PUBLIC) {
+            return PubNubException("Channel invites are not supported in Public chats.").asFuture()
+        }
+        return chat.pubNub.setChannelMembers(
+            this.id,
+            users.map { PNMember.Partial(it.id) },
+            includeCustom = true,
+            includeCount = true,
+            includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
+            filter = users.joinToString(" || ") { it.uuidFilterString }
+        ).thenAsync { memberArrayResult: PNMemberArrayResult ->
+            chat.pubNub.time().thenAsync { time: PNTimeResult ->
+                val futures: List<PNFuture<Membership>> = memberArrayResult.data.map { Membership.fromChannelMemberDTO(chat, it, this).setLastReadMessageTimetoken(time.timetoken) }
+                futures.awaitAll()
+            }
+        }.alsoAsync {
+            users.map { u ->
+                chat.emitEvent(u.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
+            }.awaitAll()
         }
     }
 
@@ -263,6 +288,8 @@ data class Channel(
     internal fun setTypingSent(value: Instant) {
         typingSent = value
     }
+
+    internal val channelFilterString = "channel.id == '${this.id}'"
 
     companion object {
         fun fromDTO(chat: Chat, channel: PNChannelMetadata): Channel {

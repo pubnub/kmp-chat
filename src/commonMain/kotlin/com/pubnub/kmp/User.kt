@@ -102,6 +102,9 @@ data class User(
             }
         return memberships
     }
+
+    internal val uuidFilterString = "uuid.id == '${this.id}'"
+
 //
 //    private fun getChannel(pnChannelMembership: PNChannelMembership): Channel {
 //        return Channel(
