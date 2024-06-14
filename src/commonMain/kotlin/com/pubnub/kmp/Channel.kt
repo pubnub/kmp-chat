@@ -6,11 +6,7 @@ import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
-import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.api.v2.callbacks.map
-import com.pubnub.api.v2.callbacks.mapCatching
-import com.pubnub.api.v2.callbacks.wrapException
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
@@ -52,23 +48,21 @@ data class Channel(
         updated: String? = null,
         status: String? = null,
         type: ChannelType? = null,
-        callback: (Result<Channel>) -> Unit
-    ) {
-        chat.updateChannel(id, name, custom, description, updated, status, type, callback)
+    ): PNFuture<Channel> {
+        return chat.updateChannel(id, name, custom, description, updated, status, type)
     }
 
-    fun delete(soft: Boolean = false, callback: (Result<Channel>) -> Unit) {
-        chat.deleteChannel(id, soft, callback)
+    fun delete(soft: Boolean = false): PNFuture<Channel> {
+        return chat.deleteChannel(id, soft)
     }
 
-    fun forwardMessage(message: Message, callback: (Result<Unit>) -> Unit) {
-        chat.forwardMessage(message, this.id, callback)
+    fun forwardMessage(message: Message): PNFuture<Unit> {
+        return chat.forwardMessage(message, this.id)
     }
 
-    fun startTyping(callback: (Result<Unit>) -> Unit) {
+    fun startTyping() : PNFuture<Unit> {
         if (type == ChannelType.PUBLIC) {
-            callback(Result.failure(Exception(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message)))
-            return
+            return PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message).asFuture()
         }
 
         val now = clock.now()
@@ -76,51 +70,45 @@ data class Channel(
         //  Writing TypeScript wrapper make sure to mimic this behaviour. In KMP the lowest possible value for this timeout is 1000(millis)
         typingSent?.let { typingSentNotNull: Instant ->
             if (!timeoutElapsed(typingSentNotNull, now)) {
-                callback(Result.success(Unit))
-                return
+                return Unit.asFuture()
             }
         }
 
         typingSent = now
-        sendTypingSignal(true, callback)
+        return sendTypingSignal(true)
     }
 
-    fun stopTyping(callback: (Result<Unit>) -> Unit) {
+    fun stopTyping() : PNFuture<Unit> {
         if (type == ChannelType.PUBLIC) {
-            callback(Result.failure(Exception(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message)))
-            return
+            return PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message).asFuture()
         }
 
         typingSent?.let { typingSentNotNull: Instant ->
             val now = clock.now()
             if(timeoutElapsed(typingSentNotNull, now)) {
-                callback(Result.success(Unit))
-                return
+                return Unit.asFuture()
             }
-        } ?: run {
-            callback(Result.success(Unit))
-            return
-        }
+        } ?: return Unit.asFuture()
+
         typingSent = null
-        sendTypingSignal(false, callback)
+        return sendTypingSignal(false)
     }
 
-    fun whoIsPresent(callback: (Result<Collection<String>>) -> Unit) {
-        chat.whoIsPresent(id, callback)
+    fun whoIsPresent(): PNFuture<Collection<String>> {
+        return chat.whoIsPresent(id)
     }
 
-    fun isPresent(userId: String, callback: (Result<Boolean>) -> Unit) {
-        chat.isPresent(userId, id, callback)
+    fun isPresent(userId: String): PNFuture<Boolean> {
+        return chat.isPresent(userId, id)
     }
 
-    fun getHistory(startTimetoken: Long? = null, endTimetoken: Long? = null, count: Int? = 25, callback: (Result<List<Message>>) -> Unit) {
-        chat.pubNub.fetchMessages(
+    fun getHistory(startTimetoken: Long? = null, endTimetoken: Long? = null, count: Int? = 25): PNFuture<List<Message>> {
+        return chat.pubNub.fetchMessages(
             listOf(id),
             PNBoundedPage(startTimetoken, endTimetoken, count),
             includeMessageActions = true,
             includeMeta = true
-        ).async { result: Result<PNFetchMessagesResult> ->
-            callback(result.mapCatching { value ->
+        ).then { value ->
                 value.channels[id]?.map { messageItem: PNFetchMessageItem ->
                     val eventContent = try {
                         messageItem.message.asString()?.let { text ->
@@ -140,11 +128,11 @@ data class Channel(
                         messageItem.meta?.decode()?.let { it as Map<String,Any>? }
                     )
                 } ?: error("Unable to read messages")
-            }.wrapException {
-                PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA.message, it)
-            })
+            }.catch {
+                Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA.message, it))
+            }
         }
-    }
+
 
     fun sendText(
         text: String,
@@ -156,12 +144,10 @@ data class Channel(
         referencedChannels: Map<Int, MessageReferencedChannel>? = null,
         textLinks: List<TextLink>? = null,
         quotedMessage: Message? = null,
-        files: List<File>? = null,
-        callback: (Result<PNPublishResult>) -> Unit
-    ) {
+        files: List<File>? = null
+    ): PNFuture<PNPublishResult> {
         if (quotedMessage != null && quotedMessage.channelId != id) {
-            callback(Result.failure(IllegalArgumentException("You cannot quote messages from other channels")))
-            return
+            return PubNubException("You cannot quote messages from other channels").asFuture()
         }
         files?.forEach {
             //chat.pubNub todo sendFile here once implemented
@@ -179,47 +165,44 @@ data class Channel(
                 ))
             }
         }
-        chat.publish(
+        return chat.publish(
             channelId = id,
             message = EventContent.TextMessageContent(text, null), //todo files
             meta = newMeta,
             shouldStore = shouldStore,
             usePost = usePost,
             ttl = ttl,
-        ) { result: Result<PNPublishResult> ->
-            result.onSuccess { publishResult: PNPublishResult ->
+        ).then { publishResult: PNPublishResult ->
                 //todo chat SDK seems to ignore results of emitting these events?
                 try {
                     mentionedUsers?.forEach {
-                        emitUserMention(it.value.id, publishResult.timetoken, text) { }
+                        emitUserMention(it.value.id, publishResult.timetoken, text).async {}
                     }
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                    //todo log
+                }
+                publishResult
             }
-            callback(result)
         }
-    }
+
 
     private fun emitUserMention(
         userId: String,
         timetoken: Long,
         text: String, //todo need to add push payload including this once push is implemented here
-        callback: (Result<PNPublishResult>) -> Unit
-    ) {
-        chat.emitEvent(userId, EventContent.Mention(timetoken, id), callback)
+    ): PNFuture<PNPublishResult> {
+        return chat.emitEvent(userId, EventContent.Mention(timetoken, id))
     }
 
     private fun timeoutElapsed(lastTypingSent: Instant, now: Instant): Boolean {
         return lastTypingSent < now - maxOf(chat.config.typingTimeout, MINIMAL_TYPING_INDICATOR_TIMEOUT)
     }
 
-    private fun sendTypingSignal(value: Boolean, callback: (Result<Unit>) -> Unit) {
-        chat.emitEvent(
+    private fun sendTypingSignal(value: Boolean): PNFuture<Unit> {
+        return chat.emitEvent(
             channel = this.id,
-            payload = EventContent.Typing(value),
-            callback = { result: Result<PNPublishResult> ->
-                callback(result.map { Unit })
-            }
-        )
+            payload = EventContent.Typing(value)
+        ).then { Unit }
     }
 
     internal fun setTypingSent(value: Instant) {

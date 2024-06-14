@@ -1,5 +1,6 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
@@ -33,24 +34,23 @@ data class User(
         custom: CustomObject? = null,
         status: String? = null,
         type: String? = null,
-        callback: (Result<User>) -> Unit
-    ) {
-        chat.updateUser(
+    ): PNFuture<User> {
+        return chat.updateUser(
             id, name, externalId, profileUrl, email,
-            custom, status, type, callback
+            custom, status, type
         )
     }
 
-    fun delete(soft: Boolean = false, callback: (Result<User>) -> Unit) {
-        chat.deleteUser(id, soft, callback)
+    fun delete(soft: Boolean = false): PNFuture<User> {
+        return chat.deleteUser(id, soft)
     }
 
-    fun wherePresent(callback: (Result<List<String>>) -> Unit) {
-        chat.wherePresent(id, callback)
+    fun wherePresent(): PNFuture<List<String>> {
+        return chat.wherePresent(id)
     }
 
-    fun isPresentOn(channelId: String, callback: (Result<Boolean>) -> Unit) {
-        chat.isPresent(id, channelId, callback)
+    fun isPresentOn(channelId: String): PNFuture<Boolean> {
+        return chat.isPresent(id, channelId)
     }
 
     fun getMemberships(
@@ -58,11 +58,10 @@ data class User(
         page: PNPage? = null,
         filter: String? = null,
         sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
-        callback: (Result<MembershipsResponse>) -> Unit
-    ) {
+    ): PNFuture<MembershipsResponse> {
         val includeParameters = IncludeParameters()
 
-        chat.pubNub.getMemberships(
+        return chat.pubNub.getMemberships(
             uuid = id,
             limit = limit,
             page = page,
@@ -71,22 +70,18 @@ data class User(
             includeCount = includeParameters.totalCount,
             includeCustom = includeParameters.customFields,
             includeChannelDetails = getChannelDetailsType(includeParameters.customChannelFields)
-        ).async { result: Result<PNChannelMembershipArrayResult> ->
-            result.onSuccess { pnChannelMembershipArrayResult ->
-                val membershipsResponse = MembershipsResponse(
+        ).then { pnChannelMembershipArrayResult ->
+                MembershipsResponse(
                     next = pnChannelMembershipArrayResult.next,
                     prev = pnChannelMembershipArrayResult.prev,
                     total = pnChannelMembershipArrayResult.totalCount ?: 0,
                     status = pnChannelMembershipArrayResult.status.toString(),
                     memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this).toSet()
                 )
-                callback(Result.success(membershipsResponse))
-            }.onFailure { error ->
-                callback(Result.failure(Exception(FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA.message, error)))
+            }.catch { exception ->
+                Result.failure(PubNubException(FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA.message, exception))
             }
-
         }
-    }
 
     private fun getChannelDetailsType(includeChannelWithCustom: Boolean): PNChannelDetailsLevel {
         return if (includeChannelWithCustom) {
@@ -120,7 +115,7 @@ data class User(
             description = pnChannelMembership.channel?.description,
             updated = pnChannelMembership.channel?.updated,
             status = pnChannelMembership.channel?.status,
-            type = ChannelType.DIRECT, //todo not sure about this
+            type = pnChannelMembership.channel?.type?.uppercase()?.let { ChannelType.valueOf(it) } ?: ChannelType.DIRECT, //todo not sure about this
         )
     }
 

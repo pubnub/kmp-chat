@@ -30,7 +30,6 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
-import com.pubnub.kmp.channel.GetChannelsResponse
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
 import com.pubnub.kmp.user.GetUsersResponse
@@ -106,20 +105,11 @@ class ChatTest {
         every { getUUIDMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNUUIDMetadataResult>>) ->
             callback1.accept(Result.failure(pnException404))
         }
-        every { pubnub.setUUIDMetadata(any(), any(), any(), any(), any(), any(), any(),any(),any())
+        every {
+            pubnub.setUUIDMetadata(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } returns setUUIDMetadataEndpoint
         every { setUUIDMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNUUIDMetadataResult>>) ->
             callback1.accept(Result.success(pnUuidMetadataResult))
-        }
-        val callback: (Result<User>) -> Unit = { result: Result<User> ->
-            assertTrue(result.isSuccess)
-            assertEquals(id, result.getOrNull()?.id)
-            assertEquals(name, result.getOrNull()?.name)
-            assertEquals(externalId, result.getOrNull()?.externalId)
-            assertEquals(profileUrl, result.getOrNull()?.profileUrl)
-            assertEquals(email, result.getOrNull()?.email)
-            assertEquals(status, result.getOrNull()?.status)
-            assertEquals(typeAsString, result.getOrNull()?.type)
         }
 
         // when
@@ -131,9 +121,19 @@ class ChatTest {
             email = email,
             custom = custom,
             status = status,
-            type = typeAsString,
-            callback = callback
-        )
+            type = typeAsString
+        ).async { result: Result<User> ->
+            assertTrue(result.isSuccess)
+            result.onSuccess {
+                assertEquals(id, it.id)
+                assertEquals(name, it.name)
+                assertEquals(externalId, it.externalId)
+                assertEquals(profileUrl, it.profileUrl)
+                assertEquals(email, it.email)
+                assertEquals(status, it.status)
+                assertEquals(typeAsString, it.type)
+            }
+        }
     }
 
     @Test
@@ -143,12 +143,6 @@ class ChatTest {
             callback1.accept(Result.success(getPNUuidMetadataResult()))
         }
 
-        val callback: (Result<User>) -> Unit = { result: Result<User> ->
-            assertTrue(result.isFailure)
-            assertEquals("User with this ID already exists", result.exceptionOrNull()?.message)
-
-        }
-
         // when
         objectUnderTest.createUser(
             id = id,
@@ -158,9 +152,12 @@ class ChatTest {
             email = email,
             custom = custom,
             status = status,
-            type = typeAsString,
-            callback = callback
-        )
+            type = typeAsString
+        ).async { result: Result<User> ->
+            assertTrue(result.isFailure)
+            assertEquals("User with this ID already exists", result.exceptionOrNull()?.message)
+
+        }
     }
 
     @Test
@@ -183,9 +180,10 @@ class ChatTest {
             email = email,
             custom = custom,
             status = status,
-            type = typeAsString,
-            callback = callback
-        )
+            type = typeAsString
+        ).async {
+
+        }
 
         // then
         verify { pubnub.getUUIDMetadata(uuid = id, includeCustom = false) }
@@ -206,7 +204,7 @@ class ChatTest {
         val softDeleteFalse = false
 
         // when
-        objectUnderTest.deleteUser(id, softDeleteFalse, callback)
+        objectUnderTest.deleteUser(id, softDeleteFalse).async {}
 
         // then
         verify { pubnub.removeUUIDMetadata(uuid = id) }
@@ -240,7 +238,7 @@ class ChatTest {
         val includeCustomFalse = false
 
         // when
-        objectUnderTest.deleteUser(id, softDelete, callback)
+        objectUnderTest.deleteUser(id, softDelete).async {}
 
         // then
         verify {
@@ -263,14 +261,13 @@ class ChatTest {
         // given
         val emptyID = ""
         val softDelete = true
-        val callback: (Result<User>) -> Unit = { result: Result<User> ->
+
+        // when
+        objectUnderTest.deleteUser(emptyID, softDelete).async { result: Result<User> ->
             // then
             assertTrue(result.isFailure)
             assertEquals("Id is required", result.exceptionOrNull()?.message)
         }
-
-        // when
-        objectUnderTest.deleteUser(emptyID, softDelete, callback)
     }
 
     @Test
@@ -279,22 +276,20 @@ class ChatTest {
         val whereNowEndpoint: WhereNow = mock(MockMode.strict)
         val channel01 = "myChannel1"
         val channel02 = "myChannel02"
-        val pnWhereNowResult: PNWhereNowResult = PNWhereNowResult(listOf(channel01, channel02))
+        val pnWhereNowResult = PNWhereNowResult(listOf(channel01, channel02))
         every { pubnub.whereNow(any()) } returns whereNowEndpoint
         every { whereNowEndpoint.async(any()) } calls { (callback: Consumer<Result<PNWhereNowResult>>) ->
             callback.accept(Result.success(pnWhereNowResult))
         }
 
-        val callback: (Result<List<String>>) -> Unit = { result: Result<List<String>> ->
+        // when
+        objectUnderTest.wherePresent(id).async { result: Result<List<String>> ->
             // then
             assertTrue(result.isSuccess)
             assertFalse(result.getOrNull()!!.isEmpty())
             assertTrue(result.getOrNull()!!.contains(channel01))
             assertTrue(result.getOrNull()!!.contains(channel02))
         }
-
-        // when
-        objectUnderTest.wherePresent(id, callback)
     }
 
     @Test
@@ -310,28 +305,25 @@ class ChatTest {
             callback.accept(Result.success(pnWhereNowResult))
         }
 
-        val callback: (Result<Boolean>) -> Unit = { result: Result<Boolean> ->
+        // when
+        objectUnderTest.isPresent(id, channelId).async { result: Result<Boolean> ->
             // then
             assertTrue(result.isSuccess)
             assertTrue(result.getOrNull()!!)
         }
-
-        // when
-        objectUnderTest.isPresent(id, channelId, callback)
     }
 
     @Test
     fun whenChannelIdIsEmptyThen_isPresent_shouldResultsFailure() {
         // given
         val emptyChannelId = ""
-        val callback: (Result<Boolean>) -> Unit = { result: Result<Boolean> ->
+
+        // when
+        objectUnderTest.isPresent(id, emptyChannelId).async { result: Result<Boolean> ->
             // then
             assertTrue(result.isFailure)
             assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
-
-        // when
-        objectUnderTest.isPresent(id, emptyChannelId, callback)
     }
 
     @Test
@@ -354,43 +346,41 @@ class ChatTest {
             callback.accept(Result.success(pnHereNowResult))
         }
 
-        val callback: (Result<Collection<String>>) -> Unit = { result: Result<Collection<String>> ->
+        // when
+        objectUnderTest.whoIsPresent(channelId).async { result: Result<Collection<String>> ->
             // then
             assertTrue(result.isSuccess)
-            assertTrue { result.getOrNull()?.contains(user01) == true }
-            assertTrue { result.getOrNull()?.contains(user02) == true }
+            result.onSuccess {
+                assertTrue { it.contains(user01) }
+                assertTrue { it.contains(user02) }
+            }
         }
-
-        // when
-        objectUnderTest.whoIsPresent(channelId, callback)
     }
 
     @Test
     fun whenChannelIdIsEmptyThen_whoIsPresent_shouldResultsFailure() {
         // given
         val emptyChannelId = ""
-        val callback: (Result<Collection<String>>) -> Unit = { result: Result<Collection<String>> ->
+
+        // when
+        objectUnderTest.whoIsPresent(emptyChannelId).async { result: Result<Collection<String>> ->
             // then
             assertTrue(result.isFailure)
             assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
-
-        // when
-        objectUnderTest.whoIsPresent(emptyChannelId, callback)
     }
 
     @Test
     fun whenChannelIdIsEmptyResultShouldContainException() {
         // given
         val channelId = ""
-        val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
+
+        // when
+        objectUnderTest.updateChannel(id = channelId).async { result: Result<Channel> ->
             // then
             assertTrue(result.isFailure)
             assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
-
-        // when
-        objectUnderTest.updateChannel(id = channelId, callback = callback)
     }
 
     @Test
@@ -413,14 +403,13 @@ class ChatTest {
         every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(Exception("Error calling setChannelMetadata")))
         }
-        val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
+
+        // when
+        objectUnderTest.updateChannel(id = id).async { result: Result<Channel> ->
             // then
             assertTrue(result.isFailure)
             assertTrue(result.exceptionOrNull()?.message!!.contains("Failed to create/update channel data"))
         }
-
-        // when
-        objectUnderTest.updateChannel(id = id, callback = callback)
     }
 
     @Test
@@ -443,14 +432,13 @@ class ChatTest {
         every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(Exception("Error calling setChannelMetadata")))
         }
-        val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
+
+        // when
+        objectUnderTest.updateChannel(id = id).async { result: Result<Channel> ->
             // then
             assertTrue(result.isFailure)
             assertEquals("Channel not found", result.exceptionOrNull()?.message)
         }
-
-        // when
-        objectUnderTest.updateChannel(id = id, callback = callback)
     }
 
     @Test
@@ -491,25 +479,24 @@ class ChatTest {
                 )
             )
         }
-        val callback: (Result<Channel>) -> Unit = { result: Result<Channel> ->
-            // then
-            assertTrue(result.isSuccess)
-            assertEquals(id, result.getOrNull()!!.id)
-            assertEquals(updatedName, result.getOrNull()!!.name)
-            assertEquals(updatedDescription, result.getOrNull()!!.description)
-            assertTrue(result.getOrNull()!!.custom is CustomObject)
-            assertEquals(updatedUpdated, result.getOrNull()!!.updated)
-            assertEquals(ChannelType.valueOf(updatedType), result.getOrNull()!!.type)
-            assertEquals(updatedStatus, result.getOrNull()!!.status)
-        }
 
         // when
-        objectUnderTest.updateChannel(id = id, name = name, description = description, callback = callback)
+        objectUnderTest.updateChannel(id = id, name = name, description = description)
+            .async { result: Result<Channel> ->
+                // then
+                assertTrue(result.isSuccess)
+                assertEquals(id, result.getOrNull()!!.id)
+                assertEquals(updatedName, result.getOrNull()!!.name)
+                assertEquals(updatedDescription, result.getOrNull()!!.description)
+                assertTrue(result.getOrNull()!!.custom is CustomObject)
+                assertEquals(updatedUpdated, result.getOrNull()!!.updated)
+                assertEquals(ChannelType.valueOf(updatedType), result.getOrNull()!!.type)
+                assertEquals(updatedStatus, result.getOrNull()!!.status)
+            }
     }
 
     @Test
     fun canHardDeleteChannel() {
-        val callback: (Result<Channel>) -> Unit = {}
         every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(
@@ -528,7 +515,7 @@ class ChatTest {
         every { pubnub.removeChannelMetadata(any()) } returns removeChannelMetadataEndpoint
         every { removeChannelMetadataEndpoint.async(any()) } returns Unit
 
-        objectUnderTest.deleteChannel(id = id, soft = false, callback = callback)
+        objectUnderTest.deleteChannel(id = id, soft = false).async {}
 
         verify { pubnub.removeChannelMetadata(channel = id) }
     }
@@ -536,7 +523,6 @@ class ChatTest {
     @Test
     fun canSoftDeleteChannel() {
         // given
-        val callback: (Result<Channel>) -> Unit = {}
         every {
             pubnub.setChannelMetadata(any(), any(), any(), any(), any(), any(), any())
         } returns setChannelMetadataEndpoint
@@ -552,7 +538,7 @@ class ChatTest {
         val includeCustomFalse = false
 
         // when
-        objectUnderTest.deleteChannel(id, softDelete, callback)
+        objectUnderTest.deleteChannel(id, softDelete).async {}
 
         // then
         verify {
@@ -573,23 +559,19 @@ class ChatTest {
     fun whenForwardedChannelIdIsEqualOriginalChannelIDShouldResultError() {
         // given
         val message = createMessage()
-        val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
+
+        // when
+        objectUnderTest.forwardMessage(message, channelId).async { result: Result<Unit> ->
             // then
             assertTrue(result.isFailure)
             assertEquals("You cannot forward the message to the same channel.", result.exceptionOrNull()!!.message)
         }
-
-        // when
-        objectUnderTest.forwardMessage(message, channelId, callback)
     }
 
     @Test
     fun forwardedMessageShouldContainOriginalPublisherLocatedInMeta() {
         val message = createMessage()
         val channelId = "forwardedChannelId"
-        val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
-            assertTrue(result.isSuccess)
-        }
         val metaSlot = Capture.slot<Any>()
         every {
             pubnub.publish(
@@ -606,7 +588,9 @@ class ChatTest {
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
 
-        objectUnderTest.forwardMessage(message, channelId, callback)
+        objectUnderTest.forwardMessage(message, channelId).async { result: Result<Unit> ->
+            assertTrue(result.isSuccess)
+        }
 
         val actualMeta: Map<String, String> = metaSlot.get() as Map<String, String>
         val mapEntry = mapOf("originalPublisher" to userId).entries.first()
@@ -620,18 +604,16 @@ class ChatTest {
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
         val payload = EventContent.Typing(true)
-        val callback: (Result<PNPublishResult>) -> Unit = { result ->
+
+        objectUnderTest.emitEvent(
+            channel = channelId,
+            payload = payload
+        ).async { result ->
             assertTrue(result.isSuccess)
             assertEquals(timetoken, result.getOrNull()?.timetoken)
         }
 
-        objectUnderTest.emitEvent(
-            channel = channelId,
-            payload = payload,
-            callback = callback
-        )
-
-        verify { pubnub.signal(channel = channelId, message = payload) }
+        verify { pubnub.signal(channel = channelId, message = mapOf("type" to "typing", "value" to true)) }
     }
 
     @Test
@@ -640,29 +622,26 @@ class ChatTest {
         every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
-        val payload = EventContent.TextMessageContent(text = "messageContent")
-        val callback: (Result<PNPublishResult>) -> Unit = { result ->
+        val payload = TextMessageContent(text = "messageContent")
+
+        objectUnderTest.emitEvent(
+            channel = channelId,
+            payload = payload
+        ).async  { result ->
             assertTrue(result.isSuccess)
             assertEquals(timetoken, result.getOrNull()?.timetoken)
         }
 
-        objectUnderTest.emitEvent(
-            channel = channelId,
-            payload = payload,
-            callback = callback
-        )
-
-        verify { pubnub.publish(channel = channelId, message = payload) }
+        verify { pubnub.publish(channel = channelId, message = mapOf("type" to "text", "text" to "messageContent", "files" to null)) }
     }
 
     @Test
     fun whenChannelIdIsEmptyThenGetChannelShouldResultFailure() {
         val emptyChannelId = ""
-        val callback: (Result<Channel?>) -> Unit = { result ->
+        objectUnderTest.getChannel(emptyChannelId).async { result ->
             assertTrue(result.isFailure)
             assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
-        objectUnderTest.getChannel(emptyChannelId, callback)
     }
 
     @Test
@@ -671,12 +650,11 @@ class ChatTest {
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(pnException404))
         }
-        val callback: (Result<Channel?>) -> Unit = { result ->
+
+        objectUnderTest.getChannel(channelId).async { result ->
             assertTrue(result.isSuccess)
             assertNull(result.getOrNull())
         }
-
-        objectUnderTest.getChannel(channelId, callback)
     }
 
     @Test
@@ -697,7 +675,7 @@ class ChatTest {
             )
         }
 
-        val callback: (Result<Channel?>) -> Unit = { result ->
+        objectUnderTest.getChannel(channelId).async { result ->
             assertTrue(result.isSuccess)
             assertEquals(id, result.getOrNull()?.id)
             assertEquals(name, result.getOrNull()?.name)
@@ -706,8 +684,6 @@ class ChatTest {
             assertEquals(typeAsString, result.getOrNull()?.type.toString().lowercase())
             assertEquals(status, result.getOrNull()?.status)
         }
-
-        objectUnderTest.getChannel(channelId, callback)
     }
 
     @Test
@@ -717,12 +693,10 @@ class ChatTest {
             callback1.accept(Result.success(getPNChannelMetadataResult()))
         }
 
-        val callback: (Result<Channel>) -> Unit = { result ->
+        objectUnderTest.createChannel(id = id, name = name).async { result ->
             assertTrue(result.isFailure)
             assertEquals("Channel with this ID already exists", result.exceptionOrNull()?.message)
         }
-
-        objectUnderTest.createChannel(id = id, name = name, callback = callback)
     }
 
     @Test
@@ -757,26 +731,27 @@ class ChatTest {
             )
         }
 
-        objectUnderTest.createChannel(id = id, name = name) { result ->
+        objectUnderTest.createChannel(id = id, name = name).async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(id, result.getOrNull()?.id)
-            assertEquals(name, result.getOrNull()?.name)
-            assertEquals(description, result.getOrNull()?.description)
-            assertEquals(updated, result.getOrNull()?.updated)
-            assertEquals(typeAsString, result.getOrNull()?.type.toString().lowercase())
-            assertEquals(status, result.getOrNull()?.status)
+            result.onSuccess {
+                assertEquals(id, it.id)
+                assertEquals(name, it.name)
+                assertEquals(description, it.description)
+                assertEquals(updated, it.updated)
+                assertEquals(typeAsString, it.type.toString().lowercase())
+                assertEquals(status, it.status)
+            }
         }
     }
 
     @Test
     fun whenUserIdIsEmptyThenGetChannelShouldResultFailure() {
         val emptyUserId = ""
-        val callback: (Result<User?>) -> Unit = { result: Result<User?> ->
+
+        objectUnderTest.getUser(emptyUserId).async { result: Result<User?> ->
             assertTrue(result.isFailure)
             assertEquals("Id is required", result.exceptionOrNull()?.message)
         }
-
-        objectUnderTest.getUser(emptyUserId, callback)
     }
 
     @Test
@@ -786,12 +761,10 @@ class ChatTest {
             callback1.accept(Result.failure(pnException404))
         }
 
-        val callback: (Result<User?>) -> Unit = { result: Result<User?> ->
+        objectUnderTest.getUser(userId).async { result: Result<User?> ->
             assertTrue(result.isSuccess)
             assertNull(result.getOrNull())
         }
-
-        objectUnderTest.getUser(userId, callback)
     }
 
     @Test
@@ -803,18 +776,18 @@ class ChatTest {
             callback1.accept(Result.success(pnUuidMetadataResult))
         }
 
-        val callback: (Result<User?>) -> Unit = { result: Result<User?> ->
+        objectUnderTest.getUser(userId = userId).async { result: Result<User?> ->
             assertTrue(result.isSuccess)
-            assertEquals(id, result.getOrNull()?.id)
-            assertEquals(name, result.getOrNull()?.name)
-            assertEquals(externalId, result.getOrNull()?.externalId)
-            assertEquals(profileUrl, result.getOrNull()?.profileUrl)
-            assertEquals(email, result.getOrNull()?.email)
-            assertEquals(updated, result.getOrNull()?.updated)
-            assertEquals(status, result.getOrNull()?.status)
+            result.onSuccess {
+                assertEquals(id, it?.id)
+                assertEquals(name, it?.name)
+                assertEquals(externalId, it?.externalId)
+                assertEquals(profileUrl, it?.profileUrl)
+                assertEquals(email, it?.email)
+                assertEquals(updated, it?.updated)
+                assertEquals(status, it?.status)
+            }
         }
-
-        objectUnderTest.getUser(userId = userId, callback = callback)
     }
 
     @Test
@@ -827,7 +800,9 @@ class ChatTest {
         every { getAllUUIDMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNUUIDMetadataArrayResult>>) ->
             callback1.accept(Result.success(pnUUIDMetadataArrayResult))
         }
-        val callback: (Result<GetUsersResponse>) -> Unit = { result: Result<GetUsersResponse> ->
+        val filter = "name LIKE 'test*'"
+
+        objectUnderTest.getUsers(filter = filter).async  { result: Result<GetUsersResponse> ->
             assertTrue(result.isSuccess)
             assertEquals(total, result.getOrNull()?.total)
             val user: User = result.getOrNull()?.users?.first()!!
@@ -840,9 +815,6 @@ class ChatTest {
             assertEquals(status, user.status)
 
         }
-        val filter = "name LIKE 'test*'"
-
-        objectUnderTest.getUsers(filter = filter, callback = callback)
 
     }
 
@@ -852,11 +824,10 @@ class ChatTest {
         every { getAllUUIDMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNUUIDMetadataArrayResult>>) ->
             callback1.accept(Result.failure(Exception("Error calling getAllUUIDMetadata")))
         }
-        val callback: (Result<GetUsersResponse>) -> Unit = { result ->
+        objectUnderTest.getUsers().async { result ->
             assertTrue(result.isFailure)
             assertTrue(result.exceptionOrNull()?.message!!.contains("Failed to get users."))
         }
-        objectUnderTest.getUsers(callback = callback)
     }
 
     @Test
@@ -879,7 +850,8 @@ class ChatTest {
             callback1.accept(Result.success(pnChannelMetadataArrayResult))
         }
 
-        val callback: (Result<GetChannelsResponse>) -> Unit = { result ->
+        val filter = "description LIKE '*support*'"
+        objectUnderTest.getChannels(filter = filter).async { result ->
             assertTrue(result.isSuccess)
             val channel: Channel = result.getOrNull()?.channels?.first()!!
             assertEquals(totalCount, result.getOrNull()?.total)
@@ -891,8 +863,6 @@ class ChatTest {
             assertEquals(typeAsString, channel.type.toString().lowercase())
             assertEquals(status, channel.status)
         }
-        val filter = "description LIKE '*support*'"
-        objectUnderTest.getChannels(filter = filter, callback = callback)
     }
 
     @Test
@@ -911,12 +881,10 @@ class ChatTest {
             callback1.accept(Result.failure(Exception("Error calling getAllChannelMetadata")))
         }
 
-        val callback: (Result<GetChannelsResponse>) -> Unit = { result ->
+        objectUnderTest.getChannels().async { result ->
             assertTrue(result.isFailure)
             assertTrue(result.exceptionOrNull()?.message!!.contains("Failed to get channels."))
         }
-
-        objectUnderTest.getChannels(callback = callback)
     }
 
     private fun getPNChannelMetadataResult(
@@ -980,7 +948,7 @@ class ChatTest {
         status = status
     )
 
-    private fun getPNUuidMetadataResult() :PNUUIDMetadataResult{
+    private fun getPNUuidMetadataResult(): PNUUIDMetadataResult {
         val pnUUIDMetadata: PNUUIDMetadata = getPNUuidMetadata()
         return PNUUIDMetadataResult(status = 200, data = pnUUIDMetadata)
     }
