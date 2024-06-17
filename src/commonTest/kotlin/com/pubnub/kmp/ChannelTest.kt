@@ -43,7 +43,6 @@ class ChannelTest {
     private val status = "testStatus"
     private val type = ChannelType.DIRECT
     private val updated = "testUpdated"
-    private val callback: (Result<Channel>) -> Unit = {}
     private val typingTimeout = 1001.milliseconds
 
 
@@ -95,7 +94,6 @@ class ChannelTest {
     @Test
     fun canForwardMessage() {
         val message = createMessage()
-        val callback: (Result<Unit>) -> Unit = { }
         every { chat.forwardMessage(any(), any()) } returns Unit.asFuture()
 
         objectUnderTest.forwardMessage(message).async {}
@@ -163,14 +161,12 @@ class ChannelTest {
     @Test
     fun whenTypingNotSendShouldEmitStartTypingEvent() {
         every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
-        val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
-            // then
+
+        // when
+        objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-
-        // when
-        objectUnderTest.startTyping().async {}
 
         // then
         verify {
@@ -193,12 +189,11 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        val callback: (Result<Unit>) -> Unit = { result ->
-            // then
+
+        objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-        objectUnderTest.startTyping().async {}
 
         verify(exactly(0)) { chat.emitEvent(any(), any()) }
     }
@@ -206,22 +201,20 @@ class ChannelTest {
     @Test
     fun whenChannelIsPublicShouldResultFailure() {
         objectUnderTest = createChannel(ChannelType.PUBLIC)
-        val callback: (Result<Unit>) -> Unit = { result ->
+
+        objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isFailure)
             assertEquals("Typing indicators are not supported in Public chats.", result.exceptionOrNull()?.message)
         }
-        objectUnderTest.stopTyping().async {}
     }
 
     @Test
     fun whenStopTypingAlreadySentStopTypingShouldImmediatelyResultSuccess() {
-        val callback: (Result<Unit>) -> Unit = { result ->
-            // then
+
+        objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-
-        objectUnderTest.stopTyping().async {}
 
         verify(exactly(0)) { chat.emitEvent(any(), any()) }
     }
@@ -237,13 +230,11 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        val callback: (Result<Unit>) -> Unit = { result ->
-            // then
+
+        objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-
-        objectUnderTest.stopTyping().async {}
 
         verify(exactly(0)) { chat.emitEvent(any(), any()) }
 
@@ -261,13 +252,12 @@ class ChannelTest {
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
         every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
-        val callback: (Result<Unit>) -> Unit = { result ->
-            // then
+
+        // when
+        objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-        // when
-        objectUnderTest.stopTyping().async {}
 
         // then
         verify {
@@ -298,9 +288,10 @@ class ChannelTest {
         every { chat.isPresent(any(), any()) } returns true.asFuture()
 
         val callback = { _: Result<Boolean> -> }
-        objectUnderTest.isPresent(
-            userId = "user"
-        )
+        objectUnderTest.isPresent(userId = "user").async { result ->
+            assertTrue(result.isSuccess)
+            assertTrue(result.getOrNull()!!)
+        }
 
         verify { chat.isPresent("user", channelId) }
     }
@@ -310,7 +301,9 @@ class ChannelTest {
         every { chat.whoIsPresent(any()) } returns emptyList<String>().asFuture()
 
         val callback = { _: Result<Collection<String>> -> }
-        objectUnderTest.whoIsPresent().async {}
+        objectUnderTest.whoIsPresent().async { result: Result<Collection<String>> ->
+            assertTrue(result.isSuccess)
+        }
 
         verify { chat.whoIsPresent(channelId) }
     }
