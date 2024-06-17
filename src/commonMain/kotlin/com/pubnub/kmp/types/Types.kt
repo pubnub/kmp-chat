@@ -5,6 +5,7 @@ import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlin.reflect.KClass
 
 @Serializable
 data class File(
@@ -14,11 +15,21 @@ data class File(
     val type: String? = null
 )
 
+
+fun getMethodFor(type: KClass<out EventContent>): EmitEventMethod? {
+    return when (type) {
+        EventContent.Custom::class -> null
+        EventContent.Receipt::class, EventContent.Typing::class -> EmitEventMethod.SIGNAL
+        EventContent.Mention::class, EventContent.Report::class, EventContent.TextMessageContent::class -> EmitEventMethod.PUBLISH
+        else -> error("Should never happen.")
+    }
+}
+
 @Serializable
-sealed class EventContent(open val type: String, @Transient open val method: EmitEventMethod = EmitEventMethod.PUBLISH) {
+sealed class EventContent {
     @Serializable
     @SerialName("typing")
-    data class Typing(val value: Boolean) : EventContent("typing", EmitEventMethod.SIGNAL)
+    data class Typing(val value: Boolean) : EventContent()
 
     @Serializable
     @SerialName("report")
@@ -28,26 +39,26 @@ sealed class EventContent(open val type: String, @Transient open val method: Emi
         val reportedMessageTimetoken: Long?,
         val reportedMessageChannelId: String?,
         val reportedUserId: String?,
-    ) : EventContent("report")
+    ) : EventContent()
 
     @Serializable
     @SerialName("receipt")
-    data class Receipt(val messageTimetoken: Long) : EventContent("receipt", EmitEventMethod.SIGNAL)
+    data class Receipt(val messageTimetoken: Long) : EventContent()
 
     @Serializable
     @SerialName("mention")
-    data class Mention(val messageTimetoken: Long, val channel: String) : EventContent("mention")
+    data class Mention(val messageTimetoken: Long, val channel: String) : EventContent()
 
     @Serializable
     @SerialName("custom")
-    data class Custom(@Contextual val data: Any, @Transient override val method: EmitEventMethod = EmitEventMethod.PUBLISH) : EventContent("custom", method)
+    data class Custom(@Contextual val data: Any, @Transient val method: EmitEventMethod = EmitEventMethod.PUBLISH) : EventContent()
 
     @Serializable
     @SerialName("text")
     open class TextMessageContent(
         val text: String,
         val files: List<File>? = null,
-    ) : EventContent("text") {
+    ) : EventContent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is TextMessageContent) return false

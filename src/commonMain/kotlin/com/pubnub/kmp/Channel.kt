@@ -13,7 +13,6 @@ import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.types.EventParams
 import com.pubnub.kmp.types.File
 import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
@@ -95,28 +94,22 @@ data class Channel(
         return sendTypingSignal(false)
     }
 
-    fun getTyping(callback: (typingUserIds: Result<Collection<String>>) -> Unit){
+    fun getTyping(callback: (typingUserIds: Collection<String>) -> Unit) : AutoCloseable {
         if (type == ChannelType.PUBLIC) {
-            callback(Result.failure(Exception(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message))) //todo change to PubNub exception
-            return
-        }
-        val eventCallback: (Result<Event<EventContent.Typing>>) -> Unit = { result: Result<Event<EventContent.Typing>> ->
-            result.onSuccess { event: Event<EventContent.Typing> ->
-                if(event.channelId != id){
-                    result
-                }
-                val now = clock.now()
-                val userId = event.userId
-                val isTyping = event.payload.value
-                updateUserTypingStatus(userId, isTyping, now)
-                removeExpiredTypingIndicators(now)
-                callback(Result.success(typingIndicators.keys.toList()))
-            }.onFailure {
-                callback(Result.failure(it))
-            }
+            throw PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message)
         }
 
-        chat.listenForEvents(eventParams = EventParams.Typing(this.id), callback = eventCallback )
+        return chat.listenForEvents(this.id) { event: Event<EventContent.Typing> ->
+            if (event.channelId != id) {
+                return@listenForEvents
+            }
+            val now = clock.now()
+            val userId = event.userId
+            val isTyping = event.payload.value
+            updateUserTypingStatus(userId, isTyping, now)
+            removeExpiredTypingIndicators(now)
+            callback(typingIndicators.keys.toList())
+        }
     }
 
     fun whoIsPresent(): PNFuture<Collection<String>> {

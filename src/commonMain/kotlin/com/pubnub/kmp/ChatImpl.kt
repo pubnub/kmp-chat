@@ -1,6 +1,5 @@
 package com.pubnub.kmp
 
-import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNKey
@@ -12,6 +11,8 @@ import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.presence.PNHereNowOccupantData
+import com.pubnub.api.models.consumer.pubsub.MessageResult
+import com.pubnub.api.models.consumer.pubsub.PNEvent
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
@@ -30,16 +31,15 @@ import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHERE_PRESENT_
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
-import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
-import com.pubnub.kmp.listener.Listener
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.types.EventParams
+import com.pubnub.kmp.types.getMethodFor
 import com.pubnub.kmp.user.GetUsersResponse
 import kotlin.js.JsExport
+import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -376,7 +376,7 @@ class ChatImpl(
 
 
     override fun <T : EventContent> emitEvent(channel: String, payload: T): PNFuture<PNPublishResult> {
-        return if (payload.method == EmitEventMethod.SIGNAL) {
+        return if (getMethodFor(payload::class) == EmitEventMethod.SIGNAL) {
             signal(channelId = channel, message = payload)
         } else {
             publish(channelId = channel, message = payload)
@@ -437,109 +437,127 @@ class ChatImpl(
         return pubNub.signal(channelId, PNDataEncoder.encode(message)!!)
     }
 
-    override fun <T : EventContent> listenForEvents(eventParams: EventParams, callback: (event: Result<Event<T>>) -> Unit) : (Unit) -> Unit {
-        val type: String = eventParams.type
-        val channel = getChannelFromEventParams(eventParams)
-        val method = getMethodFromEventParams(eventParams)
+    override fun <T : EventContent> listenForEvents(type: KClass<T>, channel: String, customMethod: EmitEventMethod?, callback: (event: Event<T>) -> Unit) : AutoCloseable {
+//        val type: String = eventParams.type
+//        val channel = getChannelFromEventParams(eventParams)
+//        val method = getMethodFromEventParams(eventParams)
 
-        val listenerCallback: (ListenerEvent) -> Unit = getListenerCallback(type, channel, callback)
-        val listener: Listener = getListenerByMethod(method, listenerCallback)
-        val removeListenerBlock: (Listener) -> Unit = addListener(listener)
-        val unsubscribeBlock: (String) -> Unit = subscribe(channel)
+        val handler = fun (_: PubNub, pnEvent: PNEvent) {
+            if (pnEvent.channel != channel) return
+            val message = (pnEvent as? MessageResult)?.message ?: return
+            val eventContent: EventContent = PNDataEncoder.decode(message)
+            @Suppress("UNCHECKED_CAST")
+            val payload = eventContent as? T ?: return
 
-        // todo not sure if this is good pattern for kotlin
-        val result: (Unit) -> Unit = {
-            removeListenerBlock.invoke(listener)
-            unsubscribeBlock.invoke(channel)
+            val event = Event(
+                chat = this,
+                timetoken = pnEvent.timetoken!!, //todo can this even be null?
+                payload = payload,
+                channelId = pnEvent.channel,
+                userId = pnEvent.publisher!! //todo can this even be null?
+            )
+            callback(event)
         }
-
-        return result
-    }
-
-    private fun getListenerByMethod(method: EmitEventMethod, listenerCallback: (ListenerEvent) -> Unit): Listener {
-        return object : Listener {
-            override fun signal(signalEvent: SignalEvent) {
-                if (method == EmitEventMethod.SIGNAL) {
-                    listenerCallback(signalEvent)
-                }
+        val method = getMethodFor(type) ?: customMethod
+        val listener = createEventListener(pubNub,
+            onMessage = if (method == EmitEventMethod.PUBLISH) handler else { _, _ -> },
+            onSignal =  if (method == EmitEventMethod.SIGNAL) handler else { _, _ -> },
+        )
+        val channelEntity = pubNub.channel(channel)
+        val subscription = channelEntity.subscription()
+        subscription.addListener(listener)
+        return object : AutoCloseable {
+            override fun close() {
+                subscription.removeListener(listener)
+                subscription.unsubscribe()
             }
-
-            override fun message(messageEvent: MessageEvent) {
-                if (method != EmitEventMethod.SIGNAL) {
-                    listenerCallback(messageEvent)
-                }
-            }
-        }
-    }
-
-    private fun <T : EventContent> getListenerCallback(
-        type: String,
-        channel: String,
-        callback: (event: Result<Event<T>>) -> Unit
-    ): (ListenerEvent) -> Unit {
-        return { listenerEvent ->
-            if (listenerEvent !is MessageEvent && listenerEvent !is SignalEvent) {
-                throw Exception("ListenerEvent should be of type MessageEvent or SignalEvent")
-            }
-            if (listenerEvent.channel != channel) {
-                throw Exception("Receive event should relate to channel: $channel")
-            }
-            if (listenerEvent.message.type != type) {
-                throw Exception("Receive event should be of type: $type")
-            }
-            val eventContent = listenerEvent.message as? T
-            if (eventContent != null) {
-                val event = Event(
-                    chat = this,
-                    timetoken = listenerEvent.timetoken,
-                    payload = eventContent,
-                    channelId = listenerEvent.channel,
-                    userId = listenerEvent.publisher
-                )
-                callback(Result.success(event))
-            } else {
-                throw Exception("Message type missmatch")
-            }
-        }
-
-    }
-
-
-    private fun getChannelFromEventParams(eventParams: EventParams): String {
-        return when (eventParams) {
-            is EventParams.Mention -> eventParams.user
-            is EventParams.Typing -> eventParams.channel
-            is EventParams.Report -> eventParams.channel
-            is EventParams.Receipt -> eventParams.channel
-            is EventParams.Invite -> eventParams.channel
-            is EventParams.CustomEventParam -> eventParams.channel
-            is EventParams.Moderation -> eventParams.channel
         }
     }
 
-    private fun getMethodFromEventParams(eventParams: EventParams): EmitEventMethod {
-        return when (eventParams) {
-            is EventParams.CustomEventParam -> eventParams.method
-            is EventParams.Receipt, is EventParams.Typing -> EmitEventMethod.SIGNAL
-            is EventParams.Mention, is EventParams.Report, is EventParams.Invite, is EventParams.Moderation -> EmitEventMethod.PUBLISH
-        }
-    }
-
-    //add listener and return function to remove this listener :|
-    private fun addListener(listener: Listener): (Listener) -> Unit {
-        // todo
-        println("using: $listener")
-        val removeListenerBlock: (listener: Listener) -> Unit = {}
-        return removeListenerBlock
-    }
-
-    // subscribe and return function to unsubscribe
-    private fun subscribe(channel: String) : (String) -> Unit {
-        // todo
-        println("using: $channel")
-        val unsubscribeBlock: (channel: String) -> Unit = {}
-        return unsubscribeBlock
-    }
+//    private fun getListenerByMethod(method: EmitEventMethod, listenerCallback: (ListenerEvent) -> Unit): Listener {
+//        return object : Listener {
+//            override fun signal(signalEvent: SignalEvent) {
+//                if (method == EmitEventMethod.SIGNAL) {
+//                    listenerCallback(signalEvent)
+//                }
+//            }
+//
+//            override fun message(messageEvent: MessageEvent) {
+//                if (method != EmitEventMethod.SIGNAL) {
+//                    listenerCallback(messageEvent)
+//                }
+//            }
+//        }
+//    }
+//
+//    private fun <T : EventContent> getListenerCallback(
+//        type: String,
+//        channel: String,
+//        callback: (event: Result<Event<T>>) -> Unit
+//    ): (ListenerEvent) -> Unit {
+//        return { listenerEvent ->
+//            if (listenerEvent !is MessageEvent && listenerEvent !is SignalEvent) {
+//                throw Exception("ListenerEvent should be of type MessageEvent or SignalEvent")
+//            }
+//            if (listenerEvent.channel != channel) {
+//                throw Exception("Receive event should relate to channel: $channel")
+//            }
+//            if (listenerEvent.message.type != type) {
+//                throw Exception("Receive event should be of type: $type")
+//            }
+//            val eventContent = listenerEvent.message as? T
+//            if (eventContent != null) {
+//                val event = Event(
+//                    chat = this,
+//                    timetoken = listenerEvent.timetoken,
+//                    payload = eventContent,
+//                    channelId = listenerEvent.channel,
+//                    userId = listenerEvent.publisher
+//                )
+//                callback(Result.success(event))
+//            } else {
+//                throw Exception("Message type missmatch")
+//            }
+//        }
+//
+//    }
+//
+//
+//    private fun getChannelFromEventParams(eventParams: EventParams): String {
+//        return when (eventParams) {
+//            is EventParams.Mention -> eventParams.user
+//            is EventParams.Typing -> eventParams.channel
+//            is EventParams.Report -> eventParams.channel
+//            is EventParams.Receipt -> eventParams.channel
+//            is EventParams.Invite -> eventParams.channel
+//            is EventParams.CustomEventParam -> eventParams.channel
+//            is EventParams.Moderation -> eventParams.channel
+//        }
+//    }
+//
+//    private fun getMethodFromEventParams(eventParams: EventParams): EmitEventMethod {
+//        return when (eventParams) {
+//            is EventParams.CustomEventParam -> eventParams.method
+//            is EventParams.Receipt, is EventParams.Typing -> EmitEventMethod.SIGNAL
+//            is EventParams.Mention, is EventParams.Report, is EventParams.Invite, is EventParams.Moderation -> EmitEventMethod.PUBLISH
+//        }
+//    }
+//
+//    //add listener and return function to remove this listener :|
+//    private fun addListener(listener: Listener): (Listener) -> Unit {
+//        // todo
+//        println("using: $listener")
+//        val removeListenerBlock: (listener: Listener) -> Unit = {}
+//        return removeListenerBlock
+//    }
+//
+//    // subscribe and return function to unsubscribe
+//    private fun subscribe(channel: String) : (String) -> Unit {
+//        // todo
+//        println("using: $channel")
+//        val unsubscribeBlock: (channel: String) -> Unit = {}
+//        return unsubscribeBlock
+//    }
 
     private fun isValidId(id: String): Boolean {
         return id.isNotEmpty()
