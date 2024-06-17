@@ -1,6 +1,6 @@
 package com.pubnub.kmp
 
-import com.pubnub.api.PubNub
+import com.pubnub.api.PubNubException
 import com.pubnub.api.createJsonElement
 import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.models.consumer.PNBoundedPage
@@ -27,6 +27,7 @@ import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -448,11 +449,10 @@ class ChannelTest {
     @Test
     fun whenChannelIsPublicGetTypingShouldResultFailure() {
         objectUnderTest = createChannel(ChannelType.PUBLIC)
-        val callback: (Result<Collection<String>>) -> Unit = { result ->
-            assertTrue(result.isFailure)
-            assertEquals("Typing indicators are not supported in Public chats.", result.exceptionOrNull()?.message)
+        val e = assertFailsWith<PubNubException> {
+            objectUnderTest.getTyping {}
         }
-        objectUnderTest.getTyping(callback)
+        assertEquals("Typing indicators are not supported in Public chats.", e.message)
     }
 
     @Test
