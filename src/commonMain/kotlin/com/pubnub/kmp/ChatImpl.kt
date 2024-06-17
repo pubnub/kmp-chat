@@ -466,6 +466,7 @@ class ChatImpl(
         val channelEntity = pubNub.channel(channel)
         val subscription = channelEntity.subscription()
         subscription.addListener(listener)
+        subscription.subscribe()
         return object : AutoCloseable {
             override fun close() {
                 subscription.removeListener(listener)
