@@ -18,6 +18,7 @@ import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
 import com.pubnub.kmp.types.TextLink
 import kotlinx.atomicfu.locks.reentrantLock
+import kotlinx.atomicfu.locks.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -41,7 +42,7 @@ data class Channel(
     private var typingSent: Instant? = null
     internal var typingIndicators = mutableMapOf<String, Instant>()
     private val sendTextRateLimiter: String? = null // todo should be ExponentialRateLimiter instead of String
-    private val lock = reentrantLock()
+    private val typingIndicatorsLock = reentrantLock()
 
     fun update(
         name: String? = null,
@@ -108,9 +109,14 @@ data class Channel(
             val now = clock.now()
             val userId = event.userId
             val isTyping = event.payload.value
-            updateUserTypingStatus(userId, isTyping, now)
-            removeExpiredTypingIndicators(now)
-            callback(typingIndicators.keys.toList())
+
+            typingIndicatorsLock.withLock {
+                updateUserTypingStatus(userId, isTyping, now)
+                removeExpiredTypingIndicators(now)
+                typingIndicators.keys.toList()
+            }.also { typingIndicatorsList ->
+                callback(typingIndicatorsList)
+            }
         }
     }
 
@@ -250,21 +256,12 @@ data class Channel(
     }
 
     internal fun removeExpiredTypingIndicators(now: Instant) {
-        val expiredTypingIndicators = mutableListOf<String>()
-
-        typingIndicators.entries.forEach { entry: MutableMap.MutableEntry<String, Instant> ->
-            if (timeoutElapsed((entry.value), now)) {
-                expiredTypingIndicators.add(entry.key)
+        val iterator = typingIndicators.entries.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (timeoutElapsed(entry.value, now)) {
+                iterator.remove()
             }
-        }
-
-        lock.lock()
-        try {
-            expiredTypingIndicators.forEach { expiredTypingIndicator ->
-                typingIndicators.remove(expiredTypingIndicator)
-            }
-        } finally {
-            lock.unlock()
         }
     }
 }
