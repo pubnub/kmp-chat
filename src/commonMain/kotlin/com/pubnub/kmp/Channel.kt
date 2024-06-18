@@ -31,6 +31,7 @@ import com.pubnub.kmp.types.MessageReferencedChannel
 import com.pubnub.kmp.types.TextLink
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -213,7 +214,8 @@ data class Channel(
                     includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
                     includeCustom = true,
                     includeCount = true,
-                    filter = channelFilterString
+                    includeType = true,
+                    filter = channelFilterString,
                 ).then { setMembershipsResult ->
                     Membership.fromMembershipDTO(chat, setMembershipsResult.data.first(), user)
                 }.thenAsync { membership ->
@@ -236,6 +238,7 @@ data class Channel(
             users.map { PNMember.Partial(it.id) },
             includeCustom = true,
             includeCount = true,
+            includeType = true,
             includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
             filter = users.joinToString(" || ") { it.uuidFilterString }
         ).thenAsync { memberArrayResult: PNMemberArrayResult ->
@@ -259,6 +262,7 @@ data class Channel(
             sort = sort,
             includeCustom = true,
             includeCount = true,
+            includeType = true,
             includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
         ).then { it: PNMemberArrayResult ->
             MembersResponse(it.next, it.prev, it.totalCount!!, it.status, it.data.map {
@@ -295,6 +299,7 @@ data class Channel(
             includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
             includeCustom = true,
             includeCount = true,
+            includeType = true,
             filter = channelFilterString,
         ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
             val resultDisconnect = disconnect ?: connect(callback)
@@ -353,7 +358,11 @@ data class Channel(
 }
 
 enum class ChannelType {
-    DIRECT, GROUP, PUBLIC, UNKNOWN;
+    @SerialName("direct") DIRECT,
+    @SerialName("group") GROUP,
+    @SerialName("public") PUBLIC,
+    @SerialName("unknown") UNKNOWN;
+
     companion object {
         fun parse(type: String?): ChannelType {
             if (type == null) {

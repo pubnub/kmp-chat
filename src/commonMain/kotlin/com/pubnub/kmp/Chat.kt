@@ -14,18 +14,9 @@ import com.pubnub.kmp.user.GetUsersResponse
 interface Chat {
     val config: ChatConfig
     val pubNub: PubNub
-    val user: User?
-//
-//    suspend fun createUser(
-//        id: String,
-//        name: String? = null,
-//        externalId: String? = null,
-//        profileUrl: String? = null,
-//        email: String? = null,
-//        custom: CustomObject? = null,
-//        status: String? = null,
-//        type: String? = null
-//    ): User
+    var user: User?
+
+    fun createUser(user: User): PNFuture<User>
 
     fun createUser(
         id: String,
@@ -40,14 +31,12 @@ interface Chat {
 
     fun getUser(userId: String): PNFuture<User?>
 
-
     fun getUsers(
         filter: String? = null,
         sort: Collection<PNSortKey<PNKey>> = listOf(),
         limit: Int? = null,
         page: PNPage? = null,
     ): PNFuture<GetUsersResponse>
-
 
     fun updateUser(
         id: String,
@@ -119,7 +108,7 @@ interface Chat {
 
     fun createDirectConversation(
         invitedUser: User,
-        channelId: String?,
+        channelId: String? = null,
         channelName: String? = null,
         channelDescription: String? = null,
         channelCustom: CustomObject? = null,

@@ -99,7 +99,7 @@ class AnyEncoder : Encoder, CompositeEncoder {
     }
 
     override fun encodeEnum(enumDescriptor: SerialDescriptor, index: Int) {
-        TODO("Not yet implemented")
+        returnValue = enumDescriptor.getElementName(index)
     }
 
     override fun encodeFloat(value: Float) {

@@ -33,7 +33,8 @@ class UserTest {
     private val externalId = "testExternalId"
     private val profileUrl = "testProfileUrl"
     private val email = "testEmail"
-    private val custom = createCustomObject(mapOf("testCustom" to "custom"))
+    private val customData = mapOf("testCustom" to "custom")
+    private val custom = createCustomObject(customData)
     private val status = "testStatus"
     private val type = "testType"
     private val updated = "testUpdated"
@@ -51,7 +52,7 @@ class UserTest {
             externalId = externalId,
             profileUrl = profileUrl,
             email = email,
-            custom = custom,
+            custom = customData,
             status = status,
             type = type,
             updated = updated,

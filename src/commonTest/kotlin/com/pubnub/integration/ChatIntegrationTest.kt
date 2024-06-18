@@ -1,0 +1,110 @@
+package com.pubnub.integration
+
+import com.pubnub.api.PubNubException
+import com.pubnub.kmp.Chat
+import com.pubnub.kmp.ChatConfigImpl
+import com.pubnub.kmp.ChatImpl
+import com.pubnub.kmp.User
+import com.pubnub.kmp.createCustomObject
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
+import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
+import com.pubnub.kmp.utils.cyrb53a
+import com.pubnub.test.BaseIntegrationTest
+import com.pubnub.test.await
+import com.pubnub.test.randomString
+import kotlinx.coroutines.test.runTest
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+
+class ChatIntegrationTest: BaseIntegrationTest() {
+
+//    val config = createPNConfiguration(UserId("testUser"), Keys.subKey, Keys.pubKey)
+//    val pubnub = createPubNub(config)
+
+    lateinit var chat: Chat
+    lateinit var someUser: User
+
+    @BeforeTest
+    override fun before(){
+        super.before()
+        chat = ChatImpl(ChatConfigImpl(config), pubnub)
+        someUser = User(chat, randomString(), randomString(), randomString(), randomString(), randomString(), mapOf(randomString() to randomString()), randomString(), randomString(), updated = null, lastActiveTimestamp = null)
+    }
+
+    @Test
+    fun createUser() = runTest {
+        val user = chat.createUser(someUser).await()
+
+        assertEquals(someUser, user.copy(updated = null, lastActiveTimestamp = null))
+        assertNotNull(user.updated)
+    }
+
+    @Test
+    fun updateUser() = runTest {
+        val user = chat.createUser(someUser).await()
+        val expectedUser = user.copy(
+            name = randomString(),
+            externalId = randomString(),
+            profileUrl = randomString(),
+            email = randomString(),
+            custom = mapOf(
+                randomString() to randomString()
+            ),
+            type = randomString(),
+            updated = null
+        )
+
+        val updatedUser = chat.updateUser(expectedUser.id, expectedUser.name, expectedUser.externalId, expectedUser.profileUrl, expectedUser.email, expectedUser.custom?.let { createCustomObject(it) }, expectedUser.status, expectedUser.type).await()
+
+        assertEquals(expectedUser, updatedUser.copy(updated = null, lastActiveTimestamp = null))
+        assertNotNull(updatedUser.updated)
+    }
+
+    @Test
+    fun updateUser_doesntExist() = runTest {
+        val e = assertFailsWith<PubNubException> {
+            chat.updateUser(someUser.id, name = randomString()).await()
+        }
+
+        assertEquals(FAILED_TO_UPDATE_USER_METADATA.message, e.message)
+        assertEquals(USER_NOT_EXIST.message, e.cause?.message)
+    }
+
+    @Test
+    fun createDirectConversation() = runTest {
+        chat.user = someUser
+        val otherUser = User(chat, randomString())
+
+        // when
+        val result = try {
+              chat.createDirectConversation(otherUser).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
+        }
+
+        // then
+        val sortedUsers = listOf(someUser.id, otherUser.id).sorted()
+        assertEquals(result.channel.id, "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}")
+
+        assertEquals(result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null), someUser)
+        assertEquals(result.inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null), otherUser)
+
+        assertEquals(result.channel, result.hostMembership.channel)
+        assertEquals(result.channel, result.inviteeMembership.channel)
+
+
+        //cleanup
+        pubnub.removeUUIDMetadata(otherUser.id).await()
+    }
+
+    @AfterTest
+    fun cleanup() = runTest {
+        pubnub.removeUUIDMetadata(someUser.id).await()
+    }
+
+}

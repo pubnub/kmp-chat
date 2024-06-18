@@ -16,7 +16,11 @@ kotlin {
     js {
         useEsModules()
         browser {
-
+            testTask {
+                useMocha {
+                    timeout = "30s"
+                }
+            }
         }
 //        nodejs()
         binaries.executable()
@@ -79,7 +83,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-//                implementation("com.pubnub:pubnub-kotlin-test:9.2-DEV")
+                implementation("com.pubnub:pubnub-kotlin-test")
             }
         }
 

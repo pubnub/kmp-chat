@@ -38,6 +38,7 @@ data class Membership(
                 channels = listOf(PNChannelMembership.Partial(channel.id, custom)),
                 includeCustom = true,
                 includeCount = true,
+                includeType = true,
                 includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
                 filter = filterThisChannel()
             ).then {

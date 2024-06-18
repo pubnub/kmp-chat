@@ -73,26 +73,18 @@ class ChatImpl(
     override val config: ChatConfig,
     override val pubNub: PubNub = createPubNub(config.pubnubConfig)
 ) : Chat {
-    override val user: User? = null
+    override var user: User? = null
 
-//    override suspend fun createUser(
-//        id: String,
-//        name: String?,
-//        externalId: String?,
-//        profileUrl: String?,
-//        email: String?,
-//        custom: CustomObject?,
-//        status: String?,
-//        type: String?
-//    ) = suspendCancellableCoroutine { cont ->
-//        createUser(id, name, externalId, profileUrl, email, custom, status, type) {
-//            it.onSuccess {
-//                cont.resume(it)
-//            }.onFailure {
-//                cont.resumeWithException(it)
-//            }
-//        }
-//    }
+    override fun createUser(user: User): PNFuture<User> = createUser(
+        id = user.id,
+        name = user.name,
+        externalId = user.externalId,
+        profileUrl = user.profileUrl,
+        email = user.email,
+        custom = user.custom?.let { createCustomObject(it) },
+        status = user.status,
+        type = user.type
+    )
 
     override fun createUser(
         id: String,
@@ -124,7 +116,7 @@ class ChatImpl(
         return pubNub.getUUIDMetadata(uuid = userId)
             .then<PNUUIDMetadataResult, User?> { pnUUIDMetadataResult: PNUUIDMetadataResult ->
                 pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
-                    createUserFromMetadata(this, pnUUIDMetadata)
+                    User.fromDTO(this, pnUUIDMetadata)
                 } ?: throw PubNubException("PNUUIDMetadataResult is null")
             }.catch {
                 if (it is PubNubException && it.statusCode == HTTP_ERROR_404) {
@@ -150,7 +142,7 @@ class ChatImpl(
             includeCustom = true
         ).then { pnUUIDMetadataArrayResult: PNUUIDMetadataArrayResult ->
             val users: MutableSet<User> = pnUUIDMetadataArrayResult.data.map { pnUUIDMetadata ->
-                createUserFromMetadata(this, pnUUIDMetadata)
+                User.fromDTO(this, pnUUIDMetadata)
             }.toMutableSet()
             GetUsersResponse(
                 users = users,
@@ -188,13 +180,13 @@ class ChatImpl(
                 profileUrl = profileUrl,
                 email = email,
                 custom = custom,
-                includeCustom = false,
+                includeCustom = true,
                 status = status,
                 type = type,
             ).then { result: PNUUIDMetadataResult ->
                 val data = result.data
                 if (data != null) {
-                    createUserFromMetadata(this, data)
+                    User.fromDTO(this, data)
                 } else {
                     error("PNUUIDMetadata is null.")
                 }
@@ -414,6 +406,7 @@ class ChatImpl(
                 includeCustom = true,
                 includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
                 includeCount = true,
+                includeType = true,
             )
             awaitAll(
                 hostMembershipFuture,
@@ -454,6 +447,7 @@ class ChatImpl(
                 includeCustom = true,
                 includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
                 includeCount = true,
+                includeType = true,
             )
             awaitAll(
                 hostMembershipFuture,
@@ -521,34 +515,19 @@ class ChatImpl(
             externalId = updatedUser.externalId,
             profileUrl = updatedUser.profileUrl,
             email = updatedUser.email,
-            custom = updatedUser.custom,
+            custom = updatedUser.custom?.let { createCustomObject(it) },
             includeCustom = false,
             type = updatedUser.type,
             status = updatedUser.status,
         ).then { pnUUIDMetadataResult ->
             pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
-                createUserFromMetadata(this, pnUUIDMetadata)
+                User.fromDTO(this, pnUUIDMetadata)
             } ?: error("PNUUIDMetadata is null.")
         }
     }
 
 
     private fun performUserDelete(user: User): PNFuture<User> = pubNub.removeUUIDMetadata(uuid = user.id).then { user }
-
-    private fun createUserFromMetadata(chat: ChatImpl, pnUUIDMetadata: PNUUIDMetadata): User {
-        return User(
-            chat = chat,
-            id = pnUUIDMetadata.id,
-            name = pnUUIDMetadata.name,
-            externalId = pnUUIDMetadata.externalId,
-            profileUrl = pnUUIDMetadata.profileUrl,
-            email = pnUUIDMetadata.email,
-            custom = pnUUIDMetadata.custom?.let { createCustomObject(it) },
-            status = pnUUIDMetadata.status,
-            type = pnUUIDMetadata.type,
-            updated = pnUUIDMetadata.updated,
-        )
-    }
 
     private fun createChannelFromMetadata(chat: ChatImpl, pnChannelMetadata: PNChannelMetadata): Channel {
         return Channel(
@@ -633,7 +612,7 @@ class ChatImpl(
             status = status
         ).then { pnUUIDMetadataResult ->
             pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
-                createUserFromMetadata(this, pnUUIDMetadata)
+                User.fromDTO(this, pnUUIDMetadata)
             } ?: error("No data available to create User")
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_USER_DATA.message, exception))
