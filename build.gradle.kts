@@ -8,6 +8,7 @@ plugins {
 //    kotlin("native.cocoapods") version "1.9.23"
 //    id("org.kodein.mock.mockmp") version "1.17.0"
     id("dev.mokkery") version "2.0.0"
+    id("org.jetbrains.kotlin.plugin.atomicfu") version "2.0.0"
 }
 
 group = "com.pubnub"
@@ -75,6 +76,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.0-RC")
 //                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0-RC")
+                implementation("org.jetbrains.kotlinx:atomicfu:0.24.0")
             }
         }
         val commonTest by getting {

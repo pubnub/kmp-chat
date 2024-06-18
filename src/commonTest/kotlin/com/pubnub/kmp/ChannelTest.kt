@@ -28,8 +28,10 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class ChannelTest {
     private lateinit var objectUnderTest: Channel
@@ -144,7 +146,7 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        objectUnderTest.startTyping().async  { result ->
+        objectUnderTest.startTyping().async { result ->
             // then
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
@@ -268,6 +270,79 @@ class ChannelTest {
         }
     }
 
+    @Test
+    fun whenTimeoutElapseShouldRemoveExpiredTypingIndicators() {
+        val typingSent1: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val now = typingSent1.plus(2.seconds)
+        val typingIndicatorsForTest = mutableMapOf<String, Instant>()
+        val user1 = "user1"
+        val user2 = "user2"
+        typingIndicatorsForTest[user1] = typingSent1
+        typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
+        objectUnderTest.typingIndicators = typingIndicatorsForTest
+
+        objectUnderTest.removeExpiredTypingIndicators(now)
+
+        assertFalse(objectUnderTest.typingIndicators.contains(user1))
+        assertFalse(objectUnderTest.typingIndicators.contains(user2))
+    }
+
+    @Test
+    fun whenTimeoutNotElapseShouldNotRemoveExpiredTypingIndicators() {
+        val typingSent1: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val now = typingSent1.plus(50.milliseconds)
+        val typingIndicatorsForTest = mutableMapOf<String, Instant>()
+        val user1 = "user1"
+        val user2 = "user2"
+        typingIndicatorsForTest[user1] = typingSent1
+        typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
+        objectUnderTest.typingIndicators = typingIndicatorsForTest
+
+        objectUnderTest.removeExpiredTypingIndicators(now)
+
+        assertTrue(objectUnderTest.typingIndicators.contains(user1))
+        assertTrue(objectUnderTest.typingIndicators.contains(user2))
+    }
+
+    @Test
+    fun whenUserIsTypingAndTypingIndicatorMapDoesNotContainEntryShouldAddIt(){
+        val now: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val userId = "user1"
+        val isTyping = true
+        objectUnderTest.typingIndicators = mutableMapOf()
+
+        objectUnderTest.updateUserTypingStatus(userId, isTyping, now)
+
+        assertTrue(objectUnderTest.typingIndicators.contains(userId))
+    }
+
+    @Test
+    fun whenUserIsNotTypingAndTypingIndicatorMapContainEntryShouldRemoveIt(){
+        val typingSent1: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val now = typingSent1.plus(50.milliseconds)
+        val userId = "user1"
+        val isTyping = false
+        objectUnderTest.typingIndicators = mutableMapOf(userId to typingSent1)
+
+        objectUnderTest.updateUserTypingStatus(userId, isTyping, now)
+
+        assertFalse(objectUnderTest.typingIndicators.contains(userId))
+    }
+
+    @Test
+    fun whenUserIsTypingAndTypingIndicatorMapContainEntryShouldUpdateTime(){
+        val typingSent1: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val now = typingSent1.plus(50.milliseconds)
+        val userId = "user1"
+        val isTyping = true
+        objectUnderTest.typingIndicators = mutableMapOf(userId to typingSent1)
+
+        objectUnderTest.updateUserTypingStatus(userId, isTyping, now)
+
+        assertTrue(objectUnderTest.typingIndicators.contains(userId))
+        assertEquals(now, objectUnderTest.typingIndicators[userId])
+    }
+
     private fun createMessage(): Message {
         return Message(
             chat = chat,
@@ -341,10 +416,14 @@ class ChannelTest {
                     PNFetchMessagesResult(
                         mapOf(
                             channelId to listOf(
-                                PNFetchMessageItem(user1, createJsonElement(mapOf("type" to "text", "text" to message1)), null,
-                                    timetoken1, null, HistoryMessageType.Message, null),
-                                PNFetchMessageItem(user2, createJsonElement(mapOf("text" to message2, "files" to null)), null,
-                                    timetoken2, null, HistoryMessageType.Message, null),
+                                PNFetchMessageItem(
+                                    user1, createJsonElement(mapOf("type" to "text", "text" to message1)), null,
+                                    timetoken1, null, HistoryMessageType.Message, null
+                                ),
+                                PNFetchMessageItem(
+                                    user2, createJsonElement(mapOf("text" to message2, "files" to null)), null,
+                                    timetoken2, null, HistoryMessageType.Message, null
+                                ),
                             )
                         ), null
                     )
@@ -387,7 +466,8 @@ class ChannelTest {
     fun sendTextAllParametersArePassedToPublish() {
         every { chat.publish(any(), any(), any(), any(), any(), any(), any()) } returns PNPublishResult(1L).asFuture()
         val messageText = "someText"
-        val message = Message(chat, 1000L, EventContent.TextMessageContent(messageText), channelId, "some user", null, null)
+        val message =
+            Message(chat, 1000L, EventContent.TextMessageContent(messageText), channelId, "some user", null, null)
         val mentionedUser1 = "mention1"
         val referencedChannel1 = "referenced1"
         val userName = "someName"
@@ -407,35 +487,37 @@ class ChannelTest {
             null, // todo when files work
         ).async {}
 
-        verify { chat.publish(
-            channelId,
-            EventContent.TextMessageContent(messageText),
-            mapOf(
-                "custom_meta" to "custom",
-                "mentionedUsers" to mapOf(
-                    "0" to mapOf("id" to mentionedUser1, "name" to userName)
-                ),
-                "referencedChannels" to mapOf(
-                    "0" to mapOf("id" to referencedChannel1, "name" to channelName)
-                ),
-                "textLinks" to listOf(
-                    mapOf(
-                        "startIndex" to 1,
-                        "endIndex" to 20,
-                        "link" to link
+        verify {
+            chat.publish(
+                channelId,
+                EventContent.TextMessageContent(messageText),
+                mapOf(
+                    "custom_meta" to "custom",
+                    "mentionedUsers" to mapOf(
+                        "0" to mapOf("id" to mentionedUser1, "name" to userName)
+                    ),
+                    "referencedChannels" to mapOf(
+                        "0" to mapOf("id" to referencedChannel1, "name" to channelName)
+                    ),
+                    "textLinks" to listOf(
+                        mapOf(
+                            "startIndex" to 1,
+                            "endIndex" to 20,
+                            "link" to link
+                        )
+                    ),
+                    "quotedMessage" to mapOf(
+                        "timetoken" to message.timetoken,
+                        "text" to message.text,
+                        "userId" to message.userId
                     )
                 ),
-                "quotedMessage" to mapOf(
-                    "timetoken" to message.timetoken,
-                    "text" to message.text,
-                    "userId" to message.userId
-                )
-            ),
-            true,
-            false,
-            true,
-            ttl
-        ) }
+                true,
+                false,
+                true,
+                ttl
+            )
+        }
     }
 
 
