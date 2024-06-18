@@ -21,8 +21,7 @@ fun getMethodFor(type: KClass<out EventContent>): EmitEventMethod? {
     return when (type) {
         EventContent.Custom::class -> null
         EventContent.Receipt::class, EventContent.Typing::class -> EmitEventMethod.SIGNAL
-        EventContent.Mention::class, EventContent.Report::class, EventContent.TextMessageContent::class -> EmitEventMethod.PUBLISH
-        else -> error("Should never happen.")
+        else -> EmitEventMethod.PUBLISH
     }
 }
 
