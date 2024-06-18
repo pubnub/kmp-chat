@@ -16,6 +16,7 @@ import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
 import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.error.PubNubErrorMessage
@@ -24,6 +25,7 @@ import com.pubnub.kmp.membership.MembersResponse
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.File
+import com.pubnub.kmp.types.JoinResult
 import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
 import com.pubnub.kmp.types.TextLink
@@ -46,7 +48,7 @@ data class Channel(
     val type: ChannelType? = null,
 ) {
     private val suggestedNames = mutableMapOf<String, List<Membership>>()
-    private var disconnect: (() -> Unit)? = null
+    private var disconnect: AutoCloseable? = null
     private var typingSent: Instant? = null
     private var typingIndicators =
         mutableMapOf<String, String>() //todo probably should be something like mutableMapOf<String, TimerTask>()
@@ -265,11 +267,55 @@ data class Channel(
         }
     }
 
+    fun connect(callback: (Message) -> Unit): AutoCloseable {
+        val channelEntity = chat.pubNub.channel(id)
+        val subscription = channelEntity.subscription()
+        val listener = createEventListener(chat.pubNub,
+            onMessage = { _, pnMessageResult ->
+                val eventContent: EventContent = PNDataEncoder.decode(pnMessageResult.message)
+                if (eventContent !is EventContent.TextMessageContent) {
+                    return@createEventListener
+                }
+                callback(Message.fromDTO(chat, pnMessageResult))
+            },
+        )
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return object : AutoCloseable {
+            override fun close() {
+                subscription.removeListener(listener)
+                subscription.unsubscribe()
+            }
+        }
+    }
+
+    fun join(custom: CustomObject? = null, callback: (Message) -> Unit): PNFuture<JoinResult> {
+        return chat.pubNub.setMemberships(
+            channels = listOf(PNChannelMembership.Partial(this.id, custom)), //todo should null overwrite? wait for optionals?
+            includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+            includeCustom = true,
+            includeCount = true,
+            filter = channelFilterString,
+        ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
+            val resultDisconnect = disconnect ?: connect(callback)
+            chat.pubNub.time().thenAsync { time: PNTimeResult ->
+                Membership.fromMembershipDTO(chat, membershipArray.data.first(), this.chat.user!!)
+                    .setLastReadMessageTimetoken(time.timetoken)
+            }.then {
+                JoinResult(it, resultDisconnect) //todo the whole disconnect handling is not safe! state can be made inconsistent
+            }
+        }
+    }
+
+    fun leave(): PNFuture<Unit> = PNFuture<Unit> {
+        disconnect?.close() //todo should this be in async too?
+        disconnect = null
+    }.alsoAsync { chat.pubNub.removeMemberships(channels = listOf(id))}
 
     private fun emitUserMention(
         userId: String,
         timetoken: Long,
-        text: String, //todo need to add push payload including this once push is implemented here
+        text: String, //todo need to add push payload once push is implemented
     ): PNFuture<PNPublishResult> {
         return chat.emitEvent(userId, EventContent.Mention(timetoken, id))
     }
@@ -289,7 +335,7 @@ data class Channel(
         typingSent = value
     }
 
-    internal val channelFilterString = "channel.id == '${this.id}'"
+    private val channelFilterString = "channel.id == '${this.id}'"
 
     companion object {
         fun fromDTO(chat: Chat, channel: PNChannelMetadata): Channel {

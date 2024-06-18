@@ -1,6 +1,5 @@
 package com.pubnub.kmp
 
-import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNKey
@@ -37,6 +36,7 @@ import com.pubnub.kmp.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.types.CreateDirectConversationResult
+import com.pubnub.kmp.types.CreateGroupConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.user.GetUsersResponse
@@ -73,7 +73,7 @@ class ChatImpl(
     override val config: ChatConfig,
     override val pubNub: PubNub = createPubNub(config.pubnubConfig)
 ) : Chat {
-    private val user: User? = null
+    override val user: User? = null
 
 //    override suspend fun createUser(
 //        id: String,
@@ -394,7 +394,7 @@ class ChatImpl(
         channelStatus: String?,
         custom: CustomObject?,
     ): PNFuture<CreateDirectConversationResult> {
-        val user = this.user ?: error("Chat user is not set. Set them by calling setChatUser on the Chat instance.")
+        val user = this.user ?: return PubNubException("Chat user is not set. Set them by calling setChatUser on the Chat instance.").asFuture()
         val sortedUsers = listOf(invitedUser.id, user.id).sorted()
         val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
 
@@ -423,6 +423,46 @@ class ChatImpl(
                     channel,
                     Membership.fromMembershipDTO(this, hostMembershipResponse.data.first(), user),
                     inviteeMembership,
+                )
+            }
+        }
+    }
+
+    override fun createGroupConversation(
+        invitedUsers: Collection<User>,
+        channelId: String,
+        channelName: String?,
+        channelDescription: String?,
+        channelCustom: CustomObject?,
+        channelStatus: String?,
+        custom: CustomObject?
+    ): PNFuture<CreateGroupConversationResult> {
+        val user = this.user ?: return PubNubException("Chat user is not set. Set them by calling setChatUser on the Chat instance.").asFuture()
+        return getChannel(channelId).thenAsync { channel ->
+            channel?.asFuture() ?: createChannel(
+                channelId,
+                channelName,
+                channelDescription,
+                channelCustom,
+                ChannelType.DIRECT,
+                channelStatus
+            )
+        }.thenAsync { channel: Channel ->
+            val hostMembershipFuture = pubNub.setMemberships(
+                listOf(PNChannelMembership.Partial(channel.id, custom)),
+                filter = "channel.id == '${channel.id}'",
+                includeCustom = true,
+                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+                includeCount = true,
+            )
+            awaitAll(
+                hostMembershipFuture,
+                channel.inviteMultiple(invitedUsers)
+            ).then { (hostMembershipResponse: PNChannelMembershipArrayResult, inviteeMemberships: Array<Membership>) ->
+                CreateGroupConversationResult(
+                    channel,
+                    Membership.fromMembershipDTO(this, hostMembershipResponse.data.first(), user),
+                    inviteeMemberships,
                 )
             }
         }

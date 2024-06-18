@@ -1,18 +1,20 @@
 package com.pubnub.kmp
 
-import com.pubnub.api.PubNub
+import com.benasher44.uuid.uuid4
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.kmp.channel.GetChannelsResponse
 import com.pubnub.kmp.types.CreateDirectConversationResult
+import com.pubnub.kmp.types.CreateGroupConversationResult
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.user.GetUsersResponse
 
 interface Chat {
     val config: ChatConfig
     val pubNub: PubNub
+    val user: User?
 //
 //    suspend fun createUser(
 //        id: String,
@@ -124,6 +126,16 @@ interface Chat {
         channelStatus: String? = null,
         custom: CustomObject? = null,
     ): PNFuture<CreateDirectConversationResult>
+
+    fun createGroupConversation(
+        invitedUsers: Collection<User>,
+        channelId: String = uuid4().toString(),
+        channelName: String? = null,
+        channelDescription: String? = null,
+        channelCustom: CustomObject? = null,
+        channelStatus: String? = null,
+        custom: CustomObject? = null,
+    ): PNFuture<CreateGroupConversationResult>
     
     fun signal(channelId: String, message: EventContent): PNFuture<PNPublishResult>
 }
