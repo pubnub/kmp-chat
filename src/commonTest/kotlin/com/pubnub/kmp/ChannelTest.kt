@@ -1,5 +1,6 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.PubNubException
 import com.pubnub.api.createJsonElement
 import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.models.consumer.PNBoundedPage
@@ -26,8 +27,11 @@ import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class ChannelTest {
     private lateinit var objectUnderTest: Channel
@@ -41,7 +45,6 @@ class ChannelTest {
     private val status = "testStatus"
     private val type = ChannelType.DIRECT
     private val updated = "testUpdated"
-    private val callback: (Result<Channel>) -> Unit = {}
     private val typingTimeout = 1001.milliseconds
 
 
@@ -93,7 +96,6 @@ class ChannelTest {
     @Test
     fun canForwardMessage() {
         val message = createMessage()
-        val callback: (Result<Unit>) -> Unit = { }
         every { chat.forwardMessage(any(), any()) } returns Unit.asFuture()
 
         objectUnderTest.forwardMessage(message).async {}
@@ -144,7 +146,7 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        objectUnderTest.startTyping().async  { result ->
+        objectUnderTest.startTyping().async { result ->
             // then
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
@@ -161,14 +163,12 @@ class ChannelTest {
     @Test
     fun whenTypingNotSendShouldEmitStartTypingEvent() {
         every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
-        val callback: (Result<Unit>) -> Unit = { result: Result<Unit> ->
-            // then
+
+        // when
+        objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-
-        // when
-        objectUnderTest.startTyping().async {}
 
         // then
         verify {
@@ -191,12 +191,11 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        val callback: (Result<Unit>) -> Unit = { result ->
-            // then
+
+        objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-        objectUnderTest.startTyping().async {}
 
         verify(exactly(0)) { chat.emitEvent(any(), any()) }
     }
@@ -204,22 +203,20 @@ class ChannelTest {
     @Test
     fun whenChannelIsPublicShouldResultFailure() {
         objectUnderTest = createChannel(ChannelType.PUBLIC)
-        val callback: (Result<Unit>) -> Unit = { result ->
+
+        objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isFailure)
             assertEquals("Typing indicators are not supported in Public chats.", result.exceptionOrNull()?.message)
         }
-        objectUnderTest.stopTyping().async {}
     }
 
     @Test
     fun whenStopTypingAlreadySentStopTypingShouldImmediatelyResultSuccess() {
-        val callback: (Result<Unit>) -> Unit = { result ->
-            // then
+
+        objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-
-        objectUnderTest.stopTyping().async {}
 
         verify(exactly(0)) { chat.emitEvent(any(), any()) }
     }
@@ -235,13 +232,11 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        val callback: (Result<Unit>) -> Unit = { result ->
-            // then
+
+        objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-
-        objectUnderTest.stopTyping().async {}
 
         verify(exactly(0)) { chat.emitEvent(any(), any()) }
 
@@ -259,13 +254,12 @@ class ChannelTest {
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
         every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
-        val callback: (Result<Unit>) -> Unit = { result ->
-            // then
+
+        // when
+        objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-        // when
-        objectUnderTest.stopTyping().async {}
 
         // then
         verify {
@@ -274,6 +268,79 @@ class ChannelTest {
                 payload = EventContent.Typing(false)
             )
         }
+    }
+
+    @Test
+    fun whenTimeoutElapseShouldRemoveExpiredTypingIndicators() {
+        val typingSent1: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val now = typingSent1.plus(2.seconds)
+        val typingIndicatorsForTest = mutableMapOf<String, Instant>()
+        val user1 = "user1"
+        val user2 = "user2"
+        typingIndicatorsForTest[user1] = typingSent1
+        typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
+        objectUnderTest.typingIndicators = typingIndicatorsForTest
+
+        objectUnderTest.removeExpiredTypingIndicators(now)
+
+        assertFalse(objectUnderTest.typingIndicators.contains(user1))
+        assertFalse(objectUnderTest.typingIndicators.contains(user2))
+    }
+
+    @Test
+    fun whenTimeoutNotElapseShouldNotRemoveExpiredTypingIndicators() {
+        val typingSent1: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val now = typingSent1.plus(50.milliseconds)
+        val typingIndicatorsForTest = mutableMapOf<String, Instant>()
+        val user1 = "user1"
+        val user2 = "user2"
+        typingIndicatorsForTest[user1] = typingSent1
+        typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
+        objectUnderTest.typingIndicators = typingIndicatorsForTest
+
+        objectUnderTest.removeExpiredTypingIndicators(now)
+
+        assertTrue(objectUnderTest.typingIndicators.contains(user1))
+        assertTrue(objectUnderTest.typingIndicators.contains(user2))
+    }
+
+    @Test
+    fun whenUserIsTypingAndTypingIndicatorMapDoesNotContainEntryShouldAddIt(){
+        val now: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val userId = "user1"
+        val isTyping = true
+        objectUnderTest.typingIndicators = mutableMapOf()
+
+        objectUnderTest.updateUserTypingStatus(userId, isTyping, now)
+
+        assertTrue(objectUnderTest.typingIndicators.contains(userId))
+    }
+
+    @Test
+    fun whenUserIsNotTypingAndTypingIndicatorMapContainEntryShouldRemoveIt(){
+        val typingSent1: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val now = typingSent1.plus(50.milliseconds)
+        val userId = "user1"
+        val isTyping = false
+        objectUnderTest.typingIndicators = mutableMapOf(userId to typingSent1)
+
+        objectUnderTest.updateUserTypingStatus(userId, isTyping, now)
+
+        assertFalse(objectUnderTest.typingIndicators.contains(userId))
+    }
+
+    @Test
+    fun whenUserIsTypingAndTypingIndicatorMapContainEntryShouldUpdateTime(){
+        val typingSent1: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val now = typingSent1.plus(50.milliseconds)
+        val userId = "user1"
+        val isTyping = true
+        objectUnderTest.typingIndicators = mutableMapOf(userId to typingSent1)
+
+        objectUnderTest.updateUserTypingStatus(userId, isTyping, now)
+
+        assertTrue(objectUnderTest.typingIndicators.contains(userId))
+        assertEquals(now, objectUnderTest.typingIndicators[userId])
     }
 
     private fun createMessage(): Message {
@@ -296,9 +363,10 @@ class ChannelTest {
         every { chat.isPresent(any(), any()) } returns true.asFuture()
 
         val callback = { _: Result<Boolean> -> }
-        objectUnderTest.isPresent(
-            userId = "user"
-        )
+        objectUnderTest.isPresent(userId = "user").async { result ->
+            assertTrue(result.isSuccess)
+            assertTrue(result.getOrNull()!!)
+        }
 
         verify { chat.isPresent("user", channelId) }
     }
@@ -308,7 +376,9 @@ class ChannelTest {
         every { chat.whoIsPresent(any()) } returns emptyList<String>().asFuture()
 
         val callback = { _: Result<Collection<String>> -> }
-        objectUnderTest.whoIsPresent().async {}
+        objectUnderTest.whoIsPresent().async { result: Result<Collection<String>> ->
+            assertTrue(result.isSuccess)
+        }
 
         verify { chat.whoIsPresent(channelId) }
     }
@@ -346,10 +416,14 @@ class ChannelTest {
                     PNFetchMessagesResult(
                         mapOf(
                             channelId to listOf(
-                                PNFetchMessageItem(user1, createJsonElement(mapOf("type" to "text", "text" to message1)), null,
-                                    timetoken1, null, HistoryMessageType.Message, null),
-                                PNFetchMessageItem(user2, createJsonElement(mapOf("text" to message2, "files" to null)), null,
-                                    timetoken2, null, HistoryMessageType.Message, null),
+                                PNFetchMessageItem(
+                                    user1, createJsonElement(mapOf("type" to "text", "text" to message1)), null,
+                                    timetoken1, null, HistoryMessageType.Message, null
+                                ),
+                                PNFetchMessageItem(
+                                    user2, createJsonElement(mapOf("text" to message2, "files" to null)), null,
+                                    timetoken2, null, HistoryMessageType.Message, null
+                                ),
                             )
                         ), null
                     )
@@ -392,7 +466,8 @@ class ChannelTest {
     fun sendTextAllParametersArePassedToPublish() {
         every { chat.publish(any(), any(), any(), any(), any(), any(), any()) } returns PNPublishResult(1L).asFuture()
         val messageText = "someText"
-        val message = Message(chat, 1000L, EventContent.TextMessageContent(messageText), channelId, "some user", null, null)
+        val message =
+            Message(chat, 1000L, EventContent.TextMessageContent(messageText), channelId, "some user", null, null)
         val mentionedUser1 = "mention1"
         val referencedChannel1 = "referenced1"
         val userName = "someName"
@@ -412,34 +487,66 @@ class ChannelTest {
             null, // todo when files work
         ).async {}
 
-        verify { chat.publish(
-            channelId,
-            EventContent.TextMessageContent(messageText),
-            mapOf(
-                "custom_meta" to "custom",
-                "mentionedUsers" to mapOf(
-                    "0" to mapOf("id" to mentionedUser1, "name" to userName)
-                ),
-                "referencedChannels" to mapOf(
-                    "0" to mapOf("id" to referencedChannel1, "name" to channelName)
-                ),
-                "textLinks" to listOf(
-                    mapOf(
-                        "startIndex" to 1,
-                        "endIndex" to 20,
-                        "link" to link
+        verify {
+            chat.publish(
+                channelId,
+                EventContent.TextMessageContent(messageText),
+                mapOf(
+                    "custom_meta" to "custom",
+                    "mentionedUsers" to mapOf(
+                        "0" to mapOf("id" to mentionedUser1, "name" to userName)
+                    ),
+                    "referencedChannels" to mapOf(
+                        "0" to mapOf("id" to referencedChannel1, "name" to channelName)
+                    ),
+                    "textLinks" to listOf(
+                        mapOf(
+                            "startIndex" to 1,
+                            "endIndex" to 20,
+                            "link" to link
+                        )
+                    ),
+                    "quotedMessage" to mapOf(
+                        "timetoken" to message.timetoken,
+                        "text" to message.text,
+                        "userId" to message.userId
                     )
                 ),
-                "quotedMessage" to mapOf(
-                    "timetoken" to message.timetoken,
-                    "text" to message.text,
-                    "userId" to message.userId
-                )
-            ),
-            true,
-            false,
-            true,
-            ttl
-        ) }
+                true,
+                false,
+                true,
+                ttl
+            )
+        }
+    }
+
+
+    @Test
+    fun whenChannelIsPublicGetTypingShouldResultFailure() {
+        objectUnderTest = createChannel(ChannelType.PUBLIC)
+        val e = assertFailsWith<PubNubException> {
+            objectUnderTest.getTyping {}
+        }
+        assertEquals("Typing indicators are not supported in Public chats.", e.message)
+    }
+
+    @Test
+    fun shouldUpdateTypingTimeWhenUserIsTyping() {
+        //todo whenTypingStatusIndicateThatUserIsTypingAndTypingEventReceiveGetTypingShouldUpdateTime
+    }
+
+    @Test
+    fun shouldRemoveTypingStatusWhenUserStopsTyping() {
+        //todo whenTypingStatusIndicateThatUserIsTypingAndNotTypingEventReceiveGetTypingShouldRemoveTypingStatus
+    }
+
+    @Test
+    fun shouldCreateTypingStatusWhenUserStartsTyping() {
+        //todo whenThereIsNoTypingStatusForUserAndTypingEventReceiveGetTypingShouldCreateTypingStatus
+    }
+
+    @Test
+    fun getTypingShouldRemoveExpiredTypingIndicators() {
+        //todo
     }
 }
