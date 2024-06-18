@@ -1,14 +1,15 @@
 package com.pubnub.kmp
 
-import com.pubnub.api.PubNub
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.kmp.channel.GetChannelsResponse
 import com.pubnub.kmp.types.CreateDirectConversationResult
+import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.user.GetUsersResponse
+import kotlin.reflect.KClass
 
 interface Chat {
     val config: ChatConfig
@@ -123,4 +124,14 @@ interface Chat {
     ): PNFuture<CreateDirectConversationResult>
     
     fun signal(channelId: String, message: EventContent): PNFuture<PNPublishResult>
+
+    fun <T: EventContent> listenForEvents(type: KClass<T>, channel: String, customMethod: EmitEventMethod? = null, callback: (event: Event<T>) -> Unit) : AutoCloseable
+}
+
+inline fun <reified T: EventContent> Chat.listenForEvents(
+    channel: String,
+    customMethod: EmitEventMethod? = null,
+    noinline callback: (event: Event<T>) -> Unit
+) : AutoCloseable {
+    return listenForEvents(T::class, channel, customMethod, callback)
 }

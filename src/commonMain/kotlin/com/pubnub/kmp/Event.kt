@@ -8,4 +8,5 @@ data class Event<T: EventContent>(
     val payload: T,
     val channelId: String,
     val userId: String
+    //może dodać type?
 )

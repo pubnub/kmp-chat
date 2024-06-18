@@ -1,6 +1,5 @@
 package com.pubnub.kmp
 
-import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNKey
@@ -12,6 +11,8 @@ import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.presence.PNHereNowOccupantData
+import com.pubnub.api.models.consumer.pubsub.MessageResult
+import com.pubnub.api.models.consumer.pubsub.PNEvent
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
@@ -35,8 +36,10 @@ import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.types.getMethodFor
 import com.pubnub.kmp.user.GetUsersResponse
 import kotlin.js.JsExport
+import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -373,7 +376,7 @@ class ChatImpl(
 
 
     override fun <T : EventContent> emitEvent(channel: String, payload: T): PNFuture<PNPublishResult> {
-        return if (payload.method == EmitEventMethod.SIGNAL) {
+        return if (getMethodFor(payload::class) == EmitEventMethod.SIGNAL) {
             signal(channelId = channel, message = payload)
         } else {
             publish(channelId = channel, message = payload)
@@ -432,6 +435,40 @@ class ChatImpl(
         message: EventContent,
     ): PNFuture<PNPublishResult> {
         return pubNub.signal(channelId, PNDataEncoder.encode(message)!!)
+    }
+
+    override fun <T : EventContent> listenForEvents(type: KClass<T>, channel: String, customMethod: EmitEventMethod?, callback: (event: Event<T>) -> Unit) : AutoCloseable {
+        val handler = fun (_: PubNub, pnEvent: PNEvent) {
+            if (pnEvent.channel != channel) return
+            val message = (pnEvent as? MessageResult)?.message ?: return
+            val eventContent: EventContent = PNDataEncoder.decode(message)
+            @Suppress("UNCHECKED_CAST")
+            val payload = eventContent as? T ?: return
+
+            val event = Event(
+                chat = this,
+                timetoken = pnEvent.timetoken!!, //todo can this even be null?
+                payload = payload,
+                channelId = pnEvent.channel,
+                userId = pnEvent.publisher!! //todo can this even be null?
+            )
+            callback(event)
+        }
+        val method = getMethodFor(type) ?: customMethod
+        val listener = createEventListener(pubNub,
+            onMessage = if (method == EmitEventMethod.PUBLISH) handler else { _, _ -> },
+            onSignal =  if (method == EmitEventMethod.SIGNAL) handler else { _, _ -> },
+        )
+        val channelEntity = pubNub.channel(channel)
+        val subscription = channelEntity.subscription()
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return object : AutoCloseable {
+            override fun close() {
+                subscription.removeListener(listener)
+                subscription.unsubscribe()
+            }
+        }
     }
 
     private fun isValidId(id: String): Boolean {

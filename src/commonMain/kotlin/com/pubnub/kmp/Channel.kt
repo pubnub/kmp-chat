@@ -6,6 +6,7 @@ import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
+import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.error.PubNubErrorMessage
@@ -16,6 +17,8 @@ import com.pubnub.kmp.types.File
 import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
 import com.pubnub.kmp.types.TextLink
+import kotlinx.atomicfu.locks.reentrantLock
+import kotlinx.atomicfu.locks.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -37,9 +40,9 @@ data class Channel(
     private val suggestedNames = mutableMapOf<String, List<Membership>>()
     private var disconnect: (() -> Unit)? = null
     private var typingSent: Instant? = null
-    private var typingIndicators =
-        mutableMapOf<String, String>() //todo probably should be something like mutableMapOf<String, TimerTask>()
+    internal var typingIndicators = mutableMapOf<String, Instant>()
     private val sendTextRateLimiter: String? = null // todo should be ExponentialRateLimiter instead of String
+    private val typingIndicatorsLock = reentrantLock()
 
     fun update(
         name: String? = null,
@@ -60,7 +63,7 @@ data class Channel(
         return chat.forwardMessage(message, this.id)
     }
 
-    fun startTyping() : PNFuture<Unit> {
+    fun startTyping(): PNFuture<Unit> {
         if (type == ChannelType.PUBLIC) {
             return PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message).asFuture()
         }
@@ -78,20 +81,43 @@ data class Channel(
         return sendTypingSignal(true)
     }
 
-    fun stopTyping() : PNFuture<Unit> {
+    fun stopTyping(): PNFuture<Unit> {
         if (type == ChannelType.PUBLIC) {
             return PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message).asFuture()
         }
 
         typingSent?.let { typingSentNotNull: Instant ->
             val now = clock.now()
-            if(timeoutElapsed(typingSentNotNull, now)) {
+            if (timeoutElapsed(typingSentNotNull, now)) {
                 return Unit.asFuture()
             }
         } ?: return Unit.asFuture()
 
         typingSent = null
         return sendTypingSignal(false)
+    }
+
+    fun getTyping(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable {
+        if (type == ChannelType.PUBLIC) {
+            throw PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message)
+        }
+
+        return chat.listenForEvents(this.id) { event: Event<EventContent.Typing> ->
+            if (event.channelId != id) {
+                return@listenForEvents
+            }
+            val now = clock.now()
+            val userId = event.userId
+            val isTyping = event.payload.value
+
+            typingIndicatorsLock.withLock {
+                updateUserTypingStatus(userId, isTyping, now)
+                removeExpiredTypingIndicators(now)
+                typingIndicators.keys.toList()
+            }.also { typingIndicatorsList ->
+                callback(typingIndicatorsList)
+            }
+        }
     }
 
     fun whoIsPresent(): PNFuture<Collection<String>> {
@@ -102,41 +128,45 @@ data class Channel(
         return chat.isPresent(userId, id)
     }
 
-    fun getHistory(startTimetoken: Long? = null, endTimetoken: Long? = null, count: Int? = 25): PNFuture<List<Message>> {
+    fun getHistory(
+        startTimetoken: Long? = null,
+        endTimetoken: Long? = null,
+        count: Int? = 25
+    ): PNFuture<List<Message>> {
         return chat.pubNub.fetchMessages(
             listOf(id),
             PNBoundedPage(startTimetoken, endTimetoken, count),
             includeMessageActions = true,
             includeMeta = true
-        ).then { value ->
-                value.channels[id]?.map { messageItem: PNFetchMessageItem ->
-                    val eventContent = try {
-                        messageItem.message.asString()?.let { text ->
-                            EventContent.TextMessageContent(text, null)
-                        } ?: PNDataEncoder.decode(messageItem.message)
-                    } catch (e: Exception) {
-                        EventContent.UnknownMessageFormat(messageItem.message)
-                    }
+        ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
+            pnFetchMessagesResult.channels[id]?.map { messageItem: PNFetchMessageItem ->
+                val eventContent = try {
+                    messageItem.message.asString()?.let { text ->
+                        EventContent.TextMessageContent(text, null)
+                    } ?: PNDataEncoder.decode(messageItem.message)
+                } catch (e: Exception) {
+                    EventContent.UnknownMessageFormat(messageItem.message)
+                }
 
-                    Message(
-                        chat,
-                        messageItem.timetoken!!,
-                        eventContent,
-                        id,
-                        messageItem.uuid!!,
-                        messageItem.actions,
-                        messageItem.meta?.decode()?.let { it as Map<String,Any>? }
-                    )
-                } ?: error("Unable to read messages")
-            }.catch {
-                Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA.message, it))
-            }
+                Message(
+                    chat,
+                    messageItem.timetoken!!,
+                    eventContent,
+                    id,
+                    messageItem.uuid!!,
+                    messageItem.actions,
+                    messageItem.meta?.decode()?.let { it as Map<String, Any>? }
+                )
+            } ?: error("Unable to read messages")
+        }.catch {
+            Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA.message, it))
         }
+    }
 
 
     fun sendText(
         text: String,
-        meta: Map<String,Any>? = null,
+        meta: Map<String, Any>? = null,
         shouldStore: Boolean? = null,
         usePost: Boolean = false,
         ttl: Int? = null,
@@ -158,11 +188,13 @@ data class Channel(
             referencedChannels?.let { put("referencedChannels", PNDataEncoder.encode(it)!!) }
             textLinks?.let { put("textLinks", PNDataEncoder.encode(it)!!) }
             quotedMessage?.let {
-                put("quotedMessage", mapOf(
-                    "timetoken" to it.timetoken,
-                    "text" to it.text,
-                    "userId" to it.userId
-                ))
+                put(
+                    "quotedMessage", mapOf(
+                        "timetoken" to it.timetoken,
+                        "text" to it.text,
+                        "userId" to it.userId
+                    )
+                )
             }
         }
         return chat.publish(
@@ -173,17 +205,17 @@ data class Channel(
             usePost = usePost,
             ttl = ttl,
         ).then { publishResult: PNPublishResult ->
-                //todo chat SDK seems to ignore results of emitting these events?
-                try {
-                    mentionedUsers?.forEach {
-                        emitUserMention(it.value.id, publishResult.timetoken, text).async {}
-                    }
-                } catch (_: Exception) {
-                    //todo log
+            //todo chat SDK seems to ignore results of emitting these events?
+            try {
+                mentionedUsers?.forEach {
+                    emitUserMention(it.value.id, publishResult.timetoken, text).async {}
                 }
-                publishResult
+            } catch (_: Exception) {
+                //todo log
             }
+            publishResult
         }
+    }
 
 
     private fun emitUserMention(
@@ -207,6 +239,30 @@ data class Channel(
 
     internal fun setTypingSent(value: Instant) {
         typingSent = value
+    }
+
+    internal fun updateUserTypingStatus(userId: String, isTyping: Boolean, now: Instant) {
+        if (typingIndicators[userId] != null) {
+            if (isTyping) {
+                typingIndicators[userId] = now
+            } else {
+                typingIndicators.remove(userId)
+            }
+        } else {
+            if (isTyping) {
+                typingIndicators[userId] = now
+            }
+        }
+    }
+
+    internal fun removeExpiredTypingIndicators(now: Instant) {
+        val iterator = typingIndicators.entries.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (timeoutElapsed(entry.value, now)) {
+                iterator.remove()
+            }
+        }
     }
 }
 
