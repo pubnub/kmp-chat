@@ -7,6 +7,7 @@ import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.PNTimeResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
+import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
@@ -17,7 +18,6 @@ import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
-import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.error.PubNubErrorMessage
@@ -261,7 +261,7 @@ data class Channel(
         }
     }
 
-    fun inviteMultiple(users: Collection<User>) : PNFuture<Array<Membership>> {
+    fun inviteMultiple(users: Collection<User>) : PNFuture<List<Membership>> {
         if (this.type == ChannelType.PUBLIC) {
             return PubNubException("Channel invites are not supported in Public chats.").asFuture()
         }
@@ -326,6 +326,7 @@ data class Channel(
     }
 
     fun join(custom: CustomObject? = null, callback: (Message) -> Unit): PNFuture<JoinResult> {
+        val user = this.chat.user ?: return PubNubException("Chat user is not set. Set them by calling setChatUser on the Chat instance.").asFuture()
         return chat.pubNub.setMemberships(
             channels = listOf(PNChannelMembership.Partial(this.id, custom)), //todo should null overwrite? wait for optionals?
             includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
@@ -336,7 +337,7 @@ data class Channel(
         ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
             val resultDisconnect = disconnect ?: connect(callback)
             chat.pubNub.time().thenAsync { time: PNTimeResult ->
-                Membership.fromMembershipDTO(chat, membershipArray.data.first(), this.chat.user!!)
+                Membership.fromMembershipDTO(chat, membershipArray.data.first(), user)
                     .setLastReadMessageTimetoken(time.timetoken)
             }.then {
                 JoinResult(it, resultDisconnect) //todo the whole disconnect handling is not safe! state can be made inconsistent

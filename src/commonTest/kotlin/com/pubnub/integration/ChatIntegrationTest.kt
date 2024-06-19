@@ -1,39 +1,20 @@
 package com.pubnub.integration
 
 import com.pubnub.api.PubNubException
-import com.pubnub.kmp.Chat
-import com.pubnub.kmp.ChatConfigImpl
-import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.User
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.kmp.utils.cyrb53a
-import com.pubnub.test.BaseIntegrationTest
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import kotlinx.coroutines.test.runTest
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 
-class ChatIntegrationTest: BaseIntegrationTest() {
-
-//    val config = createPNConfiguration(UserId("testUser"), Keys.subKey, Keys.pubKey)
-//    val pubnub = createPubNub(config)
-
-    lateinit var chat: Chat
-    lateinit var someUser: User
-
-    @BeforeTest
-    override fun before(){
-        super.before()
-        chat = ChatImpl(ChatConfigImpl(config), pubnub)
-        someUser = User(chat, randomString(), randomString(), randomString(), randomString(), randomString(), mapOf(randomString() to randomString()), randomString(), randomString(), updated = null, lastActiveTimestamp = null)
-    }
+class ChatIntegrationTest: BaseChatIntegrationTest() {
 
     @Test
     fun createUser() = runTest {
@@ -78,6 +59,7 @@ class ChatIntegrationTest: BaseIntegrationTest() {
     fun createDirectConversation() = runTest {
         chat.user = someUser
         val otherUser = User(chat, randomString())
+//        cleanup.add { pubnub.removeUUIDMetadata(otherUser.id).await() }
 
         // when
         val result = try {
@@ -86,25 +68,44 @@ class ChatIntegrationTest: BaseIntegrationTest() {
             e.printStackTrace()
             throw e
         }
+//        cleanup.add {
+//            pubnub.removeChannelMetadata(result.channel.id).await()
+//            pubnub.removeChannelMembers(result.channel.id, listOf(someUser.id, otherUser.id))
+//        }
 
         // then
         val sortedUsers = listOf(someUser.id, otherUser.id).sorted()
-        assertEquals(result.channel.id, "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}")
+        assertEquals("direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}", result.channel.id)
 
-        assertEquals(result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null), someUser)
-        assertEquals(result.inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null), otherUser)
+        assertEquals(someUser, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(otherUser, result.inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null))
 
         assertEquals(result.channel, result.hostMembership.channel)
         assertEquals(result.channel, result.inviteeMembership.channel)
 
-
-        //cleanup
-        pubnub.removeUUIDMetadata(otherUser.id).await()
     }
 
-    @AfterTest
-    fun cleanup() = runTest {
-        pubnub.removeUUIDMetadata(someUser.id).await()
-    }
+    @Test
+    fun createGroupConversation() = runTest {
+        chat.user = someUser
+        val otherUsers = listOf(User(chat, randomString()), User(chat, randomString()))
 
+        // when
+        val result = try {
+            chat.createGroupConversation(otherUsers).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
+        }
+
+        // then
+        assertEquals(someUser, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(otherUsers.size, result.inviteeMemberships.size)
+        result.inviteeMemberships.forEach { inviteeMembership ->
+            assertEquals(otherUsers.first { it.id == inviteeMembership.user.id }, inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null))
+            assertEquals(result.channel, inviteeMembership.channel)
+        }
+
+        assertEquals(result.channel, result.hostMembership.channel)
+    }
 }

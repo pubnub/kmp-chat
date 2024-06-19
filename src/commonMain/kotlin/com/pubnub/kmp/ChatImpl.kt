@@ -456,11 +456,11 @@ class ChatImpl(
             awaitAll(
                 hostMembershipFuture,
                 channel.inviteMultiple(invitedUsers)
-            ).then { (hostMembershipResponse: PNChannelMembershipArrayResult, inviteeMemberships: Array<Membership>) ->
+            ).then { (hostMembershipResponse: PNChannelMembershipArrayResult, inviteeMemberships: List<Membership>) ->
                 CreateGroupConversationResult(
                     channel,
                     Membership.fromMembershipDTO(this, hostMembershipResponse.data.first(), user),
-                    inviteeMemberships,
+                    inviteeMemberships.toTypedArray(),
                 )
             }
         }
