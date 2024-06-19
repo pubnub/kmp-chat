@@ -57,13 +57,12 @@ class ChatIntegrationTest: BaseChatIntegrationTest() {
 
     @Test
     fun createDirectConversation() = runTest {
-        chat.user = someUser
-        val otherUser = User(chat, randomString())
+//        val otherUser = User(chat, randomString())
 //        cleanup.add { pubnub.removeUUIDMetadata(otherUser.id).await() }
 
         // when
         val result = try {
-              chat.createDirectConversation(otherUser).await()
+              chat.createDirectConversation(someUser).await()
         } catch (e: Exception) {
             e.printStackTrace()
             throw e
@@ -74,11 +73,11 @@ class ChatIntegrationTest: BaseChatIntegrationTest() {
 //        }
 
         // then
-        val sortedUsers = listOf(someUser.id, otherUser.id).sorted()
+        val sortedUsers = listOf(chat.user.id, someUser.id).sorted()
         assertEquals("direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}", result.channel.id)
 
-        assertEquals(someUser, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
-        assertEquals(otherUser, result.inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(chat.user, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(someUser, result.inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null))
 
         assertEquals(result.channel, result.hostMembership.channel)
         assertEquals(result.channel, result.inviteeMembership.channel)
@@ -87,7 +86,6 @@ class ChatIntegrationTest: BaseChatIntegrationTest() {
 
     @Test
     fun createGroupConversation() = runTest {
-        chat.user = someUser
         val otherUsers = listOf(User(chat, randomString()), User(chat, randomString()))
 
         // when
@@ -99,7 +97,7 @@ class ChatIntegrationTest: BaseChatIntegrationTest() {
         }
 
         // then
-        assertEquals(someUser, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(chat.user, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
         assertEquals(otherUsers.size, result.inviteeMemberships.size)
         result.inviteeMemberships.forEach { inviteeMembership ->
             assertEquals(otherUsers.first { it.id == inviteeMembership.user.id }, inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null))

@@ -59,7 +59,7 @@ interface ChatConfig {
 }
 
 class ChatConfigImpl(override val pubnubConfig: PNConfiguration) : ChatConfig {
-    override var uuid: String = ""
+    override var uuid: String = pubnubConfig.userId.value
     override var saveDebugLog: Boolean = false
     override var typingTimeout: Duration = 5.seconds //millis
     override var rateLimitPerChannel: Any = mutableMapOf<ChannelType, Int>()
@@ -77,7 +77,8 @@ class ChatImpl(
     override val config: ChatConfig,
     override val pubNub: PubNub = createPubNub(config.pubnubConfig)
 ) : Chat {
-    override var user: User? = null
+    override var user: User = User(this, config.uuid)
+        private set
 
     override fun createUser(user: User): PNFuture<User> = createUser(
         id = user.id,

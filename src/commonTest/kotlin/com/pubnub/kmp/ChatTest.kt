@@ -52,11 +52,10 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class ChatTest {
     private lateinit var objectUnderTest: ChatImpl
-    private val chatConfig: ChatConfig = mock(MockMode.strict)
-
     private val chatMock: Chat = mock(MockMode.strict)
     private val pubnub: PubNub = mock(MockMode.strict)
     private lateinit var pnConfiguration: PNConfiguration
+    private lateinit var chatConfig: ChatConfig
     private val setUUIDMetadataEndpoint: SetUUIDMetadata = mock(MockMode.strict)
     private val setChannelMetadataEndpoint: SetChannelMetadata = mock(MockMode.strict)
     private val getUUIDMetadataEndpoint: GetUUIDMetadata = mock(MockMode.strict)
@@ -91,8 +90,9 @@ class ChatTest {
     @BeforeTest
     fun setUp() {
         pnConfiguration = createPNConfiguration(UserId(userId), subscribeKey, publishKey)
-        every { chatConfig.pubnubConfig } returns pnConfiguration
-        every { chatConfig.typingTimeout } returns 2000.milliseconds
+        chatConfig = ChatConfigImpl(pnConfiguration).apply {
+            typingTimeout = 2000.milliseconds
+        }
         objectUnderTest = ChatImpl(chatConfig, pubnub)
     }
 

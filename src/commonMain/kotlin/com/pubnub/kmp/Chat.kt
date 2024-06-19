@@ -16,7 +16,7 @@ import kotlin.reflect.KClass
 interface Chat {
     val config: ChatConfig
     val pubNub: PubNub
-    var user: User?
+    val user: User
 
     fun createUser(user: User): PNFuture<User>
 
