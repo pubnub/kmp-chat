@@ -37,6 +37,7 @@ import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.types.Restriction
 import com.pubnub.kmp.types.RestrictionType
 import com.pubnub.kmp.types.getMethodFor
 import com.pubnub.kmp.user.GetUsersResponse
@@ -484,34 +485,40 @@ class ChatImpl(
     override fun setRestrictions(
         userId: String,
         channelId: String,
-        restrictionType: RestrictionType?,
-        reason: String?
+        restriction: Restriction
     ): PNFuture<Unit> {
         val channel: String = INTERNAL_MODERATION_PREFIX + channelId
 
-        val moderationEvent: PNFuture<PNPublishResult> = if (restrictionType == null) {
-            pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
-            emitEvent(
-                channel = userId,
-                payload = EventContent.Moderation(
-                    channelId = channel,
-                    restriction = RestrictionType.LIFTED.stringValue,
-                    reason = reason
+        val moderationEvent: PNFuture<PNPublishResult> =
+            if (!restriction.ban && !restriction.mute) {
+                pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
+                emitEvent(
+                    channel = userId,
+                    payload = EventContent.Moderation(
+                        channelId = channel,
+                        restriction = RestrictionType.LIFT.stringValue,
+                        reason = restriction.reason
+                    )
                 )
-            )
-        } else {
-            val custom = createCustomObject(mapOf("restriction" to restrictionType.stringValue, "reason" to reason))
-            val uuids = listOf(PNMember.Partial(uuidId = userId, custom = custom, null))
-            pubNub.setChannelMembers(channel = channel, uuids = uuids)
-            emitEvent(
-                channel = userId,
-                payload = EventContent.Moderation(
-                    channelId = channel,
-                    restriction = restrictionType.stringValue,
-                    reason = reason
+            } else {
+                val custom = createCustomObject(
+                    mapOf(
+                        "ban" to restriction.ban,
+                        "mute" to restriction.mute,
+                        "reason" to restriction.reason
+                    )
                 )
-            )
-        }
+                val uuids = listOf(PNMember.Partial(uuidId = userId, custom = custom, null))
+                pubNub.setChannelMembers(channel = channel, uuids = uuids)
+                emitEvent(
+                    channel = userId,
+                    payload = EventContent.Moderation(
+                        channelId = channel,
+                        restriction = if(restriction.ban) RestrictionType.BAN.stringValue else RestrictionType.MUTE.stringValue,
+                        reason = restriction.reason
+                    )
+                )
+            }
         return moderationEvent.then { Unit }
     }
 

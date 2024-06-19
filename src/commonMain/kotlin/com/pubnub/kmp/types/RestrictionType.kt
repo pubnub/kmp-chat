@@ -1,7 +1,7 @@
 package com.pubnub.kmp.types
 
 enum class RestrictionType(val stringValue: String) {
-    BAN("ban"), MUTE("mute"), LIFTED("lifted");
+    BAN("banned"), MUTE("muted"), LIFT("lifted");
 
     companion object{
         fun getByTest(text: String): RestrictionType?{

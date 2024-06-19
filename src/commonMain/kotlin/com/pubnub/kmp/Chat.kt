@@ -8,7 +8,7 @@ import com.pubnub.kmp.channel.GetChannelsResponse
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.types.RestrictionType
+import com.pubnub.kmp.types.Restriction
 import com.pubnub.kmp.user.GetUsersResponse
 import kotlin.reflect.KClass
 
@@ -136,8 +136,7 @@ interface Chat {
     fun setRestrictions(
         userId: String,
         channelId: String,
-        restrictionType: RestrictionType? = null,
-        reason: String? = null
+        restriction: Restriction
     ): PNFuture<Unit>
 }
 
