@@ -8,6 +8,7 @@ import com.pubnub.kmp.channel.GetChannelsResponse
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.types.RestrictionType
 import com.pubnub.kmp.user.GetUsersResponse
 import kotlin.reflect.KClass
 
@@ -97,7 +98,7 @@ interface Chat {
 
     fun deleteChannel(id: String, soft: Boolean): PNFuture<Channel>
 
-    fun forwardMessage(message: Message, channelId: String): PNFuture<Unit>
+    fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult>
 
     fun whoIsPresent(channelId: String): PNFuture<Collection<String>>
 
@@ -122,16 +123,28 @@ interface Chat {
         channelData: Any? = null,
         membershipData: Any? = null,
     ): PNFuture<CreateDirectConversationResult>
-    
+
     fun signal(channelId: String, message: EventContent): PNFuture<PNPublishResult>
 
-    fun <T: EventContent> listenForEvents(type: KClass<T>, channel: String, customMethod: EmitEventMethod? = null, callback: (event: Event<T>) -> Unit) : AutoCloseable
+    fun <T : EventContent> listenForEvents(
+        type: KClass<T>,
+        channel: String,
+        customMethod: EmitEventMethod? = null,
+        callback: (event: Event<T>) -> Unit
+    ): AutoCloseable
+
+    fun setRestrictions(
+        userId: String,
+        channelId: String,
+        restrictionType: RestrictionType? = null,
+        reason: String? = null
+    ): PNFuture<Unit>
 }
 
-inline fun <reified T: EventContent> Chat.listenForEvents(
+inline fun <reified T : EventContent> Chat.listenForEvents(
     channel: String,
     customMethod: EmitEventMethod? = null,
     noinline callback: (event: Event<T>) -> Unit
-) : AutoCloseable {
+): AutoCloseable {
     return listenForEvents(T::class, channel, customMethod, callback)
 }

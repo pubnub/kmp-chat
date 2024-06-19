@@ -1,6 +1,7 @@
 package com.pubnub.kmp.types
 
 import com.pubnub.api.JsonElement
+import com.pubnub.kmp.ChannelType
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -19,7 +20,7 @@ data class File(
 fun getMethodFor(type: KClass<out EventContent>): EmitEventMethod? {
     return when (type) {
         EventContent.Custom::class -> null
-        EventContent.Receipt::class, EventContent.Typing::class -> EmitEventMethod.SIGNAL
+        EventContent.Receipt::class, EventContent.Typing::class, EventContent.Moderation::class, EventContent.Invite::class-> EmitEventMethod.SIGNAL
         EventContent.Mention::class, EventContent.Report::class, EventContent.TextMessageContent::class -> EmitEventMethod.PUBLISH
         else -> error("Should never happen.")
     }
@@ -52,6 +53,14 @@ sealed class EventContent {
     @Serializable
     @SerialName("custom")
     data class Custom(@Contextual val data: Any, @Transient val method: EmitEventMethod = EmitEventMethod.PUBLISH) : EventContent()
+
+    @Serializable
+    @SerialName("invite")
+    data class Invite(val channelType: ChannelType = ChannelType.UNKNOWN, val channelId: String): EventContent() //todo change ChannelType to string
+
+    @Serializable
+    @SerialName("moderation")
+    data class Moderation(val channelId: String, val restriction: String, val reason: String? = null): EventContent()
 
     @Serializable
     @SerialName("text")

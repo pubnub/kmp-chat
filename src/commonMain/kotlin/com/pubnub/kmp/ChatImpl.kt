@@ -7,6 +7,7 @@ import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
+import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
@@ -36,6 +37,7 @@ import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.types.RestrictionType
 import com.pubnub.kmp.types.getMethodFor
 import com.pubnub.kmp.user.GetUsersResponse
 import kotlin.js.JsExport
@@ -66,6 +68,8 @@ private const val CHANNEL_ID_IS_REQUIRED = "Channel Id is required"
 private const val ORIGINAL_PUBLISHER = "originalPublisher"
 
 private const val HTTP_ERROR_404 = 404
+
+private const val INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_"
 
 class ChatImpl(
     override val config: ChatConfig,
@@ -352,7 +356,7 @@ class ChatImpl(
     }
 
 
-    override fun forwardMessage(message: Message, channelId: String): PNFuture<Unit> {
+    override fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult> {
         if (!isValidId(channelId)) {
             return PubNubException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
@@ -368,10 +372,9 @@ class ChatImpl(
             channel = channelId,
             meta = meta,
             ttl = message.timetoken.toInt()
-        ).then { Unit }
-            .catch { exception ->
-                Result.failure(PubNubException(FAILED_TO_FORWARD_MESSAGE.message, exception))
-            }
+        ).catch { exception ->
+            Result.failure(PubNubException(FAILED_TO_FORWARD_MESSAGE.message, exception))
+        }
     }
 
 
@@ -437,11 +440,17 @@ class ChatImpl(
         return pubNub.signal(channelId, PNDataEncoder.encode(message)!!)
     }
 
-    override fun <T : EventContent> listenForEvents(type: KClass<T>, channel: String, customMethod: EmitEventMethod?, callback: (event: Event<T>) -> Unit) : AutoCloseable {
-        val handler = fun (_: PubNub, pnEvent: PNEvent) {
+    override fun <T : EventContent> listenForEvents(
+        type: KClass<T>,
+        channel: String,
+        customMethod: EmitEventMethod?,
+        callback: (event: Event<T>) -> Unit
+    ): AutoCloseable {
+        val handler = fun(_: PubNub, pnEvent: PNEvent) {
             if (pnEvent.channel != channel) return
             val message = (pnEvent as? MessageResult)?.message ?: return
             val eventContent: EventContent = PNDataEncoder.decode(message)
+
             @Suppress("UNCHECKED_CAST")
             val payload = eventContent as? T ?: return
 
@@ -455,9 +464,10 @@ class ChatImpl(
             callback(event)
         }
         val method = getMethodFor(type) ?: customMethod
-        val listener = createEventListener(pubNub,
+        val listener = createEventListener(
+            pubNub,
             onMessage = if (method == EmitEventMethod.PUBLISH) handler else { _, _ -> },
-            onSignal =  if (method == EmitEventMethod.SIGNAL) handler else { _, _ -> },
+            onSignal = if (method == EmitEventMethod.SIGNAL) handler else { _, _ -> },
         )
         val channelEntity = pubNub.channel(channel)
         val subscription = channelEntity.subscription()
@@ -469,6 +479,40 @@ class ChatImpl(
                 subscription.unsubscribe()
             }
         }
+    }
+
+    override fun setRestrictions(
+        userId: String,
+        channelId: String,
+        restrictionType: RestrictionType?,
+        reason: String?
+    ): PNFuture<Unit> {
+        val channel: String = INTERNAL_MODERATION_PREFIX + channelId
+
+        val moderationEvent: PNFuture<PNPublishResult> = if (restrictionType == null) {
+            pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
+            emitEvent(
+                channel = userId,
+                payload = EventContent.Moderation(
+                    channelId = channel,
+                    restriction = RestrictionType.LIFTED.stringValue,
+                    reason = reason
+                )
+            )
+        } else {
+            val custom = createCustomObject(mapOf("restriction" to restrictionType.stringValue, "reason" to reason))
+            val uuids = listOf(PNMember.Partial(uuidId = userId, custom = custom, null))
+            pubNub.setChannelMembers(channel = channel, uuids = uuids)
+            emitEvent(
+                channel = userId,
+                payload = EventContent.Moderation(
+                    channelId = channel,
+                    restriction = restrictionType.stringValue,
+                    reason = reason
+                )
+            )
+        }
+        return moderationEvent.then { Unit }
     }
 
     private fun isValidId(id: String): Boolean {

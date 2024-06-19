@@ -6,6 +6,7 @@ import com.pubnub.api.endpoints.objects.channel.GetAllChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.GetChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.RemoveChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
+import com.pubnub.api.endpoints.objects.member.ManageChannelMembers
 import com.pubnub.api.endpoints.objects.uuid.GetAllUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
@@ -31,6 +32,7 @@ import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
+import com.pubnub.kmp.types.RestrictionType
 import com.pubnub.kmp.user.GetUsersResponse
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -85,8 +87,9 @@ class ChatTest {
     private val channelId = "myChannelId"
     private val meta = mapOf("one" to "ten")
     private val ttl = 10
-    val timetoken: Long = 123457
-    val pnException404 = PubNubException(statusCode = 404, errorMessage = "Requested object was not found.")
+    private val manageChannelMembers: ManageChannelMembers = mock(mode = MockMode.strict)
+    private val timetoken: Long = 123457
+    private val pnException404 = PubNubException(statusCode = 404, errorMessage = "Requested object was not found.")
 
     @BeforeTest
     fun setUp() {
@@ -560,7 +563,7 @@ class ChatTest {
         val message = createMessage()
 
         // when
-        objectUnderTest.forwardMessage(message, channelId).async { result: Result<Unit> ->
+        objectUnderTest.forwardMessage(message, channelId).async { result: Result<PNPublishResult> ->
             // then
             assertTrue(result.isFailure)
             assertEquals("You cannot forward the message to the same channel.", result.exceptionOrNull()!!.message)
@@ -587,7 +590,7 @@ class ChatTest {
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
 
-        objectUnderTest.forwardMessage(message, channelId).async { result: Result<Unit> ->
+        objectUnderTest.forwardMessage(message, channelId).async { result: Result<PNPublishResult> ->
             assertTrue(result.isSuccess)
         }
 
@@ -626,12 +629,17 @@ class ChatTest {
         objectUnderTest.emitEvent(
             channel = channelId,
             payload = payload
-        ).async  { result ->
+        ).async { result ->
             assertTrue(result.isSuccess)
             assertEquals(timetoken, result.getOrNull()?.timetoken)
         }
 
-        verify { pubnub.publish(channel = channelId, message = mapOf("type" to "text", "text" to "messageContent", "files" to null)) }
+        verify {
+            pubnub.publish(
+                channel = channelId,
+                message = mapOf("type" to "text", "text" to "messageContent", "files" to null)
+            )
+        }
     }
 
     @Test
@@ -801,7 +809,7 @@ class ChatTest {
         }
         val filter = "name LIKE 'test*'"
 
-        objectUnderTest.getUsers(filter = filter).async  { result: Result<GetUsersResponse> ->
+        objectUnderTest.getUsers(filter = filter).async { result: Result<GetUsersResponse> ->
             assertTrue(result.isSuccess)
             assertEquals(total, result.getOrNull()?.total)
             val user: User = result.getOrNull()?.users?.first()!!
@@ -885,6 +893,50 @@ class ChatTest {
             assertTrue(result.exceptionOrNull()?.message!!.contains("Failed to get channels."))
         }
     }
+
+
+    @Test
+    fun shouldLiftRestrictionWhenNoRestrictionProvided() {
+        val userId = "user1"
+        val channelId = "channel1"
+        val reason = "Scout"
+        val payloadSlot = Capture.slot<Any>()
+        every { pubnub.removeChannelMembers(any(), any()) } returns manageChannelMembers
+        //unfortunately mokkery lib doesn't support spying, so we can't stub chat.emitEvent :|
+        every { pubnub.signal(any(), capture(payloadSlot)) } returns signalEndpoint
+
+        objectUnderTest.setRestrictions(userId, channelId, restrictionType = null, reason = reason)
+
+        verify { pubnub.signal(channel = userId, message = any()) }
+        // it seems that mokkery does capture custom object but map and plain types
+        val actualPayload: Map<String, String> = payloadSlot.get() as Map<String, String>
+        assertEquals(actualPayload["type"], "moderation")
+        assertEquals(actualPayload["channelId"], "PUBNUB_INTERNAL_MODERATION_$channelId")
+        assertEquals(actualPayload["restriction"], RestrictionType.LIFTED.stringValue)
+        assertEquals(actualPayload["reason"], reason)
+    }
+
+    @Test
+    fun shouldSetRestrictionWhenRestrictionProvided() {
+        val userId = "user1"
+        val channelId = "channel1"
+        val reason = "Scout"
+        val ban = RestrictionType.BAN
+        val payloadSlot = Capture.slot<Any>()
+        every { pubnub.setChannelMembers(any(), any()) } returns manageChannelMembers
+        every { pubnub.signal(any(), capture(payloadSlot)) } returns signalEndpoint
+
+        objectUnderTest.setRestrictions(userId, channelId, restrictionType = ban, reason = reason)
+
+        verify { pubnub.signal(channel = userId, message = any()) }
+        // it seems that mokkery does capture custom object but map and plain types
+        val actualPayload: Map<String, String> = payloadSlot.get() as Map<String, String>
+        assertEquals(actualPayload["type"], "moderation")
+        assertEquals(actualPayload["channelId"], "PUBNUB_INTERNAL_MODERATION_$channelId")
+        assertEquals(actualPayload["restriction"], RestrictionType.BAN.stringValue)
+        assertEquals(actualPayload["reason"], reason)
+    }
+
 
     private fun getPNChannelMetadataResult(
         updatedName: String = "",
