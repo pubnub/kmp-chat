@@ -391,7 +391,7 @@ data class Channel(
                 description = channel.description,
                 updated = channel.updated,
                 status = channel.status,
-                type = ChannelType.parse(channel.type)
+                type = ChannelType.from(channel.type)
             )
         }
     }
@@ -426,14 +426,14 @@ private const val stringGroup = "group"
 private const val stringPublic = "public"
 private const val stringUnknown = "unknown"
 
-enum class ChannelType(private val stringValue: String) {
+enum class ChannelType(val stringValue: String) {
     @SerialName(stringDirect) DIRECT(stringDirect),
     @SerialName(stringGroup) GROUP(stringGroup),
     @SerialName(stringPublic) PUBLIC(stringPublic),
     @SerialName(stringUnknown) UNKNOWN(stringUnknown);
 
     companion object {
-        fun parse(type: String?): ChannelType {
+        fun from(type: String?): ChannelType {
             return entries.find { it.stringValue == type } ?: UNKNOWN
         }
     }
