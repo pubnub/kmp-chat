@@ -105,20 +105,6 @@ data class User(
 
     internal val uuidFilterString = "uuid.id == '${this.id}'"
 
-//
-//    private fun getChannel(pnChannelMembership: PNChannelMembership): Channel {
-//        return Channel(
-//            chat = chat,
-//            id = pnChannelMembership.channel?.id ?: "undefined", //todo not sure about this
-//            name = pnChannelMembership.channel?.name,
-//            custom = pnChannelMembership.channel?.custom?.let { createCustomObject(it) },
-//            description = pnChannelMembership.channel?.description,
-//            updated = pnChannelMembership.channel?.updated,
-//            status = pnChannelMembership.channel?.status,
-//            type = ChannelType.parse(pnChannelMembership.channel?.type)
-//        )
-//    }
-
     companion object {
         fun fromDTO(chat: Chat, user: PNUUIDMetadata): User = User(
             chat,

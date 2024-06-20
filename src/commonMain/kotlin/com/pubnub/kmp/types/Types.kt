@@ -20,7 +20,7 @@ data class File(
 fun getMethodFor(type: KClass<out EventContent>): EmitEventMethod? {
     return when (type) {
         EventContent.Custom::class -> null
-        EventContent.Receipt::class, EventContent.Typing::class -> EmitEventMethod.SIGNAL
+        EventContent.Receipt::class, EventContent.Typing::class, EventContent.Moderation::class, EventContent.Invite::class-> EmitEventMethod.SIGNAL
         else -> EmitEventMethod.PUBLISH
     }
 }
@@ -56,6 +56,10 @@ sealed class EventContent {
     @Serializable
     @SerialName("custom")
     data class Custom(@Contextual val data: Any, @Transient val method: EmitEventMethod = EmitEventMethod.PUBLISH) : EventContent()
+
+    @Serializable
+    @SerialName("moderation")
+    data class Moderation(val channelId: String, val restriction: RestrictionType, val reason: String? = null): EventContent()
 
     @Serializable
     @SerialName("text")

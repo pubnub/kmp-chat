@@ -91,20 +91,24 @@ class ChannelTest {
     @Test
     fun canSoftDeleteChannel() {
         val softDelete = true
-        every { chat.deleteChannel(any(), any()) } returns objectUnderTest.asFuture()
+        val channelFutureMock: PNFuture<Channel> = mock(MockMode.strict)
+        every { chat.deleteChannel(any(), any()) } returns channelFutureMock
 
-        objectUnderTest.delete(soft = softDelete).async {}
+        val deleteChannelFuture: PNFuture<Channel> = objectUnderTest.delete(soft = softDelete)
 
+        assertEquals(channelFutureMock, deleteChannelFuture)
         verify { chat.deleteChannel(id = channelId, soft = softDelete) }
     }
 
     @Test
     fun canForwardMessage() {
         val message = createMessage()
-        every { chat.forwardMessage(any(), any()) } returns Unit.asFuture()
+        val publishResultMock: PNFuture<PNPublishResult> = mock(MockMode.strict)
+        every { chat.forwardMessage(any(), any()) } returns publishResultMock
 
-        objectUnderTest.forwardMessage(message).async {}
+        val forwardMessage = objectUnderTest.forwardMessage(message)
 
+        assertEquals(publishResultMock, forwardMessage)
         verify { chat.forwardMessage(message, channelId) }
     }
 

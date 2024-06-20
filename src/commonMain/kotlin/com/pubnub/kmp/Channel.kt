@@ -73,7 +73,7 @@ data class Channel(
         return chat.deleteChannel(id, soft)
     }
 
-    fun forwardMessage(message: Message): PNFuture<Unit> {
+    fun forwardMessage(message: Message): PNFuture<PNPublishResult> {
         return chat.forwardMessage(message, this.id)
     }
 
