@@ -42,7 +42,8 @@ class ChannelTest {
     private lateinit var chatConfig: ChatConfig
     private val channelId = "testId"
     private val name = "testName"
-    private val custom = createCustomObject(mapOf("testCustom" to "custom"))
+    private val customData = mapOf("testCustom" to "custom")
+    private val custom = createCustomObject(customData)
     private val description = "testDescription"
     private val status = "testStatus"
     private val type = ChannelType.DIRECT
@@ -65,7 +66,7 @@ class ChannelTest {
         clock = clock,
         id = channelId,
         name = name,
-        custom = custom,
+        custom = customData,
         description = description,
         updated = updated,
         status = status,

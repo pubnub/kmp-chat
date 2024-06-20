@@ -27,7 +27,7 @@ import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.File
 import com.pubnub.kmp.types.JoinResult
-import com.pubnub.kmp.types.MessageMentionedUser
+import com.pubnub.kmp.types.MessageMentionedUsers
 import com.pubnub.kmp.types.MessageReferencedChannel
 import com.pubnub.kmp.types.TextLink
 import kotlinx.atomicfu.locks.reentrantLock
@@ -45,7 +45,7 @@ data class Channel(
     private val clock: Clock = Clock.System,
     val id: String,
     val name: String? = null,
-    val custom: CustomObject? = null,
+    val custom: Map<String,Any?>? = null,
     val description: String? = null,
     val updated: String? = null,
     val status: String? = null,
@@ -184,7 +184,7 @@ data class Channel(
         shouldStore: Boolean? = null,
         usePost: Boolean = false,
         ttl: Int? = null,
-        mentionedUsers: Map<Int, MessageMentionedUser>? = null,
+        mentionedUsers: MessageMentionedUsers? = null,
         referencedChannels: Map<Int, MessageReferencedChannel>? = null,
         textLinks: List<TextLink>? = null,
         quotedMessage: Message? = null,
@@ -326,7 +326,7 @@ data class Channel(
     }
 
     fun join(custom: CustomObject? = null, callback: (Message) -> Unit): PNFuture<JoinResult> {
-        val user = this.chat.user ?: return PubNubException("Chat user is not set. Set them by calling setChatUser on the Chat instance.").asFuture()
+        val user = this.chat.user
         return chat.pubNub.setMemberships(
             channels = listOf(PNChannelMembership.Partial(this.id, custom)), //todo should null overwrite? wait for optionals?
             includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
@@ -346,9 +346,32 @@ data class Channel(
     }
 
     fun leave(): PNFuture<Unit> = PNFuture<Unit> {
-        disconnect?.close() //todo should this be in async too?
+        disconnect?.close()
         disconnect = null
     }.alsoAsync { chat.pubNub.removeMemberships(channels = listOf(id))}
+
+    fun getPinnedMessage(): PNFuture<Message?> {
+        val pinnedMessageTimetoken = this.custom?.get("pinnedMessageTimetoken") as? Long ?: return null.asFuture()
+        val pinnedMessageChannelID = this.custom["pinnedMessageChannelID"] as? String ?: return null.asFuture()
+
+        if (pinnedMessageChannelID == this.id) {
+            return getMessage(pinnedMessageTimetoken)
+        }
+        return this.chat.getChannel(pinnedMessageChannelID).thenAsync { threadChannel: Channel? ->
+            if (threadChannel == null) {
+                error("The thread channel does not exist")
+            }
+            threadChannel.getMessage(pinnedMessageTimetoken)
+        }
+    }
+
+    fun getMessage(timetoken: Long): PNFuture<Message?> {
+        val previousTimetoken = timetoken + 1
+        return getHistory(previousTimetoken, timetoken).then {
+            it.firstOrNull()
+        }
+    }
+
 
     private fun emitUserMention(
         userId: String,
@@ -380,7 +403,7 @@ data class Channel(
             return Channel(chat,
                 id = channel.id,
                 name = channel.name,
-                custom = channel.custom?.let { createCustomObject(it) },
+                custom = channel.custom,
                 description = channel.description,
                 updated = channel.updated,
                 status = channel.status,
@@ -414,22 +437,20 @@ data class Channel(
     }
 }
 
-enum class ChannelType {
-    @SerialName("direct") DIRECT,
-    @SerialName("group") GROUP,
-    @SerialName("public") PUBLIC,
-    @SerialName("unknown") UNKNOWN;
+private const val stringDirect = "direct"
+private const val stringGroup = "group"
+private const val stringPublic = "public"
+private const val stringUnknown = "unknown"
+
+enum class ChannelType(private val stringValue: String) {
+    @SerialName(stringDirect) DIRECT(stringDirect),
+    @SerialName(stringGroup) GROUP(stringGroup),
+    @SerialName(stringPublic) PUBLIC(stringPublic),
+    @SerialName(stringUnknown) UNKNOWN(stringUnknown);
 
     companion object {
         fun parse(type: String?): ChannelType {
-            if (type == null) {
-                return UNKNOWN
-            }
-            return try {
-                valueOf(type.uppercase())
-            } catch (e: Exception) {
-                UNKNOWN
-            }
+            return entries.find { it.stringValue == type } ?: UNKNOWN
         }
     }
 }

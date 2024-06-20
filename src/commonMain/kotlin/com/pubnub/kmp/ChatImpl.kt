@@ -396,7 +396,7 @@ class ChatImpl(
         channelStatus: String?,
         custom: CustomObject?,
     ): PNFuture<CreateDirectConversationResult> {
-        val user = this.user ?: return PubNubException("Chat user is not set. Set them by calling setChatUser on the Chat instance.").asFuture()
+        val user = this.user
         val sortedUsers = listOf(invitedUser.id, user.id).sorted()
         val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
 
@@ -440,7 +440,7 @@ class ChatImpl(
         channelStatus: String?,
         custom: CustomObject?
     ): PNFuture<CreateGroupConversationResult> {
-        val user = this.user ?: return PubNubException("Chat user is not set. Set them by calling setChatUser on the Chat instance.").asFuture()
+        val user = this.user
         return getChannel(channelId).thenAsync { channel ->
             channel?.asFuture() ?: createChannel(
                 channelId,
