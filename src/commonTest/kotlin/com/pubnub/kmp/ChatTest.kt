@@ -6,6 +6,7 @@ import com.pubnub.api.endpoints.objects.channel.GetAllChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.GetChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.RemoveChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
+import com.pubnub.api.endpoints.objects.member.ManageChannelMembers
 import com.pubnub.api.endpoints.objects.uuid.GetAllUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
@@ -85,8 +86,9 @@ class ChatTest {
     private val channelId = "myChannelId"
     private val meta = mapOf("one" to "ten")
     private val ttl = 10
-    val timetoken: Long = 123457
-    val pnException404 = PubNubException(statusCode = 404, errorMessage = "Requested object was not found.")
+    private val manageChannelMembers: ManageChannelMembers = mock(mode = MockMode.strict)
+    private val timetoken: Long = 123457
+    private val pnException404 = PubNubException(statusCode = 404, errorMessage = "Requested object was not found.")
 
     @BeforeTest
     fun setUp() {
@@ -560,7 +562,7 @@ class ChatTest {
         val message = createMessage()
 
         // when
-        objectUnderTest.forwardMessage(message, channelId).async { result: Result<Unit> ->
+        objectUnderTest.forwardMessage(message, channelId).async { result: Result<PNPublishResult> ->
             // then
             assertTrue(result.isFailure)
             assertEquals("You cannot forward the message to the same channel.", result.exceptionOrNull()!!.message)
@@ -587,7 +589,7 @@ class ChatTest {
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
 
-        objectUnderTest.forwardMessage(message, channelId).async { result: Result<Unit> ->
+        objectUnderTest.forwardMessage(message, channelId).async { result: Result<PNPublishResult> ->
             assertTrue(result.isSuccess)
         }
 
@@ -626,12 +628,17 @@ class ChatTest {
         objectUnderTest.emitEvent(
             channel = channelId,
             payload = payload
-        ).async  { result ->
+        ).async { result ->
             assertTrue(result.isSuccess)
             assertEquals(timetoken, result.getOrNull()?.timetoken)
         }
 
-        verify { pubnub.publish(channel = channelId, message = mapOf("type" to "text", "text" to "messageContent", "files" to null)) }
+        verify {
+            pubnub.publish(
+                channel = channelId,
+                message = mapOf("type" to "text", "text" to "messageContent", "files" to null)
+            )
+        }
     }
 
     @Test
@@ -801,7 +808,7 @@ class ChatTest {
         }
         val filter = "name LIKE 'test*'"
 
-        objectUnderTest.getUsers(filter = filter).async  { result: Result<GetUsersResponse> ->
+        objectUnderTest.getUsers(filter = filter).async { result: Result<GetUsersResponse> ->
             assertTrue(result.isSuccess)
             assertEquals(total, result.getOrNull()?.total)
             val user: User = result.getOrNull()?.users?.first()!!
@@ -885,6 +892,60 @@ class ChatTest {
             assertTrue(result.exceptionOrNull()?.message!!.contains("Failed to get channels."))
         }
     }
+
+
+    // todo fix this test if you can mock alsoAsync
+//    @Test
+//    fun shouldLiftRestrictionWhenNoRestrictionProvided() {
+//        val userId = "user1"
+//        val channelId = "channel1"
+//        val reason = "Scout"
+//        val payloadSlot = Capture.slot<Any>()
+//        val restriction = Restriction(reason = reason)
+//        val pnMemberArrayResult = PNMemberArrayResult(status = 200, data = listOf(PNMember(null, null, "", "", null)), 1, null, null)
+//        every { pubnub.removeChannelMembers(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns manageChannelMembers
+//        every { manageChannelMembers.async(any()) } calls  { (callback1: Consumer<Result<PNMemberArrayResult>>) ->
+//            callback1.accept(Result.success(pnMemberArrayResult))
+//        }
+//        every { manageChannelMembers.alsoAsync(any()) } calls { (callback1: Consumer<Result<PNMemberArrayResult>>) ->
+//            pnMemberArrayResult.asFuture()
+//        }
+//        //unfortunately mokkery lib doesn't support spying, so we can't stub chat.emitEvent :|
+//        every { pubnub.signal(any(), capture(payloadSlot)) } returns signalEndpoint
+//
+//        objectUnderTest.setRestrictions(userId, channelId, restriction = restriction)
+//
+//        verify { pubnub.signal(channel = userId, message = any()) }
+//        // it seems that mokkery does capture custom object but map and plain types
+//        val actualPayload: Map<String, String> = payloadSlot.get() as Map<String, String>
+//        assertEquals(actualPayload["type"], "moderation")
+//        assertEquals(actualPayload["channelId"], "PUBNUB_INTERNAL_MODERATION_$channelId")
+//        assertEquals(actualPayload["restriction"], RestrictionType.LIFT.stringValue)
+//        assertEquals(actualPayload["reason"], reason)
+//    }
+
+    // todo fix this test
+//    @Test
+//    fun shouldSetRestrictionWhenRestrictionProvided() {
+//        val userId = "user1"
+//        val channelId = "channel1"
+//        val reason = "Scout"
+//        val restriction = Restriction(ban = true, reason = reason)
+//        val payloadSlot = Capture.slot<Any>()
+//        every { pubnub.setChannelMembers(any(), any()) } returns manageChannelMembers
+//        every { pubnub.signal(any(), capture(payloadSlot)) } returns signalEndpoint
+//
+//        objectUnderTest.setRestrictions(userId, channelId, restriction = restriction)
+//
+//        verify { pubnub.signal(channel = userId, message = any()) }
+//        // it seems that mokkery does capture custom object but map and plain types
+//        val actualPayload: Map<String, String> = payloadSlot.get() as Map<String, String>
+//        assertEquals(actualPayload["type"], "moderation")
+//        assertEquals(actualPayload["channelId"], "PUBNUB_INTERNAL_MODERATION_$channelId")
+//        assertEquals(actualPayload["restriction"], RestrictionType.BAN.stringValue)
+//        assertEquals(actualPayload["reason"], reason)
+//    }
+
 
     private fun getPNChannelMetadataResult(
         updatedName: String = "",

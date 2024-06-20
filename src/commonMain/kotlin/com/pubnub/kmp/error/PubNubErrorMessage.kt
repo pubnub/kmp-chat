@@ -24,6 +24,8 @@ enum class PubNubErrorMessage(val message: String) {
     FAILED_TO_SOFT_DELETE_CHANNEL("Failed to soft delete the channel"),
     FAILED_TO_DELETE_USER("Failed to delete the user"),
     FAILED_TO_UPDATE_USER_METADATA("Failed to update user metadata."),
+    FAILED_TO_REMOVE_CHANNEL_MEMBERS("Failed to remove channel members."),
+    FAILED_TO_SET_CHANNEL_MEMBERS("Failed to set channel members."),
     ;
 
     override fun toString(): String {

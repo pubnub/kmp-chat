@@ -71,17 +71,17 @@ data class User(
             includeCustom = includeParameters.customFields,
             includeChannelDetails = getChannelDetailsType(includeParameters.customChannelFields)
         ).then { pnChannelMembershipArrayResult ->
-                MembershipsResponse(
-                    next = pnChannelMembershipArrayResult.next,
-                    prev = pnChannelMembershipArrayResult.prev,
-                    total = pnChannelMembershipArrayResult.totalCount ?: 0,
-                    status = pnChannelMembershipArrayResult.status.toString(),
-                    memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this).toSet()
-                )
-            }.catch { exception ->
-                Result.failure(PubNubException(FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA.message, exception))
-            }
+            MembershipsResponse(
+                next = pnChannelMembershipArrayResult.next,
+                prev = pnChannelMembershipArrayResult.prev,
+                total = pnChannelMembershipArrayResult.totalCount ?: 0,
+                status = pnChannelMembershipArrayResult.status.toString(),
+                memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this).toSet()
+            )
+        }.catch { exception ->
+            Result.failure(PubNubException(FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA.message, exception))
         }
+    }
 
     private fun getChannelDetailsType(includeChannelWithCustom: Boolean): PNChannelDetailsLevel {
         return if (includeChannelWithCustom) {
@@ -115,7 +115,8 @@ data class User(
             description = pnChannelMembership.channel?.description,
             updated = pnChannelMembership.channel?.updated,
             status = pnChannelMembership.channel?.status,
-            type = pnChannelMembership.channel?.type?.uppercase()?.let { ChannelType.valueOf(it) } ?: ChannelType.DIRECT, //todo not sure about this
+            type = pnChannelMembership.channel?.type?.uppercase()?.let { ChannelType.valueOf(it) }
+                ?: ChannelType.DIRECT, //todo not sure about this
         )
     }
 
