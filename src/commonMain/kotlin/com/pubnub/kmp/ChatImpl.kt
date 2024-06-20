@@ -504,8 +504,6 @@ class ChatImpl(
                                 reason = restriction.reason
                             )
                         )
-                    }.catch { pnException ->
-                        Result.failure(PubNubException(FAILED_TO_REMOVE_CHANNEL_MEMBERS.message, pnException))
                     }
             } else {
                 val custom = createCustomObject(
@@ -526,8 +524,6 @@ class ChatImpl(
                                 reason = restriction.reason
                             )
                         )
-                    }.catch { pnException ->
-                        Result.failure(PubNubException(FAILED_TO_SET_CHANNEL_MEMBERS.message, pnException))
                     }
             }
         return moderationEvent.then { Unit }
