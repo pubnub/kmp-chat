@@ -353,6 +353,9 @@ data class Channel(
         }
     }
 
+    fun registerForPush() = chat.registerPushChannels(listOf(id))
+
+    fun unregisterFromPush() = chat.unregisterPushChannels(listOf(id))
 
     private fun emitUserMention(
         userId: String,
