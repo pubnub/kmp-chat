@@ -20,7 +20,7 @@ data class File(
 fun getMethodFor(type: KClass<out EventContent>): EmitEventMethod? {
     return when (type) {
         EventContent.Custom::class -> null
-        EventContent.Receipt::class, EventContent.Typing::class, EventContent.Moderation::class, EventContent.Invite::class-> EmitEventMethod.SIGNAL
+        EventContent.Receipt::class, EventContent.Typing::class -> EmitEventMethod.SIGNAL
         else -> EmitEventMethod.PUBLISH
     }
 }
