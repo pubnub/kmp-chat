@@ -1,8 +1,6 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
-import com.pubnub.api.asString
-import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.PNTimeResult
@@ -142,7 +140,7 @@ data class Channel(
         return chat.isPresent(userId, id)
     }
 
-    fun getHistory(
+    fun getHistory( // todo add paging in response
         startTimetoken: Long? = null,
         endTimetoken: Long? = null,
         count: Int? = 25
@@ -154,29 +152,12 @@ data class Channel(
             includeMeta = true
         ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
             pnFetchMessagesResult.channels[id]?.map { messageItem: PNFetchMessageItem ->
-                val eventContent = try {
-                    messageItem.message.asString()?.let { text ->
-                        EventContent.TextMessageContent(text, null)
-                    } ?: PNDataEncoder.decode(messageItem.message)
-                } catch (e: Exception) {
-                    EventContent.UnknownMessageFormat(messageItem.message)
-                }
-
-                Message(
-                    chat,
-                    messageItem.timetoken!!,
-                    eventContent,
-                    id,
-                    messageItem.uuid!!,
-                    messageItem.actions,
-                    messageItem.meta?.decode()?.let { it as Map<String, Any>? }
-                )
+                Message.fromDTO(chat, messageItem, id)
             } ?: error("Unable to read messages")
         }.catch {
             Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA.message, it))
         }
     }
-
 
     fun sendText(
         text: String,

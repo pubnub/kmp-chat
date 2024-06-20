@@ -19,6 +19,8 @@ interface Chat {
     val pubNub: PubNub
     val user: User
 
+    val editMessageActionName: String
+
     fun createUser(user: User): PNFuture<User>
 
     fun createUser(
