@@ -1,10 +1,22 @@
 package com.pubnub.kmp.types
 
-enum class RestrictionType(val stringValue: String) {
-    BAN("banned"), MUTE("muted"), LIFT("lifted");
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
+enum class RestrictionType(val stringValue: String) {
+    @SerialName("banned")
+    BAN("banned"),
+
+    @SerialName("muted")
+    MUTE("muted"),
+
+    @SerialName("lifted")
+    LIFT("lifted");
+
+    //todo check if this is required. If not required remove stringValue
     companion object{
-        fun getByTest(text: String): RestrictionType?{
+        fun from(text: String): RestrictionType?{
             return values().find {it.stringValue== text }
         }
     }

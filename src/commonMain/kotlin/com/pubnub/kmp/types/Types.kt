@@ -56,11 +56,11 @@ sealed class EventContent {
 
     @Serializable
     @SerialName("invite")
-    data class Invite(val channelType: ChannelType = ChannelType.UNKNOWN, val channelId: String): EventContent() //todo change ChannelType to string
+    data class Invite(val channelType: ChannelType = ChannelType.UNKNOWN, val channelId: String): EventContent() //todo change ChannelType to string?
 
     @Serializable
     @SerialName("moderation")
-    data class Moderation(val channelId: String, val restriction: String, val reason: String? = null): EventContent()
+    data class Moderation(val channelId: String, val restriction: RestrictionType, val reason: String? = null): EventContent()
 
     @Serializable
     @SerialName("text")

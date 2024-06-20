@@ -8,6 +8,7 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.member.PNMember
+import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
@@ -26,10 +27,12 @@ import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_USER_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_FORWARD_MESSAGE
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_GET_CHANNELS
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_GET_USERS
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_REMOVE_CHANNEL_MEMBERS
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_CHANNEL_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_IS_PRESENT_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHERE_PRESENT_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_SET_CHANNEL_MEMBERS
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
@@ -489,17 +492,21 @@ class ChatImpl(
     ): PNFuture<Unit> {
         val channel: String = INTERNAL_MODERATION_PREFIX + channelId
 
-        val moderationEvent: PNFuture<PNPublishResult> =
+        val moderationEvent: PNFuture<PNMemberArrayResult> =
             if (!restriction.ban && !restriction.mute) {
                 pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
-                emitEvent(
-                    channel = userId,
-                    payload = EventContent.Moderation(
-                        channelId = channel,
-                        restriction = RestrictionType.LIFT.stringValue,
-                        reason = restriction.reason
-                    )
-                )
+                    .alsoAsync { _ ->
+                        emitEvent(
+                            channel = userId,
+                            payload = EventContent.Moderation(
+                                channelId = channel,
+                                restriction = RestrictionType.LIFT,
+                                reason = restriction.reason
+                            )
+                        )
+                    }.catch { pnException ->
+                        Result.failure(PubNubException(FAILED_TO_REMOVE_CHANNEL_MEMBERS.message, pnException))
+                    }
             } else {
                 val custom = createCustomObject(
                     mapOf(
@@ -510,14 +517,18 @@ class ChatImpl(
                 )
                 val uuids = listOf(PNMember.Partial(uuidId = userId, custom = custom, null))
                 pubNub.setChannelMembers(channel = channel, uuids = uuids)
-                emitEvent(
-                    channel = userId,
-                    payload = EventContent.Moderation(
-                        channelId = channel,
-                        restriction = if(restriction.ban) RestrictionType.BAN.stringValue else RestrictionType.MUTE.stringValue,
-                        reason = restriction.reason
-                    )
-                )
+                    .alsoAsync { _ ->
+                        emitEvent(
+                            channel = userId,
+                            payload = EventContent.Moderation(
+                                channelId = channel,
+                                restriction = if (restriction.ban) RestrictionType.BAN else RestrictionType.MUTE,
+                                reason = restriction.reason
+                            )
+                        )
+                    }.catch { pnException ->
+                        Result.failure(PubNubException(FAILED_TO_SET_CHANNEL_MEMBERS.message, pnException))
+                    }
             }
         return moderationEvent.then { Unit }
     }
