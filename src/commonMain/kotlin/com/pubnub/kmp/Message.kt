@@ -11,8 +11,10 @@ import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.types.File
 import com.pubnub.kmp.types.MessageMentionedUsers
 import com.pubnub.kmp.types.MessageReferencedChannels
+import com.pubnub.kmp.types.TextLink
 
 private const val THREAD_ROOT_ID = "threadRootId"
 
@@ -26,9 +28,25 @@ data class Message(
     val meta: Map<String, Any>? = null,
     val mentionedUsers: MessageMentionedUsers? = null,
     val referencedChannels: MessageReferencedChannels? = null,
+    val textLinks: TextLink? = null, //todo
+    val quotedMessage: Message? = null, // todo
 ) {
     val text: String
-        get() = content.text // todo implement Message.text() method from TS
+        get() {
+            val edits = actions?.get(chat.editMessageActionName) ?: return content.text
+            val flatEdits = edits.mapValues { it.value.first() }
+            val lastEdit = flatEdits.entries.reduce { acc, entry ->
+                if (acc.value.actionTimetoken.toLong() > entry.value.actionTimetoken.toLong()) {
+                    acc
+                } else {
+                    entry
+                }
+            }
+            return lastEdit.key
+        }
+
+    val deleted: Boolean
+        get() = actions?.get(chat.deleteMessageActionName)?.get(chat.deleteMessageActionName)?.isNotEmpty() ?: false
 
     val hasThread: Boolean
         get() {
@@ -37,6 +55,11 @@ data class Message(
             }
             return actions[THREAD_ROOT_ID]?.entries?.firstOrNull()?.value?.isNotEmpty() ?: false
         }
+
+    val type = EventContent.TextMessageContent.serializer().descriptor.serialName // = "text"
+
+    val files: List<File>
+        get() = content.files ?: emptyList()
 
     fun editText(newText: String): PNFuture<Message> {
         val type = chat.editMessageActionName

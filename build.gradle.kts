@@ -82,6 +82,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:atomicfu:0.24.0")
             }
         }
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))

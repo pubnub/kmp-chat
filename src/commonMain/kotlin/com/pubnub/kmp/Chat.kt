@@ -22,6 +22,7 @@ interface Chat {
     val user: User
 
     val editMessageActionName: String
+    val deleteMessageActionName: String
 
     fun createUser(user: User): PNFuture<User>
 
