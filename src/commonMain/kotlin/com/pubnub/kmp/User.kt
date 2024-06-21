@@ -21,11 +21,11 @@ data class User(
     val externalId: String? = null,
     val profileUrl: String? = null,
     val email: String? = null,
-    val custom: Map<String,Any?>? = null,
+    val custom: Map<String, Any?>? = null,
     val status: String? = null,
     val type: String? = null,
     val updated: String? = null,
-    val lastActiveTimestamp: Long? = null
+    val lastActiveTimestamp: Long? = null,
 ) {
     fun update(
         name: String? = null,
@@ -72,17 +72,17 @@ data class User(
             includeCustom = includeParameters.customFields,
             includeChannelDetails = getChannelDetailsType(includeParameters.customChannelFields)
         ).then { pnChannelMembershipArrayResult ->
-                MembershipsResponse(
-                    next = pnChannelMembershipArrayResult.next,
-                    prev = pnChannelMembershipArrayResult.prev,
-                    total = pnChannelMembershipArrayResult.totalCount ?: 0,
-                    status = pnChannelMembershipArrayResult.status,
-                    memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this).toSet()
-                )
-            }.catch { exception ->
-                Result.failure(PubNubException(FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA.message, exception))
-            }
+            MembershipsResponse(
+                next = pnChannelMembershipArrayResult.next,
+                prev = pnChannelMembershipArrayResult.prev,
+                total = pnChannelMembershipArrayResult.totalCount ?: 0,
+                status = pnChannelMembershipArrayResult.status,
+                memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this).toSet()
+            )
+        }.catch { exception ->
+            Result.failure(PubNubException(FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA.message, exception))
         }
+    }
 
     private fun getChannelDetailsType(includeChannelWithCustom: Boolean): PNChannelDetailsLevel {
         return if (includeChannelWithCustom) {
@@ -94,7 +94,7 @@ data class User(
 
     private fun getMembershipsFromResult(
         pnChannelMembershipArrayResult: PNChannelMembershipArrayResult,
-        user: User
+        user: User,
     ): List<Membership> {
         val memberships: List<Membership> =
             pnChannelMembershipArrayResult.data.map { pnChannelMembership: PNChannelMembership ->
