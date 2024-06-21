@@ -7,6 +7,7 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA
 import com.pubnub.kmp.membership.IncludeParameters
@@ -20,11 +21,11 @@ data class User(
     val externalId: String? = null,
     val profileUrl: String? = null,
     val email: String? = null,
-    val custom: CustomObject? = null,
+    val custom: Map<String, Any?>? = null,
     val status: String? = null,
     val type: String? = null,
     val updated: String? = null,
-    val lastActiveTimestamp: Long? = null
+    val lastActiveTimestamp: Long? = null,
 ) {
     fun update(
         name: String? = null,
@@ -75,7 +76,7 @@ data class User(
                 next = pnChannelMembershipArrayResult.next,
                 prev = pnChannelMembershipArrayResult.prev,
                 total = pnChannelMembershipArrayResult.totalCount ?: 0,
-                status = pnChannelMembershipArrayResult.status.toString(),
+                status = pnChannelMembershipArrayResult.status,
                 memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this).toSet()
             )
         }.catch { exception ->
@@ -93,30 +94,30 @@ data class User(
 
     private fun getMembershipsFromResult(
         pnChannelMembershipArrayResult: PNChannelMembershipArrayResult,
-        user: User
+        user: User,
     ): List<Membership> {
         val memberships: List<Membership> =
             pnChannelMembershipArrayResult.data.map { pnChannelMembership: PNChannelMembership ->
-                Membership(
-                    channel = getChannel(pnChannelMembership),
-                    user = user,
-                    custom = pnChannelMembership.custom,
-                )
+                Membership.fromMembershipDTO(chat, pnChannelMembership, user)
             }
         return memberships
     }
 
-    private fun getChannel(pnChannelMembership: PNChannelMembership): Channel {
-        return Channel(
-            chat = chat,
-            id = pnChannelMembership.channel?.id ?: "undefined", //todo not sure about this
-            name = pnChannelMembership.channel?.name,
-            custom = pnChannelMembership.custom?.let { createCustomObject(it) },
-            description = pnChannelMembership.channel?.description,
-            updated = pnChannelMembership.channel?.updated,
-            status = pnChannelMembership.channel?.status,
-            type = pnChannelMembership.channel?.type?.uppercase()?.let { ChannelType.valueOf(it) }
-                ?: ChannelType.DIRECT, //todo not sure about this
+    internal val uuidFilterString = "uuid.id == '${this.id}'"
+
+    companion object {
+        fun fromDTO(chat: Chat, user: PNUUIDMetadata): User = User(
+            chat,
+            id = user.id,
+            name = user.name,
+            externalId = user.externalId,
+            profileUrl = user.profileUrl,
+            email = user.email,
+            custom = user.custom,
+            updated = user.updated,
+            status = user.status,
+            type = user.type,
+            lastActiveTimestamp = (user.custom?.get("lastActiveTimestamp") as? Number)?.toLong()
         )
     }
 

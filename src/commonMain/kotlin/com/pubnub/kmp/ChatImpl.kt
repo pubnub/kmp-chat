@@ -9,6 +9,9 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
+import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
@@ -27,23 +30,24 @@ import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_USER_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_FORWARD_MESSAGE
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_GET_CHANNELS
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_GET_USERS
-import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_REMOVE_CHANNEL_MEMBERS
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_CHANNEL_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_IS_PRESENT_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHERE_PRESENT_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
-import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_SET_CHANNEL_MEMBERS
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
+import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.types.CreateDirectConversationResult
+import com.pubnub.kmp.types.CreateGroupConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.Restriction
 import com.pubnub.kmp.types.RestrictionType
 import com.pubnub.kmp.types.getMethodFor
 import com.pubnub.kmp.user.GetUsersResponse
+import com.pubnub.kmp.utils.cyrb53a
 import kotlin.js.JsExport
 import kotlin.reflect.KClass
 import kotlin.time.Duration
@@ -59,7 +63,7 @@ interface ChatConfig {
 }
 
 class ChatConfigImpl(override val pubnubConfig: PNConfiguration) : ChatConfig {
-    override var uuid: String = ""
+    override var uuid: String = pubnubConfig.userId.value
     override var saveDebugLog: Boolean = false
     override var typingTimeout: Duration = 5.seconds //millis
     override var rateLimitPerChannel: Any = mutableMapOf<ChannelType, Int>()
@@ -79,26 +83,19 @@ class ChatImpl(
     override val config: ChatConfig,
     override val pubNub: PubNub = createPubNub(config.pubnubConfig)
 ) : Chat {
-    private val user: User? = null
+    override var user: User = User(this, config.uuid)
+        private set
 
-//    override suspend fun createUser(
-//        id: String,
-//        name: String?,
-//        externalId: String?,
-//        profileUrl: String?,
-//        email: String?,
-//        custom: CustomObject?,
-//        status: String?,
-//        type: String?
-//    ) = suspendCancellableCoroutine { cont ->
-//        createUser(id, name, externalId, profileUrl, email, custom, status, type) {
-//            it.onSuccess {
-//                cont.resume(it)
-//            }.onFailure {
-//                cont.resumeWithException(it)
-//            }
-//        }
-//    }
+    override fun createUser(user: User): PNFuture<User> = createUser(
+        id = user.id,
+        name = user.name,
+        externalId = user.externalId,
+        profileUrl = user.profileUrl,
+        email = user.email,
+        custom = user.custom?.let { createCustomObject(it) },
+        status = user.status,
+        type = user.type
+    )
 
     override fun createUser(
         id: String,
@@ -130,7 +127,7 @@ class ChatImpl(
         return pubNub.getUUIDMetadata(uuid = userId)
             .then<PNUUIDMetadataResult, User?> { pnUUIDMetadataResult: PNUUIDMetadataResult ->
                 pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
-                    createUserFromMetadata(this, pnUUIDMetadata)
+                    User.fromDTO(this, pnUUIDMetadata)
                 } ?: throw PubNubException("PNUUIDMetadataResult is null")
             }.catch {
                 if (it is PubNubException && it.statusCode == HTTP_ERROR_404) {
@@ -156,7 +153,7 @@ class ChatImpl(
             includeCustom = true
         ).then { pnUUIDMetadataArrayResult: PNUUIDMetadataArrayResult ->
             val users: MutableSet<User> = pnUUIDMetadataArrayResult.data.map { pnUUIDMetadata ->
-                createUserFromMetadata(this, pnUUIDMetadata)
+                User.fromDTO(this, pnUUIDMetadata)
             }.toMutableSet()
             GetUsersResponse(
                 users = users,
@@ -194,13 +191,13 @@ class ChatImpl(
                 profileUrl = profileUrl,
                 email = email,
                 custom = custom,
-                includeCustom = false,
+                includeCustom = true,
                 status = status,
                 type = type,
             ).then { result: PNUUIDMetadataResult ->
                 val data = result.data
                 if (data != null) {
-                    createUserFromMetadata(this, data)
+                    User.fromDTO(this, data)
                 } else {
                     error("PNUUIDMetadata is null.")
                 }
@@ -393,26 +390,87 @@ class ChatImpl(
     override fun createDirectConversation(
         invitedUser: User,
         channelId: String?,
-        channelData: Any?,
-        membershipData: Any?
+        channelName: String?,
+        channelDescription: String?,
+        channelCustom: CustomObject?,
+        channelStatus: String?,
+        custom: CustomObject?,
     ): PNFuture<CreateDirectConversationResult> {
-        TODO("Not implemented yet")
-//        val user = this.user ?: error("Chat user is not set. Set them by calling setChatUser on the Chat instance.")
-//        val sortedUsers = listOf(invitedUser.id, user.id).sorted()
-//        val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
-//
-//
-//        return getChannel(finalChannelId).thenAsync { channel -> // big fat TODO
-//            if (channel == null) {
-//                createChannel(finalChannelId, type = ChannelType.DIRECT).then {
-//                    CreateDirectConversationResult()
-//                }
-//            } else {
-//                CreateDirectConversationResult().asFuture()
-//            }
-//        }
+        val user = this.user ?: return PubNubException("Chat user is not set. Set them by calling setChatUser on the Chat instance.").asFuture()
+        val sortedUsers = listOf(invitedUser.id, user.id).sorted()
+        val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
+
+        return getChannel(finalChannelId).thenAsync { channel ->
+            channel?.asFuture() ?: createChannel(
+                finalChannelId,
+                channelName,
+                channelDescription,
+                channelCustom,
+                ChannelType.DIRECT,
+                channelStatus
+            )
+        }.thenAsync { channel: Channel ->
+            val hostMembershipFuture = pubNub.setMemberships(
+                listOf(PNChannelMembership.Partial(channel.id, custom)),
+                filter = "channel.id == '${channel.id}'",
+                includeCustom = true,
+                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+                includeCount = true,
+                includeType = true,
+            )
+            awaitAll(
+                hostMembershipFuture,
+                channel.invite(invitedUser)
+            ).then { (hostMembershipResponse: PNChannelMembershipArrayResult, inviteeMembership: Membership) ->
+                CreateDirectConversationResult(
+                    channel,
+                    Membership.fromMembershipDTO(this, hostMembershipResponse.data.first(), user),
+                    inviteeMembership,
+                )
+            }
+        }
     }
 
+    override fun createGroupConversation(
+        invitedUsers: Collection<User>,
+        channelId: String,
+        channelName: String?,
+        channelDescription: String?,
+        channelCustom: CustomObject?,
+        channelStatus: String?,
+        custom: CustomObject?
+    ): PNFuture<CreateGroupConversationResult> {
+        val user = this.user ?: return PubNubException("Chat user is not set. Set them by calling setChatUser on the Chat instance.").asFuture()
+        return getChannel(channelId).thenAsync { channel ->
+            channel?.asFuture() ?: createChannel(
+                channelId,
+                channelName,
+                channelDescription,
+                channelCustom,
+                ChannelType.DIRECT,
+                channelStatus
+            )
+        }.thenAsync { channel: Channel ->
+            val hostMembershipFuture = pubNub.setMemberships(
+                listOf(PNChannelMembership.Partial(channel.id, custom)),
+                filter = "channel.id == '${channel.id}'",
+                includeCustom = true,
+                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+                includeCount = true,
+                includeType = true,
+            )
+            awaitAll(
+                hostMembershipFuture,
+                channel.inviteMultiple(invitedUsers)
+            ).then { (hostMembershipResponse: PNChannelMembershipArrayResult, inviteeMemberships: List<Membership>) ->
+                CreateGroupConversationResult(
+                    channel,
+                    Membership.fromMembershipDTO(this, hostMembershipResponse.data.first(), user),
+                    inviteeMemberships.toTypedArray(),
+                )
+            }
+        }
+    }
 
     override fun whoIsPresent(channelId: String): PNFuture<Collection<String>> {
         if (!isValidId(channelId)) {
@@ -552,34 +610,19 @@ class ChatImpl(
             externalId = updatedUser.externalId,
             profileUrl = updatedUser.profileUrl,
             email = updatedUser.email,
-            custom = updatedUser.custom,
+            custom = updatedUser.custom?.let { createCustomObject(it) },
             includeCustom = false,
             type = updatedUser.type,
             status = updatedUser.status,
         ).then { pnUUIDMetadataResult ->
             pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
-                createUserFromMetadata(this, pnUUIDMetadata)
+                User.fromDTO(this, pnUUIDMetadata)
             } ?: error("PNUUIDMetadata is null.")
         }
     }
 
 
     private fun performUserDelete(user: User): PNFuture<User> = pubNub.removeUUIDMetadata(uuid = user.id).then { user }
-
-    private fun createUserFromMetadata(chat: ChatImpl, pnUUIDMetadata: PNUUIDMetadata): User {
-        return User(
-            chat = chat,
-            id = pnUUIDMetadata.id,
-            name = pnUUIDMetadata.name,
-            externalId = pnUUIDMetadata.externalId,
-            profileUrl = pnUUIDMetadata.profileUrl,
-            email = pnUUIDMetadata.email,
-            custom = pnUUIDMetadata.custom?.let { createCustomObject(it) },
-            status = pnUUIDMetadata.status,
-            type = pnUUIDMetadata.type,
-            updated = pnUUIDMetadata.updated,
-        )
-    }
 
     private fun createChannelFromMetadata(chat: ChatImpl, pnChannelMetadata: PNChannelMetadata): Channel {
         return Channel(
@@ -664,7 +707,7 @@ class ChatImpl(
             status = status
         ).then { pnUUIDMetadataResult ->
             pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
-                createUserFromMetadata(this, pnUUIDMetadata)
+                User.fromDTO(this, pnUUIDMetadata)
             } ?: error("No data available to create User")
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_USER_DATA.message, exception))

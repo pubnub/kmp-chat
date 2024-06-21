@@ -1,6 +1,7 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
+import com.pubnub.api.UserId
 import com.pubnub.api.createJsonElement
 import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.models.consumer.PNBoundedPage
@@ -10,6 +11,7 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
@@ -37,7 +39,7 @@ class ChannelTest {
     private lateinit var objectUnderTest: Channel
 
     private val chat: Chat = mock(MockMode.strict)
-    private val chatConfig: ChatConfig = mock(MockMode.strict)
+    private lateinit var chatConfig: ChatConfig
     private val channelId = "testId"
     private val name = "testName"
     private val custom = createCustomObject(mapOf("testCustom" to "custom"))
@@ -50,8 +52,11 @@ class ChannelTest {
 
     @BeforeTest
     fun setUp() {
+        chatConfig = ChatConfigImpl(createPNConfiguration(UserId("myUser"), "demo", "demo")).apply {
+            typingTimeout = this@ChannelTest.typingTimeout
+        }
+
         every { chat.config } returns chatConfig
-        every { chatConfig.typingTimeout } returns typingTimeout
         objectUnderTest = createChannel(type)
     }
 
@@ -185,7 +190,7 @@ class ChannelTest {
 
     @Test
     fun whenTypingTimoutSetToZeroShouldNotEmitSignalWithinFirstSecond() {
-        every { chatConfig.typingTimeout } returns 0.milliseconds
+        chatConfig.typingTimeout = 0.milliseconds
         val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val currentTimeStampInMillis = typingSent.plus(1.milliseconds)
         val customClock = object : Clock {

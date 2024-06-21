@@ -20,9 +20,8 @@ data class File(
 fun getMethodFor(type: KClass<out EventContent>): EmitEventMethod? {
     return when (type) {
         EventContent.Custom::class -> null
-        EventContent.Receipt::class, EventContent.Typing::class, EventContent.Moderation::class, EventContent.Invite::class-> EmitEventMethod.SIGNAL
-        EventContent.Mention::class, EventContent.Report::class, EventContent.TextMessageContent::class -> EmitEventMethod.PUBLISH
-        else -> error("Should never happen.")
+        EventContent.Receipt::class, EventContent.Typing::class -> EmitEventMethod.SIGNAL
+        else -> EmitEventMethod.PUBLISH
     }
 }
 
@@ -51,12 +50,12 @@ sealed class EventContent {
     data class Mention(val messageTimetoken: Long, val channel: String) : EventContent()
 
     @Serializable
-    @SerialName("custom")
-    data class Custom(@Contextual val data: Any, @Transient val method: EmitEventMethod = EmitEventMethod.PUBLISH) : EventContent()
+    @SerialName("invite")
+    data class Invite(val channelType: ChannelType, val channelId: String) : EventContent()
 
     @Serializable
-    @SerialName("invite")
-    data class Invite(val channelType: ChannelType = ChannelType.UNKNOWN, val channelId: String): EventContent() //todo change ChannelType to string?
+    @SerialName("custom")
+    data class Custom(@Contextual val data: Any, @Transient val method: EmitEventMethod = EmitEventMethod.PUBLISH) : EventContent()
 
     @Serializable
     @SerialName("moderation")

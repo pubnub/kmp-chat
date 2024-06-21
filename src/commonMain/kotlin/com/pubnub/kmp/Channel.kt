@@ -5,15 +5,28 @@ import com.pubnub.api.asString
 import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.PNTimeResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
+import com.pubnub.api.models.consumer.objects.PNMemberKey
+import com.pubnub.api.models.consumer.objects.PNPage
+import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.models.consumer.objects.member.PNMember
+import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
+import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
+import com.pubnub.kmp.membership.MembersResponse
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.File
+import com.pubnub.kmp.types.JoinResult
 import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
 import com.pubnub.kmp.types.TextLink
@@ -21,6 +34,7 @@ import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -38,11 +52,12 @@ data class Channel(
     val type: ChannelType? = null,
 ) {
     private val suggestedNames = mutableMapOf<String, List<Membership>>()
-    private var disconnect: (() -> Unit)? = null
+    private var disconnect: AutoCloseable? = null
     private var typingSent: Instant? = null
     internal var typingIndicators = mutableMapOf<String, Instant>()
     private val sendTextRateLimiter: String? = null // todo should be ExponentialRateLimiter instead of String
     private val typingIndicatorsLock = reentrantLock()
+    private val channelFilterString = "channel.id == '${this.id}'"
 
     fun update(
         name: String? = null,
@@ -218,10 +233,132 @@ data class Channel(
     }
 
 
+    fun invite(user: User) : PNFuture<Membership> {
+        if (this.type == ChannelType.PUBLIC) {
+            return PubNubException(PubNubErrorMessage.CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS.message).asFuture()
+        }
+        return getMembers(filter = user.uuidFilterString).thenAsync { channelMembers: MembersResponse ->
+            if (channelMembers.members.isNotEmpty()) {
+                return@thenAsync channelMembers.members.first().asFuture()
+            } else {
+                chat.pubNub.setMemberships(
+                    channels = listOf(PNChannelMembership.Partial(this.id)),
+                    uuid = user.id,
+                    includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+                    includeCustom = true,
+                    includeCount = true,
+                    includeType = true,
+                    filter = channelFilterString,
+                ).then { setMembershipsResult ->
+                    Membership.fromMembershipDTO(chat, setMembershipsResult.data.first(), user)
+                }.thenAsync { membership ->
+                    chat.pubNub.time().thenAsync { time ->
+                        membership.setLastReadMessageTimetoken(time.timetoken)
+                    }
+                }.alsoAsync {
+                    chat.emitEvent(user.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
+                }
+            }
+        }
+    }
+
+    fun inviteMultiple(users: Collection<User>) : PNFuture<List<Membership>> {
+        if (this.type == ChannelType.PUBLIC) {
+            return PubNubException("Channel invites are not supported in Public chats.").asFuture()
+        }
+        return chat.pubNub.setChannelMembers(
+            this.id,
+            users.map { PNMember.Partial(it.id) },
+            includeCustom = true,
+            includeCount = true,
+            includeType = true,
+            includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
+            filter = users.joinToString(" || ") { it.uuidFilterString }
+        ).thenAsync { memberArrayResult: PNMemberArrayResult ->
+            chat.pubNub.time().thenAsync { time: PNTimeResult ->
+                val futures: List<PNFuture<Membership>> = memberArrayResult.data.map { Membership.fromChannelMemberDTO(chat, it, this).setLastReadMessageTimetoken(time.timetoken) }
+                futures.awaitAll()
+            }
+        }.alsoAsync {
+            users.map { u ->
+                chat.emitEvent(u.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
+            }.awaitAll()
+        }
+    }
+
+    fun getMembers(limit: Int? = null, page: PNPage? = null, filter: String? = null, sort: Collection<PNSortKey<PNMemberKey>> = listOf()): PNFuture<MembersResponse> {
+        return chat.pubNub.getChannelMembers(
+            this.id,
+            limit = limit,
+            page = page,
+            filter = filter,
+            sort = sort,
+            includeCustom = true,
+            includeCount = true,
+            includeType = true,
+            includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
+        ).then { it: PNMemberArrayResult ->
+            MembersResponse(it.next, it.prev, it.totalCount!!, it.status, it.data.map {
+                Membership.fromChannelMemberDTO(chat, it, this)
+            }.toSet() )
+        }
+    }
+
+    fun connect(callback: (Message) -> Unit): AutoCloseable {
+        val channelEntity = chat.pubNub.channel(id)
+        val subscription = channelEntity.subscription()
+        val listener = createEventListener(chat.pubNub,
+            onMessage = { _, pnMessageResult ->
+                try {
+                    val eventContent: EventContent = PNDataEncoder.decode(pnMessageResult.message)
+                    if (eventContent !is EventContent.TextMessageContent) {
+                        return@createEventListener
+                    }
+                    callback(Message.fromDTO(chat, pnMessageResult))
+                } catch (e: Exception) {
+                    e.printStackTrace() //todo add logging
+                }
+            },
+        )
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return object : AutoCloseable {
+            override fun close() {
+                subscription.removeListener(listener)
+                subscription.unsubscribe()
+            }
+        }
+    }
+
+    fun join(custom: CustomObject? = null, callback: (Message) -> Unit): PNFuture<JoinResult> {
+        val user = this.chat.user ?: return PubNubException("Chat user is not set. Set them by calling setChatUser on the Chat instance.").asFuture()
+        return chat.pubNub.setMemberships(
+            channels = listOf(PNChannelMembership.Partial(this.id, custom)), //todo should null overwrite? wait for optionals?
+            includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+            includeCustom = true,
+            includeCount = true,
+            includeType = true,
+            filter = channelFilterString,
+        ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
+            val resultDisconnect = disconnect ?: connect(callback)
+            chat.pubNub.time().thenAsync { time: PNTimeResult ->
+                Membership.fromMembershipDTO(chat, membershipArray.data.first(), user)
+                    .setLastReadMessageTimetoken(time.timetoken)
+            }.then {
+                JoinResult(it, resultDisconnect) //todo the whole disconnect handling is not safe! state can be made inconsistent
+            }
+        }
+    }
+
+    fun leave(): PNFuture<Unit> = PNFuture<Unit> {
+        disconnect?.close() //todo should this be in async too?
+        disconnect = null
+    }.alsoAsync { chat.pubNub.removeMemberships(channels = listOf(id))}
+
     private fun emitUserMention(
         userId: String,
         timetoken: Long,
-        text: String, //todo need to add push payload including this once push is implemented here
+        text: String, //todo need to add push payload once push is implemented
     ): PNFuture<PNPublishResult> {
         return chat.emitEvent(userId, EventContent.Mention(timetoken, id))
     }
@@ -239,6 +376,20 @@ data class Channel(
 
     internal fun setTypingSent(value: Instant) {
         typingSent = value
+    }
+
+    companion object {
+        fun fromDTO(chat: Chat, channel: PNChannelMetadata): Channel {
+            return Channel(chat,
+                id = channel.id,
+                name = channel.name,
+                custom = channel.custom?.let { createCustomObject(it) },
+                description = channel.description,
+                updated = channel.updated,
+                status = channel.status,
+                type = ChannelType.parse(channel.type)
+            )
+        }
     }
 
     internal fun updateUserTypingStatus(userId: String, isTyping: Boolean, now: Instant) {
@@ -267,5 +418,21 @@ data class Channel(
 }
 
 enum class ChannelType {
-    DIRECT, GROUP, PUBLIC, UNKNOWN;
+    @SerialName("direct") DIRECT,
+    @SerialName("group") GROUP,
+    @SerialName("public") PUBLIC,
+    @SerialName("unknown") UNKNOWN;
+
+    companion object {
+        fun parse(type: String?): ChannelType {
+            if (type == null) {
+                return UNKNOWN
+            }
+            return try {
+                valueOf(type.uppercase())
+            } catch (e: Exception) {
+                UNKNOWN
+            }
+        }
+    }
 }

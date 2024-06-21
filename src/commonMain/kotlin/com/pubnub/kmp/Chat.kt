@@ -1,11 +1,13 @@
 package com.pubnub.kmp
 
+import com.benasher44.uuid.uuid4
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.kmp.channel.GetChannelsResponse
 import com.pubnub.kmp.types.CreateDirectConversationResult
+import com.pubnub.kmp.types.CreateGroupConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.Restriction
@@ -15,17 +17,9 @@ import kotlin.reflect.KClass
 interface Chat {
     val config: ChatConfig
     val pubNub: PubNub
-//
-//    suspend fun createUser(
-//        id: String,
-//        name: String? = null,
-//        externalId: String? = null,
-//        profileUrl: String? = null,
-//        email: String? = null,
-//        custom: CustomObject? = null,
-//        status: String? = null,
-//        type: String? = null
-//    ): User
+    val user: User
+
+    fun createUser(user: User): PNFuture<User>
 
     fun createUser(
         id: String,
@@ -40,14 +34,12 @@ interface Chat {
 
     fun getUser(userId: String): PNFuture<User?>
 
-
     fun getUsers(
         filter: String? = null,
         sort: Collection<PNSortKey<PNKey>> = listOf(),
         limit: Int? = null,
         page: PNPage? = null,
     ): PNFuture<GetUsersResponse>
-
 
     fun updateUser(
         id: String,
@@ -120,9 +112,22 @@ interface Chat {
     fun createDirectConversation(
         invitedUser: User,
         channelId: String? = null,
-        channelData: Any? = null,
-        membershipData: Any? = null,
+        channelName: String? = null,
+        channelDescription: String? = null,
+        channelCustom: CustomObject? = null,
+        channelStatus: String? = null,
+        custom: CustomObject? = null,
     ): PNFuture<CreateDirectConversationResult>
+
+    fun createGroupConversation(
+        invitedUsers: Collection<User>,
+        channelId: String = uuid4().toString(),
+        channelName: String? = null,
+        channelDescription: String? = null,
+        channelCustom: CustomObject? = null,
+        channelStatus: String? = null,
+        custom: CustomObject? = null,
+    ): PNFuture<CreateGroupConversationResult>
 
     fun signal(channelId: String, message: EventContent): PNFuture<PNPublishResult>
 

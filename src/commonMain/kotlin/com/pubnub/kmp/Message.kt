@@ -1,6 +1,9 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
+import com.pubnub.api.models.consumer.pubsub.PNMessageResult
+import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.types.EventContent
 
 data class Message(
@@ -14,4 +17,17 @@ data class Message(
 ) {
     val text: String
         get() = content.text // todo implement Message.text() method from TS
+
+    companion object {
+        fun fromDTO(chat: Chat, pnMessageResult: PNMessageResult): Message {
+            return Message(
+                chat,
+                pnMessageResult.timetoken!!,
+                PNDataEncoder.decode<EventContent>(pnMessageResult.message) as EventContent.TextMessageContent,
+                pnMessageResult.channel,
+                pnMessageResult.publisher!!,
+                meta = pnMessageResult.userMetadata?.decode() as? Map<String, Any>
+            )
+        }
+    }
 }
