@@ -57,6 +57,7 @@ data class Channel(
     internal var typingIndicators = mutableMapOf<String, Instant>()
     private val sendTextRateLimiter: String? = null // todo should be ExponentialRateLimiter instead of String
     private val typingIndicatorsLock = reentrantLock()
+    private val channelFilterString = "channel.id == '${this.id}'"
 
     fun update(
         name: String? = null,
@@ -234,7 +235,7 @@ data class Channel(
 
     fun invite(user: User) : PNFuture<Membership> {
         if (this.type == ChannelType.PUBLIC) {
-            return PubNubException("Channel invites are not supported in Public chats.").asFuture()
+            return PubNubException(PubNubErrorMessage.CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS.message).asFuture()
         }
         return getMembers(filter = user.uuidFilterString).thenAsync { channelMembers: MembersResponse ->
             if (channelMembers.members.isNotEmpty()) {
@@ -308,11 +309,15 @@ data class Channel(
         val subscription = channelEntity.subscription()
         val listener = createEventListener(chat.pubNub,
             onMessage = { _, pnMessageResult ->
-                val eventContent: EventContent = PNDataEncoder.decode(pnMessageResult.message)
-                if (eventContent !is EventContent.TextMessageContent) {
-                    return@createEventListener
+                try {
+                    val eventContent: EventContent = PNDataEncoder.decode(pnMessageResult.message)
+                    if (eventContent !is EventContent.TextMessageContent) {
+                        return@createEventListener
+                    }
+                    callback(Message.fromDTO(chat, pnMessageResult))
+                } catch (e: Exception) {
+                    e.printStackTrace() //todo add logging
                 }
-                callback(Message.fromDTO(chat, pnMessageResult))
             },
         )
         subscription.addListener(listener)
@@ -372,8 +377,6 @@ data class Channel(
     internal fun setTypingSent(value: Instant) {
         typingSent = value
     }
-
-    private val channelFilterString = "channel.id == '${this.id}'"
 
     companion object {
         fun fromDTO(chat: Chat, channel: PNChannelMetadata): Channel {

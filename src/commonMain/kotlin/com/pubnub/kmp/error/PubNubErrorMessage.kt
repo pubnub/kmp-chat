@@ -26,6 +26,7 @@ enum class PubNubErrorMessage(val message: String) {
     FAILED_TO_UPDATE_USER_METADATA("Failed to update user metadata."),
     FAILED_TO_REMOVE_CHANNEL_MEMBERS("Failed to remove channel members."),
     FAILED_TO_SET_CHANNEL_MEMBERS("Failed to set channel members."),
+    CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS("Channel invites are not supported in Public chats."),
     ;
 
     override fun toString(): String {
