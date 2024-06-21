@@ -5,6 +5,7 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.kmp.channel.GetChannelsResponse
@@ -151,6 +152,8 @@ interface Chat {
 
     fun registerPushChannels(channels: List<String>): PNFuture<PNPushAddChannelResult>
     fun unregisterPushChannels(channels: List<String>): PNFuture<PNPushRemoveChannelResult>
+    fun getThreadChannel(message: Message): PNFuture<ThreadChannel>
+    fun pinMessageToChannel(message: Message, channel: Channel): PNFuture<PNChannelMetadataResult>
 }
 
 inline fun <reified T : EventContent> Chat.listenForEvents(

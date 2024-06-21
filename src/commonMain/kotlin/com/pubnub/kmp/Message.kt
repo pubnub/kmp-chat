@@ -4,6 +4,7 @@ import com.pubnub.api.JsonElement
 import com.pubnub.api.asMap
 import com.pubnub.api.asString
 import com.pubnub.api.decode
+import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
@@ -14,6 +15,7 @@ import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.File
 import com.pubnub.kmp.types.MessageMentionedUsers
 import com.pubnub.kmp.types.MessageReferencedChannels
+import com.pubnub.kmp.types.QuotedMessage
 import com.pubnub.kmp.types.TextLink
 
 private const val THREAD_ROOT_ID = "threadRootId"
@@ -29,7 +31,7 @@ data class Message(
     val mentionedUsers: MessageMentionedUsers? = null,
     val referencedChannels: MessageReferencedChannels? = null,
     val textLinks: TextLink? = null, //todo
-    val quotedMessage: Message? = null, // todo
+    val quotedMessage: QuotedMessage? = null,
 ) {
     val text: String
         get() {
@@ -73,6 +75,58 @@ data class Message(
         }
     }
 
+    fun delete(soft: Boolean = false, preserveFiles: Boolean = false): PNFuture<Message?> {
+        val type = chat.deleteMessageActionName
+        if (soft) {
+            return chat.pubNub.addMessageAction(channelId, PNMessageAction(
+                type, type, timetoken
+            )).then { it: PNAddMessageActionResult ->
+                val actions = assignAction(it)
+                copy(actions = actions) as Message?
+            }.alsoAsync {
+                deleteThread(soft)
+            }
+        } else {
+            val previousTimetoken = timetoken - 1
+            return chat.pubNub.deleteMessages(
+                listOf(channelId),
+                previousTimetoken,
+                timetoken
+            ).alsoAsync {
+                deleteThread(soft)
+            }.alsoAsync {
+                if (files.isNotEmpty() && !preserveFiles) {
+                    files.map { file ->
+                        chat.pubNub.deleteFile(channelId, file.name, file.id)
+                    }.awaitAll()
+                } else {
+                    Unit.asFuture()
+                }
+            }.then {
+                null as Message?
+            }
+        }
+    }
+
+    fun getThread() = chat.getThreadChannel(this)
+
+    fun forward(channelId: String): PNFuture<PNPublishResult> = chat.forwardMessage(this, channelId)
+
+    fun pin() {
+        return chat.getChannel(channelId).thenAsync { channel ->
+            chat.pinMessageToChannel(this, channel!!)
+        }
+    }
+
+    private fun deleteThread(soft: Boolean): PNFuture<Unit> {
+        if (hasThread) {
+            return getThread().thenAsync {
+                it.delete(soft)
+            }.then { Unit }
+        }
+        return Unit.asFuture()
+    }
+
     internal fun assignAction(actionResult: PNAddMessageActionResult): Map<String, Map<String, List<Action>>> {
         val type = actionResult.type
         val newActions = actions?.toMutableMap() ?: mutableMapOf()
@@ -89,6 +143,14 @@ data class Message(
         return newActions
     }
 
+    internal fun asQuotedMessage() : QuotedMessage {
+        return QuotedMessage(
+            timetoken,
+            text,
+            userId
+        )
+    }
+
     companion object {
         fun fromDTO(chat: Chat, pnMessageResult: PNMessageResult): Message {
             return Message(
@@ -99,7 +161,8 @@ data class Message(
                 pnMessageResult.publisher!!,
                 meta = pnMessageResult.userMetadata?.decode() as? Map<String, Any>,
                 mentionedUsers = pnMessageResult.userMetadata.extractMentionedUsers(),
-                referencedChannels = pnMessageResult.userMetadata.extractReferencedChannels()
+                referencedChannels = pnMessageResult.userMetadata.extractReferencedChannels(),
+                quotedMessage = pnMessageResult.userMetadata?.let { PNDataEncoder.decode(it) }
             )
         }
 

@@ -27,6 +27,7 @@ import com.pubnub.kmp.types.File
 import com.pubnub.kmp.types.JoinResult
 import com.pubnub.kmp.types.MessageMentionedUsers
 import com.pubnub.kmp.types.MessageReferencedChannel
+import com.pubnub.kmp.types.QuotedMessage
 import com.pubnub.kmp.types.TextLink
 import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
@@ -38,7 +39,7 @@ import kotlin.time.Duration.Companion.seconds
 
 internal val MINIMAL_TYPING_INDICATOR_TIMEOUT: Duration = 1.seconds
 
-data class Channel(
+open class Channel(
     private val chat: Chat,
     private val clock: Clock = Clock.System,
     val id: String,
@@ -184,11 +185,8 @@ data class Channel(
             textLinks?.let { put("textLinks", PNDataEncoder.encode(it)!!) }
             quotedMessage?.let {
                 put(
-                    "quotedMessage", mapOf(
-                        "timetoken" to it.timetoken,
-                        "text" to it.text,
-                        "userId" to it.userId
-                    )
+                    "quotedMessage",
+                    PNDataEncoder.encode(QuotedMessage)!!
                 )
             }
         }
@@ -418,6 +416,29 @@ data class Channel(
                 iterator.remove()
             }
         }
+    }
+
+    //todo: change Channel to interface, change this class back to `data class ChannelImpl: Channel`, delete this method
+    internal fun copy(chat: Chat? = null,
+                      clock: Clock? = null,
+                      id: String? = null,
+                      name: String? = null,
+                      custom: Map<String,Any?>? = null,
+                      description: String? = null,
+                      updated: String? = null,
+                      status: String? = null,
+                      type: ChannelType? = null,
+                      ): Channel {
+        return Channel(
+            chat = chat ?: this.chat,
+            id = id ?: this.id,
+            name = name ?: this.name,
+            custom = custom ?: this.custom,
+            description = description ?: this.description,
+            updated = updated ?: this.updated,
+            status = status ?: this.status,
+            type = type ?: this.type,
+        )
     }
 }
 

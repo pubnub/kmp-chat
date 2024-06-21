@@ -95,11 +95,13 @@ private const val ORIGINAL_PUBLISHER = "originalPublisher"
 private const val HTTP_ERROR_404 = 404
 
 private const val INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_"
+private const val MESSAGE_THREAD_ID_PREFIX = "PUBNUB_INTERNAL_THREAD"
 
 class ChatImpl(
     override val config: ChatConfig,
     override val pubNub: PubNub = createPubNub(config.pubnubConfig),
-    override val editMessageActionName: String = MessageActionType.EDITED.toString()
+    override val editMessageActionName: String = MessageActionType.EDITED.toString(),
+    override val deleteMessageActionName: String = MessageActionType.DELETED.toString(),
 ) : Chat {
     override var user: User = User(this, config.uuid)
         private set
@@ -625,6 +627,27 @@ class ChatImpl(
                 pushOptions.apnsEnvironment
             )
         }
+    }
+
+    override fun getThreadChannel(message: Message): PNFuture<ThreadChannel> {
+        val threadChannelId = getThreadId(message.channelId, message.timetoken)
+        return pubNub.getChannelMetadata(threadChannelId).then {
+            ThreadChannel.fromDTO(this, message, it.data!!)
+        }.catch {
+            if (it is PubNubException && it.statusCode == HTTP_ERROR_404) {
+                Result.failure(PubNubException("This message is not a thread", it))
+            } else {
+                Result.failure(it)
+            }
+        }
+    }
+
+    override fun pinMessageToChannel(message: Message, channel: Channel): PNFuture<PNChannelMetadataResult> {
+
+    }
+
+    internal fun getThreadId(channelId: String, messageTimetoken: Long): String {
+        return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_${messageTimetoken}"
     }
 
     private fun getCommonPushOptions(): PushNotificationsConfig {
