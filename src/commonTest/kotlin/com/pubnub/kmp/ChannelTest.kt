@@ -12,6 +12,9 @@ import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.kmp.channel.ChannelType
+import com.pubnub.kmp.channel.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
@@ -36,7 +39,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class ChannelTest {
-    private lateinit var objectUnderTest: Channel
+    private lateinit var objectUnderTest: ChannelImpl
 
     private val chat: Chat = mock(MockMode.strict)
     private lateinit var chatConfig: ChatConfig
@@ -61,7 +64,7 @@ class ChannelTest {
         objectUnderTest = createChannel(type)
     }
 
-    private fun createChannel(type: ChannelType, clock: Clock = Clock.System) = Channel(
+    private fun createChannel(type: ChannelType, clock: Clock = Clock.System) = ChannelImpl(
         chat = chat,
         clock = clock,
         id = channelId,
@@ -92,10 +95,10 @@ class ChannelTest {
     @Test
     fun canSoftDeleteChannel() {
         val softDelete = true
-        val channelFutureMock: PNFuture<Channel> = mock(MockMode.strict)
+        val channelFutureMock: PNFuture<ChannelImpl> = mock(MockMode.strict)
         every { chat.deleteChannel(any(), any()) } returns channelFutureMock
 
-        val deleteChannelFuture: PNFuture<Channel> = objectUnderTest.delete(soft = softDelete)
+        val deleteChannelFuture: PNFuture<ChannelImpl> = objectUnderTest.delete(soft = softDelete)
 
         assertEquals(channelFutureMock, deleteChannelFuture)
         verify { chat.deleteChannel(id = channelId, soft = softDelete) }

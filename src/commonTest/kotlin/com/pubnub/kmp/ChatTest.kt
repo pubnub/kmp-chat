@@ -30,6 +30,8 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.kmp.channel.ChannelType
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
 import com.pubnub.kmp.user.GetUsersResponse
@@ -377,7 +379,7 @@ class ChatTest {
         val channelId = ""
 
         // when
-        objectUnderTest.updateChannel(id = channelId).async { result: Result<Channel> ->
+        objectUnderTest.updateChannel(id = channelId).async { result: Result<ChannelImpl> ->
             // then
             assertTrue(result.isFailure)
             assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
@@ -406,7 +408,7 @@ class ChatTest {
         }
 
         // when
-        objectUnderTest.updateChannel(id = id).async { result: Result<Channel> ->
+        objectUnderTest.updateChannel(id = id).async { result: Result<ChannelImpl> ->
             // then
             assertTrue(result.isFailure)
             assertTrue(result.exceptionOrNull()?.message!!.contains("Failed to create/update channel data"))
@@ -435,7 +437,7 @@ class ChatTest {
         }
 
         // when
-        objectUnderTest.updateChannel(id = id).async { result: Result<Channel> ->
+        objectUnderTest.updateChannel(id = id).async { result: Result<ChannelImpl> ->
             // then
             assertTrue(result.isFailure)
             assertEquals("Channel not found", result.exceptionOrNull()?.message)
@@ -483,7 +485,7 @@ class ChatTest {
 
         // when
         objectUnderTest.updateChannel(id = id, name = name, description = description)
-            .async { result: Result<Channel> ->
+            .async { result: Result<ChannelImpl> ->
                 // then
                 assertTrue(result.isSuccess)
                 result.onSuccess {
@@ -861,7 +863,7 @@ class ChatTest {
         val filter = "description LIKE '*support*'"
         objectUnderTest.getChannels(filter = filter).async { result ->
             assertTrue(result.isSuccess)
-            val channel: Channel = result.getOrNull()?.channels?.first()!!
+            val channel: ChannelImpl = result.getOrNull()?.channels?.first()!!
             assertEquals(totalCount, result.getOrNull()?.total)
             assertTrue(result.isSuccess)
             assertEquals(id, channel.id)

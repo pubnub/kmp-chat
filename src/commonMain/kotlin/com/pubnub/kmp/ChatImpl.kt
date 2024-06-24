@@ -4,6 +4,7 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
@@ -25,7 +26,10 @@ import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
+import com.pubnub.kmp.channel.BaseChannel
+import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.channel.GetChannelsResponse
+import com.pubnub.kmp.channel.ThreadChannelImpl
 import com.pubnub.kmp.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_META_DATA_IS_EMPTY
@@ -43,6 +47,7 @@ import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.kmp.membership.Membership
+import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.CreateGroupConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
@@ -86,7 +91,7 @@ class ChatConfigImpl(override val pubnubConfig: PNConfiguration) : ChatConfig {
     )
 }
 
-private const val DELETED = "Deleted"
+internal const val DELETED = "Deleted"
 
 private const val ID_IS_REQUIRED = "Id is required"
 private const val CHANNEL_ID_IS_REQUIRED = "Channel Id is required"
@@ -307,7 +312,7 @@ class ChatImpl(
             includeCustom = true
         ).then { pnChannelMetadataArrayResult ->
             val channels: MutableSet<Channel> = pnChannelMetadataArrayResult.data.map { pnChannelMetadata ->
-                Channel.fromDTO(this, pnChannelMetadata)
+                ChannelImpl.fromDTO(this, pnChannelMetadata)
             }.toMutableSet()
             GetChannelsResponse(
                 channels = channels,
@@ -327,7 +332,7 @@ class ChatImpl(
         return pubNub.getChannelMetadata(channel = channelId)
             .then<PNChannelMetadataResult, Channel?> { pnChannelMetadataResult: PNChannelMetadataResult ->
                 pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
-                    Channel.fromDTO(this, pnChannelMetadata)
+                    ChannelImpl.fromDTO(this, pnChannelMetadata)
                 } ?: error("PNChannelMetadata is null")
             }.catch { exception ->
                 if (exception is PubNubException && exception.statusCode == HTTP_ERROR_404) {
@@ -632,7 +637,7 @@ class ChatImpl(
     override fun getThreadChannel(message: Message): PNFuture<ThreadChannel> {
         val threadChannelId = getThreadId(message.channelId, message.timetoken)
         return pubNub.getChannelMetadata(threadChannelId).then {
-            ThreadChannel.fromDTO(this, message, it.data!!)
+            ThreadChannelImpl.fromDTO(this, message, it.data!!)
         }.catch {
             if (it is PubNubException && it.statusCode == HTTP_ERROR_404) {
                 Result.failure(PubNubException("This message is not a thread", it))
@@ -640,10 +645,6 @@ class ChatImpl(
                 Result.failure(it)
             }
         }
-    }
-
-    internal fun getThreadId(channelId: String, messageTimetoken: Long): String {
-        return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_${messageTimetoken}"
     }
 
     private fun getCommonPushOptions(): PushNotificationsConfig {
@@ -661,7 +662,7 @@ class ChatImpl(
         return pubNub.getChannelMetadata(channel = id, includeCustom = false)
             .then { pnChannelMetadataResult: PNChannelMetadataResult ->
                 pnChannelMetadataResult.data?.let { pnChannelMetadata ->
-                    Channel.fromDTO(this, pnChannelMetadata)
+                    ChannelImpl.fromDTO(this, pnChannelMetadata)
                 } ?: error(CHANNEL_META_DATA_IS_EMPTY)
             }.catch { exception ->
                 Result.failure(PubNubException(FAILED_TO_RETRIEVE_CHANNEL_DATA.message, exception))
@@ -690,7 +691,7 @@ class ChatImpl(
     private fun performUserDelete(user: User): PNFuture<User> = pubNub.removeUUIDMetadata(uuid = user.id).then { user }
     
     private fun performSoftChannelDelete(channel: Channel): PNFuture<Channel> {
-        val updatedChannel = channel.copy(status = DELETED)
+        val updatedChannel = (channel as BaseChannel).copyWithDeleted()
         return pubNub.setChannelMetadata(
             channel = channel.id,
             name = updatedChannel.name,
@@ -701,7 +702,7 @@ class ChatImpl(
             status = updatedChannel.status
         ).then { pnChannelMetadataResult ->
             pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
-                Channel.fromDTO(this, pnChannelMetadata)
+                ChannelImpl.fromDTO(this, pnChannelMetadata)
             } ?: error("PNChannelMetadata is null.")
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_SOFT_DELETE_CHANNEL.message, exception))
@@ -729,7 +730,7 @@ class ChatImpl(
             status = status
         ).then { pnChannelMetadataResult ->
             pnChannelMetadataResult.data?.let { pnChannelMetadata ->
-                Channel.fromDTO(this, pnChannelMetadata)
+                ChannelImpl.fromDTO(this, pnChannelMetadata)
             } ?: error("No data available to create Channel")
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA.message, exception))
@@ -777,6 +778,50 @@ class ChatImpl(
                 customMetadataToSet["pinnedMessageChannelID"] = message.channelId
             }
             return pubNub.setChannelMetadata(channel.id, custom = createCustomObject(customMetadataToSet))
+        }
+
+        internal fun getThreadId(channelId: String, messageTimetoken: Long): String {
+            return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_${messageTimetoken}"
+        }
+
+        internal fun createThreadChannel(chat: Chat, message: Message): PNFuture<ThreadChannel> {
+            if (message.channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
+                return PubNubException("Only one level of thread nesting is allowed").asFuture()
+            }
+            if (message.deleted) {
+                return PubNubException("You cannot create threads on deleted messages").asFuture()
+            }
+
+            val threadChannelId = getThreadId(message.channelId, message.timetoken)
+            return chat.getChannel(threadChannelId).thenAsync { it: Channel? ->
+                if (it != null) {
+                    return@thenAsync PubNubException("Thread for this message already exists").asFuture()
+                }
+                ThreadChannelImpl(message, chat, description = "Thread on channel ${message.channelId} with message timetoken ${message.timetoken}",
+                    id = threadChannelId, threadCreated = false).asFuture()
+            }
+        }
+
+        internal fun removeThreadChannel(chat: Chat, message: Message, soft: Boolean = false): PNFuture<Pair<PNRemoveMessageActionResult, Channel>> {
+            if (!message.hasThread) {
+                return PubNubException("There is no thread to be deleted").asFuture()
+            }
+
+            val threadId = getThreadId(message.channelId, message.timetoken)
+
+            val actionTimetoken =
+                message.actions?.get("threadRootId")?.get(threadId)?.get(0)?.actionTimetoken?.toLongOrNull()
+                    ?: return PubNubException("There is no action timetoken corresponding to the thread").asFuture()
+
+            return chat.getChannel(threadId).thenAsync { threadChannel ->
+                if (threadChannel == null) {
+                    throw PubNubException("There is no thread with id: $threadId")
+                }
+                awaitAll(
+                    chat.pubNub.removeMessageAction(message.channelId, message.timetoken, actionTimetoken),
+                    threadChannel.delete(soft)
+                )
+            }
         }
     }
 }

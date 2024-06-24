@@ -1,7 +1,6 @@
 package com.pubnub.kmp.types
 
 import com.pubnub.api.JsonElement
-import com.pubnub.kmp.ChannelType
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -15,7 +14,6 @@ data class File(
     val url: String,
     val type: String? = null
 )
-
 
 fun getMethodFor(type: KClass<out EventContent>): EmitEventMethod? {
     return when (type) {

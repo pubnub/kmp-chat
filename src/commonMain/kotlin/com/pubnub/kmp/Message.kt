@@ -11,6 +11,7 @@ import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.internal.PNDataEncoder
+import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.File
 import com.pubnub.kmp.types.MessageActionType
@@ -128,7 +129,7 @@ data class Message(
     fun pin(): PNFuture<Channel> {
         return chat.getChannel(channelId).thenAsync { channel ->
             ChatImpl.pinMessageToChannel(chat.pubNub, this, channel!!).then {
-                Channel.fromDTO(chat, it.data!!)
+                ChannelImpl.fromDTO(chat, it.data!!)
             }
         }
     }
@@ -142,6 +143,10 @@ data class Message(
             userId
         ))
     }
+
+    fun createThread(): PNFuture<ThreadChannel> = ChatImpl.createThreadChannel(chat, this)
+
+    fun removeThread() = ChatImpl.removeThreadChannel(chat, this)
 
     private fun deleteThread(soft: Boolean): PNFuture<Unit> {
         if (hasThread) {
@@ -177,7 +182,7 @@ data class Message(
     }
 
     companion object {
-        fun fromDTO(chat: Chat, pnMessageResult: PNMessageResult): Message {
+        internal fun fromDTO(chat: Chat, pnMessageResult: PNMessageResult): Message {
             return Message(
                 chat,
                 pnMessageResult.timetoken!!,
@@ -191,7 +196,7 @@ data class Message(
             )
         }
 
-        fun fromDTO(chat: Chat, messageItem: PNFetchMessageItem, channelId: String): Message {
+        internal fun fromDTO(chat: Chat, messageItem: PNFetchMessageItem, channelId: String): Message {
             val eventContent = try {
                 messageItem.message.asString()?.let { text ->
                     EventContent.TextMessageContent(text, null)
