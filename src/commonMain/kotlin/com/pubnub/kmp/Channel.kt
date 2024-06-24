@@ -18,6 +18,7 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
+import com.pubnub.kmp.ChatImpl.Companion.pinMessageToChannel
 import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.kmp.membership.MembersResponse
@@ -27,7 +28,6 @@ import com.pubnub.kmp.types.File
 import com.pubnub.kmp.types.JoinResult
 import com.pubnub.kmp.types.MessageMentionedUsers
 import com.pubnub.kmp.types.MessageReferencedChannel
-import com.pubnub.kmp.types.QuotedMessage
 import com.pubnub.kmp.types.TextLink
 import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
@@ -187,7 +187,7 @@ open class Channel(
             quotedMessage?.let {
                 put(
                     "quotedMessage",
-                    PNDataEncoder.encode(QuotedMessage)!!
+                    PNDataEncoder.encode(quotedMessage.asQuotedMessage())!!
                 )
             }
         }
@@ -360,6 +360,14 @@ open class Channel(
 
     fun unregisterFromPush() = chat.unregisterPushChannels(listOf(id))
 
+    fun pinMessage(message: Message): PNFuture<Channel> {
+        return pinMessageToChannel(chat.pubNub, message, this).then { fromDTO(chat, it.data!!) }
+    }
+
+    fun unpinMessage(): PNFuture<Channel> {
+        return pinMessageToChannel(chat.pubNub, null, this).then { fromDTO(chat, it.data!!) }
+    }
+
     private fun emitUserMention(
         userId: String,
         timetoken: Long,
@@ -421,7 +429,7 @@ open class Channel(
         }
     }
 
-    //todo: change Channel to interface, change this class back to `data class ChannelImpl: Channel`, delete this method
+    //todo: change Channel to interface, change this class back to `data class ChannelImpl: Channel`, delete this method and equals/hashcode
     internal fun copy(chat: Chat? = null,
                       clock: Clock? = null,
                       id: String? = null,
@@ -442,6 +450,36 @@ open class Channel(
             status = status ?: this.status,
             type = type ?: this.type,
         )
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Channel) return false
+
+        if (chat != other.chat) return false
+        if (clock != other.clock) return false
+        if (id != other.id) return false
+        if (name != other.name) return false
+        if (custom != other.custom) return false
+        if (description != other.description) return false
+        if (updated != other.updated) return false
+        if (status != other.status) return false
+        if (type != other.type) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = chat.hashCode()
+        result = 31 * result + clock.hashCode()
+        result = 31 * result + id.hashCode()
+        result = 31 * result + (name?.hashCode() ?: 0)
+        result = 31 * result + (custom?.hashCode() ?: 0)
+        result = 31 * result + (description?.hashCode() ?: 0)
+        result = 31 * result + (updated?.hashCode() ?: 0)
+        result = 31 * result + (status?.hashCode() ?: 0)
+        result = 31 * result + (type?.hashCode() ?: 0)
+        return result
     }
 }
 

@@ -13,12 +13,14 @@ import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.File
+import com.pubnub.kmp.types.MessageActionType
 import com.pubnub.kmp.types.MessageMentionedUsers
 import com.pubnub.kmp.types.MessageReferencedChannels
 import com.pubnub.kmp.types.QuotedMessage
 import com.pubnub.kmp.types.TextLink
 
 private const val THREAD_ROOT_ID = "threadRootId"
+private const val INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL"
 
 data class Message(
     private val chat: Chat,
@@ -30,7 +32,6 @@ data class Message(
     val meta: Map<String, Any>? = null,
     val mentionedUsers: MessageMentionedUsers? = null,
     val referencedChannels: MessageReferencedChannels? = null,
-    val textLinks: TextLink? = null, //todo
     val quotedMessage: QuotedMessage? = null,
 ) {
     val text: String
@@ -62,6 +63,18 @@ data class Message(
 
     val files: List<File>
         get() = content.files ?: emptyList()
+
+    val reactions = actions?.get(MessageActionType.REACTIONS.toString()) ?: emptyMap()
+
+    val textLinks: List<TextLink>? = (meta?.get("textLinks") as? List<Any>)?.let { textLinksList: List<Any> ->
+        textLinksList.filterIsInstance<Map<*,*>>().map { textLinkItem: Map<*, *> ->
+            TextLink(textLinkItem["startIndex"] as Int, textLinkItem["endIndex"] as Int, textLinkItem["link"] as String)
+        }
+    }
+
+    fun hasUserReaction(reaction: String): Boolean {
+        return reactions[reaction]?.any { it.uuid == chat.pubNub.configuration.userId.value } ?: false
+    }
 
     fun editText(newText: String): PNFuture<Message> {
         val type = chat.editMessageActionName
@@ -112,10 +125,22 @@ data class Message(
 
     fun forward(channelId: String): PNFuture<PNPublishResult> = chat.forwardMessage(this, channelId)
 
-    fun pin() {
+    fun pin(): PNFuture<Channel> {
         return chat.getChannel(channelId).thenAsync { channel ->
-            chat.pinMessageToChannel(this, channel!!)
+            ChatImpl.pinMessageToChannel(chat.pubNub, this, channel!!).then {
+                Channel.fromDTO(chat, it.data!!)
+            }
         }
+    }
+
+    fun report(reason: String): PNFuture<PNPublishResult> {
+        return chat.emitEvent(INTERNAL_ADMIN_CHANNEL, EventContent.Report(
+            text,
+            reason,
+            timetoken,
+            channelId,
+            userId
+        ))
     }
 
     private fun deleteThread(soft: Boolean): PNFuture<Unit> {

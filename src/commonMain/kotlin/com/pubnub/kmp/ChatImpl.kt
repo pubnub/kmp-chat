@@ -642,10 +642,6 @@ class ChatImpl(
         }
     }
 
-    override fun pinMessageToChannel(message: Message, channel: Channel): PNFuture<PNChannelMetadataResult> {
-
-    }
-
     internal fun getThreadId(channelId: String, messageTimetoken: Long): String {
         return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_${messageTimetoken}"
     }
@@ -767,6 +763,20 @@ class ChatImpl(
             } ?: error("No data available to create User")
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_USER_DATA.message, exception))
+        }
+    }
+
+    companion object {
+        internal fun pinMessageToChannel(pubNub: PubNub, message: Message?, channel: Channel): PNFuture<PNChannelMetadataResult> {
+            val customMetadataToSet = channel.custom?.toMutableMap() ?: mutableMapOf()
+            if (message == null) {
+                customMetadataToSet.remove("pinnedMessageTimetoken")
+                customMetadataToSet.remove("pinnedMessageChannelID")
+            } else {
+                customMetadataToSet["pinnedMessageTimetoken"] = message.timetoken
+                customMetadataToSet["pinnedMessageChannelID"] = message.channelId
+            }
+            return pubNub.setChannelMetadata(channel.id, custom = createCustomObject(customMetadataToSet))
         }
     }
 }
