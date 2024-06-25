@@ -10,9 +10,12 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArra
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA
+import com.pubnub.kmp.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
 import com.pubnub.kmp.membership.IncludeParameters
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.membership.MembershipsResponse
+import com.pubnub.kmp.restrictions.GetRestrictionsResponse
+import com.pubnub.kmp.restrictions.Restriction
 
 data class User(
     val chat: Chat,
@@ -82,6 +85,79 @@ data class User(
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA.message, exception))
         }
+    }
+
+    fun setRestrictions(channel: Channel, ban: Boolean = false, mute: Boolean = false, reason: String? = null) : PNFuture<Unit>{
+        if(chat.config.pubnubConfig.secretKey.isEmpty()){
+            throw PubNubException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY.message)
+        }
+        return chat.setRestrictions(Restriction(
+            userId = id,
+            channelId = channel.id,
+            ban = ban,
+            mute = mute,
+            reason = reason
+        ))
+    }
+
+    fun getChannelRestrictions(channel: Channel): PNFuture<Restriction> {
+        return getRestrictions(channel).then { pnChannelMembershipArrayResult ->
+            val firstMembership: PNChannelMembership = pnChannelMembershipArrayResult.data.first()
+            Restriction.fromChannelMembershipDTO(id, firstMembership)
+        }
+    }
+
+    fun getChannelsRestrictions(
+        limit: Int? = null,
+        page: PNPage? = null,
+        sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
+    ): PNFuture<GetRestrictionsResponse> {
+        val undefinedChannel = null
+
+        return getRestrictions(
+            channel = undefinedChannel,
+            limit = limit,
+            page = page,
+            sort = sort
+        ).then { pnChannelMembershipArrayResult: PNChannelMembershipArrayResult ->
+            val restrictions = pnChannelMembershipArrayResult.data.map { pnChannelMembership ->
+                Restriction.fromChannelMembershipDTO(id, pnChannelMembership)
+            }.toSet()
+
+            GetRestrictionsResponse(
+                restrictions = restrictions,
+                next = pnChannelMembershipArrayResult.next,
+                prev = pnChannelMembershipArrayResult.prev,
+                total = pnChannelMembershipArrayResult.totalCount ?: 0,
+                status = pnChannelMembershipArrayResult.status
+            )
+        }
+    }
+
+    internal fun getRestrictions(
+        channel: Channel?,
+        limit: Int? = null,
+        page: PNPage? = null,
+        sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
+    ): PNFuture<PNChannelMembershipArrayResult> {
+        val filter: String =
+            if (channel != null) {
+                "channel.id == '${INTERNAL_MODERATION_PREFIX}${channel.id}'"
+            } else {
+                "channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*'"
+            }
+
+        return chat.pubNub.getMemberships(
+            uuid = id,
+            limit = limit,
+            page = page,
+            filter = filter,
+            sort = sort,
+            includeCount = true,
+            includeCustom = true,
+            includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+            includeType = true
+        )
     }
 
     private fun getChannelDetailsType(includeChannelWithCustom: Boolean): PNChannelDetailsLevel {

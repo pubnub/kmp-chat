@@ -4,11 +4,17 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.createJsonElement
 import com.pubnub.api.endpoints.FetchMessages
+import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.HistoryMessageType
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
+import com.pubnub.api.models.consumer.objects.PNMemberKey
+import com.pubnub.api.models.consumer.objects.PNPage
+import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
+import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
@@ -52,6 +58,7 @@ class ChannelTest {
     private val type = ChannelType.DIRECT
     private val updated = "testUpdated"
     private val typingTimeout = 1001.milliseconds
+    private val pubNub: PubNub = mock(MockMode.strict)
 
 
     @BeforeTest
@@ -401,7 +408,6 @@ class ChannelTest {
         // given
         val startToken = 1L
         val endToken = 2000L
-        val pubNub: PubNub = mock(MockMode.strict)
         val fetchMessages: FetchMessages = mock(MockMode.strict)
 
         every { chat.pubNub } returns pubNub
@@ -533,6 +539,63 @@ class ChannelTest {
         }
     }
 
+    @Test
+    fun canGetRestrictionsWithNullUser(){
+        val limit = 1
+        val page: PNPage? = PNPage.PNNext("nextPageHash")
+        val sort = listOf(PNSortKey.PNAsc(PNMemberKey.UUID_ID))
+        val fetChannelMembers: GetChannelMembers = mock(MockMode.strict)
+        every { chat.pubNub } returns pubNub
+        every { pubNub.getChannelMembers(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns fetChannelMembers
+
+        objectUnderTest.getRestrictions(user = null, limit = limit, page = page, sort = sort)
+
+        verify { pubNub.getChannelMembers(
+            channel = "PUBNUB_INTERNAL_MODERATION_$channelId",
+            limit = limit,
+            page = page,
+            filter = null,
+            sort = sort,
+            includeCount = true,
+            includeCustom = true,
+            includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
+            includeType = true
+        ) }
+    }
+
+    @Test
+    fun canGetRestrictionsByUser(){
+        val user = User(chat = chat, id = "userId")
+        val limit = 1
+        val page: PNPage? = PNPage.PNNext("nextPageHash")
+        val sort = listOf(PNSortKey.PNAsc(PNMemberKey.UUID_ID))
+        val getChannelMembers: GetChannelMembers = mock(MockMode.strict)
+        every { chat.pubNub } returns pubNub
+        every { pubNub.getChannelMembers(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getChannelMembers
+
+        objectUnderTest.getRestrictions(user = user, limit = limit, page = page, sort = sort)
+
+        verify { pubNub.getChannelMembers(
+            channel = "PUBNUB_INTERNAL_MODERATION_$channelId",
+            limit = limit,
+            page = page,
+            filter = "uuid.id == 'userId'",
+            sort = sort,
+            includeCount = true,
+            includeCustom = true,
+            includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
+            includeType = true
+        ) }
+    }
+
+    @Test
+    fun shouldThrowExceptionWhenSecretKeyIsNotSet() {
+        val user = User(chat = chat, id = "userId")
+        val e = assertFailsWith<PubNubException> {
+            objectUnderTest.setRestrictions(user)
+        }
+        assertEquals("Moderation restrictions can only be set by clients initialized with a Secret Key.", e.message)
+    }
 
     @Test
     fun whenChannelIsPublicGetTypingShouldResultFailure() {

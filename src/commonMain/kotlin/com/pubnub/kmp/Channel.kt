@@ -8,6 +8,8 @@ import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.kmp.membership.MembersResponse
 import com.pubnub.kmp.membership.Membership
+import com.pubnub.kmp.restrictions.GetRestrictionsResponse
+import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.File
 import com.pubnub.kmp.types.JoinResult
@@ -77,4 +79,16 @@ interface Channel {
     fun unregisterFromPush(): PNFuture<PNPushRemoveChannelResult>
     fun pinMessage(message: Message): PNFuture<Channel>
     fun unpinMessage(): PNFuture<Channel>
+    fun setRestrictions(
+        user: User,
+        ban: Boolean = false,
+        mute: Boolean = false,
+        reason: String? = null
+    ): PNFuture<Unit>
+    fun getUserRestrictions(user: User): PNFuture<Restriction>
+    fun getUsersRestrictions(
+        limit: Int? = null,
+        page: PNPage? = null,
+        sort: Collection<PNSortKey<PNMemberKey>> = listOf()
+    ): PNFuture<GetRestrictionsResponse>
 }

@@ -1,6 +1,7 @@
 package com.pubnub.kmp.channel
 
 import com.pubnub.api.PubNubException
+import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.PNTimeResult
@@ -22,6 +23,7 @@ import com.pubnub.kmp.Chat
 import com.pubnub.kmp.ChatImpl.Companion.pinMessageToChannel
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.Event
+import com.pubnub.kmp.INTERNAL_MODERATION_PREFIX
 import com.pubnub.kmp.Message
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.User
@@ -31,10 +33,13 @@ import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.catch
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.error.PubNubErrorMessage
+import com.pubnub.kmp.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
 import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.kmp.listenForEvents
 import com.pubnub.kmp.membership.MembersResponse
 import com.pubnub.kmp.membership.Membership
+import com.pubnub.kmp.restrictions.GetRestrictionsResponse
+import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import com.pubnub.kmp.types.ChannelType
@@ -58,7 +63,7 @@ abstract class BaseChannel(
     private val clock: Clock = Clock.System,
     override val id: String,
     override val name: String? = null,
-    override val custom: Map<String,Any?>? = null,
+    override val custom: Map<String, Any?>? = null,
     override val description: String? = null,
     override val updated: String? = null,
     override val status: String? = null,
@@ -226,7 +231,7 @@ abstract class BaseChannel(
     }
 
 
-    override fun invite(user: User) : PNFuture<Membership> {
+    override fun invite(user: User): PNFuture<Membership> {
         if (this.type == ChannelType.PUBLIC) {
             return PubNubException(PubNubErrorMessage.CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS.message).asFuture()
         }
@@ -255,7 +260,7 @@ abstract class BaseChannel(
         }
     }
 
-    override fun inviteMultiple(users: Collection<User>) : PNFuture<List<Membership>> {
+    override fun inviteMultiple(users: Collection<User>): PNFuture<List<Membership>> {
         if (this.type == ChannelType.PUBLIC) {
             return PubNubException("Channel invites are not supported in Public chats.").asFuture()
         }
@@ -269,7 +274,9 @@ abstract class BaseChannel(
             filter = users.joinToString(" || ") { it.uuidFilterString }
         ).thenAsync { memberArrayResult: PNMemberArrayResult ->
             chat.pubNub.time().thenAsync { time: PNTimeResult ->
-                val futures: List<PNFuture<Membership>> = memberArrayResult.data.map { Membership.fromChannelMemberDTO(chat, it, this).setLastReadMessageTimetoken(time.timetoken) }
+                val futures: List<PNFuture<Membership>> = memberArrayResult.data.map {
+                    Membership.fromChannelMemberDTO(chat, it, this).setLastReadMessageTimetoken(time.timetoken)
+                }
                 futures.awaitAll()
             }
         }.alsoAsync {
@@ -279,7 +286,12 @@ abstract class BaseChannel(
         }
     }
 
-    override fun getMembers(limit: Int?, page: PNPage?, filter: String?, sort: Collection<PNSortKey<PNMemberKey>>): PNFuture<MembersResponse> {
+    override fun getMembers(
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNMemberKey>>
+    ): PNFuture<MembersResponse> {
         return chat.pubNub.getChannelMembers(
             this.id,
             limit = limit,
@@ -293,14 +305,15 @@ abstract class BaseChannel(
         ).then { it: PNMemberArrayResult ->
             MembersResponse(it.next, it.prev, it.totalCount!!, it.status, it.data.map {
                 Membership.fromChannelMemberDTO(chat, it, this)
-            }.toSet() )
+            }.toSet())
         }
     }
 
     override fun connect(callback: (Message) -> Unit): AutoCloseable {
         val channelEntity = chat.pubNub.channel(id)
         val subscription = channelEntity.subscription()
-        val listener = createEventListener(chat.pubNub,
+        val listener = createEventListener(
+            chat.pubNub,
             onMessage = { _, pnMessageResult ->
                 try {
                     val eventContent: EventContent = PNDataEncoder.decode(pnMessageResult.message)
@@ -326,7 +339,12 @@ abstract class BaseChannel(
     override fun join(custom: CustomObject?, callback: (Message) -> Unit): PNFuture<JoinResult> {
         val user = this.chat.user
         return chat.pubNub.setMemberships(
-            channels = listOf(PNChannelMembership.Partial(this.id, custom)), //todo should null overwrite? wait for optionals?
+            channels = listOf(
+                PNChannelMembership.Partial(
+                    this.id,
+                    custom
+                )
+            ), //todo should null overwrite? wait for optionals?
             includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
             includeCustom = true,
             includeCount = true,
@@ -338,7 +356,10 @@ abstract class BaseChannel(
                 Membership.fromMembershipDTO(chat, membershipArray.data.first(), user)
                     .setLastReadMessageTimetoken(time.timetoken)
             }.then {
-                JoinResult(it, resultDisconnect) //todo the whole disconnect handling is not safe! state can be made inconsistent
+                JoinResult(
+                    it,
+                    resultDisconnect
+                ) //todo the whole disconnect handling is not safe! state can be made inconsistent
             }
         }
     }
@@ -346,7 +367,7 @@ abstract class BaseChannel(
     override fun leave(): PNFuture<Unit> = PNFuture<Unit> {
         disconnect?.close()
         disconnect = null
-    }.alsoAsync { chat.pubNub.removeMemberships(channels = listOf(id))}
+    }.alsoAsync { chat.pubNub.removeMemberships(channels = listOf(id)) }
 
     override fun getPinnedMessage(): PNFuture<Message?> {
         val pinnedMessageTimetoken = this.custom?.get("pinnedMessageTimetoken") as? Long ?: return null.asFuture()
@@ -380,6 +401,77 @@ abstract class BaseChannel(
 
     override fun unpinMessage(): PNFuture<Channel> {
         return pinMessageToChannel(chat.pubNub, null, this).then { ChannelImpl.fromDTO(chat, it.data!!) }
+    }
+
+    override fun getUsersRestrictions(
+        limit: Int?,
+        page: PNPage?,
+        sort: Collection<PNSortKey<PNMemberKey>>
+    ): PNFuture<GetRestrictionsResponse> {
+        val undefinedUser = null
+        return getRestrictions(
+            user = undefinedUser,
+            limit = limit,
+            page = page,
+            sort = sort
+        ).then { pnMemberArrayResult: PNMemberArrayResult ->
+            val restrictions = pnMemberArrayResult.data.map { pnMember ->
+                Restriction.fromMemberDTO(id, pnMember)
+            }.toSet()
+            GetRestrictionsResponse(
+                restrictions = restrictions,
+                next = pnMemberArrayResult.next,
+                prev = pnMemberArrayResult.prev,
+                total = pnMemberArrayResult.totalCount ?: 0,
+                status = pnMemberArrayResult.status
+            )
+        }
+    }
+
+    override fun getUserRestrictions(user: User): PNFuture<Restriction> {
+        return getRestrictions(user).then { pnMemberArrayResult: PNMemberArrayResult ->
+            val firstMember: PNMember = pnMemberArrayResult.data.first()
+            Restriction.fromMemberDTO(id, firstMember)
+        }
+    }
+
+    override fun setRestrictions(
+        user: User,
+        ban: Boolean,
+        mute: Boolean,
+        reason: String?
+    ): PNFuture<Unit> {
+        if (chat.config.pubnubConfig.secretKey.isEmpty()) {
+            throw PubNubException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY.message)
+        }
+        return chat.setRestrictions(
+            Restriction(
+                userId = user.id,
+                channelId = id,
+                ban = ban,
+                mute = mute,
+                reason = reason
+            )
+        )
+    }
+
+    internal fun getRestrictions(
+        user: User?,
+        limit: Int? = null,
+        page: PNPage? = null,
+        sort: Collection<PNSortKey<PNMemberKey>> = listOf(),
+    ): GetChannelMembers {
+        return chat.pubNub.getChannelMembers(
+            channel = "$INTERNAL_MODERATION_PREFIX$id",
+            limit = limit,
+            page = page,
+            filter = user?.let { "uuid.id == '${user.id}'" },
+            sort = sort,
+            includeCount = true,
+            includeCustom = true,
+            includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
+            includeType = true
+        )
     }
 
     private fun emitUserMention(

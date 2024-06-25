@@ -53,8 +53,8 @@ import com.pubnub.kmp.types.CreateGroupConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.MessageActionType
-import com.pubnub.kmp.types.Restriction
-import com.pubnub.kmp.types.RestrictionType
+import com.pubnub.kmp.restrictions.Restriction
+import com.pubnub.kmp.restrictions.RestrictionType
 import com.pubnub.kmp.types.getMethodFor
 import com.pubnub.kmp.user.GetUsersResponse
 import com.pubnub.kmp.utils.cyrb53a
@@ -99,7 +99,7 @@ private const val ORIGINAL_PUBLISHER = "originalPublisher"
 
 private const val HTTP_ERROR_404 = 404
 
-private const val INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_"
+internal const val INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_"
 private const val MESSAGE_THREAD_ID_PREFIX = "PUBNUB_INTERNAL_THREAD"
 
 class ChatImpl(
@@ -567,11 +567,10 @@ class ChatImpl(
     }
 
     override fun setRestrictions(
-        userId: String,
-        channelId: String,
         restriction: Restriction
     ): PNFuture<Unit> {
-        val channel: String = INTERNAL_MODERATION_PREFIX + channelId
+        val channel: String = INTERNAL_MODERATION_PREFIX + restriction.channelId
+        val userId = restriction.userId
 
         val moderationEvent: PNFuture<PNMemberArrayResult> =
             if (!restriction.ban && !restriction.mute) {

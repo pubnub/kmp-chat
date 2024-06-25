@@ -20,6 +20,8 @@ enum class PubNubErrorMessage(val message: String) {
     CHANNEL_ID_ALREADY_EXIST("Channel with this ID already exists"),
     USER_ID_ALREADY_EXIST("User with this ID already exists"),
     CHANNEL_NOT_EXIST("Channel does not exist"),
+    CHANNEL_ID_SHOULD_BE_DEFINED("Channel id should be defined"),
+    USER_ID_SHOULD_BE_DEFINED("User id should be defined"),
     USER_NOT_EXIST("User does not exist"),
     FAILED_TO_SOFT_DELETE_CHANNEL("Failed to soft delete the channel"),
     FAILED_TO_DELETE_USER("Failed to delete the user"),
@@ -27,6 +29,7 @@ enum class PubNubErrorMessage(val message: String) {
     FAILED_TO_REMOVE_CHANNEL_MEMBERS("Failed to remove channel members."),
     FAILED_TO_SET_CHANNEL_MEMBERS("Failed to set channel members."),
     CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS("Channel invites are not supported in Public chats."),
+    MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY("Moderation restrictions can only be set by clients initialized with a Secret Key."),
     ;
 
     override fun toString(): String {
