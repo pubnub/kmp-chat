@@ -10,6 +10,7 @@ import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
 import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
@@ -40,6 +41,8 @@ import com.pubnub.kmp.membership.MembersResponse
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.kmp.restrictions.Restriction
+import com.pubnub.kmp.message.BaseMessage
+import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import com.pubnub.kmp.types.ChannelType
@@ -58,7 +61,7 @@ import kotlin.time.Duration.Companion.seconds
 
 internal val MINIMAL_TYPING_INDICATOR_TIMEOUT: Duration = 1.seconds
 
-abstract class BaseChannel(
+abstract class BaseChannel<T : Channel>(
     private val chat: Chat,
     private val clock: Clock = Clock.System,
     override val id: String,
@@ -68,6 +71,7 @@ abstract class BaseChannel(
     override val updated: String? = null,
     override val status: String? = null,
     override val type: ChannelType? = null,
+    val channelFactory: (Chat, PNChannelMetadata) -> T,
 ) : Channel {
     private val suggestedNames = mutableMapOf<String, List<Membership>>()
     private var disconnect: AutoCloseable? = null
@@ -173,7 +177,7 @@ abstract class BaseChannel(
             includeMeta = true
         ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
             pnFetchMessagesResult.channels[id]?.map { messageItem: PNFetchMessageItem ->
-                Message.fromDTO(chat, messageItem, id)
+                MessageImpl.fromDTO(chat, messageItem, id)
             } ?: error("Unable to read messages")
         }.catch {
             Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA.message, it))
@@ -206,7 +210,7 @@ abstract class BaseChannel(
             quotedMessage?.let {
                 put(
                     "quotedMessage",
-                    PNDataEncoder.encode(quotedMessage.asQuotedMessage())!!
+                    PNDataEncoder.encode((quotedMessage as BaseMessage<*>).asQuotedMessage())!!
                 )
             }
         }
@@ -320,7 +324,7 @@ abstract class BaseChannel(
                     if (eventContent !is EventContent.TextMessageContent) {
                         return@createEventListener
                     }
-                    callback(Message.fromDTO(chat, pnMessageResult))
+                    callback(MessageImpl.fromDTO(chat, pnMessageResult))
                 } catch (e: Exception) {
                     e.printStackTrace() //todo add logging
                 }
@@ -395,12 +399,12 @@ abstract class BaseChannel(
 
     override fun unregisterFromPush() = chat.unregisterPushChannels(listOf(id))
 
-    override fun pinMessage(message: Message): PNFuture<Channel> {
-        return pinMessageToChannel(chat.pubNub, message, this).then { ChannelImpl.fromDTO(chat, it.data!!) }
+    override fun pinMessage(message: Message): PNFuture<T> {
+        return pinMessageToChannel(chat.pubNub, message, this).then { channelFactory(chat, it.data!!) }
     }
 
-    override fun unpinMessage(): PNFuture<Channel> {
-        return pinMessageToChannel(chat.pubNub, null, this).then { ChannelImpl.fromDTO(chat, it.data!!) }
+    override fun unpinMessage(): PNFuture<T> {
+        return pinMessageToChannel(chat.pubNub, null, this).then { channelFactory(chat, it.data!!) }
     }
 
     override fun getUsersRestrictions(
@@ -490,7 +494,7 @@ abstract class BaseChannel(
         return chat.emitEvent(
             channel = this.id,
             payload = EventContent.Typing(value)
-        ).then { Unit }
+        ).then { }
     }
 
     internal fun setTypingSent(value: Instant) {
@@ -521,5 +525,5 @@ abstract class BaseChannel(
         }
     }
 
-    internal abstract fun copyWithStatusDeleted(): Channel
+    internal abstract fun copyWithStatusDeleted(): T
 }

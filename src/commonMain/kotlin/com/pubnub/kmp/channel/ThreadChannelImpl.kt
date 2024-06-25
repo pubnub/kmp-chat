@@ -3,7 +3,6 @@ package com.pubnub.kmp.channel
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
-import com.pubnub.kmp.Channel
 import com.pubnub.kmp.Chat
 import com.pubnub.kmp.DELETED
 import com.pubnub.kmp.Message
@@ -31,7 +30,20 @@ data class ThreadChannelImpl(
     override val status: String? = null,
     override val type: ChannelType? = null,
     private var threadCreated: Boolean = true,
-) : BaseChannel(chat, clock, id, name, custom, description, updated, status, type), ThreadChannel {
+) : BaseChannel<ThreadChannel>(
+    chat,
+    clock,
+    id,
+    name,
+    custom,
+    description,
+    updated,
+    status,
+    type,
+    { chat, pnChannelMetadata ->
+        fromDTO(chat, parentMessage, pnChannelMetadata)
+    }
+), ThreadChannel {
 
     override val parentChannelId: String
         get() = parentMessage.channelId
@@ -76,7 +88,7 @@ data class ThreadChannelImpl(
         }
     }
 
-    override fun copyWithStatusDeleted(): Channel = copy(status = DELETED)
+    override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
 
     companion object {
         internal fun fromDTO(chat: Chat, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {

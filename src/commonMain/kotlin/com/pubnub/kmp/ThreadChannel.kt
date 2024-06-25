@@ -6,4 +6,8 @@ interface ThreadChannel : Channel {
     val parentMessage: Message
     val clock: Clock
     val parentChannelId: String
+
+    fun pinMessageToParentChannel(message: ThreadMessage) {
+
+    }
 }

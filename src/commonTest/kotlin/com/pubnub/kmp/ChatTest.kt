@@ -30,6 +30,7 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
@@ -973,7 +974,7 @@ class ChatTest {
 
 
     private fun createMessage(): Message {
-        return Message(
+        return MessageImpl(
             chat = chatMock,
             timetoken = 123345,
             content = TextMessageContent(

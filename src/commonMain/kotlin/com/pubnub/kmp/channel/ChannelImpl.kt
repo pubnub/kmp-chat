@@ -17,7 +17,7 @@ data class ChannelImpl(
     override val updated: String? = null,
     override val status: String? = null,
     override val type: ChannelType? = null,
-) : BaseChannel(
+) : BaseChannel<Channel>(
     chat = chat,
     clock = clock,
     id = id,
@@ -26,7 +26,8 @@ data class ChannelImpl(
     description = description,
     updated = updated,
     status = status,
-    type = type
+    type = type,
+    ::fromDTO
 ) {
     companion object {
         internal fun fromDTO(chat: Chat, channel: PNChannelMetadata): Channel {
