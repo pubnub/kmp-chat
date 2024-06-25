@@ -198,42 +198,6 @@ abstract class BaseMessage<T : Message>(
     internal abstract fun copyWithActions(actions: Actions): T
 
     companion object {
-//        internal fun fromDTO(chat: Chat, pnMessageResult: PNMessageResult): BaseMessage {
-//            return BaseMessage(
-//                chat,
-//                pnMessageResult.timetoken!!,
-//                PNDataEncoder.decode<EventContent>(pnMessageResult.message) as EventContent.TextMessageContent,
-//                pnMessageResult.channel,
-//                pnMessageResult.publisher!!,
-//                meta = pnMessageResult.userMetadata?.decode() as? Map<String, Any>,
-//                mentionedUsers = pnMessageResult.userMetadata.extractMentionedUsers(),
-//                referencedChannels = pnMessageResult.userMetadata.extractReferencedChannels(),
-//                quotedMessage = pnMessageResult.userMetadata?.let { PNDataEncoder.decode(it) }
-//            )
-//        }
-//
-//        internal fun fromDTO(chat: Chat, messageItem: PNFetchMessageItem, channelId: String): BaseMessage {
-//            val eventContent = try {
-//                messageItem.message.asString()?.let { text ->
-//                    EventContent.TextMessageContent(text, null)
-//                } ?: PNDataEncoder.decode(messageItem.message)
-//            } catch (e: Exception) {
-//                EventContent.UnknownMessageFormat(messageItem.message)
-//            }
-//
-//            return BaseMessage(
-//                chat,
-//                messageItem.timetoken!!,
-//                eventContent,
-//                channelId,
-//                messageItem.uuid!!,
-//                messageItem.actions,
-//                messageItem.meta?.decode()?.let { it as Map<String, Any>? },
-//                mentionedUsers = messageItem.meta.extractMentionedUsers(),
-//                referencedChannels = messageItem.meta.extractReferencedChannels()
-//            )
-//        }
-
         internal fun JsonElement?.extractMentionedUsers(): MessageMentionedUsers? {
             if (this == null) {
                 return null

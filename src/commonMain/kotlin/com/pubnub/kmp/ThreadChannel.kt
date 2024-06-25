@@ -7,7 +7,6 @@ interface ThreadChannel : Channel {
     val clock: Clock
     val parentChannelId: String
 
-    fun pinMessageToParentChannel(message: ThreadMessage) {
-
-    }
+    fun pinMessageToParentChannel(message: ThreadMessage): PNFuture<Channel>
+    fun unpinMessageFromParentChannel(): PNFuture<Channel>
 }

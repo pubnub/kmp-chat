@@ -71,7 +71,8 @@ data class MessageImpl(
                 messageItem.actions,
                 messageItem.meta?.decode()?.let { it as Map<String, Any>? },
                 mentionedUsers = messageItem.meta.extractMentionedUsers(),
-                referencedChannels = messageItem.meta.extractReferencedChannels()
+                referencedChannels = messageItem.meta.extractReferencedChannels(),
+                quotedMessage = messageItem.meta?.let { PNDataEncoder.decode(it) }
             )
         }
     }

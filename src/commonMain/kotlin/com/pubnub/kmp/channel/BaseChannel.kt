@@ -61,7 +61,7 @@ import kotlin.time.Duration.Companion.seconds
 
 internal val MINIMAL_TYPING_INDICATOR_TIMEOUT: Duration = 1.seconds
 
-abstract class BaseChannel<T : Channel>(
+abstract class BaseChannel<C : Channel, M: Message>(
     private val chat: Chat,
     private val clock: Clock = Clock.System,
     override val id: String,
@@ -71,7 +71,8 @@ abstract class BaseChannel<T : Channel>(
     override val updated: String? = null,
     override val status: String? = null,
     override val type: ChannelType? = null,
-    val channelFactory: (Chat, PNChannelMetadata) -> T,
+    val channelFactory: (Chat, PNChannelMetadata) -> C,
+    val messageFactory: (Chat, PNFetchMessageItem, channelId: String) -> M,
 ) : Channel {
     private val suggestedNames = mutableMapOf<String, List<Membership>>()
     private var disconnect: AutoCloseable? = null
@@ -169,7 +170,7 @@ abstract class BaseChannel<T : Channel>(
         startTimetoken: Long?,
         endTimetoken: Long?,
         count: Int?
-    ): PNFuture<List<Message>> {
+    ): PNFuture<List<M>> {
         return chat.pubNub.fetchMessages(
             listOf(id),
             PNBoundedPage(startTimetoken, endTimetoken, count),
@@ -177,7 +178,7 @@ abstract class BaseChannel<T : Channel>(
             includeMeta = true
         ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
             pnFetchMessagesResult.channels[id]?.map { messageItem: PNFetchMessageItem ->
-                MessageImpl.fromDTO(chat, messageItem, id)
+                messageFactory(chat, messageItem, id)
             } ?: error("Unable to read messages")
         }.catch {
             Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA.message, it))
@@ -399,11 +400,11 @@ abstract class BaseChannel<T : Channel>(
 
     override fun unregisterFromPush() = chat.unregisterPushChannels(listOf(id))
 
-    override fun pinMessage(message: Message): PNFuture<T> {
+    override fun pinMessage(message: Message): PNFuture<C> {
         return pinMessageToChannel(chat.pubNub, message, this).then { channelFactory(chat, it.data!!) }
     }
 
-    override fun unpinMessage(): PNFuture<T> {
+    override fun unpinMessage(): PNFuture<C> {
         return pinMessageToChannel(chat.pubNub, null, this).then { channelFactory(chat, it.data!!) }
     }
 
@@ -525,5 +526,5 @@ abstract class BaseChannel<T : Channel>(
         }
     }
 
-    internal abstract fun copyWithStatusDeleted(): T
+    internal abstract fun copyWithStatusDeleted(): C
 }

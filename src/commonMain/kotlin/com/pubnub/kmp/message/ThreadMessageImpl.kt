@@ -6,9 +6,14 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.internal.PNDataEncoder
+import com.pubnub.kmp.Channel
 import com.pubnub.kmp.Chat
-import com.pubnub.kmp.Message
+import com.pubnub.kmp.ChatImpl
+import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.ThreadMessage
+import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.kmp.then
+import com.pubnub.kmp.thenAsync
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.MessageMentionedUsers
 import com.pubnub.kmp.types.MessageReferencedChannels
@@ -41,7 +46,7 @@ data class ThreadMessageImpl(
     override fun copyWithActions(actions: Actions): ThreadMessage = copy(actions = actions)
 
     companion object {
-        internal fun fromDTO(chat: Chat, pnMessageResult: PNMessageResult, parentChannelId: String): Message {
+        internal fun fromDTO(chat: Chat, pnMessageResult: PNMessageResult, parentChannelId: String): ThreadMessage {
             return ThreadMessageImpl(
                 chat,
                 parentChannelId,
@@ -52,11 +57,11 @@ data class ThreadMessageImpl(
                 meta = pnMessageResult.userMetadata?.decode() as? Map<String, Any>,
                 mentionedUsers = pnMessageResult.userMetadata.extractMentionedUsers(),
                 referencedChannels = pnMessageResult.userMetadata.extractReferencedChannels(),
-                quotedMessage = pnMessageResult.userMetadata?.let { PNDataEncoder.decode(it) }
+                quotedMessage = pnMessageResult.userMetadata?.let { PNDataEncoder.decode(it) },
             )
         }
 
-        internal fun fromDTO(chat: Chat, messageItem: PNFetchMessageItem, channelId: String, parentChannelId: String): Message {
+        internal fun fromDTO(chat: Chat, messageItem: PNFetchMessageItem, channelId: String, parentChannelId: String): ThreadMessage {
             val eventContent = try {
                 messageItem.message.asString()?.let { text ->
                     EventContent.TextMessageContent(text, null)
@@ -66,25 +71,33 @@ data class ThreadMessageImpl(
             }
 
             return ThreadMessageImpl(
-                chat,
-                parentChannelId,
-                messageItem.timetoken!!,
-                eventContent,
-                channelId,
-                messageItem.uuid!!,
-                messageItem.actions,
-                messageItem.meta?.decode()?.let { it as Map<String, Any>? },
+                chat = chat,
+                parentChannelId = parentChannelId,
+                timetoken = messageItem.timetoken!!,
+                content = eventContent,
+                channelId = channelId,
+                userId = messageItem.uuid!!,
+                actions = messageItem.actions,
+                meta = messageItem.meta?.decode()?.let { it as Map<String, Any>? },
                 mentionedUsers = messageItem.meta.extractMentionedUsers(),
-                referencedChannels = messageItem.meta.extractReferencedChannels()
+                referencedChannels = messageItem.meta.extractReferencedChannels(),
+                quotedMessage = messageItem.meta?.let { PNDataEncoder.decode(it) },
             )
         }
     }
 
-    override fun pinToParentChannel() {
-        TODO("Not yet implemented")
-    }
+    override fun pinToParentChannel() = pinOrUnpinFromParentChannel(this)
 
-    override fun unpinFromParentChannel() {
-        TODO("Not yet implemented")
+    override fun unpinFromParentChannel() = pinOrUnpinFromParentChannel(null)
+
+    private fun pinOrUnpinFromParentChannel(message: ThreadMessage?): PNFuture<Channel> {
+        return chat.getChannel(parentChannelId).thenAsync { parentChannel ->
+            if (parentChannel == null) {
+                error("Parent channel doesn't exist")
+            }
+            ChatImpl.pinMessageToChannel(chat.pubNub, message, parentChannel).then {
+                ChannelImpl.fromDTO(chat, it.data!!)
+            }
+        }
     }
 }
