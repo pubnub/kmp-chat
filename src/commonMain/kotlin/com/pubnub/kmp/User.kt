@@ -106,7 +106,7 @@ data class User(
     internal val uuidFilterString = "uuid.id == '${this.id}'"
 
     companion object {
-        fun fromDTO(chat: Chat, user: PNUUIDMetadata): User = User(
+        internal fun fromDTO(chat: Chat, user: PNUUIDMetadata): User = User(
             chat,
             id = user.id,
             name = user.name,

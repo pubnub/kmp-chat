@@ -12,6 +12,9 @@ import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.kmp.channel.MINIMAL_TYPING_INDICATOR_TIMEOUT
+import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
@@ -36,13 +39,14 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class ChannelTest {
-    private lateinit var objectUnderTest: Channel
+    private lateinit var objectUnderTest: ChannelImpl
 
     private val chat: Chat = mock(MockMode.strict)
     private lateinit var chatConfig: ChatConfig
     private val channelId = "testId"
     private val name = "testName"
-    private val custom = createCustomObject(mapOf("testCustom" to "custom"))
+    private val customData = mapOf("testCustom" to "custom")
+    private val custom = createCustomObject(customData)
     private val description = "testDescription"
     private val status = "testStatus"
     private val type = ChannelType.DIRECT
@@ -60,12 +64,12 @@ class ChannelTest {
         objectUnderTest = createChannel(type)
     }
 
-    private fun createChannel(type: ChannelType, clock: Clock = Clock.System) = Channel(
+    private fun createChannel(type: ChannelType, clock: Clock = Clock.System) = ChannelImpl(
         chat = chat,
         clock = clock,
         id = channelId,
         name = name,
-        custom = custom,
+        custom = customData,
         description = description,
         updated = updated,
         status = status,

@@ -57,20 +57,8 @@ class ChatIntegrationTest: BaseChatIntegrationTest() {
 
     @Test
     fun createDirectConversation() = runTest {
-//        val otherUser = User(chat, randomString())
-//        cleanup.add { pubnub.removeUUIDMetadata(otherUser.id).await() }
-
         // when
-        val result = try {
-              chat.createDirectConversation(someUser).await()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw e
-        }
-//        cleanup.add {
-//            pubnub.removeChannelMetadata(result.channel.id).await()
-//            pubnub.removeChannelMembers(result.channel.id, listOf(someUser.id, otherUser.id))
-//        }
+        val result = chat.createDirectConversation(someUser).await()
 
         // then
         val sortedUsers = listOf(chat.user.id, someUser.id).sorted()
@@ -89,12 +77,7 @@ class ChatIntegrationTest: BaseChatIntegrationTest() {
         val otherUsers = listOf(User(chat, randomString()), User(chat, randomString()))
 
         // when
-        val result = try {
-            chat.createGroupConversation(otherUsers).await()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw e
-        }
+        val result = chat.createGroupConversation(otherUsers).await()
 
         // then
         assertEquals(chat.user, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))

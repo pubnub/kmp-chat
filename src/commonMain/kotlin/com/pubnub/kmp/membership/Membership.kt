@@ -11,6 +11,7 @@ import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.User
 import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
+import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
@@ -77,7 +78,7 @@ data class Membership(
     companion object {
         fun fromMembershipDTO(chat: Chat, channelMembership: PNChannelMembership, user: User) = Membership(
             chat,
-            Channel.fromDTO(chat, channelMembership.channel!!),
+            ChannelImpl.fromDTO(chat, channelMembership.channel!!),
             user,
             channelMembership.custom
         )

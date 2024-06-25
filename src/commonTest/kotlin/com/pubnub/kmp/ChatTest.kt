@@ -30,6 +30,7 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
 import com.pubnub.kmp.user.GetUsersResponse
@@ -448,7 +449,7 @@ class ChatTest {
         val updatedDescription = "updatedDescription"
         val updatedCustom = mapOf("cos" to "cos1")
         val updatedUpdated = "updatedUpdated"
-        val updatedType = "GROUP"
+        val updatedType = ChannelType.GROUP.stringValue
         val updatedStatus = "updatedStatus"
 
         every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
@@ -486,13 +487,15 @@ class ChatTest {
             .async { result: Result<Channel> ->
                 // then
                 assertTrue(result.isSuccess)
-                assertEquals(id, result.getOrNull()!!.id)
-                assertEquals(updatedName, result.getOrNull()!!.name)
-                assertEquals(updatedDescription, result.getOrNull()!!.description)
-                assertTrue(result.getOrNull()!!.custom is CustomObject)
-                assertEquals(updatedUpdated, result.getOrNull()!!.updated)
-                assertEquals(ChannelType.valueOf(updatedType), result.getOrNull()!!.type)
-                assertEquals(updatedStatus, result.getOrNull()!!.status)
+                result.onSuccess {
+                    assertEquals(id, it.id)
+                    assertEquals(updatedName, it.name)
+                    assertEquals(updatedDescription, it.description)
+                    assertEquals(updatedCustom, it.custom)
+                    assertEquals(updatedUpdated, it.updated)
+                    assertEquals(ChannelType.from(updatedType), it.type)
+                    assertEquals(updatedStatus, it.status)
+                }
             }
     }
 
