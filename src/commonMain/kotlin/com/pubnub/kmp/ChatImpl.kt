@@ -691,7 +691,7 @@ class ChatImpl(
     private fun performUserDelete(user: User): PNFuture<User> = pubNub.removeUUIDMetadata(uuid = user.id).then { user }
     
     private fun performSoftChannelDelete(channel: Channel): PNFuture<Channel> {
-        val updatedChannel = (channel as BaseChannel).copyWithDeleted()
+        val updatedChannel = (channel as BaseChannel).copyWithStatusDeleted()
         return pubNub.setChannelMetadata(
             channel = channel.id,
             name = updatedChannel.name,

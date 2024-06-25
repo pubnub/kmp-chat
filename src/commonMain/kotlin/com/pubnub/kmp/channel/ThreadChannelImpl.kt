@@ -76,7 +76,7 @@ data class ThreadChannelImpl(
         }
     }
 
-    override fun copyWithDeleted(): Channel = copy(status = DELETED)
+    override fun copyWithStatusDeleted(): Channel = copy(status = DELETED)
 
     companion object {
         internal fun fromDTO(chat: Chat, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {

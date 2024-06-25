@@ -70,7 +70,7 @@ abstract class BaseChannel(
     internal var typingIndicators = mutableMapOf<String, Instant>()
     private val sendTextRateLimiter: String? = null // todo should be ExponentialRateLimiter instead of String
     private val typingIndicatorsLock = reentrantLock()
-    private val channelFilterString = "channel.id == '${this.id}'"
+    private val channelFilterString get() = "channel.id == '${this.id}'"
 
     override fun update(
         name: String?,
@@ -429,5 +429,5 @@ abstract class BaseChannel(
         }
     }
 
-    internal abstract fun copyWithDeleted(): Channel
+    internal abstract fun copyWithStatusDeleted(): Channel
 }

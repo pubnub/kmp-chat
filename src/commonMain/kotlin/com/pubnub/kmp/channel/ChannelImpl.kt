@@ -42,5 +42,5 @@ data class ChannelImpl(
         }
     }
 
-    override fun copyWithDeleted(): Channel = copy(status = DELETED)
+    override fun copyWithStatusDeleted(): Channel = copy(status = DELETED)
 }
