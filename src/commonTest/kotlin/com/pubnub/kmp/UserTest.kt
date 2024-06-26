@@ -1,5 +1,6 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.PubNubException
 import com.pubnub.api.endpoints.objects.membership.GetMemberships
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
@@ -8,8 +9,10 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
+import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.kmp.channel.ChannelImpl
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -20,6 +23,7 @@ import dev.mokkery.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -27,6 +31,7 @@ class UserTest {
     private lateinit var objectUnderTest: User
     private val chat: Chat = mock(MockMode.strict)
     private val chatConfig: ChatConfig = mock(MockMode.strict)
+    private val pubnubConfig: PNConfiguration = mock(MockMode.strict)
     private val pubNub: PubNub = mock(MockMode.strict)
     private val id = "testId"
     private val name = "testName"
@@ -45,6 +50,8 @@ class UserTest {
     fun setUp() {
         every { chatConfig.typingTimeout } returns 2000.milliseconds
         every { chat.config } returns chatConfig
+        every { chatConfig.pubnubConfig } returns pubnubConfig
+        every { pubnubConfig.secretKey } returns ""
         objectUnderTest = User(
             chat = chat,
             id = id,
@@ -228,6 +235,68 @@ class UserTest {
             includeCustom = true,
             includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM
         ) }
+    }
+
+    @Test
+    fun canGetRestrictionsWithNoChannelProvided(){
+        val noChannelProvided = null
+        val limit = 1
+        val page: PNPage? = PNPage.PNNext("nextPageHash")
+        val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
+        val getMemberships: GetMemberships = mock(MockMode.strict)
+        every { chat.pubNub } returns pubNub
+        every { pubNub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMemberships
+
+        objectUnderTest.getRestrictions(channel = noChannelProvided, limit = limit, page = page, sort = sort)
+
+        val expectedFilter = "channel.id LIKE 'PUBNUB_INTERNAL_MODERATION_*'"
+        verify { pubNub.getMemberships(
+            uuid = id,
+            limit = limit,
+            page = page,
+            filter = expectedFilter,
+            sort = sort,
+            includeCount = true,
+            includeCustom = true,
+            includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+            includeType = true
+        ) }
+    }
+
+    @Test
+    fun canGetRestrictionsByChannel(){
+        val channelId = "channelId"
+        val channel = ChannelImpl(chat = chat, id = channelId)
+        val limit = 1
+        val page: PNPage? = PNPage.PNNext("nextPageHash")
+        val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
+        val getMemberships: GetMemberships = mock(MockMode.strict)
+        every { chat.pubNub } returns pubNub
+        every { pubNub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMemberships
+
+        objectUnderTest.getRestrictions(channel = channel, limit = limit, page = page, sort = sort)
+
+        val expectedFilter = "channel.id == 'PUBNUB_INTERNAL_MODERATION_channelId'"
+        verify { pubNub.getMemberships(
+            uuid = id,
+            limit = limit,
+            page = page,
+            filter = expectedFilter,
+            sort = sort,
+            includeCount = true,
+            includeCustom = true,
+            includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+            includeType = true
+        ) }
+    }
+
+    @Test
+    fun shouldThrowExceptionWhenSecretKeyIsNotSet() {
+        val channel = ChannelImpl(chat = chat, id = "channelId")
+        val e = assertFailsWith<PubNubException> {
+            objectUnderTest.setRestrictions(channel)
+        }
+        assertEquals("Moderation restrictions can only be set by clients initialized with a Secret Key.", e.message)
     }
 
     private fun getPNChannelMembershipArrayResult(): PNChannelMembershipArrayResult {

@@ -1,6 +1,7 @@
 package com.pubnub.kmp.types
 
 import com.pubnub.api.JsonElement
+import com.pubnub.kmp.restrictions.RestrictionType
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

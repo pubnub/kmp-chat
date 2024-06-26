@@ -1,4 +1,4 @@
-package com.pubnub.kmp.types
+package com.pubnub.kmp.restrictions
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
