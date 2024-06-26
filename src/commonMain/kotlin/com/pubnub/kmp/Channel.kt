@@ -1,11 +1,15 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.pubsub.objects.PNSetChannelMetadataEventMessage
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
+import com.pubnub.kmp.channel.BaseChannel
+import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.membership.MembersResponse
 import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
@@ -91,4 +95,37 @@ interface Channel {
         page: PNPage? = null,
         sort: Collection<PNSortKey<PNMemberKey>> = listOf()
     ): PNFuture<GetRestrictionsResponse>
+    fun streamUpdates(callback: (channel: Channel) -> Unit): AutoCloseable {
+        return streamUpdatesOn(listOf(this)) {
+            callback(it.first())
+        }
+    }
+
+    companion object {
+        fun streamUpdatesOn(channels: Collection<Channel>, callback: (channels: Collection<Channel>) -> Unit) : AutoCloseable {
+            if (channels.isEmpty()) {
+                throw PubNubException("Cannot stream channel updates on an empty list")
+            }
+            val chat = (channels.first() as BaseChannel<*,*>).chat
+            val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
+                val message = event.extractedMessage
+                if (message !is PNSetChannelMetadataEventMessage) return@createEventListener
+
+                val newChannel = ChannelImpl.fromDTO(chat, message.data)
+                val newChannels = channels.map {
+                    if (it.id == newChannel.id) {
+                        newChannel
+                    } else {
+                        it
+                    }
+                }
+                callback(newChannels)
+            })
+
+            val subscriptionSet = chat.pubNub.subscriptionSetOf(channels.map { it.id }.toSet())
+            subscriptionSet.addListener(listener)
+            subscriptionSet.subscribe()
+            return subscriptionSet
+        }
+    }
 }

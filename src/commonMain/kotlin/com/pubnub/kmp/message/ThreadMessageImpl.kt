@@ -7,7 +7,6 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.Channel
-import com.pubnub.kmp.Chat
 import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.ThreadMessage
@@ -20,7 +19,7 @@ import com.pubnub.kmp.types.MessageReferencedChannels
 import com.pubnub.kmp.types.QuotedMessage
 
 data class ThreadMessageImpl(
-    private val chat: Chat,
+    private val chat: ChatImpl,
     override val parentChannelId: String,
     override val timetoken: Long,
     override val content: EventContent.TextMessageContent,
@@ -46,7 +45,7 @@ data class ThreadMessageImpl(
     override fun copyWithActions(actions: Actions): ThreadMessage = copy(actions = actions)
 
     companion object {
-        internal fun fromDTO(chat: Chat, pnMessageResult: PNMessageResult, parentChannelId: String): ThreadMessage {
+        internal fun fromDTO(chat: ChatImpl, pnMessageResult: PNMessageResult, parentChannelId: String): ThreadMessage {
             return ThreadMessageImpl(
                 chat,
                 parentChannelId,
@@ -61,7 +60,7 @@ data class ThreadMessageImpl(
             )
         }
 
-        internal fun fromDTO(chat: Chat, messageItem: PNFetchMessageItem, channelId: String, parentChannelId: String): ThreadMessage {
+        internal fun fromDTO(chat: ChatImpl, messageItem: PNFetchMessageItem, channelId: String, parentChannelId: String): ThreadMessage {
             val eventContent = try {
                 messageItem.message.asString()?.let { text ->
                     EventContent.TextMessageContent(text, null)

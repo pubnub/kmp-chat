@@ -108,7 +108,7 @@ class ChatImpl(
     override val editMessageActionName: String = MessageActionType.EDITED.toString(),
     override val deleteMessageActionName: String = MessageActionType.DELETED.toString(),
 ) : Chat {
-    override var user: User = User(this, config.uuid)
+    override var currentUser: User = User(this, config.uuid)
         private set
 
     override fun createUser(user: User): PNFuture<User> = createUser(
@@ -419,7 +419,7 @@ class ChatImpl(
         channelStatus: String?,
         custom: CustomObject?,
     ): PNFuture<CreateDirectConversationResult> {
-        val user = this.user
+        val user = this.currentUser
         val sortedUsers = listOf(invitedUser.id, user.id).sorted()
         val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
 
@@ -463,7 +463,7 @@ class ChatImpl(
         channelStatus: String?,
         custom: CustomObject?
     ): PNFuture<CreateGroupConversationResult> {
-        val user = this.user
+        val user = this.currentUser
         return getChannel(channelId).thenAsync { channel ->
             channel?.asFuture() ?: createChannel(
                 channelId,
@@ -506,19 +506,19 @@ class ChatImpl(
         }
     }
 
-    override fun publish(
+    internal fun publish(
         channelId: String,
         message: EventContent,
-        meta: Map<String, Any>?,
-        shouldStore: Boolean?,
-        usePost: Boolean,
-        replicate: Boolean,
-        ttl: Int?,
+        meta: Map<String, Any>? = null,
+        shouldStore: Boolean? = null,
+        usePost: Boolean = false,
+        replicate: Boolean = true,
+        ttl: Int? = null,
     ): PNFuture<PNPublishResult> {
         return pubNub.publish(channelId, PNDataEncoder.encode(message)!!, meta, shouldStore, usePost, replicate, ttl)
     }
 
-    override fun signal(
+    internal fun signal(
         channelId: String,
         message: EventContent,
     ): PNFuture<PNPublishResult> {
@@ -558,12 +558,7 @@ class ChatImpl(
         val subscription = channelEntity.subscription()
         subscription.addListener(listener)
         subscription.subscribe()
-        return object : AutoCloseable {
-            override fun close() {
-                subscription.removeListener(listener)
-                subscription.unsubscribe()
-            }
-        }
+        return subscription
     }
 
     override fun setRestrictions(
@@ -783,7 +778,7 @@ class ChatImpl(
             return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_${messageTimetoken}"
         }
 
-        internal fun createThreadChannel(chat: Chat, message: Message): PNFuture<ThreadChannel> {
+        internal fun createThreadChannel(chat: ChatImpl, message: Message): PNFuture<ThreadChannel> {
             if (message.channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
                 return PubNubException("Only one level of thread nesting is allowed").asFuture()
             }

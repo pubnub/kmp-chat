@@ -8,7 +8,6 @@ import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.Channel
-import com.pubnub.kmp.Chat
 import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.Message
 import com.pubnub.kmp.PNFuture
@@ -34,7 +33,7 @@ private const val INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL"
 typealias Actions = Map<String, Map<String, List<PNFetchMessageItem.Action>>>
 
 abstract class BaseMessage<T : Message>(
-    private val chat: Chat,
+    private val chat: ChatImpl,
     override val timetoken: Long,
     override val content: EventContent.TextMessageContent,
     override val channelId: String,

@@ -61,10 +61,10 @@ class ChatIntegrationTest: BaseChatIntegrationTest() {
         val result = chat.createDirectConversation(someUser).await()
 
         // then
-        val sortedUsers = listOf(chat.user.id, someUser.id).sorted()
+        val sortedUsers = listOf(chat.currentUser.id, someUser.id).sorted()
         assertEquals("direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}", result.channel.id)
 
-        assertEquals(chat.user, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(chat.currentUser, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
         assertEquals(someUser, result.inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null))
 
         assertEquals(result.channel, result.hostMembership.channel)
@@ -80,7 +80,7 @@ class ChatIntegrationTest: BaseChatIntegrationTest() {
         val result = chat.createGroupConversation(otherUsers).await()
 
         // then
-        assertEquals(chat.user, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(chat.currentUser, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
         assertEquals(otherUsers.size, result.inviteeMemberships.size)
         result.inviteeMemberships.forEach { inviteeMembership ->
             assertEquals(otherUsers.first { it.id == inviteeMembership.user.id }, inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null))

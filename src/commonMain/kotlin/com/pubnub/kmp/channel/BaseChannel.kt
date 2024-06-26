@@ -17,10 +17,11 @@ import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
+import com.pubnub.api.models.consumer.push.payload.PushPayloadHelper
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.Channel
-import com.pubnub.kmp.Chat
+import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.ChatImpl.Companion.pinMessageToChannel
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.Event
@@ -62,7 +63,7 @@ import kotlin.time.Duration.Companion.seconds
 internal val MINIMAL_TYPING_INDICATOR_TIMEOUT: Duration = 1.seconds
 
 abstract class BaseChannel<C : Channel, M: Message>(
-    private val chat: Chat,
+    internal open val chat: ChatImpl,
     private val clock: Clock = Clock.System,
     override val id: String,
     override val name: String? = null,
@@ -71,8 +72,8 @@ abstract class BaseChannel<C : Channel, M: Message>(
     override val updated: String? = null,
     override val status: String? = null,
     override val type: ChannelType? = null,
-    val channelFactory: (Chat, PNChannelMetadata) -> C,
-    val messageFactory: (Chat, PNFetchMessageItem, channelId: String) -> M,
+    val channelFactory: (ChatImpl, PNChannelMetadata) -> C,
+    val messageFactory: (ChatImpl, PNFetchMessageItem, channelId: String) -> M,
 ) : Channel {
     private val suggestedNames = mutableMapOf<String, List<Membership>>()
     private var disconnect: AutoCloseable? = null
@@ -333,16 +334,11 @@ abstract class BaseChannel<C : Channel, M: Message>(
         )
         subscription.addListener(listener)
         subscription.subscribe()
-        return object : AutoCloseable {
-            override fun close() {
-                subscription.removeListener(listener)
-                subscription.unsubscribe()
-            }
-        }
+        return subscription
     }
 
     override fun join(custom: CustomObject?, callback: (Message) -> Unit): PNFuture<JoinResult> {
-        val user = this.chat.user
+        val user = this.chat.currentUser
         return chat.pubNub.setMemberships(
             channels = listOf(
                 PNChannelMembership.Partial(
@@ -527,4 +523,51 @@ abstract class BaseChannel<C : Channel, M: Message>(
     }
 
     internal abstract fun copyWithStatusDeleted(): C
+
+    private fun getPushPayload(text: String): Map<String,Any> {
+        val pushConfig = chat.config.pushNotifications
+        val apnsTopic = pushConfig.apnsTopic
+        val apnsEnv = pushConfig.apnsEnvironment
+        if (!pushConfig.sendPushes) {
+            return emptyMap()
+        }
+        val title = chat.currentUser.name ?: chat.currentUser.id
+        val pushBuilder = PushPayloadHelper()
+        pushBuilder.fcmPayloadV2 = PushPayloadHelper.FCMPayloadV2().apply {
+            notification = PushPayloadHelper.FCMPayloadV2.Notification().apply {
+                this.title = title
+                this.body = text
+            }
+            data = buildMap {
+                name?.let { put("subtitle", it) }
+            }
+            this.android = PushPayloadHelper.FCMPayloadV2.AndroidConfig().apply {
+                this.notification = PushPayloadHelper.FCMPayloadV2.AndroidConfig.AndroidNotification().apply {
+                    this.sound = "default"
+                    this.title = title
+                    this.body = text
+                }
+            }
+        }
+        if (apnsTopic != null) {
+            pushBuilder.apnsPayload = PushPayloadHelper.APNSPayload().apply {
+                this.aps = PushPayloadHelper.APNSPayload.APS().apply {
+                    this.alert = mapOf(
+                        "title" to title,
+                        "body" to text
+                    )
+                    this.sound = "default"
+                }
+                apns2Configurations = listOf(PushPayloadHelper.APNSPayload.APNS2Configuration().apply {
+                    this.targets = listOf(PushPayloadHelper.APNSPayload.APNS2Configuration.Target().apply {
+                        this.topic = apnsTopic
+                        this.environment = apnsEnv
+                    })
+                })
+                name?.let { custom = mapOf("subtitle" to it) }
+            }
+        }
+
+        return pushBuilder.build()
+    }
 }
