@@ -18,7 +18,7 @@ import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.kmp.restrictions.Restriction
 
 data class User(
-    internal val chat: ChatImpl,
+    internal val chat: Chat,
     val id: String,
     val name: String? = null,
     val externalId: String? = null,
@@ -182,7 +182,7 @@ data class User(
     internal val uuidFilterString = "uuid.id == '${this.id}'"
 
     companion object {
-        internal fun fromDTO(chat: ChatImpl, user: PNUUIDMetadata): User = User(
+        internal fun fromDTO(chat: Chat, user: PNUUIDMetadata): User = User(
             chat,
             id = user.id,
             name = user.name,

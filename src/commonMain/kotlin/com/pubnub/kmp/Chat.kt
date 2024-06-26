@@ -140,6 +140,25 @@ interface Chat {
     fun registerPushChannels(channels: List<String>): PNFuture<PNPushAddChannelResult>
     fun unregisterPushChannels(channels: List<String>): PNFuture<PNPushRemoveChannelResult>
     fun getThreadChannel(message: Message): PNFuture<ThreadChannel>
+
+    /* should be internal */
+    fun publish(
+        channelId: String,
+        message: EventContent,
+        meta: Map<String, Any>? = null,
+        shouldStore: Boolean? = null,
+        usePost: Boolean = false,
+        replicate: Boolean = true,
+        ttl: Int? = null,
+        mergeMessageWith: Map<String, Any>? = null,
+    ): PNFuture<PNPublishResult>
+
+    /* should be internal */
+    fun signal(
+        channelId: String,
+        message: EventContent,
+        mergeMessageWith: Map<String, Any>? = null
+    ): PNFuture<PNPublishResult>
 }
 
 inline fun <reified T : EventContent> Chat.listenForEvents(
