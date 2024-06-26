@@ -147,13 +147,14 @@ abstract class BaseMessage<T : Message>(
 
     override fun report(reason: String): PNFuture<PNPublishResult> {
         return chat.emitEvent(
-            INTERNAL_ADMIN_CHANNEL, EventContent.Report(
+            INTERNAL_ADMIN_CHANNEL,
+            EventContent.Report(
                 text,
                 reason,
                 timetoken,
                 channelId,
                 userId
-            )
+            ),
         )
     }
 

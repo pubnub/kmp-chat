@@ -260,7 +260,7 @@ abstract class BaseChannel<C : Channel, M: Message>(
                         membership.setLastReadMessageTimetoken(time.timetoken)
                     }
                 }.alsoAsync {
-                    chat.emitEvent(user.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
+                    chat.emitEvent(user.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id),)
                 }
             }
         }
@@ -287,7 +287,7 @@ abstract class BaseChannel<C : Channel, M: Message>(
             }
         }.alsoAsync {
             users.map { u ->
-                chat.emitEvent(u.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
+                chat.emitEvent(u.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id),)
             }.awaitAll()
         }
     }
@@ -478,9 +478,9 @@ abstract class BaseChannel<C : Channel, M: Message>(
     private fun emitUserMention(
         userId: String,
         timetoken: Long,
-        text: String, //todo need to add push payload once push is implemented
+        text: String,
     ): PNFuture<PNPublishResult> {
-        return chat.emitEvent(userId, EventContent.Mention(timetoken, id))
+        return chat.emitEvent(userId, EventContent.Mention(timetoken, id), getPushPayload(text))
     }
 
     private fun timeoutElapsed(lastTypingSent: Instant, now: Instant): Boolean {
@@ -490,7 +490,7 @@ abstract class BaseChannel<C : Channel, M: Message>(
     private fun sendTypingSignal(value: Boolean): PNFuture<Unit> {
         return chat.emitEvent(
             channel = this.id,
-            payload = EventContent.Typing(value)
+            payload = EventContent.Typing(value),
         ).then { }
     }
 

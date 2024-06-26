@@ -612,7 +612,7 @@ class ChatTest {
 
         objectUnderTest.emitEvent(
             channel = channelId,
-            payload = payload
+            payload = payload,
         ).async { result ->
             assertTrue(result.isSuccess)
             assertEquals(timetoken, result.getOrNull()?.timetoken)
@@ -631,7 +631,7 @@ class ChatTest {
 
         objectUnderTest.emitEvent(
             channel = channelId,
-            payload = payload
+            payload = payload,
         ).async { result ->
             assertTrue(result.isSuccess)
             assertEquals(timetoken, result.getOrNull()?.timetoken)

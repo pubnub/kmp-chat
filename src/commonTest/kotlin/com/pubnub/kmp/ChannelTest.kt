@@ -14,7 +14,6 @@ import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
-import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
@@ -151,12 +150,12 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        verify(exactly(0)) { chat.emitEvent(any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(),) }
     }
 
     @Test
     fun whenTypingSentAlreadyButTimeoutExpiredStartTypingShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
+        every { chat.emitEvent(any(), any(),) } returns PNPublishResult(1L).asFuture()
         val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val currentTimeStampInMillis =
             typingSent.plus(typingTimeout).plus(MINIMAL_TYPING_INDICATOR_TIMEOUT).plus(1.milliseconds)
@@ -176,14 +175,14 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channel = channelId,
-                payload = EventContent.Typing(true)
+                payload = EventContent.Typing(true),
             )
         }
     }
 
     @Test
     fun whenTypingNotSendShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
+        every { chat.emitEvent(any(), any(),) } returns PNPublishResult(1L).asFuture()
 
         // when
         objectUnderTest.startTyping().async { result ->
@@ -195,7 +194,7 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channel = channelId,
-                payload = EventContent.Typing(true)
+                payload = EventContent.Typing(true),
             )
         }
     }
@@ -218,7 +217,7 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        verify(exactly(0)) { chat.emitEvent(any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(),) }
     }
 
     @Test
@@ -239,7 +238,7 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        verify(exactly(0)) { chat.emitEvent(any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(),) }
     }
 
     @Test
@@ -259,7 +258,7 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        verify(exactly(0)) { chat.emitEvent(any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(),) }
 
     }
 
@@ -274,7 +273,7 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
+        every { chat.emitEvent(any(), any(),) } returns PNPublishResult(1L).asFuture()
 
         // when
         objectUnderTest.stopTyping().async { result ->
@@ -286,7 +285,7 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channel = channelId,
-                payload = EventContent.Typing(false)
+                payload = EventContent.Typing(false),
             )
         }
     }

@@ -402,11 +402,11 @@ class ChatImpl(
     }
 
 
-    override fun <T : EventContent> emitEvent(channel: String, payload: T): PNFuture<PNPublishResult> {
+    override fun <T : EventContent> emitEvent(channel: String, payload: T, mergePayloadWith: Map<String, Any>?): PNFuture<PNPublishResult> {
         return if (getMethodFor(payload::class) == EmitEventMethod.SIGNAL) {
-            signal(channelId = channel, message = payload)
+            signal(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
         } else {
-            publish(channelId = channel, message = payload)
+            publish(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
         }
     }
 
@@ -514,15 +514,33 @@ class ChatImpl(
         usePost: Boolean = false,
         replicate: Boolean = true,
         ttl: Int? = null,
+        mergeMessageWith: Map<String, Any>? = null,
     ): PNFuture<PNPublishResult> {
-        return pubNub.publish(channelId, PNDataEncoder.encode(message)!!, meta, shouldStore, usePost, replicate, ttl)
+        val finalMessage = merge(message, mergeMessageWith)
+        return pubNub.publish(channelId, finalMessage, meta, shouldStore, usePost, replicate, ttl)
     }
 
     internal fun signal(
         channelId: String,
         message: EventContent,
-    ): PNFuture<PNPublishResult> {
-        return pubNub.signal(channelId, PNDataEncoder.encode(message)!!)
+        mergeMessageWith: Map<String, Any>? = null,
+        ): PNFuture<PNPublishResult> {
+        val finalMessage = merge(message, mergeMessageWith)
+        return pubNub.signal(channelId, finalMessage)
+    }
+
+    private fun merge(
+        message: EventContent,
+        mergeMessageWith: Map<String, Any>?,
+    ): Map<String, Any> {
+        var finalMessage = PNDataEncoder.encode(message) as Map<String, Any>
+        if (mergeMessageWith != null) {
+            finalMessage = buildMap {
+                putAll(finalMessage)
+                putAll(mergeMessageWith)
+            }
+        }
+        return finalMessage
     }
 
     override fun <T : EventContent> listenForEvents(
@@ -577,7 +595,7 @@ class ChatImpl(
                                 channelId = channel,
                                 restriction = RestrictionType.LIFT,
                                 reason = restriction.reason
-                            )
+                            ),
                         )
                     }
             } else {
@@ -597,7 +615,7 @@ class ChatImpl(
                                 channelId = channel,
                                 restriction = if (restriction.ban) RestrictionType.BAN else RestrictionType.MUTE,
                                 reason = restriction.reason
-                            )
+                            ),
                         )
                     }
             }

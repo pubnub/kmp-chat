@@ -100,19 +100,10 @@ interface Chat {
 
     fun whoIsPresent(channelId: String): PNFuture<Collection<String>>
 
-//    fun publish(
-//        channelId: String,
-//        message: EventContent,
-//        meta: Map<String, Any>? = null,
-//        shouldStore: Boolean? = null,
-//        usePost: Boolean = false,
-//        replicate: Boolean = true,
-//        ttl: Int? = null,
-//    ): PNFuture<PNPublishResult>
-
     fun <T : EventContent> emitEvent(
         channel: String,
         payload: T,
+        mergePayloadWith: Map<String, Any>? = null,
     ): PNFuture<PNPublishResult>
 
     fun createDirectConversation(
@@ -134,8 +125,6 @@ interface Chat {
         channelStatus: String? = null,
         custom: CustomObject? = null,
     ): PNFuture<CreateGroupConversationResult>
-
-//    fun signal(channelId: String, message: EventContent): PNFuture<PNPublishResult>
 
     fun <T : EventContent> listenForEvents(
         type: KClass<T>,
