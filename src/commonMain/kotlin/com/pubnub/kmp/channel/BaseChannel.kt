@@ -40,10 +40,10 @@ import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN
 import com.pubnub.kmp.listenForEvents
 import com.pubnub.kmp.membership.MembersResponse
 import com.pubnub.kmp.membership.Membership
-import com.pubnub.kmp.restrictions.GetRestrictionsResponse
-import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.kmp.message.BaseMessage
 import com.pubnub.kmp.message.MessageImpl
+import com.pubnub.kmp.restrictions.GetRestrictionsResponse
+import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import com.pubnub.kmp.types.ChannelType
