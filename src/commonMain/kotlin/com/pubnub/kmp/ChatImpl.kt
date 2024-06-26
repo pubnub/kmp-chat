@@ -506,24 +506,24 @@ class ChatImpl(
         }
     }
 
-    internal fun publish(
+    override fun publish(
         channelId: String,
         message: EventContent,
-        meta: Map<String, Any>? = null,
-        shouldStore: Boolean? = null,
-        usePost: Boolean = false,
-        replicate: Boolean = true,
-        ttl: Int? = null,
-        mergeMessageWith: Map<String, Any>? = null,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean?,
+        usePost: Boolean,
+        replicate: Boolean,
+        ttl: Int?,
+        mergeMessageWith: Map<String, Any>?,
     ): PNFuture<PNPublishResult> {
         val finalMessage = merge(message, mergeMessageWith)
         return pubNub.publish(channelId, finalMessage, meta, shouldStore, usePost, replicate, ttl)
     }
 
-    internal fun signal(
+    override fun signal(
         channelId: String,
         message: EventContent,
-        mergeMessageWith: Map<String, Any>? = null,
+        mergeMessageWith: Map<String, Any>?,
         ): PNFuture<PNPublishResult> {
         val finalMessage = merge(message, mergeMessageWith)
         return pubNub.signal(channelId, finalMessage)
@@ -796,7 +796,7 @@ class ChatImpl(
             return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_${messageTimetoken}"
         }
 
-        internal fun createThreadChannel(chat: ChatImpl, message: Message): PNFuture<ThreadChannel> {
+        internal fun createThreadChannel(chat: Chat, message: Message): PNFuture<ThreadChannel> {
             if (message.channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
                 return PubNubException("Only one level of thread nesting is allowed").asFuture()
             }

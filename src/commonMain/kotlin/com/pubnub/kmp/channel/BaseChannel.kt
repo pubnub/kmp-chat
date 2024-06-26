@@ -21,7 +21,7 @@ import com.pubnub.api.models.consumer.push.payload.PushPayloadHelper
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.Channel
-import com.pubnub.kmp.ChatImpl
+import com.pubnub.kmp.Chat
 import com.pubnub.kmp.ChatImpl.Companion.pinMessageToChannel
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.Event
@@ -63,7 +63,7 @@ import kotlin.time.Duration.Companion.seconds
 internal val MINIMAL_TYPING_INDICATOR_TIMEOUT: Duration = 1.seconds
 
 abstract class BaseChannel<C : Channel, M: Message>(
-    internal open val chat: ChatImpl,
+    internal open val chat: Chat,
     private val clock: Clock = Clock.System,
     override val id: String,
     override val name: String? = null,
@@ -72,8 +72,8 @@ abstract class BaseChannel<C : Channel, M: Message>(
     override val updated: String? = null,
     override val status: String? = null,
     override val type: ChannelType? = null,
-    val channelFactory: (ChatImpl, PNChannelMetadata) -> C,
-    val messageFactory: (ChatImpl, PNFetchMessageItem, channelId: String) -> M,
+    val channelFactory: (Chat, PNChannelMetadata) -> C,
+    val messageFactory: (Chat, PNFetchMessageItem, channelId: String) -> M,
 ) : Channel {
     private val suggestedNames = mutableMapOf<String, List<Membership>>()
     private var disconnect: AutoCloseable? = null

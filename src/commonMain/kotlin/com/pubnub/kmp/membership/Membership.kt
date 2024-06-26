@@ -4,6 +4,7 @@ import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.kmp.Channel
+import com.pubnub.kmp.Chat
 import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.Message
@@ -17,7 +18,7 @@ import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 
 data class Membership(
-    private val chat: ChatImpl,
+    private val chat: Chat,
     val channel: Channel,
     val user: User,
     val custom: Map<String,Any?>?
@@ -76,14 +77,14 @@ data class Membership(
     private fun filterThisChannel() = "channel.id == '${this.channel.id}'"
 
     companion object {
-        internal fun fromMembershipDTO(chat: ChatImpl, channelMembership: PNChannelMembership, user: User) = Membership(
+        internal fun fromMembershipDTO(chat: Chat, channelMembership: PNChannelMembership, user: User) = Membership(
             chat,
             ChannelImpl.fromDTO(chat, channelMembership.channel!!),
             user,
             channelMembership.custom
         )
 
-        internal fun fromChannelMemberDTO(chat: ChatImpl, userMembership: PNMember, channel: Channel) = Membership(
+        internal fun fromChannelMemberDTO(chat: Chat, userMembership: PNMember, channel: Channel) = Membership(
             chat,
             channel,
             User.fromDTO(chat, userMembership.uuid!!),
