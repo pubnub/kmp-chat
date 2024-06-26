@@ -5,6 +5,7 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteChannelMetadataEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetChannelMetadataEventMessage
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
@@ -108,10 +109,11 @@ interface Channel {
             }
             val chat = (channels.first() as BaseChannel<*,*>).chat
             val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
-                val message = event.extractedMessage
-                if (message !is PNSetChannelMetadataEventMessage) return@createEventListener
-
-                val newChannel = ChannelImpl.fromDTO(chat, message.data)
+                val newChannel = when(val message = event.extractedMessage) {
+                    is PNSetChannelMetadataEventMessage -> ChannelImpl.fromDTO(chat, message.data)
+                    is PNDeleteChannelMetadataEventMessage -> ChannelImpl(chat, id = event.channel) // todo verify behavior with TS Chat SDK
+                    else -> return@createEventListener
+                }
                 val newChannels = channels.map {
                     if (it.id == newChannel.id) {
                         newChannel
