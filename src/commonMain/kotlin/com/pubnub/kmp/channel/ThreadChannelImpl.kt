@@ -4,13 +4,16 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.kmp.Channel
-import com.pubnub.kmp.Chat
+import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.DELETED
 import com.pubnub.kmp.Message
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.ThreadChannel
+import com.pubnub.kmp.ThreadMessage
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
+import com.pubnub.kmp.message.ThreadMessageImpl
+import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.File
@@ -21,7 +24,7 @@ import kotlinx.datetime.Clock
 
 data class ThreadChannelImpl(
     override val parentMessage: Message,
-    private val chat: Chat,
+    override val chat: ChatImpl,
     override val clock: Clock = Clock.System,
     override val id: String,
     override val name: String? = null,
@@ -31,10 +34,41 @@ data class ThreadChannelImpl(
     override val status: String? = null,
     override val type: ChannelType? = null,
     private var threadCreated: Boolean = true,
-) : BaseChannel(chat, clock, id, name, custom, description, updated, status, type), ThreadChannel {
+) : BaseChannel<ThreadChannel, ThreadMessage>(
+    chat,
+    clock,
+    id,
+    name,
+    custom,
+    description,
+    updated,
+    status,
+    type,
+    { chat, pnChannelMetadata ->
+        fromDTO(chat, parentMessage, pnChannelMetadata)
+    },
+    { chat, pnMessageItem, channelId ->
+        ThreadMessageImpl.fromDTO(chat, pnMessageItem, channelId, parentMessage.channelId)
+    }
+), ThreadChannel {
 
     override val parentChannelId: String
         get() = parentMessage.channelId
+
+    override fun pinMessageToParentChannel(message: ThreadMessage) = pinOrUnpinMessageFromParentChannel(message)
+
+    override fun unpinMessageFromParentChannel(): PNFuture<Channel> = pinOrUnpinMessageFromParentChannel(null)
+
+    private fun pinOrUnpinMessageFromParentChannel(message: ThreadMessage?): PNFuture<Channel> {
+        return chat.getChannel(parentChannelId).thenAsync { parentChannel ->
+            if (parentChannel == null) {
+                error("Parent channel doesn't exist")
+            }
+            ChatImpl.pinMessageToChannel(chat.pubNub, message, parentChannel).then {
+                ChannelImpl.fromDTO(chat, it.data!!)
+            }
+        }
+    }
 
     override fun sendText(
         text: String,
@@ -76,10 +110,10 @@ data class ThreadChannelImpl(
         }
     }
 
-    override fun copyWithStatusDeleted(): Channel = copy(status = DELETED)
+    override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
 
     companion object {
-        internal fun fromDTO(chat: Chat, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {
+        internal fun fromDTO(chat: ChatImpl, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {
             return ThreadChannelImpl(
                 parentMessage,
                 chat,

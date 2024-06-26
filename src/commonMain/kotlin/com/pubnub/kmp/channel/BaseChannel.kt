@@ -10,16 +10,18 @@ import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
 import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
+import com.pubnub.api.models.consumer.push.payload.PushPayloadHelper
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.Channel
-import com.pubnub.kmp.Chat
+import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.ChatImpl.Companion.pinMessageToChannel
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.Event
@@ -38,6 +40,8 @@ import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN
 import com.pubnub.kmp.listenForEvents
 import com.pubnub.kmp.membership.MembersResponse
 import com.pubnub.kmp.membership.Membership
+import com.pubnub.kmp.message.BaseMessage
+import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.kmp.then
@@ -58,8 +62,8 @@ import kotlin.time.Duration.Companion.seconds
 
 internal val MINIMAL_TYPING_INDICATOR_TIMEOUT: Duration = 1.seconds
 
-abstract class BaseChannel(
-    private val chat: Chat,
+abstract class BaseChannel<C : Channel, M: Message>(
+    internal open val chat: ChatImpl,
     private val clock: Clock = Clock.System,
     override val id: String,
     override val name: String? = null,
@@ -68,6 +72,8 @@ abstract class BaseChannel(
     override val updated: String? = null,
     override val status: String? = null,
     override val type: ChannelType? = null,
+    val channelFactory: (ChatImpl, PNChannelMetadata) -> C,
+    val messageFactory: (ChatImpl, PNFetchMessageItem, channelId: String) -> M,
 ) : Channel {
     private val suggestedNames = mutableMapOf<String, List<Membership>>()
     private var disconnect: AutoCloseable? = null
@@ -165,7 +171,7 @@ abstract class BaseChannel(
         startTimetoken: Long?,
         endTimetoken: Long?,
         count: Int?
-    ): PNFuture<List<Message>> {
+    ): PNFuture<List<M>> {
         return chat.pubNub.fetchMessages(
             listOf(id),
             PNBoundedPage(startTimetoken, endTimetoken, count),
@@ -173,7 +179,7 @@ abstract class BaseChannel(
             includeMeta = true
         ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
             pnFetchMessagesResult.channels[id]?.map { messageItem: PNFetchMessageItem ->
-                Message.fromDTO(chat, messageItem, id)
+                messageFactory(chat, messageItem, id)
             } ?: error("Unable to read messages")
         }.catch {
             Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA.message, it))
@@ -206,7 +212,7 @@ abstract class BaseChannel(
             quotedMessage?.let {
                 put(
                     "quotedMessage",
-                    PNDataEncoder.encode(quotedMessage.asQuotedMessage())!!
+                    PNDataEncoder.encode((quotedMessage as BaseMessage<*>).asQuotedMessage())!!
                 )
             }
         }
@@ -254,7 +260,7 @@ abstract class BaseChannel(
                         membership.setLastReadMessageTimetoken(time.timetoken)
                     }
                 }.alsoAsync {
-                    chat.emitEvent(user.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
+                    chat.emitEvent(user.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id),)
                 }
             }
         }
@@ -281,7 +287,7 @@ abstract class BaseChannel(
             }
         }.alsoAsync {
             users.map { u ->
-                chat.emitEvent(u.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
+                chat.emitEvent(u.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id),)
             }.awaitAll()
         }
     }
@@ -320,7 +326,7 @@ abstract class BaseChannel(
                     if (eventContent !is EventContent.TextMessageContent) {
                         return@createEventListener
                     }
-                    callback(Message.fromDTO(chat, pnMessageResult))
+                    callback(MessageImpl.fromDTO(chat, pnMessageResult))
                 } catch (e: Exception) {
                     e.printStackTrace() //todo add logging
                 }
@@ -328,16 +334,11 @@ abstract class BaseChannel(
         )
         subscription.addListener(listener)
         subscription.subscribe()
-        return object : AutoCloseable {
-            override fun close() {
-                subscription.removeListener(listener)
-                subscription.unsubscribe()
-            }
-        }
+        return subscription
     }
 
     override fun join(custom: CustomObject?, callback: (Message) -> Unit): PNFuture<JoinResult> {
-        val user = this.chat.user
+        val user = this.chat.currentUser
         return chat.pubNub.setMemberships(
             channels = listOf(
                 PNChannelMembership.Partial(
@@ -395,12 +396,12 @@ abstract class BaseChannel(
 
     override fun unregisterFromPush() = chat.unregisterPushChannels(listOf(id))
 
-    override fun pinMessage(message: Message): PNFuture<Channel> {
-        return pinMessageToChannel(chat.pubNub, message, this).then { ChannelImpl.fromDTO(chat, it.data!!) }
+    override fun pinMessage(message: Message): PNFuture<C> {
+        return pinMessageToChannel(chat.pubNub, message, this).then { channelFactory(chat, it.data!!) }
     }
 
-    override fun unpinMessage(): PNFuture<Channel> {
-        return pinMessageToChannel(chat.pubNub, null, this).then { ChannelImpl.fromDTO(chat, it.data!!) }
+    override fun unpinMessage(): PNFuture<C> {
+        return pinMessageToChannel(chat.pubNub, null, this).then { channelFactory(chat, it.data!!) }
     }
 
     override fun getUsersRestrictions(
@@ -477,9 +478,9 @@ abstract class BaseChannel(
     private fun emitUserMention(
         userId: String,
         timetoken: Long,
-        text: String, //todo need to add push payload once push is implemented
+        text: String,
     ): PNFuture<PNPublishResult> {
-        return chat.emitEvent(userId, EventContent.Mention(timetoken, id))
+        return chat.emitEvent(userId, EventContent.Mention(timetoken, id), getPushPayload(text))
     }
 
     private fun timeoutElapsed(lastTypingSent: Instant, now: Instant): Boolean {
@@ -489,8 +490,8 @@ abstract class BaseChannel(
     private fun sendTypingSignal(value: Boolean): PNFuture<Unit> {
         return chat.emitEvent(
             channel = this.id,
-            payload = EventContent.Typing(value)
-        ).then { Unit }
+            payload = EventContent.Typing(value),
+        ).then { }
     }
 
     internal fun setTypingSent(value: Instant) {
@@ -521,5 +522,52 @@ abstract class BaseChannel(
         }
     }
 
-    internal abstract fun copyWithStatusDeleted(): Channel
+    internal abstract fun copyWithStatusDeleted(): C
+
+    private fun getPushPayload(text: String): Map<String,Any> {
+        val pushConfig = chat.config.pushNotifications
+        val apnsTopic = pushConfig.apnsTopic
+        val apnsEnv = pushConfig.apnsEnvironment
+        if (!pushConfig.sendPushes) {
+            return emptyMap()
+        }
+        val title = chat.currentUser.name ?: chat.currentUser.id
+        val pushBuilder = PushPayloadHelper()
+        pushBuilder.fcmPayloadV2 = PushPayloadHelper.FCMPayloadV2().apply {
+            notification = PushPayloadHelper.FCMPayloadV2.Notification().apply {
+                this.title = title
+                this.body = text
+            }
+            data = buildMap {
+                name?.let { put("subtitle", it) }
+            }
+            this.android = PushPayloadHelper.FCMPayloadV2.AndroidConfig().apply {
+                this.notification = PushPayloadHelper.FCMPayloadV2.AndroidConfig.AndroidNotification().apply {
+                    this.sound = "default"
+                    this.title = title
+                    this.body = text
+                }
+            }
+        }
+        if (apnsTopic != null) {
+            pushBuilder.apnsPayload = PushPayloadHelper.APNSPayload().apply {
+                this.aps = PushPayloadHelper.APNSPayload.APS().apply {
+                    this.alert = mapOf(
+                        "title" to title,
+                        "body" to text
+                    )
+                    this.sound = "default"
+                }
+                apns2Configurations = listOf(PushPayloadHelper.APNSPayload.APNS2Configuration().apply {
+                    this.targets = listOf(PushPayloadHelper.APNSPayload.APNS2Configuration.Target().apply {
+                        this.topic = apnsTopic
+                        this.environment = apnsEnv
+                    })
+                })
+                name?.let { custom = mapOf("subtitle" to it) }
+            }
+        }
+
+        return pushBuilder.build()
+    }
 }
