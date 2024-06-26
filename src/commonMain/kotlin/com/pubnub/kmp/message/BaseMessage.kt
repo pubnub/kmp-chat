@@ -95,7 +95,7 @@ abstract class BaseMessage<T : Message>(
                 type, newText, timetoken
             )
         ).then { actionResult: PNAddMessageActionResult ->
-            val actions: Actions = assignAction(actionResult)
+            val actions: Actions = assignAction(actions, actionResult)
             this.copyWithActions(actions)
         }
     }
@@ -107,7 +107,7 @@ abstract class BaseMessage<T : Message>(
                 type, type, timetoken
             )
             ).then { it: PNAddMessageActionResult ->
-                val actions = assignAction(it)
+                val actions = assignAction(actions, it)
                 copyWithActions(actions)
             }.alsoAsync {
                 deleteThread(soft)
@@ -172,22 +172,6 @@ abstract class BaseMessage<T : Message>(
         return Unit.asFuture()
     }
 
-    private fun assignAction(actionResult: PNAddMessageActionResult): Map<String, Map<String, List<PNFetchMessageItem.Action>>> {
-        val type = actionResult.type
-        val newActions = actions?.toMutableMap() ?: mutableMapOf()
-        val actionValue = (newActions[type]?.toMutableMap() ?: mutableMapOf()).also {
-            newActions[type] = it
-        }
-        val valueList = (actionValue[actionResult.value]?.toMutableList() ?: mutableListOf()).also {
-            actionValue[actionResult.value] = it
-        }
-        if (valueList.any { it.actionTimetoken.toLong() == actionResult.actionTimetoken }) {
-            return newActions
-        }
-        valueList.add(PNFetchMessageItem.Action(actionResult.uuid!!, actionResult.actionTimetoken.toString()))
-        return newActions
-    }
-
     internal fun asQuotedMessage() : QuotedMessage {
         return QuotedMessage(
             timetoken,
@@ -212,5 +196,50 @@ abstract class BaseMessage<T : Message>(
             }
             return asMap()?.get("referencedChannels")?.let { PNDataEncoder.decode(it) }
         }
+
+        internal fun assignAction(actions: Actions?, actionResult: PNMessageAction): Actions {
+            val type = actionResult.type
+            val newActions = actions?.toMutableMap() ?: mutableMapOf()
+            val actionValue = (newActions[type]?.toMutableMap() ?: mutableMapOf()).also {
+                newActions[type] = it
+            }
+            val valueList = (actionValue[actionResult.value]?.toMutableList() ?: mutableListOf()).also {
+                actionValue[actionResult.value] = it
+            }
+            if (valueList.any { it.actionTimetoken.toLong() == actionResult.actionTimetoken }) {
+                return newActions
+            }
+            valueList.add(PNFetchMessageItem.Action(actionResult.uuid!!, actionResult.actionTimetoken.toString()))
+            return newActions
+        }
+
+        internal fun filterAction(actions: Actions?, action: PNMessageAction): Actions {
+            return buildMap {
+                actions?.entries?.forEach { entry ->
+                    put(entry.key, buildMap {
+                        entry.value.forEach { innerEntry ->
+                            if (entry.key == action.type && innerEntry.key == action.value) {
+                                put(innerEntry.key, innerEntry.value.filter {
+                                    it.actionTimetoken.toLong() != action.actionTimetoken || it.uuid != action.uuid
+                                })
+                            } else {
+                                put(innerEntry.key, innerEntry.value)
+                            }
+                        }
+                    })
+                }
+            }
+        }
+
+//        protected filterAction(action: PubNub.MessageAction) {
+//            const { actionTimetoken, type, value, uuid } = action
+//            const newActions = this.actions || {}
+//            newActions[type] ||= {}
+//            newActions[type][value] ||= []
+//            newActions[type][value] = newActions[type][value].filter(
+//                (r) => r.actionTimetoken !== actionTimetoken || r.uuid !== uuid
+//            )
+//            return newActions
+//        }
     }
 }

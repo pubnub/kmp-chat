@@ -46,7 +46,6 @@ import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
-import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.kmp.restrictions.RestrictionType
 import com.pubnub.kmp.types.ChannelType

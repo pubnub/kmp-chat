@@ -12,7 +12,6 @@ import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.membership.MembersResponse
-import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.kmp.types.ChannelType
@@ -96,6 +95,7 @@ interface Channel {
         page: PNPage? = null,
         sort: Collection<PNSortKey<PNMemberKey>> = listOf()
     ): PNFuture<GetRestrictionsResponse>
+
     fun streamUpdates(callback: (channel: Channel) -> Unit): AutoCloseable {
         return streamUpdatesOn(listOf(this)) {
             callback(it.first())

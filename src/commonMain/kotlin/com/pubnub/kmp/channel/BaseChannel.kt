@@ -26,6 +26,7 @@ import com.pubnub.kmp.ChatImpl.Companion.pinMessageToChannel
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.Event
 import com.pubnub.kmp.INTERNAL_MODERATION_PREFIX
+import com.pubnub.kmp.Membership
 import com.pubnub.kmp.Message
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.User
@@ -39,7 +40,6 @@ import com.pubnub.kmp.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLI
 import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.kmp.listenForEvents
 import com.pubnub.kmp.membership.MembersResponse
-import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.message.BaseMessage
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse

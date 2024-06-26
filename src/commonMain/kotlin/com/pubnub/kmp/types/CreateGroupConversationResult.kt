@@ -1,7 +1,7 @@
 package com.pubnub.kmp.types
 
 import com.pubnub.kmp.Channel
-import com.pubnub.kmp.membership.Membership
+import com.pubnub.kmp.Membership
 
 class CreateGroupConversationResult(
     val channel: Channel,
