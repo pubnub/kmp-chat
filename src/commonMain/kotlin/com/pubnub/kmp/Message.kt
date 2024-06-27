@@ -40,6 +40,7 @@ interface Message {
     fun report(reason: String): PNFuture<PNPublishResult>
     fun createThread(): PNFuture<ThreadChannel>
     fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel>>
+    fun toggleReaction(reaction: String): PNFuture<Message>
 
     fun streamUpdates(callback: (message: Message) -> Unit): AutoCloseable {
         return streamUpdatesOn(listOf(this)) {

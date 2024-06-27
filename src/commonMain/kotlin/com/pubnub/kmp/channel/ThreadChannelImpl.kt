@@ -17,7 +17,7 @@ import com.pubnub.kmp.message.ThreadMessageImpl
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import com.pubnub.kmp.types.ChannelType
-import com.pubnub.kmp.types.File
+import com.pubnub.kmp.types.InputFile
 import com.pubnub.kmp.types.MessageMentionedUsers
 import com.pubnub.kmp.types.MessageReferencedChannel
 import com.pubnub.kmp.types.TextLink
@@ -81,7 +81,7 @@ data class ThreadChannelImpl(
         referencedChannels: Map<Int, MessageReferencedChannel>?,
         textLinks: List<TextLink>?,
         quotedMessage: Message?,
-        files: List<File>?,
+        files: List<InputFile>?,
     ): PNFuture<PNPublishResult> {
         return (if (!threadCreated) {
             awaitAll(

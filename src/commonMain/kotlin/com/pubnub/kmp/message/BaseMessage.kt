@@ -163,6 +163,21 @@ abstract class BaseMessage<T : Message>(
 
     override fun removeThread() = ChatImpl.removeThreadChannel(chat, this)
 
+    override fun toggleReaction(reaction: String): PNFuture<Message> {
+        val existingReaction = reactions[reaction]?.find {
+            it.uuid == chat.currentUser.id
+        }
+        val messageAction = PNMessageAction(MessageActionType.REACTIONS.toString(), reaction, timetoken)
+        val newActions = if (existingReaction != null) {
+            chat.pubNub.removeMessageAction(channelId, timetoken, existingReaction.actionTimetoken.toLong())
+                .then { filterAction(actions, messageAction) }
+        } else {
+            chat.pubNub.addMessageAction(channelId, messageAction)
+                .then { assignAction(actions, it) }
+        }
+        return newActions.then { copyWithActions(it) }
+    }
+
     private fun deleteThread(soft: Boolean): PNFuture<Unit> {
         if (hasThread) {
             return getThread().thenAsync {
