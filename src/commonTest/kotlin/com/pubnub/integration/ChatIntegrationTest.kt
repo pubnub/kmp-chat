@@ -80,10 +80,10 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val result = chat.createDirectConversation(someUser).await()
 
         // then
-        val sortedUsers = listOf(chat.user.id, someUser.id).sorted()
+        val sortedUsers = listOf(chat.currentUser.id, someUser.id).sorted()
         assertEquals("direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}", result.channel.id)
 
-        assertEquals(chat.user, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(chat.currentUser, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
         assertEquals(someUser, result.inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null))
 
         assertEquals(result.channel, result.hostMembership.channel)
@@ -99,7 +99,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val result = chat.createGroupConversation(otherUsers).await()
 
         // then
-        assertEquals(chat.user, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(chat.currentUser, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
         assertEquals(otherUsers.size, result.inviteeMemberships.size)
         result.inviteeMemberships.forEach { inviteeMembership ->
             assertEquals(
@@ -122,7 +122,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val channelId02 = channel02.id
         val membership01: ChannelMembershipInput = PNChannelMembership.Partial(channelId01, custom)
         val membership02: ChannelMembershipInput = PNChannelMembership.Partial(channelId02)
-        chat.pubNub.setMemberships(listOf(membership01, membership02), chat.user.id).await()
+        chat.pubNub.setMemberships(listOf(membership01, membership02), chat.currentUser.id).await()
 
         //to each channel add two messages(we want to check if last message will be taken by fetchMessages with limit = 1)
         channel01.sendText("message01In$channelId01").await()
@@ -138,7 +138,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         ) { event: Event<EventContent.Receipt> ->
             try {
                 assertEquals(channelId01, event.channelId)
-                assertEquals(chat.user.id, event.userId)
+                assertEquals(chat.currentUser.id, event.userId)
                 assertNotEquals(lastReadMessageTimetokenValue, event.payload.messageTimetoken)
                 assertEquals(lastPublishToChannel01.timetoken, event.payload.messageTimetoken)
                 assertionErrorInListener01.complete(null)
@@ -153,7 +153,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         ) { event: Event<EventContent.Receipt> ->
             try {
                 assertEquals(channelId02, event.channelId)
-                assertEquals(chat.user.id, event.userId)
+                assertEquals(chat.currentUser.id, event.userId)
                 assertNotEquals(lastReadMessageTimetokenValue, event.payload.messageTimetoken)
                 assertEquals(lastPublishToChannel02.timetoken, event.payload.messageTimetoken)
                 assertionErrorInListener02.complete(null)
@@ -172,7 +172,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         }
 
         // verify each Membership has updated custom value for "lastReadMessageTimetoken"
-        val userMembership: MembershipsResponse = chat.user.getMemberships().await()
+        val userMembership: MembershipsResponse = chat.currentUser.getMemberships().await()
         userMembership.memberships.forEach { membership: Membership ->
             assertNotEquals(lastReadMessageTimetokenValue.toDouble(), membership.custom!!["lastReadMessageTimetoken"])
         }

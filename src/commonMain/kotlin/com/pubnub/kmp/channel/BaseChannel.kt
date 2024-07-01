@@ -337,7 +337,7 @@ abstract class BaseChannel(
     }
 
     override fun join(custom: CustomObject?, callback: (Message) -> Unit): PNFuture<JoinResult> {
-        val user = this.chat.user
+        val user = this.chat.currentUser
         return chat.pubNub.setMemberships(
             channels = listOf(
                 PNChannelMembership.Partial(

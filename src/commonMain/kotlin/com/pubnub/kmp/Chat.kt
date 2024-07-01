@@ -23,7 +23,7 @@ import kotlin.reflect.KClass
 interface Chat {
     val config: ChatConfig
     val pubNub: PubNub
-    val user: User
+    val currentUser: User
 
     val editMessageActionName: String
     val deleteMessageActionName: String
@@ -116,6 +116,7 @@ interface Chat {
     fun <T : EventContent> emitEvent(
         channel: String,
         payload: T,
+        mergePayloadWith: Map<String, Any>? = null,
     ): PNFuture<PNPublishResult>
 
     fun createDirectConversation(
@@ -168,6 +169,26 @@ interface Chat {
         filter: String? = null,
         sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
     ): PNFuture<MarkAllMessageAsReadResponse>
+
+
+    /* should be internal */
+    fun publish(
+        channelId: String,
+        message: EventContent,
+        meta: Map<String, Any>? = null,
+        shouldStore: Boolean? = null,
+        usePost: Boolean = false,
+        replicate: Boolean = true,
+        ttl: Int? = null,
+        mergeMessageWith: Map<String, Any>? = null,
+    ): PNFuture<PNPublishResult>
+
+    /* should be internal */
+    fun signal(
+        channelId: String,
+        message: EventContent,
+        mergeMessageWith: Map<String, Any>? = null
+    ): PNFuture<PNPublishResult>
 }
 
 inline fun <reified T : EventContent> Chat.listenForEvents(

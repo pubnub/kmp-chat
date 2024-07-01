@@ -30,6 +30,7 @@ import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.api.v2.subscriptions.Subscription
 import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.channel.ChannelImpl
@@ -116,7 +117,7 @@ class ChatImpl(
     override val editMessageActionName: String = MessageActionType.EDITED.toString(),
     override val deleteMessageActionName: String = MessageActionType.DELETED.toString(),
 ) : Chat {
-    override var user: User = User(this, config.uuid)
+    override var currentUser: User = User(this, config.uuid)
         private set
 
     //todo when creating "chat" ChatConfig contain UUID but PNConfiguration located in ChatConfig has UserId
@@ -414,11 +415,11 @@ class ChatImpl(
     }
 
 
-    override fun <T : EventContent> emitEvent(channel: String, payload: T): PNFuture<PNPublishResult> {
+    override fun <T : EventContent> emitEvent(channel: String, payload: T, mergePayloadWith: Map<String, Any>?): PNFuture<PNPublishResult> {
         return if (getMethodFor(payload::class) == EmitEventMethod.SIGNAL) {
-            signal(channelId = channel, message = payload)
+            signal(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
         } else {
-            publish(channelId = channel, message = payload)
+            publish(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
         }
     }
 
@@ -431,7 +432,7 @@ class ChatImpl(
         channelStatus: String?,
         custom: CustomObject?,
     ): PNFuture<CreateDirectConversationResult> {
-        val user = this.user
+        val user = this.currentUser
         val sortedUsers = listOf(invitedUser.id, user.id).sorted()
         val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
 
@@ -475,7 +476,7 @@ class ChatImpl(
         channelStatus: String?,
         custom: CustomObject?
     ): PNFuture<CreateGroupConversationResult> {
-        val user = this.user
+        val user = this.currentUser
         return getChannel(channelId).thenAsync { channel ->
             channel?.asFuture() ?: createChannel(
                 channelId,
@@ -526,15 +527,33 @@ class ChatImpl(
         usePost: Boolean,
         replicate: Boolean,
         ttl: Int?,
+        mergeMessageWith: Map<String, Any>?,
     ): PNFuture<PNPublishResult> {
-        return pubNub.publish(channelId, PNDataEncoder.encode(message)!!, meta, shouldStore, usePost, replicate, ttl)
+        val finalMessage = merge(message, mergeMessageWith)
+        return pubNub.publish(channelId, finalMessage, meta, shouldStore, usePost, replicate, ttl)
     }
 
     override fun signal(
         channelId: String,
         message: EventContent,
+        mergeMessageWith: Map<String, Any>?,
     ): PNFuture<PNPublishResult> {
-        return pubNub.signal(channelId, PNDataEncoder.encode(message)!!)
+        val finalMessage = merge(message, mergeMessageWith)
+        return pubNub.signal(channelId, finalMessage)
+    }
+
+    private fun merge(
+        message: EventContent,
+        mergeMessageWith: Map<String, Any>?,
+    ): Map<String, Any> {
+        var finalMessage = PNDataEncoder.encode(message) as Map<String, Any>
+        if (mergeMessageWith != null) {
+            finalMessage = buildMap {
+                putAll(finalMessage)
+                putAll(mergeMessageWith)
+            }
+        }
+        return finalMessage
     }
 
     override fun <T : EventContent> listenForEvents(
@@ -567,7 +586,7 @@ class ChatImpl(
             onSignal = if (method == EmitEventMethod.SIGNAL) handler else { _, _ -> },
         )
         val channelEntity = pubNub.channel(channel)
-        val subscription = channelEntity.subscription()
+        val subscription: Subscription = channelEntity.subscription()
         subscription.addListener(listener)
         subscription.subscribe()
         return object : AutoCloseable {
@@ -594,7 +613,7 @@ class ChatImpl(
                                 channelId = channel,
                                 restriction = RestrictionType.LIFT,
                                 reason = restriction.reason
-                            )
+                            ),
                         )
                     }
             } else {
@@ -614,7 +633,7 @@ class ChatImpl(
                                 channelId = channel,
                                 restriction = if (restriction.ban) RestrictionType.BAN else RestrictionType.MUTE,
                                 reason = restriction.reason
-                            )
+                            ),
                         )
                     }
             }
@@ -664,7 +683,7 @@ class ChatImpl(
         filter: String?,
         sort: Collection<PNSortKey<PNMembershipKey>>
     ): PNFuture<Set<GetUnreadMessagesCounts>> {
-        return user.getMemberships(limit = limit, page = page, filter = filter, sort = sort)
+        return currentUser.getMemberships(limit = limit, page = page, filter = filter, sort = sort)
             .thenAsync { membershipsResponse: MembershipsResponse ->
                 val memberships = membershipsResponse.memberships
                 if (memberships.isEmpty()) {
@@ -698,7 +717,7 @@ class ChatImpl(
         filter: String?,
         sort: Collection<PNSortKey<PNMembershipKey>>
     ): PNFuture<MarkAllMessageAsReadResponse> {
-        return user.getMemberships(limit = limit, page = page, filter = filter, sort = sort)
+        return currentUser.getMemberships(limit = limit, page = page, filter = filter, sort = sort)
             .thenAsync { userMembershipsResponse: MembershipsResponse ->
                 if (userMembershipsResponse.memberships.isEmpty()) {
                     return@thenAsync emptySet<MarkAllMessageAsReadResponse>().asFuture()
@@ -730,7 +749,7 @@ class ChatImpl(
                             pubNub.setMemberships(
                                 channels = channelMembershipInputs,
                                 filter = filterExpression,
-                                uuid = user.id,
+                                uuid = currentUser.id,
                                 includeCount = true,
                                 includeCustom = true,
                                 includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
@@ -751,7 +770,7 @@ class ChatImpl(
                                         Membership.fromMembershipDTO(
                                             this,
                                             membership,
-                                            user
+                                            currentUser
                                         )
                                     }.toSet(),
                                     next = setMembershipsResponse.next,
@@ -815,7 +834,7 @@ class ChatImpl(
     private fun performUserDelete(user: User): PNFuture<User> = pubNub.removeUUIDMetadata(uuid = user.id).then { user }
 
     private fun performSoftChannelDelete(channel: Channel): PNFuture<Channel> {
-        val updatedChannel = (channel as BaseChannel).copyWithStatusDeleted()
+        val updatedChannel = (channel as BaseChannel<*, *>).copyWithStatusDeleted()
         return pubNub.setChannelMetadata(
             channel = channel.id,
             name = updatedChannel.name,

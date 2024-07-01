@@ -61,8 +61,8 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
             type = ChannelType.DIRECT
         )
         // user has chat and chat has user they should be the same
-        someUser = chat.user
-        userPam = chatPam.user
+        someUser = chat.currentUser
+        userPam = chatPam.currentUser
     }
 
     @AfterTest
