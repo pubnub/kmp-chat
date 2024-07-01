@@ -3,15 +3,20 @@ package com.pubnub.kmp
 import com.pubnub.api.PubNubException
 import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
+import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.history.PNFetchMessageItem
+import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.models.consumer.objects.PNKey
+import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
+import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
@@ -46,7 +51,9 @@ import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
-import com.pubnub.kmp.membership.Membership
+import com.pubnub.kmp.membership.MembershipsResponse
+import com.pubnub.kmp.message.GetUnreadMessagesCounts
+import com.pubnub.kmp.message.MarkAllMessageAsReadResponse
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.CreateGroupConversationResult
@@ -661,6 +668,119 @@ class ChatImpl(
                 Result.failure(it)
             }
         }
+    }
+
+    override fun getUnreadMessagesCounts(
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNMembershipKey>>
+    ): PNFuture<Set<GetUnreadMessagesCounts>> {
+        return currentUser.getMemberships(limit = limit, page = page, filter = filter, sort = sort)
+            .thenAsync { membershipsResponse: MembershipsResponse ->
+                val memberships = membershipsResponse.memberships
+                if (memberships.isEmpty()) {
+                    return@thenAsync emptySet<GetUnreadMessagesCounts>().asFuture()
+                } else {
+                    val channels = memberships.map { membership -> membership.channel.id }
+                    val channelsTimetoken =
+                        memberships.map { membership -> membership.lastReadMessageTimetoken ?: 0 }
+                    pubNub.messageCounts(channels = channels, channelsTimetoken = channelsTimetoken)
+                }.then { pnMessageCountResult ->
+                    val unreadMessageCounts =
+                        pnMessageCountResult.channels.map { (channelId, messageCount) ->
+                            val membershipMatchingChannel =
+                                memberships.find { membership: Membership -> membership.channel.id == channelId }
+                                    ?: throw PubNubException("Cannot find channel with id $channelId")
+                            GetUnreadMessagesCounts(
+                                channel = membershipMatchingChannel.channel,
+                                membership = membershipMatchingChannel,
+                                count = messageCount
+                            )
+                        }.toSet()
+                    unreadMessageCounts.filter { unreadMessageCount -> unreadMessageCount.count > 0 }.toSet()
+                }
+            }
+    }
+
+
+    override fun markAllMessagesAsRead(
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNMembershipKey>>
+    ): PNFuture<MarkAllMessageAsReadResponse> {
+        return currentUser.getMemberships(limit = limit, page = page, filter = filter, sort = sort)
+            .thenAsync { userMembershipsResponse: MembershipsResponse ->
+                if (userMembershipsResponse.memberships.isEmpty()) {
+                    return@thenAsync emptySet<MarkAllMessageAsReadResponse>().asFuture()
+                } else {
+                    val relevantChannelIds: List<String> =
+                        userMembershipsResponse.memberships.map { membership -> membership.channel.id }
+                    pubNub.fetchMessages(channels = relevantChannelIds, page = PNBoundedPage(limit = 1))
+                        .thenAsync { lastMessagesFromMembershipChannels: PNFetchMessagesResult ->
+
+                            val channelMembershipInputs: MutableList<ChannelMembershipInput> = mutableListOf()
+                            relevantChannelIds.mapIndexed { index, channelId ->
+                                val relevantLastMessageTimeToken: Long =
+                                    getTimetokenFromHistoryMessage(channelId, lastMessagesFromMembershipChannels)
+
+                                val customMap: Map<String, Any?> =
+                                    userMembershipsResponse.memberships.toList()[index].custom?.let { customNotNull ->
+                                        customNotNull.toMutableMap()
+                                            .apply { put("lastReadMessageTimetoken", relevantLastMessageTimeToken) }
+                                    } ?: mapOf("lastReadMessageTimetoken" to relevantLastMessageTimeToken)
+
+                                val channelMembership = PNChannelMembership.Partial(
+                                    channelId = channelId,
+                                    custom = createCustomObject(customMap)
+                                )
+                                channelMembershipInputs.add(channelMembership)
+                            }
+                            val filterExpression = relevantChannelIds.joinToString(" || ") { "channel.id == '$it'" }
+
+                            pubNub.setMemberships(
+                                channels = channelMembershipInputs,
+                                filter = filterExpression,
+                                uuid = currentUser.id,
+                                includeCount = true,
+                                includeCustom = true,
+                                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+                                includeType = true
+                            ).alsoAsync { setMembershipsResponse: PNChannelMembershipArrayResult ->
+                                val emitEventFutures: List<PNFuture<PNPublishResult>> = relevantChannelIds.map { channelId: String ->
+                                    val relevantLastMessageTimeToken =
+                                        getTimetokenFromHistoryMessage(channelId, lastMessagesFromMembershipChannels)
+                                    emitEvent(
+                                        channel = channelId,
+                                        payload = EventContent.Receipt(relevantLastMessageTimeToken)
+                                    )
+                                }
+                                emitEventFutures.awaitAll()
+                            }.then { setMembershipsResponse: PNChannelMembershipArrayResult ->
+                                MarkAllMessageAsReadResponse(
+                                    memberships = setMembershipsResponse.data.map { membership: PNChannelMembership ->
+                                        Membership.fromMembershipDTO(
+                                            this,
+                                            membership,
+                                            currentUser
+                                        )
+                                    }.toSet(),
+                                    next = setMembershipsResponse.next,
+                                    prev = setMembershipsResponse.prev,
+                                    total = setMembershipsResponse.totalCount ?: 0,
+                                    status = setMembershipsResponse.status
+                                )
+                            }
+                        }
+                }
+            } as PNFuture<MarkAllMessageAsReadResponse>
+    }
+
+    private fun getTimetokenFromHistoryMessage(channelId: String, pnFetchMessagesResult: PNFetchMessagesResult): Long {
+        // todo in TS there is encodeURIComponent(channelId) do we need this?
+        val relevantLastMessage: List<PNFetchMessageItem>? = pnFetchMessagesResult.channels[channelId]
+        return (relevantLastMessage?.getOrNull(0)?.timetoken ?: "0") as Long
     }
 
     private fun getCommonPushOptions(): PushNotificationsConfig {

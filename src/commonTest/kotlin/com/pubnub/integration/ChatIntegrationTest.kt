@@ -9,7 +9,7 @@ import com.pubnub.kmp.User
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
-import com.pubnub.kmp.membership.Membership
+import com.pubnub.kmp.Membership
 import com.pubnub.kmp.membership.MembershipsResponse
 import com.pubnub.kmp.message.MarkAllMessageAsReadResponse
 import com.pubnub.kmp.types.EventContent
