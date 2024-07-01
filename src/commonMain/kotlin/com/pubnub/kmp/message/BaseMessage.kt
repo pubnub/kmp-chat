@@ -95,7 +95,7 @@ abstract class BaseMessage<T : Message>(
                 type, newText, timetoken
             )
         ).then { actionResult: PNAddMessageActionResult ->
-            val actions: Actions = assignAction(actionResult)
+            val actions: Actions = assignAction(actions, actionResult)
             this.copyWithActions(actions)
         }
     }
@@ -107,7 +107,7 @@ abstract class BaseMessage<T : Message>(
                 type, type, timetoken
             )
             ).then { it: PNAddMessageActionResult ->
-                val actions = assignAction(it)
+                val actions = assignAction(actions, it)
                 copyWithActions(actions)
             }.alsoAsync {
                 deleteThread(soft)
@@ -163,6 +163,21 @@ abstract class BaseMessage<T : Message>(
 
     override fun removeThread() = ChatImpl.removeThreadChannel(chat, this)
 
+    override fun toggleReaction(reaction: String): PNFuture<Message> {
+        val existingReaction = reactions[reaction]?.find {
+            it.uuid == chat.currentUser.id
+        }
+        val messageAction = PNMessageAction(MessageActionType.REACTIONS.toString(), reaction, timetoken)
+        val newActions = if (existingReaction != null) {
+            chat.pubNub.removeMessageAction(channelId, timetoken, existingReaction.actionTimetoken.toLong())
+                .then { filterAction(actions, messageAction) }
+        } else {
+            chat.pubNub.addMessageAction(channelId, messageAction)
+                .then { assignAction(actions, it) }
+        }
+        return newActions.then { copyWithActions(it) }
+    }
+
     private fun deleteThread(soft: Boolean): PNFuture<Unit> {
         if (hasThread) {
             return getThread().thenAsync {
@@ -170,22 +185,6 @@ abstract class BaseMessage<T : Message>(
             }.then { Unit }
         }
         return Unit.asFuture()
-    }
-
-    private fun assignAction(actionResult: PNAddMessageActionResult): Map<String, Map<String, List<PNFetchMessageItem.Action>>> {
-        val type = actionResult.type
-        val newActions = actions?.toMutableMap() ?: mutableMapOf()
-        val actionValue = (newActions[type]?.toMutableMap() ?: mutableMapOf()).also {
-            newActions[type] = it
-        }
-        val valueList = (actionValue[actionResult.value]?.toMutableList() ?: mutableListOf()).also {
-            actionValue[actionResult.value] = it
-        }
-        if (valueList.any { it.actionTimetoken.toLong() == actionResult.actionTimetoken }) {
-            return newActions
-        }
-        valueList.add(PNFetchMessageItem.Action(actionResult.uuid!!, actionResult.actionTimetoken.toString()))
-        return newActions
     }
 
     internal fun asQuotedMessage() : QuotedMessage {
@@ -211,6 +210,40 @@ abstract class BaseMessage<T : Message>(
                 return null
             }
             return asMap()?.get("referencedChannels")?.let { PNDataEncoder.decode(it) }
+        }
+
+        internal fun assignAction(actions: Actions?, actionResult: PNMessageAction): Actions {
+            val type = actionResult.type
+            val newActions = actions?.toMutableMap() ?: mutableMapOf()
+            val actionValue = (newActions[type]?.toMutableMap() ?: mutableMapOf()).also {
+                newActions[type] = it
+            }
+            val valueList = (actionValue[actionResult.value]?.toMutableList() ?: mutableListOf()).also {
+                actionValue[actionResult.value] = it
+            }
+            if (valueList.any { it.actionTimetoken.toLong() == actionResult.actionTimetoken }) {
+                return newActions
+            }
+            valueList.add(PNFetchMessageItem.Action(actionResult.uuid!!, actionResult.actionTimetoken.toString()))
+            return newActions
+        }
+
+        internal fun filterAction(actions: Actions?, action: PNMessageAction): Actions {
+            return buildMap {
+                actions?.entries?.forEach { entry ->
+                    put(entry.key, buildMap {
+                        entry.value.forEach { innerEntry ->
+                            if (entry.key == action.type && innerEntry.key == action.value) {
+                                put(innerEntry.key, innerEntry.value.filter {
+                                    it.actionTimetoken.toLong() != action.actionTimetoken || it.uuid != action.uuid
+                                })
+                            } else {
+                                put(innerEntry.key, innerEntry.value)
+                            }
+                        }
+                    })
+                }
+            }
         }
     }
 }

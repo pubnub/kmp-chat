@@ -509,7 +509,7 @@ class ChannelTest {
         verify {
             chat.publish(
                 channelId,
-                EventContent.TextMessageContent(messageText),
+                EventContent.TextMessageContent(messageText, emptyList()),
                 mapOf(
                     "custom_meta" to "custom",
                     "mentionedUsers" to mapOf(

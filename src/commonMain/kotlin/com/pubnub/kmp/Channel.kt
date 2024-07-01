@@ -2,6 +2,7 @@ package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.files.PNDeleteFileResult
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
@@ -12,11 +13,11 @@ import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.membership.MembersResponse
-import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.kmp.types.ChannelType
-import com.pubnub.kmp.types.File
+import com.pubnub.kmp.types.GetFilesResult
+import com.pubnub.kmp.types.InputFile
 import com.pubnub.kmp.types.JoinResult
 import com.pubnub.kmp.types.MessageMentionedUsers
 import com.pubnub.kmp.types.MessageReferencedChannel
@@ -63,7 +64,7 @@ interface Channel {
         referencedChannels: Map<Int, MessageReferencedChannel>? = null,
         textLinks: List<TextLink>? = null,
         quotedMessage: Message? = null,
-        files: List<File>? = null,
+        files: List<InputFile>? = null,
     ): PNFuture<PNPublishResult>
 
     fun invite(user: User): PNFuture<Membership>
@@ -96,11 +97,20 @@ interface Channel {
         page: PNPage? = null,
         sort: Collection<PNSortKey<PNMemberKey>> = listOf()
     ): PNFuture<GetRestrictionsResponse>
+
     fun streamUpdates(callback: (channel: Channel) -> Unit): AutoCloseable {
         return streamUpdatesOn(listOf(this)) {
             callback(it.first())
         }
     }
+
+    fun streamReadReceipts(callback: (receipts: Map<String, List<String>>) -> Unit): AutoCloseable
+
+    fun getFiles(limit: Int = 100, next: String? = null): PNFuture<GetFilesResult>
+
+    fun deleteFile(id: String, name: String): PNFuture<PNDeleteFileResult>
+
+    fun streamPresence(callback: (userIds: Collection<String>) -> Unit): AutoCloseable
 
     companion object {
         fun streamUpdatesOn(channels: Collection<Channel>, callback: (channels: Collection<Channel>) -> Unit) : AutoCloseable {

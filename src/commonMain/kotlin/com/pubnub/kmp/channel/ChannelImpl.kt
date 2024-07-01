@@ -3,7 +3,6 @@ package com.pubnub.kmp.channel
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.kmp.Channel
 import com.pubnub.kmp.Chat
-import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.DELETED
 import com.pubnub.kmp.Message
 import com.pubnub.kmp.message.MessageImpl
