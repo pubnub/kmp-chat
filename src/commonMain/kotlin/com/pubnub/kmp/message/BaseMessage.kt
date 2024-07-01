@@ -245,16 +245,5 @@ abstract class BaseMessage<T : Message>(
                 }
             }
         }
-
-//        protected filterAction(action: PubNub.MessageAction) {
-//            const { actionTimetoken, type, value, uuid } = action
-//            const newActions = this.actions || {}
-//            newActions[type] ||= {}
-//            newActions[type][value] ||= []
-//            newActions[type][value] = newActions[type][value].filter(
-//                (r) => r.actionTimetoken !== actionTimetoken || r.uuid !== uuid
-//            )
-//            return newActions
-//        }
     }
 }
