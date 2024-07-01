@@ -778,6 +778,10 @@ class ChatImpl(
         }
     }
 
+    override fun getChannelSuggestions(text: String, filter: String?, limit: Int): PNFuture<List<Channel>> {
+        TODO("Not yet implemented")
+    }
+
     companion object {
         internal fun pinMessageToChannel(pubNub: PubNub, message: Message?, channel: Channel): PNFuture<PNChannelMetadataResult> {
             val customMetadataToSet = channel.custom?.toMutableMap() ?: mutableMapOf()
