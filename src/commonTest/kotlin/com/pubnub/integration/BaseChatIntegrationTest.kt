@@ -1,7 +1,6 @@
 package com.pubnub.integration
 
 import com.pubnub.kmp.Channel
-import com.pubnub.kmp.Chat
 import com.pubnub.kmp.ChatConfigImpl
 import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.User
@@ -16,8 +15,8 @@ import kotlin.test.BeforeTest
 
 abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
 
-    lateinit var chat: Chat
-    lateinit var chatPam: Chat
+    lateinit var chat: ChatImpl
+    lateinit var chatPam: ChatImpl
     lateinit var channel01: Channel
     lateinit var channel02: Channel
     lateinit var channelPam: Channel

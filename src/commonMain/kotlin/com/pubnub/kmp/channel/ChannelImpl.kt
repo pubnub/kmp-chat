@@ -4,11 +4,13 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.kmp.Channel
 import com.pubnub.kmp.Chat
 import com.pubnub.kmp.DELETED
+import com.pubnub.kmp.Message
+import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
 import kotlinx.datetime.Clock
 
 data class ChannelImpl(
-    private val chat: Chat,
+    override val chat: Chat,
     private val clock: Clock = Clock.System,
     override val id: String,
     override val name: String? = null,
@@ -17,7 +19,7 @@ data class ChannelImpl(
     override val updated: String? = null,
     override val status: String? = null,
     override val type: ChannelType? = null,
-) : BaseChannel(
+) : BaseChannel<Channel, Message>(
     chat = chat,
     clock = clock,
     id = id,
@@ -26,7 +28,9 @@ data class ChannelImpl(
     description = description,
     updated = updated,
     status = status,
-    type = type
+    type = type,
+    ::fromDTO,
+    MessageImpl::fromDTO
 ) {
     companion object {
         internal fun fromDTO(chat: Chat, channel: PNChannelMetadata): Channel {

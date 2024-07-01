@@ -35,7 +35,6 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
-import com.pubnub.kmp.message.GetUnreadMessagesCounts
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent

@@ -8,17 +8,19 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
+import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteUUIDMetadataEventMessage
+import com.pubnub.api.models.consumer.pubsub.objects.PNSetUUIDMetadataEventMessage
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
 import com.pubnub.kmp.membership.IncludeParameters
-import com.pubnub.kmp.membership.Membership
 import com.pubnub.kmp.membership.MembershipsResponse
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.kmp.restrictions.Restriction
 
 data class User(
-    val chat: Chat,
+    internal val chat: Chat,
     val id: String,
     val name: String? = null,
     val externalId: String? = null,
@@ -134,6 +136,12 @@ data class User(
         }
     }
 
+    fun streamUpdates(callback: (user: User) -> Unit): AutoCloseable {
+        return streamUpdatesOn(listOf(this)) {
+            callback(it.first())
+        }
+    }
+
     internal fun getRestrictions(
         channel: Channel?,
         limit: Int? = null,
@@ -197,6 +205,33 @@ data class User(
             type = user.type,
             lastActiveTimestamp = (user.custom?.get("lastActiveTimestamp") as? Number)?.toLong()
         )
+
+        fun streamUpdatesOn(users: Collection<User>, callback: (users: Collection<User>) -> Unit) : AutoCloseable {
+            if (users.isEmpty()) {
+                throw PubNubException("Cannot stream user updates on an empty list")
+            }
+            val chat = (users.first() as BaseChannel<*, *>).chat
+            val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
+                val newUser = when(val message = event.extractedMessage) {
+                    is PNSetUUIDMetadataEventMessage -> User.fromDTO(chat, message.data)
+                    is PNDeleteUUIDMetadataEventMessage -> User(chat, id = message.uuid) // todo verify behavior with TS Chat SDK
+                    else -> return@createEventListener
+                }
+                val newChannels = users.map {
+                    if (it.id == newUser.id) {
+                        newUser
+                    } else {
+                        it
+                    }
+                }
+                callback(newChannels)
+            })
+
+            val subscriptionSet = chat.pubNub.subscriptionSetOf(users.map { it.id }.toSet())
+            subscriptionSet.addListener(listener)
+            subscriptionSet.subscribe()
+            return subscriptionSet
+        }
     }
 
 }

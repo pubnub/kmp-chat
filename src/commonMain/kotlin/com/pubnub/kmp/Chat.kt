@@ -103,16 +103,6 @@ interface Chat {
 
     fun whoIsPresent(channelId: String): PNFuture<Collection<String>>
 
-    fun publish(
-        channelId: String,
-        message: EventContent,
-        meta: Map<String, Any>? = null,
-        shouldStore: Boolean? = null,
-        usePost: Boolean = false,
-        replicate: Boolean = true,
-        ttl: Int? = null,
-    ): PNFuture<PNPublishResult>
-
     fun <T : EventContent> emitEvent(
         channel: String,
         payload: T,
@@ -139,8 +129,6 @@ interface Chat {
         custom: CustomObject? = null,
     ): PNFuture<CreateGroupConversationResult>
 
-    fun signal(channelId: String, message: EventContent): PNFuture<PNPublishResult>
-
     fun <T : EventContent> listenForEvents(
         type: KClass<T>,
         channel: String,
@@ -155,7 +143,6 @@ interface Chat {
     fun registerPushChannels(channels: List<String>): PNFuture<PNPushAddChannelResult>
     fun unregisterPushChannels(channels: List<String>): PNFuture<PNPushRemoveChannelResult>
     fun getThreadChannel(message: Message): PNFuture<ThreadChannel>
-
     fun getUnreadMessagesCounts(
         limit: Int? = null,
         page: PNPage? = null,
@@ -169,7 +156,6 @@ interface Chat {
         filter: String? = null,
         sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
     ): PNFuture<MarkAllMessageAsReadResponse>
-
 
     /* should be internal */
     fun publish(

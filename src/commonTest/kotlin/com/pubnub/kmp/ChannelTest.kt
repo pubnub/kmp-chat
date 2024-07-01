@@ -14,12 +14,12 @@ import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
-import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.channel.MINIMAL_TYPING_INDICATOR_TIMEOUT
+import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.MessageMentionedUser
@@ -150,12 +150,12 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        verify(exactly(0)) { chat.emitEvent(any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(),) }
     }
 
     @Test
     fun whenTypingSentAlreadyButTimeoutExpiredStartTypingShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
+        every { chat.emitEvent(any(), any(),) } returns PNPublishResult(1L).asFuture()
         val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val currentTimeStampInMillis =
             typingSent.plus(typingTimeout).plus(MINIMAL_TYPING_INDICATOR_TIMEOUT).plus(1.milliseconds)
@@ -175,14 +175,14 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channel = channelId,
-                payload = EventContent.Typing(true)
+                payload = EventContent.Typing(true),
             )
         }
     }
 
     @Test
     fun whenTypingNotSendShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
+        every { chat.emitEvent(any(), any(),) } returns PNPublishResult(1L).asFuture()
 
         // when
         objectUnderTest.startTyping().async { result ->
@@ -194,7 +194,7 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channel = channelId,
-                payload = EventContent.Typing(true)
+                payload = EventContent.Typing(true),
             )
         }
     }
@@ -217,7 +217,7 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        verify(exactly(0)) { chat.emitEvent(any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(),) }
     }
 
     @Test
@@ -238,7 +238,7 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        verify(exactly(0)) { chat.emitEvent(any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(),) }
     }
 
     @Test
@@ -258,7 +258,7 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        verify(exactly(0)) { chat.emitEvent(any(), any()) }
+        verify(exactly(0)) { chat.emitEvent(any(), any(),) }
 
     }
 
@@ -273,7 +273,7 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
+        every { chat.emitEvent(any(), any(),) } returns PNPublishResult(1L).asFuture()
 
         // when
         objectUnderTest.stopTyping().async { result ->
@@ -285,7 +285,7 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channel = channelId,
-                payload = EventContent.Typing(false)
+                payload = EventContent.Typing(false),
             )
         }
     }
@@ -364,7 +364,7 @@ class ChannelTest {
     }
 
     private fun createMessage(): Message {
-        return Message(
+        return MessageImpl(
             chat = chat,
             timetoken = 123345,
             content = EventContent.TextMessageContent(
@@ -457,7 +457,7 @@ class ChannelTest {
             it.onSuccess { result ->
                 assertEquals(
                     listOf(
-                        Message(
+                        MessageImpl(
                             chat,
                             timetoken1,
                             EventContent.TextMessageContent(message1),
@@ -466,7 +466,7 @@ class ChannelTest {
                             null,
                             null
                         ),
-                        Message(
+                        MessageImpl(
                             chat,
                             timetoken2,
                             EventContent.TextMessageContent(message2),
@@ -486,7 +486,7 @@ class ChannelTest {
         every { chat.publish(any(), any(), any(), any(), any(), any(), any()) } returns PNPublishResult(1L).asFuture()
         val messageText = "someText"
         val message =
-            Message(chat, 1000L, EventContent.TextMessageContent(messageText), channelId, "some user", null, null)
+            MessageImpl(chat, 1000L, EventContent.TextMessageContent(messageText), channelId, "some user", null, null)
         val mentionedUser1 = "mention1"
         val referencedChannel1 = "referenced1"
         val userName = "someName"
@@ -509,7 +509,7 @@ class ChannelTest {
         verify {
             chat.publish(
                 channelId,
-                EventContent.TextMessageContent(messageText),
+                EventContent.TextMessageContent(messageText, emptyList()),
                 mapOf(
                     "custom_meta" to "custom",
                     "mentionedUsers" to mapOf(
