@@ -3,17 +3,20 @@ package com.pubnub.kmp
 import com.benasher44.uuid.uuid4
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNKey
+import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.kmp.channel.GetChannelsResponse
+import com.pubnub.kmp.message.GetUnreadMessagesCounts
+import com.pubnub.kmp.message.MarkAllMessageAsReadResponse
+import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.CreateGroupConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.kmp.user.GetUsersResponse
 import kotlin.reflect.KClass
 
@@ -151,6 +154,20 @@ interface Chat {
     fun registerPushChannels(channels: List<String>): PNFuture<PNPushAddChannelResult>
     fun unregisterPushChannels(channels: List<String>): PNFuture<PNPushRemoveChannelResult>
     fun getThreadChannel(message: Message): PNFuture<ThreadChannel>
+
+    fun getUnreadMessagesCounts(
+        limit: Int? = null,
+        page: PNPage? = null,
+        filter: String? = null,
+        sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
+    ) : PNFuture<Set<GetUnreadMessagesCounts>>
+
+    fun markAllMessagesAsRead(
+        limit: Int? = null,
+        page: PNPage? = null,
+        filter: String? = null,
+        sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
+    ): PNFuture<MarkAllMessageAsReadResponse>
 }
 
 inline fun <reified T : EventContent> Chat.listenForEvents(

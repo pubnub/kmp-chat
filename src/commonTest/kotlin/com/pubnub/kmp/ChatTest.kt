@@ -2,11 +2,13 @@ package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
+import com.pubnub.api.endpoints.MessageCounts
 import com.pubnub.api.endpoints.objects.channel.GetAllChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.GetChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.RemoveChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
 import com.pubnub.api.endpoints.objects.member.ManageChannelMembers
+import com.pubnub.api.endpoints.objects.membership.GetMemberships
 import com.pubnub.api.endpoints.objects.uuid.GetAllUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
@@ -16,9 +18,12 @@ import com.pubnub.api.endpoints.presence.WhereNow
 import com.pubnub.api.endpoints.pubsub.Publish
 import com.pubnub.api.endpoints.pubsub.Signal
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.history.PNMessageCountResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
@@ -30,6 +35,7 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.kmp.message.GetUnreadMessagesCounts
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
@@ -89,6 +95,8 @@ class ChatTest {
     private val manageChannelMembers: ManageChannelMembers = mock(mode = MockMode.strict)
     private val timetoken: Long = 123457
     private val pnException404 = PubNubException(statusCode = 404, errorMessage = "Requested object was not found.")
+    private val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
+    private val messageCounts: MessageCounts = mock(MockMode.strict)
 
     @BeforeTest
     fun setUp() {
@@ -896,6 +904,49 @@ class ChatTest {
         }
     }
 
+    @Test
+    fun getUnreadMessagesCountsShouldReturnEmptySetWhenUserHasNoMembership(){
+        val resultWithEmptyData = PNChannelMembershipArrayResult(
+            status = 200, data = emptyList(),
+            totalCount = 0,
+            next = null,
+            prev = null,
+        )
+        every { pubnub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMembershipsEndpoint
+        every { getMembershipsEndpoint.async(any()) } calls { ( callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback.accept(Result.success(resultWithEmptyData))
+        }
+
+        objectUnderTest.getUnreadMessagesCounts().async {result: Result<Set<GetUnreadMessagesCounts>> ->
+            assertTrue(result.isSuccess)
+            assertTrue(result.getOrNull()?.isEmpty()!!)
+        }
+    }
+
+    @Test
+    fun getUnreadMessagesCountsShouldReturnResult(){
+        val numberOfMessagesUnread = 2L
+        every { pubnub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMembershipsEndpoint
+        every { getMembershipsEndpoint.async(any()) } calls { ( callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback.accept(Result.success(getPNChannelMembershipArrayResult()))
+        }
+        every { pubnub.messageCounts(channels = listOf(channelId), channelsTimetoken = any()) } returns messageCounts
+        every { messageCounts.async(any()) } calls {(callback : Consumer<Result<PNMessageCountResult>>)->
+            callback.accept(Result.success(PNMessageCountResult(mapOf(channelId to numberOfMessagesUnread))))
+        }
+
+        objectUnderTest.getUnreadMessagesCounts().async {result: Result<Set<GetUnreadMessagesCounts>> ->
+            assertTrue(result.isSuccess)
+            assertFalse(result.getOrNull()?.isEmpty()!!)
+            val messageCountForChannel: GetUnreadMessagesCounts = result.getOrNull()?.first()!!
+            assertEquals(2, messageCountForChannel.count)
+            assertEquals(channelId, messageCountForChannel.channel.id)
+            assertEquals(channelId, messageCountForChannel.membership.channel.id)
+            assertEquals(userId, messageCountForChannel.membership.user.id)
+        }
+    }
+
+
 
     // todo fix this test if you can mock alsoAsync
 //    @Test
@@ -1014,5 +1065,35 @@ class ChatTest {
     private fun getPNUuidMetadataResult(): PNUUIDMetadataResult {
         val pnUUIDMetadata: PNUUIDMetadata = getPNUuidMetadata()
         return PNUUIDMetadataResult(status = 200, data = pnUUIDMetadata)
+    }
+
+    private fun getPNChannelMembershipArrayResult(): PNChannelMembershipArrayResult {
+        val channelMetadata = PNChannelMetadata(
+            id = channelId,
+            name = null,
+            description = null,
+            custom = null,
+            updated = null,
+            eTag = null,
+            type = null,
+            status = null
+        )
+
+        val channelMembership = PNChannelMembership(
+            channel = channelMetadata,
+            custom = null,
+            updated = "2024-05-20T14:50:19.972361Z",
+            eTag = "AZO/t53al7m8fw",
+            status = null
+        )
+
+        val data: List<PNChannelMembership> = mutableListOf(channelMembership)
+        return PNChannelMembershipArrayResult(
+            status = 200,
+            data = data,
+            totalCount = 1,
+            next = null,
+            prev = null
+        )
     }
 }
