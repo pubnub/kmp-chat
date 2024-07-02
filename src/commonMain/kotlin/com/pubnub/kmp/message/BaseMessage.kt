@@ -199,17 +199,15 @@ abstract class BaseMessage<T : Message>(
 
     companion object {
         internal fun JsonElement?.extractMentionedUsers(): MessageMentionedUsers? {
-            if (this == null) {
-                return null
-            }
-            return asMap()?.get("mentionedUsers")?.let { PNDataEncoder.decode(it) }
+            return this?.asMap()?.get("mentionedUsers")?.let { PNDataEncoder.decode(it) }
         }
 
         internal fun JsonElement?.extractReferencedChannels(): MessageReferencedChannels? {
-            if (this == null) {
-                return null
-            }
-            return asMap()?.get("referencedChannels")?.let { PNDataEncoder.decode(it) }
+            return this?.asMap()?.get("referencedChannels")?.let { PNDataEncoder.decode(it) }
+        }
+
+        internal fun JsonElement?.extractQuotedMessage(): QuotedMessage? {
+            return this?.asMap()?.get("quotedMessage")?.let { PNDataEncoder.decode(it) }
         }
 
         internal fun assignAction(actions: Actions?, actionResult: PNMessageAction): Actions {

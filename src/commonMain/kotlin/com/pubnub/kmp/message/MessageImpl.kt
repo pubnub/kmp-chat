@@ -49,7 +49,7 @@ data class MessageImpl(
                 meta = pnMessageResult.userMetadata?.decode() as? Map<String, Any>,
                 mentionedUsers = pnMessageResult.userMetadata.extractMentionedUsers(),
                 referencedChannels = pnMessageResult.userMetadata.extractReferencedChannels(),
-                quotedMessage = pnMessageResult.userMetadata?.let { PNDataEncoder.decode(it) }
+                quotedMessage = pnMessageResult.userMetadata.extractQuotedMessage()
             )
         }
 
@@ -72,7 +72,7 @@ data class MessageImpl(
                 messageItem.meta?.decode()?.let { it as Map<String, Any>? },
                 mentionedUsers = messageItem.meta.extractMentionedUsers(),
                 referencedChannels = messageItem.meta.extractReferencedChannels(),
-                quotedMessage = messageItem.meta?.let { PNDataEncoder.decode(it) }
+                quotedMessage = messageItem.meta.extractQuotedMessage()
             )
         }
     }
