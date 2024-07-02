@@ -1,6 +1,7 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
+import com.pubnub.api.models.consumer.history.PNMessageCountResult
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
@@ -17,8 +18,11 @@ data class Membership(
     val updated: String?,
     val eTag: String?,
 ) {
-    val lastReadMessageTimetoken: Long?
-        get() = custom?.get("lastReadMessageTimetoken") as? Long
+    val lastReadMessageTimetoken: Long? // todo shouldn't we call here getMetadata.custom.lastReadMessageTimetoken to have current data?
+        get() {
+            val double = custom?.get("lastReadMessageTimetoken") as? Double
+            return double?.toLong()
+        }
 
     fun setLastReadMessage(message: Message): PNFuture<Membership> {
         return setLastReadMessageTimetoken(message.timetoken)
@@ -37,8 +41,8 @@ data class Membership(
                 includeType = true,
                 includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
                 filter = filterThisChannel()
-            ).then {
-                fromMembershipDTO(chat, it.data.first(), user)
+            ).then { pnChannelMembershipArrayResult ->
+                fromMembershipDTO(chat, pnChannelMembershipArrayResult.data.first(), user)
             }
         }
     }
@@ -59,7 +63,9 @@ data class Membership(
             chat.pubNub.messageCounts(
                 channels = listOf(channel.id),
                 channelsTimetoken = listOf(timetoken)
-            ).then { it.channels[channel.id]!! }
+            ).then { pnMessageCountResult ->
+                pnMessageCountResult.channels[channel.id]!!
+            }
         } ?: (null as Long?).asFuture()
     }
 
