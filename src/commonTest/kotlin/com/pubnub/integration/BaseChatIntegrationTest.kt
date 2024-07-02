@@ -18,6 +18,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     lateinit var chat: ChatImpl
     lateinit var chatPam: ChatImpl
     lateinit var channel01: Channel
+    lateinit var channel02: Channel
     lateinit var channelPam: Channel
     lateinit var someUser: User
     lateinit var userPam: User
@@ -38,6 +39,16 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
             status = randomString(),
             type = ChannelType.DIRECT
         )
+        channel02 = ChannelImpl(
+            chat = chat,
+            id = randomString(),
+            name = randomString(),
+            custom = mapOf(randomString() to randomString()),
+            description = randomString(),
+            updated = randomString(),
+            status = randomString(),
+            type = ChannelType.DIRECT
+        )
         channelPam = ChannelImpl(
             chat = chatPam,
             id = randomString(),
@@ -48,32 +59,9 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
             status = randomString(),
             type = ChannelType.DIRECT
         )
-        someUser = User(
-            chat,
-            randomString(),
-            randomString(),
-            randomString(),
-            randomString(),
-            randomString(),
-            mapOf(randomString() to randomString()),
-            randomString(),
-            randomString(),
-            updated = null,
-            lastActiveTimestamp = null
-        )
-        userPam = User(
-            chatPam,
-            randomString(),
-            randomString(),
-            randomString(),
-            randomString(),
-            randomString(),
-            mapOf(randomString() to randomString()),
-            randomString(),
-            randomString(),
-            updated = null,
-            lastActiveTimestamp = null
-        )
+        // user has chat and chat has user they should be the same
+        someUser = chat.currentUser
+        userPam = chatPam.currentUser
     }
 
     @AfterTest
@@ -81,6 +69,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
         pubnub.removeUUIDMetadata(someUser.id).await()
         pubnub.removeUUIDMetadata(userPam.id).await()
         pubnub.removeChannelMetadata(channel01.id).await()
+        pubnub.removeChannelMetadata(channel02.id).await()
         pubnub.removeChannelMetadata(channelPam.id).await()
         cleanup.forEach { it.invoke() }
     }
