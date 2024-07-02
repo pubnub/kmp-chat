@@ -375,13 +375,13 @@ abstract class BaseChannel<C : Channel, M : Message>(
             includeType = true,
             filter = channelFilterString,
         ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
-            val resultDisconnect = disconnect ?: connect(callback)
+            val resultDisconnect = disconnect ?: connect(callback) //todo assign disconnect = resultDisconnect in subsequent line?
             chat.pubNub.time().thenAsync { time: PNTimeResult ->
                 Membership.fromMembershipDTO(chat, membershipArray.data.first(), user)
                     .setLastReadMessageTimetoken(time.timetoken)
-            }.then {
+            }.then { membership: Membership ->
                 JoinResult(
-                    it,
+                    membership,
                     resultDisconnect
                 ) //todo the whole disconnect handling is not safe! state can be made inconsistent
             }
