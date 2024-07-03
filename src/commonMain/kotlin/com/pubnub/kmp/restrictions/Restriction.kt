@@ -22,7 +22,7 @@ data class Restriction(
             val customData: Map<String, Any?>? = pnChannelMembership.custom
             val ban: Boolean = (customData?.get("ban") as? Boolean) ?: false
             val mute: Boolean = (customData?.get("mute") as? Boolean) ?: false
-            val reason: String? = customData?.get("reason").toString()
+            val reason: String? = customData?.get("reason")?.toString()
 
             return Restriction(
                 userId = userId,
@@ -38,7 +38,7 @@ data class Restriction(
             val customData: Map<String, Any?>? = pnMember.custom
             val ban: Boolean = (customData?.get("ban") as? Boolean) ?: false
             val mute: Boolean = (customData?.get("mute") as? Boolean) ?: false
-            val reason: String? = customData?.get("reason").toString()
+            val reason: String? = customData?.get("reason")?.toString()
             return Restriction(
                 userId = userId,
                 channelId = channelId,

@@ -1,7 +1,6 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
-import com.pubnub.api.models.consumer.history.PNMessageCountResult
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
@@ -9,6 +8,7 @@ import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteMembershipEventMess
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEventMessage
 import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.channel.ChannelImpl
+import tryLong
 
 data class Membership(
     private val chat: Chat,
@@ -20,8 +20,7 @@ data class Membership(
 ) {
     val lastReadMessageTimetoken: Long? // todo shouldn't we call here getMetadata.custom.lastReadMessageTimetoken to have current data?
         get() {
-            val double = custom?.get("lastReadMessageTimetoken") as? Double
-            return double?.toLong()
+            return custom?.get("lastReadMessageTimetoken").tryLong()
         }
 
     fun setLastReadMessage(message: Message): PNFuture<Membership> {

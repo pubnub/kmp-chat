@@ -18,6 +18,7 @@ import com.pubnub.kmp.membership.IncludeParameters
 import com.pubnub.kmp.membership.MembershipsResponse
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.kmp.restrictions.Restriction
+import tryLong
 
 data class User(
     internal val chat: Chat,
@@ -203,7 +204,7 @@ data class User(
             updated = user.updated,
             status = user.status,
             type = user.type,
-            lastActiveTimestamp = (user.custom?.get("lastActiveTimestamp") as? Number)?.toLong()
+            lastActiveTimestamp = user.custom?.get("lastActiveTimestamp")?.tryLong()
         )
 
         fun streamUpdatesOn(users: Collection<User>, callback: (users: Collection<User>) -> Unit) : AutoCloseable {

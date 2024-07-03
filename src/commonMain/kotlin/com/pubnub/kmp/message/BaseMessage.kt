@@ -27,6 +27,7 @@ import com.pubnub.kmp.types.MessageReferencedChannels
 import com.pubnub.kmp.types.QuotedMessage
 import com.pubnub.kmp.types.TextLink
 import kotlinx.serialization.ExperimentalSerializationApi
+import tryInt
 
 private const val THREAD_ROOT_ID = "threadRootId"
 private const val INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL"
@@ -80,7 +81,7 @@ abstract class BaseMessage<T : Message>(
 
     override val textLinks: List<TextLink>? get() = (meta?.get("textLinks") as? List<Any>)?.let { textLinksList: List<Any> ->
         textLinksList.filterIsInstance<Map<*,*>>().map { textLinkItem: Map<*, *> ->
-            TextLink(textLinkItem["startIndex"] as Int, textLinkItem["endIndex"] as Int, textLinkItem["link"] as String)
+            TextLink(textLinkItem["startIndex"].tryInt()!!, textLinkItem["endIndex"].tryInt()!!, textLinkItem["link"] as String)
         }
     }
 
