@@ -157,8 +157,10 @@ interface Chat {
         sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
     ): PNFuture<MarkAllMessageAsReadResponse>
 
+    fun getChannelSuggestions(text: String, limit: Int = 10): PNFuture<Set<Channel>>
+
     /* should be internal */
-    fun publish(
+    fun publish( //todo maybe create separate interface Chat : ChatInternal so that publish and signal are not visible by user?
         channelId: String,
         message: EventContent,
         meta: Map<String, Any>? = null,

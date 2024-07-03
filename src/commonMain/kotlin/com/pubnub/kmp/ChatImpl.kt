@@ -16,7 +16,6 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
-import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
@@ -118,6 +117,7 @@ class ChatImpl(
     override var currentUser: User = User(this, config.uuid)
         private set
 
+    private val suggestedChannelsCache: MutableMap<String, Set<Channel>> = mutableMapOf()
     //todo when creating "chat" ChatConfig contain UUID but PNConfiguration located in ChatConfig has UserId
     // maybe we can unified this?
     // shouldn't this method be called on chat.user instead of any user?
@@ -782,6 +782,37 @@ class ChatImpl(
                         }
                     }
             }
+    }
+
+    override fun getChannelSuggestions(text: String, limit: Int): PNFuture<Set<Channel>> {
+        val cacheKey: String = getChannelPhraseToLookFor(text) ?: return emptySet<Channel>().asFuture()
+
+        suggestedChannelsCache[cacheKey]?.let { nonNullChannels ->
+            return nonNullChannels.asFuture()
+        }
+
+        return getChannels(filter = "name LIKE '${cacheKey}*'", limit = limit).then { getChannelsResponse ->
+            val channels: Set<Channel> = getChannelsResponse.channels
+            suggestedChannelsCache[cacheKey] = channels
+            channels
+        }
+    }
+
+    internal fun getChannelPhraseToLookFor(text: String): String? {
+        val lastAtIndex = text.lastIndexOf("#")
+        if (lastAtIndex == -1) {
+            return null
+        }
+        val charactersAfterHash = text.substring(lastAtIndex + 1)
+        if (charactersAfterHash.length < 3) {
+            return null
+        }
+
+        val splitWords: List<String> = charactersAfterHash.split(" ")
+        if (splitWords.size > 2) {
+            return null
+        }
+        return splitWords.joinToString(" ")
     }
 
     private fun getTimetokenFromHistoryMessage(channelId: String, pnFetchMessagesResult: PNFetchMessagesResult): Long {
