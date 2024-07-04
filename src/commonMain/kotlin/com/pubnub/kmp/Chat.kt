@@ -159,7 +159,10 @@ interface Chat {
         message: EventContent,
         mergeMessageWith: Map<String, Any>? = null
     ): PNFuture<PNPublishResult>
-    fun getChannelSuggestions(text: String, filter: String?, limit: Int): PNFuture<List<Channel>>
+    fun getChannelSuggestions(
+       filter: String?,
+       limit: Int
+    ): PNFuture<List<Channel>>
 }
 
 inline fun <reified T : EventContent> Chat.listenForEvents(

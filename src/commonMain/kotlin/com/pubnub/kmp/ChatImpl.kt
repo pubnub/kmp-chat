@@ -778,8 +778,17 @@ class ChatImpl(
         }
     }
 
-    override fun getChannelSuggestions(text: String, filter: String?, limit: Int): PNFuture<List<Channel>> {
-        TODO("Not yet implemented")
+    override fun getChannelSuggestions(filter: String?, limit: Int): PNFuture<List<Channel>> {
+        return pubNub.getAllChannelMetadata(
+            filter = filter,
+            limit = limit
+        ).then { channelMetadata ->
+            channelMetadata.data.map {
+                ChannelImpl.fromDTO(this, it)
+            }
+        }.catch { exception ->
+            Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_USER_DATA.message, exception))
+        }
     }
 
     companion object {

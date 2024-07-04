@@ -8,7 +8,6 @@ import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.User
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
-import com.pubnub.kmp.map
 import com.pubnub.kmp.then
 import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
@@ -16,24 +15,23 @@ import com.pubnub.kmp.types.TextLink
 import com.pubnub.kmp.utils.indexOfDifference
 import com.pubnub.kmp.utils.isValidUrl
 import com.pubnub.kmp.utils.shift
-import kotlin.math.abs
 import kotlin.properties.Delegates
 
 class MessageDraft(
     private val chat: Chat,
     private val channel: Channel,
     private val userSuggestionDataSource: UserSuggestionDataSource,
-    private val userSuggestionLimit: Int
+    private val userSuggestionLimit: Int = 10
 ) {
     private var currentTextLinkDescriptors: MutableList<TextLinkDescriptor> = emptyList<TextLinkDescriptor>().toMutableList()
-    private var currentText: String by Delegates.observable("") { _, oldValue, newValue -> onTextChanged(oldValue, newValue) }
     private var quotedMessage: Message? = null
-    private var mentionedUsers: MutableList<MentionedItemDescriptor<User>> = emptyList<MentionedItemDescriptor<User>>().toMutableList()
-    private var mentionedChannels: MutableList<MentionedItemDescriptor<Channel>> = emptyList<MentionedItemDescriptor<Channel>>().toMutableList()
+    private var mentionedUsers: MutableList<MentionDescriptor<User>> = emptyList<MentionDescriptor<User>>().toMutableList()
+    private var mentionedChannels: MutableList<MentionDescriptor<Channel>> = emptyList<MentionDescriptor<Channel>>().toMutableList()
     private var getUsersFuture: PNFuture<List<User>> = emptyList<User>().asFuture()
     private var getChannelsFuture: PNFuture<List<Channel>> = emptyList<Channel>().asFuture()
 
-    var onChange: (String, SuggestedMessageDraftMentions) -> Unit = { _, _  -> }
+    var onSuggestionsChanged: (String, SuggestedMessageDraftMentions) -> Unit = { _, _  -> }
+    var currentText: String by Delegates.observable("") { _, oldValue, newValue -> onTextChanged(oldValue, newValue) }
 
     init {
         require(userSuggestionLimit <= 100) { "Fetching more than 100 users is prohibited" }
@@ -73,46 +71,24 @@ class MessageDraft(
     }
 
     fun addMentionedUser(user: User, positionInInput: Int) {
-        val mentionedItemDescriptor = MentionedItemDescriptor(
-            item = user,
-            id = user.id,
-            name = user.name.orEmpty(),
-            range = positionInInput..<positionInInput + user.name.orEmpty().length
-        )
-        addMentionedItem(
-            prefix = "@",
-            mentionedValue = mentionedItemDescriptor,
-            toCollection = mentionedUsers,
-            atPosition = positionInInput
-        )
+        addMention(user, user.id, user.name.orEmpty(), "@", positionInInput, mentionedUsers)
     }
 
     fun addMentionedChannel(channel: Channel, positionInInput: Int) {
-        val mentionedItemDescriptor = MentionedItemDescriptor(
-            item = channel,
-            id = channel.id,
-            name = channel.name.orEmpty(),
-            range = positionInInput..<positionInInput + channel.name.orEmpty().length
-        )
-        addMentionedItem(
-            prefix = "#",
-            mentionedValue = mentionedItemDescriptor,
-            toCollection = mentionedChannels,
-            atPosition = positionInInput
-        )
+        addMention(channel, channel.id, channel.name.orEmpty(), "#", positionInInput, mentionedChannels)
     }
 
-    fun getHighlightedMention(selectionStart: Int): HighlightedUser? {
-        return mentionedUsers.firstOrNull { it.range.contains(selectionStart) }?.let {
-            HighlightedUser(user = it.item, nameOccurrenceIndex = it.range.first)
+    fun getHighlightedUserMention(selectionStart: Int): HighlightedUser? {
+        return mentionedUsers.firstOrNull { it.fullMentionRange.contains(selectionStart) }?.let {
+            HighlightedUser(user = it.item, nameOccurrenceIndex = it.fullMentionRange.first)
         }
     }
 
     fun getMessagePreview(): MessageDraftPreview {
         return MessageDraftPreview(
             text = currentText,
-            mentionedUsers = mentionedUsers.associateBy { it.range.first }.mapValues { MessageMentionedUser(it.value.id, it.value.name) },
-            referencedChannels = mentionedChannels.associateBy { it.range.first }.mapValues { MessageReferencedChannel(it.value.id, it.value.name) },
+            mentionedUsers = mentionedUsers.associateBy { it.fullMentionRange.first }.mapValues { MessageMentionedUser(it.value.id, it.value.fullMentionName.drop(1)) },
+            referencedChannels = mentionedChannels.associateBy { it.fullMentionRange.first }.mapValues { MessageReferencedChannel(it.value.id, it.value.fullMentionName.drop(1)) },
             textLinks = currentTextLinkDescriptors.map { TextLink(it.range.first, it.range.last, it.link) },
             quotedMessage = quotedMessage
         )
@@ -130,75 +106,75 @@ class MessageDraft(
             usePost = usePost ?: false,
             ttl = ttl,
             meta = meta,
-            mentionedUsers = mentionedUsers.associateBy { it.range.first }.mapValues { MessageMentionedUser(it.value.id, it.value.name) },
-            referencedChannels = mentionedChannels.associateBy { it.range.first }.mapValues { MessageReferencedChannel(it.value.id, it.value.name) },
+            mentionedUsers = mentionedUsers.associateBy { it.fullMentionRange.first }.mapValues { MessageMentionedUser(it.value.id, it.value.fullMentionName) },
+            referencedChannels = mentionedChannels.associateBy { it.fullMentionRange.first }.mapValues { MessageReferencedChannel(it.value.id, it.value.fullMentionName) },
             textLinks = currentTextLinkDescriptors.map { TextLink(it.range.first, it.range.last, it.link) },
             quotedMessage = quotedMessage
         )
     }
 
     private fun onTextChanged(oldValue: String, newValue: String) {
-        newValue.indexOfDifference(oldValue)?.let {
-            val oldTxtLength = oldValue.length
-            val newTxtLength = newValue.length
-            val textLengthDiff = abs(newTxtLength - oldTxtLength)
-            val diffToApply = if (newTxtLength > oldTxtLength) { textLengthDiff } else { -textLengthDiff }
+        newValue.indexOfDifference(oldValue)?.let { diffIndex ->
+            val userMentionAtDiffIndex = updateMentionDescriptors(mentionedUsers.iterator(), diffIndex).firstOrNull {
+                it.fullMentionRange.contains(diffIndex)
+            }
+            val channelMentionAtDiffIndex = updateMentionDescriptors(mentionedChannels.iterator(), diffIndex).firstOrNull {
+                it.fullMentionRange.contains(diffIndex)
+            }
+            val bestUserMentionToQuery = userMentionAtDiffIndex?.let {
+                findFirstMention("@", it.fullMentionRange.first, 3)?.let { matchResult ->
+                    Pair(matchResult.value, matchResult.range.first)
+                }
+            } ?: findNameToQuery(mentionedUsers, "@", diffIndex, 3)
 
-            removeNoLongerExistingItems()
-            shiftRanges(it, diffToApply)
-            getSuggestedUsersAndChannels(it)
+            val bestChannelMentionToQuery = channelMentionAtDiffIndex?.let {
+                findFirstMention("#", it.fullMentionRange.first, 3)?.let { matchResult ->
+                    Pair(matchResult.value, matchResult.range.first)
+                }
+            } ?: findNameToQuery(mentionedChannels, "#", diffIndex, 3)
+
+            getSuggestedUsersAndChannels(
+                bestUserMentionToQuery,
+                bestChannelMentionToQuery
+            )
         }
     }
 
-    private fun shiftRanges(indexOfDiff: Int, diffToApply: Int) {
-        currentTextLinkDescriptors.filter { it.range.first >= indexOfDiff || it.range.contains(indexOfDiff) }.forEach { link ->
-            if (link.range.contains(indexOfDiff)) {
-                link.shiftRange(byStartOffset = 0, byEndOffset = diffToApply)
-            } else {
-                link.shiftRange(byStartOffset = diffToApply, byEndOffset = diffToApply)
+    private fun<T> updateMentionDescriptors(withIterator: MutableIterator<MentionDescriptor<T>>, indexOfDiff: Int): List<MentionDescriptor<T>> {
+        var removedElements = emptyList<MentionDescriptor<T>>().toMutableList()
+
+        while (withIterator.hasNext()) {
+            val it = withIterator.next()
+            val startIndex = currentText.indexOf(it.fullMentionName)
+            val endIndex = if (startIndex == -1 ) { -1 } else { startIndex + it.fullMentionName.length }
+
+            if (it.fullMentionRange.first >= indexOfDiff || it.fullMentionRange.contains(indexOfDiff)) {
+                if (!(startIndex..<endIndex).isEmpty()) {
+                    it.updateRange(startIndex..<endIndex)
+                } else {
+                    removedElements.add(it)
+                    withIterator.remove()
+                }
             }
         }
-        currentTextLinkDescriptors.removeAll {
-            it.range.isEmpty()
-        }
-        mentionedUsers.forEach {
-            it.shiftRange(diffToApply, diffToApply)
-        }
-        mentionedChannels.forEach {
-            it.shiftRange(diffToApply, diffToApply)
-        }
+        return removedElements
     }
 
-    private fun removeNoLongerExistingItems() {
-        mentionedUsers.removeAll {
-            !currentText.contains("@" + it.item.name.orEmpty())
-        }
-        mentionedChannels.removeAll {
-            !currentText.contains("#" + it.item.name.orEmpty())
-        }
-        currentTextLinkDescriptors.removeAll {
-            !currentText.contains(it.text)
-        }
-    }
-
-    private fun getSuggestedUsersAndChannels(indexOfDiff: Int) {
-        val userMention = findNameToQuery(mentionedUsers, "@", indexOfDiff)
-        val channelMention = findNameToQuery(mentionedChannels, "#", indexOfDiff)
-
-        getUsersFuture = if (userMention.first != null && userMention.second != null) {
+    private fun getSuggestedUsersAndChannels(userMention: Pair<String, Int>?, channelMention: Pair<String, Int>?) {
+        getUsersFuture = if (userMention != null) {
             when (userSuggestionDataSource) {
                 UserSuggestionDataSource.CHANNEL ->
                     channel.getMembers(
                         filter = "uuid.name LIKE `${userMention.first}`",
                         limit = userSuggestionLimit
-                    ).map {
+                    ).then {
                         it.members.map { membership -> membership.user }
                     }
                 UserSuggestionDataSource.CHAT ->
                     chat.getUsers(
                         filter = "uuid.name LIKE `${userMention.first}`",
                         limit = 10
-                    ).map {
+                    ).then {
                         it.users.toList()
                     }
             }
@@ -206,19 +182,21 @@ class MessageDraft(
             emptyList<User>().asFuture()
         }
 
-        getChannelsFuture = if (channelMention.first != null && channelMention.second != null) {
-            chat.getChannelSuggestions(text = currentText, filter = "name LIKE `${channelMention.first}`", limit = 10)
+        getChannelsFuture = if (channelMention != null) {
+            chat.getChannelSuggestions(filter = "name LIKE `${channelMention.first}`", limit = 10)
         } else {
             emptyList<Channel>().asFuture()
         }
 
-        awaitAll(getUsersFuture, getChannelsFuture).then {
-            invokeOnChangeCallback(
-                userMentionedAt = userMention.second,
-                users = it.first.toList(),
-                channelMentionedAt = channelMention.second,
-                channels = it.second
-            )
+        awaitAll(getUsersFuture, getChannelsFuture).async {
+            it.onSuccess { resultValue ->
+                invokeOnChangeCallback(
+                    userMentionedAt = userMention?.second,
+                    users = resultValue.first.toList(),
+                    channelMentionedAt = channelMention?.second,
+                    channels = resultValue.second
+                )
+            }
         }
     }
 
@@ -235,63 +213,74 @@ class MessageDraft(
             channels
         )
         if (suggestedMentions.channels.isNotEmpty() || suggestedMentions.users.isNotEmpty()) {
-            onChange(currentText, suggestedMentions)
+            onSuggestionsChanged(currentText, suggestedMentions)
+        }
+    }
+
+    private fun<T> addMention(
+        mention: T,
+        id: String,
+        name: String,
+        withPrefix: String,
+        positionInInput: Int,
+        intoCollection: MutableList<MentionDescriptor<T>>
+    ) {
+        if (positionInInput >= currentText.length) {
+            return
+        }
+        findFirstMention(
+           withPrefix = withPrefix,
+           startIndex = positionInInput,
+           greaterOrEqualThan = 3
+        )?.let {
+            if (name.startsWith(it.value.drop(withPrefix.length)).and(it.range.first == positionInInput)) {
+                val fullMentionName = withPrefix + name
+                val fullMentionRange = it.range.first..it.range.first + name.length
+                intoCollection.add(MentionDescriptor(id, mention, fullMentionName, fullMentionRange))
+                currentText = currentText.replaceRange(it.range, fullMentionName)
+            }
         }
     }
 
     private fun <T> findNameToQuery(
-        alreadyMentionedItemDescriptors: List<MentionedItemDescriptor<T>>,
+        currentMentions: List<MentionDescriptor<T>>,
         prefix: String,
+        greaterOrEqualThan: Int,
         indexOfDiff: Int
-    ): Pair<String?, Int?> {
-        val affectedAlreadyMentionedItem = alreadyMentionedItemDescriptors.firstOrNull {
-            it.range.contains(indexOfDiff)
+    ): Pair<String, Int>? {
+        val currentMentionsRanges = currentMentions.map {
+            it.fullMentionRange
         }
-        val matchResults = if (affectedAlreadyMentionedItem != null) {
-            findAllMentions(prefix, indexOfDiff)
-        } else {
-            findAllMentions(prefix)
-        }.filter {
-            !alreadyMentionedItemDescriptors.map { item -> item.name }.contains(it.value.drop(1))
-        }
-        return if (affectedAlreadyMentionedItem != null) {
-            Pair(matchResults.firstOrNull()?.value, matchResults.firstOrNull()?.range?.start)
-        } else {
-            Pair(matchResults.lastOrNull()?.value, matchResults.lastOrNull()?.range?.start)
-        }
-    }
-
-    private fun findAllMentions(withPrefix: String, startIndex: Int = 0): Sequence<MatchResult> {
-        return "$withPrefix[\\w\\s]+".toRegex().findAll(currentText, startIndex).filter { it.value.length >= 3 }
-    }
-
-    private fun findFirstMention(withPrefix: String, startIndex: Int = 0): MatchResult? {
-        return "$withPrefix[\\w\\s]+".toRegex().find(currentText, startIndex)
-    }
-
-    private fun <T> addMentionedItem(
-        prefix: String,
-        mentionedValue: MentionedItemDescriptor<T>,
-        toCollection: MutableList<MentionedItemDescriptor<T>>,
-        atPosition: Int
-    ) {
-        findFirstMention(prefix, atPosition)?.let {
-            if (mentionedValue.name.startsWith(it.value)) {
-                toCollection.add(mentionedValue)
-                currentText = currentText.replaceRange(it.range, mentionedValue.name)
+        "$prefix(\\w+)".toRegex().findAll(currentText, indexOfDiff).forEach { matchResult ->
+            if (currentMentionsRanges.intersect(matchResult.range).isEmpty()) {
+                if (matchResult.value.drop(prefix.length).length >= greaterOrEqualThan) {
+                    return Pair(matchResult.value.drop(prefix.length), matchResult.range.first)
+                }
             }
+        }
+        return null
+    }
+
+    private fun findFirstMention(withPrefix: String, startIndex: Int, greaterOrEqualThan: Int): MatchResult? {
+        return "$withPrefix(\\w+)".toRegex().find(currentText, startIndex)?.let {
+            return if (it.value.length >= greaterOrEqualThan) { it } else { null }
         }
     }
 }
 
-private class MentionedItemDescriptor<T>(
-    val item: T,
-    val id: String,
-    val name: String,
-    var range: IntRange
-) {
-    fun shiftRange(byStartOffset: Int, byEndOffset: Int) {
-        range = range.shift(byStartOffset, byEndOffset)
+private class MentionDescriptor<T> {
+    val id: String
+    val item: T
+    val fullMentionName: String
+    var fullMentionRange: IntRange private set
+    constructor(id: String, item: T, fullMentionName: String, fullMentionRange: IntRange) {
+        this.id = id
+        this.item = item
+        this.fullMentionName = fullMentionName
+        this.fullMentionRange = fullMentionRange
+    }
+    fun updateRange(newRange: IntRange) {
+        fullMentionRange = newRange
     }
 }
 private class TextLinkDescriptor {

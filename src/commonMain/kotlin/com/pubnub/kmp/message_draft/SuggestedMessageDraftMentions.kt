@@ -6,8 +6,8 @@ import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
 
 class SuggestedMessageDraftMentions private constructor(
-    val users: Map<Int, List<MessageMentionedUser>>,
-    val channels: Map<Int, List<MessageReferencedChannel>>
+    val users: Map<Int, List<User>>,
+    val channels: Map<Int, List<Channel>>
 ) {
     companion object {
         fun create(
@@ -17,12 +17,8 @@ class SuggestedMessageDraftMentions private constructor(
             channels: List<Channel>
         ): SuggestedMessageDraftMentions {
             return SuggestedMessageDraftMentions(
-                users = userMentionedAt?.let {
-                    mapOf(it to users.map { user -> MessageMentionedUser(user.id, user.name.orEmpty()) })
-                } ?: emptyMap(),
-                channels = channelMentionedAt?.let {
-                    mapOf(it to channels.map { channel -> MessageReferencedChannel(channel.id, channel.name.orEmpty()) })
-                } ?: emptyMap()
+                users = userMentionedAt?.let { mapOf(it to users) } ?: emptyMap(),
+                channels = channelMentionedAt?.let { mapOf(it to channels) } ?: emptyMap()
             )
         }
     }
