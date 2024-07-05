@@ -59,7 +59,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
             status = randomString(),
             type = ChannelType.DIRECT
         )
-        // user has chat and chat has user they should be the same
+        // user has chat and chat has user they should be the same?
         someUser = chat.currentUser
         userPam = chatPam.currentUser
     }

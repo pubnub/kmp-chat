@@ -91,6 +91,7 @@ interface Channel {
         mute: Boolean = false,
         reason: String? = null
     ): PNFuture<Unit>
+
     fun getUserRestrictions(user: User): PNFuture<Restriction>
     fun getUsersRestrictions(
         limit: Int? = null,
@@ -112,16 +113,24 @@ interface Channel {
 
     fun streamPresence(callback: (userIds: Collection<String>) -> Unit): AutoCloseable
 
+    fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<Set<Membership>>
+
     companion object {
-        fun streamUpdatesOn(channels: Collection<Channel>, callback: (channels: Collection<Channel>) -> Unit) : AutoCloseable {
+        fun streamUpdatesOn(
+            channels: Collection<Channel>,
+            callback: (channels: Collection<Channel>) -> Unit
+        ): AutoCloseable {
             if (channels.isEmpty()) {
                 throw PubNubException("Cannot stream channel updates on an empty list")
             }
-            val chat = (channels.first() as BaseChannel<*,*>).chat
+            val chat = (channels.first() as BaseChannel<*, *>).chat
             val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
-                val newChannel = when(val message = event.extractedMessage) {
+                val newChannel = when (val message = event.extractedMessage) {
                     is PNSetChannelMetadataEventMessage -> ChannelImpl.fromDTO(chat, message.data)
-                    is PNDeleteChannelMetadataEventMessage -> ChannelImpl(chat, id = event.channel) // todo verify behavior with TS Chat SDK
+                    is PNDeleteChannelMetadataEventMessage -> ChannelImpl(
+                        chat,
+                        id = event.channel
+                    ) // todo verify behavior with TS Chat SDK
                     else -> return@createEventListener
                 }
                 val newChannels = channels.map {

@@ -63,6 +63,7 @@ import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.MessageActionType
 import com.pubnub.kmp.types.getMethodFor
 import com.pubnub.kmp.user.GetUsersResponse
+import com.pubnub.kmp.util.getPhraseToLookFor
 import com.pubnub.kmp.utils.cyrb53a
 import kotlin.js.JsExport
 import kotlin.reflect.KClass
@@ -118,6 +119,8 @@ class ChatImpl(
         private set
 
     private val suggestedChannelsCache: MutableMap<String, Set<Channel>> = mutableMapOf()
+    private val suggestedUsersCache: MutableMap<String, Set<User>> = mutableMapOf()
+
     //todo when creating "chat" ChatConfig contain UUID but PNConfiguration located in ChatConfig has UserId
     // maybe we can unified this?
     // shouldn't this method be called on chat.user instead of any user?
@@ -785,7 +788,7 @@ class ChatImpl(
     }
 
     override fun getChannelSuggestions(text: String, limit: Int): PNFuture<Set<Channel>> {
-        val cacheKey: String = getChannelPhraseToLookFor(text) ?: return emptySet<Channel>().asFuture()
+        val cacheKey: String = getPhraseToLookFor(text, "#") ?: return emptySet<Channel>().asFuture()
 
         suggestedChannelsCache[cacheKey]?.let { nonNullChannels ->
             return nonNullChannels.asFuture()
@@ -798,21 +801,18 @@ class ChatImpl(
         }
     }
 
-    internal fun getChannelPhraseToLookFor(text: String): String? {
-        val lastAtIndex = text.lastIndexOf("#")
-        if (lastAtIndex == -1) {
-            return null
-        }
-        val charactersAfterHash = text.substring(lastAtIndex + 1)
-        if (charactersAfterHash.length < 3) {
-            return null
+    override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<User>> {
+        val cacheKey: String = getPhraseToLookFor(text, "@") ?: return emptySet<User>().asFuture()
+
+        suggestedUsersCache[cacheKey]?.let { nonNullUser ->
+            return nonNullUser.asFuture()
         }
 
-        val splitWords: List<String> = charactersAfterHash.split(" ")
-        if (splitWords.size > 2) {
-            return null
+        return getUsers(filter = "name LIKE '${cacheKey}*'", limit = limit).then { getUsersResponse ->
+            val users: Set<User> = getUsersResponse.users
+            suggestedUsersCache[cacheKey] = users
+            users
         }
-        return splitWords.joinToString(" ")
     }
 
     private fun getTimetokenFromHistoryMessage(channelId: String, pnFetchMessagesResult: PNFetchMessagesResult): Long {
