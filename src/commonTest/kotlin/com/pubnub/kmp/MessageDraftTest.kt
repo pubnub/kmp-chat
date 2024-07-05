@@ -23,6 +23,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
+import dev.mokkery.verify
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -242,7 +243,7 @@ class MessageDraftTest {
             assertEquals(suggestions.users[messageDraft.currentText.indexOf("@")]?.map { it.name.orEmpty() }, channelMembers)
             assertEquals(suggestions.channels[messageDraft.currentText.indexOf("#")]?.map { it.name.orEmpty() }, channelSuggestions)
         }
-        messageDraft.currentText = "Hi, it's @${userFullName.dropLast(3)}, your new marketing manager. Add me to the #$channelBriefName channel"
+        messageDraft.currentText = "Hi, it's @${userBriefName.dropLast(3)}, your new marketing manager. Add me to the #$channelBriefName channel"
         assertTrue { messageDraft.getMessagePreview().mentionedUsers.isEmpty() }
     }
 

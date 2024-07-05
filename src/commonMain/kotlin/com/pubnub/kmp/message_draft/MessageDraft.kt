@@ -156,7 +156,8 @@ class MessageDraft(
             } ?: findNameToQuery(
                 currentMentions = mentionedUsers,
                 prefix = "@",
-                greaterOrEqualThan = 3
+                greaterOrEqualThan = 3,
+                indexOfDiff = diffIndex
             )
 
             val bestChannelMentionToQuery = existingChannelMentionAtDiffIdx?.let {
@@ -166,7 +167,8 @@ class MessageDraft(
             } ?: findNameToQuery(
                 currentMentions = mentionedChannels,
                 prefix = "#",
-                greaterOrEqualThan = 3
+                greaterOrEqualThan = 3,
+                indexOfDiff = diffIndex
             )
 
             updateTextLinkDescriptors(
@@ -310,16 +312,21 @@ class MessageDraft(
     private fun <T> findNameToQuery(
         currentMentions: List<MentionDescriptor<T>>,
         prefix: String,
-        greaterOrEqualThan: Int
+        greaterOrEqualThan: Int,
+        indexOfDiff: Int
     ): Pair<String, Int>? {
-        val currentMentionsRanges = currentMentions.map {
+        val currentMentionsRanges: List<IntRange> = currentMentions.map {
             it.fullMentionRange
         }
         "$prefix(\\w+)".toRegex().findAll(currentText).forEach { matchResult ->
-            if (currentMentionsRanges.intersect(matchResult.range).isEmpty()) {
-                if (matchResult.value.drop(prefix.length).length >= greaterOrEqualThan) {
+            if (currentMentionsRanges.isNotEmpty()) {
+                currentMentionsRanges.firstOrNull {
+                    it.first != matchResult.range.first && matchResult.value.length >= greaterOrEqualThan && it.first >= indexOfDiff
+                }?.let {
                     return Pair(matchResult.value.drop(prefix.length), matchResult.range.first)
                 }
+            } else {
+                return Pair(matchResult.value.drop(prefix.length), matchResult.range.first)
             }
         }
         return null
