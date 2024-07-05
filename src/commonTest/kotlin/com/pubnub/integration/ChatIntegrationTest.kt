@@ -11,6 +11,7 @@ import com.pubnub.kmp.User
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
+import com.pubnub.kmp.listenForEvents
 import com.pubnub.kmp.membership.MembershipsResponse
 import com.pubnub.kmp.message.GetUnreadMessagesCounts
 import com.pubnub.kmp.message.MarkAllMessageAsReadResponse
@@ -24,7 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import kotlin.test.Ignore
+import tryLong
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -137,10 +138,12 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         channel02.sendText("message01In$channelId02").await()
         val lastPublishToChannel02 = channel02.sendText("message02In$channelId02").await()
 
+        withContext(Dispatchers.Default) {
+            delay(2000)
+        }
         // register lister of "Receipt" event
         val assertionErrorInListener01 = CompletableDeferred<AssertionError?>()
-        val removeListenerAndUnsubscribe01: AutoCloseable = chat.listenForEvents(
-            type = EventContent.Receipt::class,
+        val removeListenerAndUnsubscribe01: AutoCloseable = chat.listenForEvents<EventContent.Receipt>(
             channel = channelId01
         ) { event: Event<EventContent.Receipt> ->
             try {
@@ -177,13 +180,13 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         // verify response contains updated "lastReadMessageTimetoken"
         markAllMessageAsReadResponse.memberships.forEach { membership: Membership ->
             //why membership.custom!!["lastReadMessageTimetoken"] returns double? <--this is default behaviour of GSON
-            assertNotEquals(lastReadMessageTimetokenValue.toDouble(), membership.custom!!["lastReadMessageTimetoken"])
+            assertNotEquals(lastReadMessageTimetokenValue, membership.custom!!["lastReadMessageTimetoken"].tryLong())
         }
 
         // verify each Membership has updated custom value for "lastReadMessageTimetoken"
         val userMembership: MembershipsResponse = chat.currentUser.getMemberships().await()
         userMembership.memberships.forEach { membership: Membership ->
-            assertNotEquals(lastReadMessageTimetokenValue.toDouble(), membership.custom!!["lastReadMessageTimetoken"])
+            assertNotEquals(lastReadMessageTimetokenValue, membership.custom!!["lastReadMessageTimetoken"].tryLong())
         }
 
         // verify assertion inside listeners
@@ -200,16 +203,16 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         //remove memberships (user). This will be done in tearDown method
     }
 
-    @Ignore // fails from time to time
+//    @Ignore // fails from time to time
     @Test
     fun can_getUnreadMessagesCount_onMembership() = runTest {
         val channelId01 = channel01.id
 
         // send message
         channel01.sendText("message01In$channelId01").await()
-        withContext(Dispatchers.Default) {
-            delay(150) // history calls have around 130ms of cache time
-        }
+//        withContext(Dispatchers.Default) {
+//            delay(150) // history calls have around 130ms of cache time
+//        }
         // join (implicitly setLastReadMessageTimetoken)
         val joinResult: JoinResult = channel01.join { }.await()
         val membership = joinResult.membership
@@ -218,18 +221,18 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // send message
         channel01.sendText("message02In$channelId01").await()
-        withContext(Dispatchers.Default) {
-            delay(150) // history calls have around 130ms of cache time
-        }
+//        withContext(Dispatchers.Default) {
+//            delay(150) // history calls have around 130ms of cache time
+//        }
         val unreadMessageCount02: Long? = membership.getUnreadMessagesCount().await()
         assertEquals(1L, unreadMessageCount02)
 
         // markAllMessagesAsRead
         val markAllMessageAsReadResponse: MarkAllMessageAsReadResponse = chat.markAllMessagesAsRead().await()
-        val membershipWithUpgradeLastReadMessageTimetoken = markAllMessageAsReadResponse.memberships.first()
         withContext(Dispatchers.Default) {
             delay(1050)
         }
+        val membershipWithUpgradeLastReadMessageTimetoken = markAllMessageAsReadResponse.memberships.first()
         val unreadMessageCount03: Long? = membershipWithUpgradeLastReadMessageTimetoken.getUnreadMessagesCount().await()
         assertEquals(0, unreadMessageCount03)
 
@@ -237,7 +240,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         chat.pubNub.deleteMessages(listOf(channelId01))
     }
 
-    @Ignore // fails from time to time
+//    @Ignore // fails from time to time
     @Test
     fun can_getUnreadMessageCounts_global() = runTest {
         val channelId01 = channel01.id
@@ -268,7 +271,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         // markUnread
         chat.markAllMessagesAsRead().await()
         withContext(Dispatchers.Default) {
-            delay(5000) // todo not sure why 5s is needed here but without it test doesn't pass in most cases. What can take so long? markAllMessagesAsRead method sets Membership. Does it take so long to propagate?
+            delay(5200) // todo not sure why 5s is needed here but without it test doesn't pass in most cases. What can take so long? markAllMessagesAsRead method sets Membership. Does it take so long to propagate?
         }
 
         // read message count

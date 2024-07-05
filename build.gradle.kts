@@ -18,8 +18,11 @@ kotlin {
         useEsModules()
         browser {
             testTask {
-                useMocha {
-                    timeout = "30s"
+//                useMocha {
+//                    timeout = "30s"
+//                }
+                useKarma {
+                    useChrome()
                 }
             }
         }

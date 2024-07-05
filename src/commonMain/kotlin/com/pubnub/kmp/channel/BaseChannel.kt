@@ -1,7 +1,7 @@
 package com.pubnub.kmp.channel
 
 import com.pubnub.api.PubNubException
-import com.pubnub.api.endpoints.objects.member.GetChannelMembers
+import com.pubnub.kmp.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.PNTimeResult
@@ -199,7 +199,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     override fun sendText(
         text: String,
         meta: Map<String, Any>?,
-        shouldStore: Boolean?,
+        shouldStore: Boolean,
         usePost: Boolean,
         ttl: Int?,
         mentionedUsers: MessageMentionedUsers?,

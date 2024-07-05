@@ -3,8 +3,6 @@ package com.pubnub.kmp
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.createJsonElement
-import com.pubnub.api.endpoints.FetchMessages
-import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.HistoryMessageType
@@ -19,6 +17,8 @@ import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.channel.MINIMAL_TYPING_INDICATOR_TIMEOUT
+import com.pubnub.kmp.endpoints.FetchMessages
+import com.pubnub.kmp.endpoints.objects.member.GetChannelMembers
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
@@ -382,7 +382,6 @@ class ChannelTest {
     fun canCallIsPresent() {
         every { chat.isPresent(any(), any()) } returns true.asFuture()
 
-        val callback = { _: Result<Boolean> -> }
         objectUnderTest.isPresent(userId = "user").async { result ->
             assertTrue(result.isSuccess)
             assertTrue(result.getOrNull()!!)
@@ -395,7 +394,6 @@ class ChannelTest {
     fun canCallWhoIsPresent() {
         every { chat.whoIsPresent(any()) } returns emptyList<String>().asFuture()
 
-        val callback = { _: Result<Collection<String>> -> }
         objectUnderTest.whoIsPresent().async { result: Result<Collection<String>> ->
             assertTrue(result.isSuccess)
         }
@@ -567,7 +565,7 @@ class ChannelTest {
     fun canGetRestrictionsByUser(){
         val user = User(chat = chat, id = "userId")
         val limit = 1
-        val page: PNPage? = PNPage.PNNext("nextPageHash")
+        val page: PNPage = PNPage.PNNext("nextPageHash")
         val sort = listOf(PNSortKey.PNAsc(PNMemberKey.UUID_ID))
         val getChannelMembers: GetChannelMembers = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub

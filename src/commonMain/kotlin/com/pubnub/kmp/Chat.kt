@@ -166,7 +166,7 @@ interface Chat {
         channelId: String,
         message: EventContent,
         meta: Map<String, Any>? = null,
-        shouldStore: Boolean? = null,
+        shouldStore: Boolean = true,
         usePost: Boolean = false,
         replicate: Boolean = true,
         ttl: Int? = null,
