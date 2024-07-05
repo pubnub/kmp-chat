@@ -8,7 +8,7 @@ import com.pubnub.kmp.types.TextLink
 class MessageDraftPreview(
     val text: String,
     val mentionedUsers: MessageMentionedUsers,
-    val referencedChannels: MessageReferencedChannels,
+    val mentionedChannels: MessageReferencedChannels,
     val textLinks: List<TextLink>,
     val quotedMessage: Message?
 )

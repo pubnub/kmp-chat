@@ -1,5 +1,6 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.endpoints.objects.channel.GetAllChannelMetadata
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
@@ -12,8 +13,10 @@ import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.message_draft.MessageDraft
 import com.pubnub.kmp.message_draft.UserSuggestionDataSource
+import com.pubnub.kmp.types.EventContent
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -22,6 +25,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
@@ -38,11 +42,20 @@ class MessageDraftTest {
         val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
 
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userFullName = userToMention.name.orEmpty()
+        val userBriefName = userFullName.split(" ").first().trim()
+        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelFullName = channelToMention.name.orEmpty()
+        val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
+
         messageDraft.onSuggestionsChanged = { _, suggestedMentions ->
-            assertEquals(channelMembers, suggestedMentions.users[5]?.map { it.name })
-            assertEquals(channelSuggestions, suggestedMentions.channels[37]?.map { it.name })
+            val suggestedUsers = suggestedMentions.users[messageDraft.currentText.indexOf("@")]?.map { it.name }
+            val suggestedChannels = suggestedMentions.channels[messageDraft.currentText.indexOf("#")]?.map { it.name }
+            assertEquals(channelMembers, suggestedUsers)
+            assertEquals(channelSuggestions, suggestedChannels)
         }
-        messageDraft.currentText = "Hey, @Mar here. Please add me to the #Gam channel"
+        messageDraft.currentText = "Hey, @$userBriefName here. Please add me to the #$channelBriefName channel"
     }
 
     @Test
@@ -51,14 +64,48 @@ class MessageDraftTest {
 
         val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-        val maryJonson = User(chat = chat, id = "Mary Jonson", name = "Mary Jonson")
-        val gamesChannel = ChannelImpl(chat = chat, id = "Games", name = "Games")
 
-        messageDraft.currentText = "I'm @Mar and I would like to join the #Gam channel"
-        messageDraft.addMentionedUser(maryJonson, 4)
-        assertEquals(messageDraft.currentText, "I'm @Mary Jonson and I would like to join the #Gam channel")
-        messageDraft.addMentionedChannel(gamesChannel, 46)
-        assertEquals(messageDraft.currentText, "I'm @Mary Jonson and I would like to join the #Games channel")
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userFullName = userToMention.name.orEmpty()
+        val userBriefName = userFullName.split(" ").first().trim()
+        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelFullName = channelToMention.name.orEmpty()
+        val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
+
+        messageDraft.currentText = "I'm @$userBriefName and I would like to join the #$channelBriefName channel"
+        messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
+        assertEquals(messageDraft.currentText, "I'm @$userFullName and I would like to join the #$channelBriefName channel")
+        messageDraft.addMentionedChannel(channelToMention, messageDraft.currentText.indexOf("#"))
+        assertEquals(messageDraft.currentText, "I'm @$userFullName and I would like to join the #$channelFullName channel")
+
+        val preview = messageDraft.getMessagePreview()
+        assertEquals(preview.mentionedUsers[messageDraft.currentText.indexOf("@")]?.name, userFullName)
+        assertEquals(preview.mentionedChannels[messageDraft.currentText.indexOf("#")]?.name, channelFullName)
+    }
+
+    @Test
+    fun removingMentionedUserAndChannel() {
+        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
+
+        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
+        val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
+
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userFullName = userToMention.name.orEmpty()
+        val userBriefName = userFullName.split(" ").first().trim()
+        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelFullName = channelToMention.name.orEmpty()
+        val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
+
+        messageDraft.currentText = "I'm @$userBriefName and I would like to join the #$channelBriefName channel"
+        messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
+        messageDraft.addMentionedChannel(channelToMention, messageDraft.currentText.indexOf("#"))
+        assertEquals(messageDraft.currentText, "I'm @$userFullName and I would like to join the #$channelFullName channel")
+
+        messageDraft.removeMentionedUser(messageDraft.currentText.indexOf("@"))
+        messageDraft.removeMentionedChannel(messageDraft.currentText.indexOf("#"))
+        assertTrue(messageDraft.getMessagePreview().mentionedUsers.isEmpty())
+        assertTrue(messageDraft.getMessagePreview().mentionedChannels.isEmpty())
     }
 
     @Test
@@ -67,13 +114,18 @@ class MessageDraftTest {
 
         val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-        val maryJonson = User(chat = chat, id = "Mary Jonson", name = "Mary Jonson")
-        val gamesChannel = ChannelImpl(chat = chat, id = "Games", name = "Games")
 
-        messageDraft.currentText = "Thank you @Mar for deciding to join our #Gam group"
-        messageDraft.addMentionedUser(maryJonson, 20)
-        messageDraft.addMentionedChannel(gamesChannel, 5)
-        assertEquals(messageDraft.currentText, "Thank you @Mar for deciding to join our #Gam group")
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userFullName = userToMention.name.orEmpty()
+        val userBriefName = userFullName.split(" ").first().trim()
+        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelFullName = channelToMention.name.orEmpty()
+        val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
+
+        messageDraft.currentText = "Thank you @$userBriefName for deciding to join our #$channelBriefName group"
+        assertFailsWith<PubNubException> { messageDraft.addMentionedUser(userToMention, 20) }
+        assertFailsWith<PubNubException> { messageDraft.addMentionedChannel(channelToMention, 105) }
+        assertEquals(messageDraft.currentText, "Thank you @$userBriefName for deciding to join our #$channelBriefName group")
     }
 
     @Test
@@ -82,23 +134,22 @@ class MessageDraftTest {
 
         val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-        val selectedUserToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
-        val selectedUserFirstName = selectedUserToMention.name.orEmpty().split(" ").first().trim()
-        val selectedUserFullName = selectedUserToMention.name.orEmpty()
-        val selectedChannelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
-        val selectedChannelBriefName = selectedChannelToMention.name.orEmpty().dropLast(3)
-        val selectedChannelFullName = selectedChannelToMention.name.orEmpty()
 
-        messageDraft.currentText = "Hey all. I'm @$selectedUserFirstName and I would like to join #$selectedChannelBriefName channel"
-        messageDraft.addMentionedUser(selectedUserToMention, 13)
-        assertEquals(messageDraft.currentText, "Hey all. I'm @$selectedUserFullName and I would like to join #$selectedChannelBriefName channel")
-        messageDraft.addMentionedChannel(selectedChannelToMention, 54)
-        assertEquals(messageDraft.currentText, "Hey all. I'm @$selectedUserFullName and I would like to join #$selectedChannelFullName channel")
-        messageDraft.currentText = "Hey all. Nice to meet you. I'm @$selectedUserFullName who wants to join #$selectedChannelFullName channel"
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userFullName = userToMention.name.orEmpty()
+        val userBriefName = userFullName.split(" ").first().trim()
+        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelFullName = channelToMention.name.orEmpty()
+        val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
+
+        messageDraft.currentText = "Hey all. I'm @$userBriefName and I would like to join #$channelBriefName channel"
+        messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
+        messageDraft.addMentionedChannel(channelToMention, messageDraft.currentText.indexOf("#"))
+        messageDraft.currentText = "Hey all. Nice to meet you. I'm @$userFullName who wants to join #$channelFullName channel"
 
         val messagePreview = messageDraft.getMessagePreview()
-        assertEquals(messagePreview.mentionedUsers[31]!!.name, selectedUserFullName)
-        assertEquals(messagePreview.referencedChannels[65]!!.name, selectedChannelFullName)
+        assertEquals(messagePreview.mentionedUsers[messageDraft.currentText.indexOf("@")]!!.name, userFullName)
+        assertEquals(messagePreview.mentionedChannels[messageDraft.currentText.indexOf("#")]!!.name, channelFullName)
     }
 
     @Test
@@ -107,42 +158,41 @@ class MessageDraftTest {
 
         val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-        val selectedUserToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
-        val selectedUserFirstName = selectedUserToMention.name.orEmpty().split(" ").first().trim()
-        val selectedUserFullName = selectedUserToMention.name.orEmpty()
-        val selectedChannelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
-        val selectedChannelBriefName = selectedChannelToMention.name.orEmpty().dropLast(3)
-        val selectedChannelFullName = selectedChannelToMention.name.orEmpty()
 
-        messageDraft.currentText = "Hello. My name is @$selectedUserFirstName and I need access to #$selectedChannelBriefName channel"
-        messageDraft.addMentionedUser(selectedUserToMention, 18)
-        assertEquals(messageDraft.currentText, "Hello. My name is @$selectedUserFullName and I need access to #$selectedChannelBriefName channel")
-        messageDraft.addMentionedChannel(selectedChannelToMention, 55)
-        assertEquals(messageDraft.currentText, "Hello. My name is @$selectedUserFullName and I need access to #$selectedChannelFullName channel")
-        messageDraft.currentText = "@$selectedUserFullName, have you been added to #$selectedChannelFullName?"
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userFullName = userToMention.name.orEmpty()
+        val userBriefName = userFullName.split(" ").first().trim()
+        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelFullName = channelToMention.name.orEmpty()
+        val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
+
+        messageDraft.currentText = "Hello. My name is @$userBriefName and I need access to #$channelBriefName channel"
+        messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
+        messageDraft.addMentionedChannel(channelToMention, messageDraft.currentText.indexOf("#"))
+        messageDraft.currentText = "@$userFullName, have you been added to #$channelFullName?"
 
         val messagePreview = messageDraft.getMessagePreview()
-        assertEquals(messagePreview.mentionedUsers[0]!!.name, selectedUserFullName)
-        assertEquals(messagePreview.referencedChannels[40]!!.name, selectedChannelFullName)
+        assertEquals(messagePreview.mentionedUsers[messageDraft.currentText.indexOf("@")]!!.name, userFullName)
+        assertEquals(messagePreview.mentionedChannels[messageDraft.currentText.indexOf("#")]!!.name, channelFullName)
     }
 
     @Test
-    fun userMentionsThatNoLongerMatchDueToStringSubstitution() {
+    fun mentionsThatNoLongerMatchDueToStringSubstitution() {
         chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
 
         val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-        val selectedUserToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
-        val selectedUserFirstName = selectedUserToMention.name.orEmpty().split(" ").first().trim()
-        val selectedUserFullName = selectedUserToMention.name.orEmpty()
 
-        messageDraft.currentText = "Hello. My name is @$selectedUserFirstName and I'm the new marketing manager"
-        messageDraft.addMentionedUser(selectedUserToMention, 18)
-        assertEquals(messageDraft.currentText, "Hello. My name is @$selectedUserFullName and I'm the new marketing manager")
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userFullName = userToMention.name.orEmpty()
+        val userBriefName = userFullName.split(" ").first().trim()
+
+        messageDraft.currentText = "Hello. My name is @$userBriefName and I'm the new marketing manager"
+        messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
 
         messageDraft.currentText = "I would love to tell you about the strengths I can bring to this role"
         assertTrue(messageDraft.getMessagePreview().mentionedUsers.isEmpty())
-        assertTrue(messageDraft.getMessagePreview().referencedChannels.isEmpty())
+        assertTrue(messageDraft.getMessagePreview().mentionedChannels.isEmpty())
     }
 
     @Test
@@ -151,46 +201,49 @@ class MessageDraftTest {
 
         val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-        val firstSelUserToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
-        val firstSelUserFirstName = firstSelUserToMention.name.orEmpty().split(" ").first().trim()
-        val firstSelUserFullName = firstSelUserToMention.name.orEmpty()
-        val secondSelUserToMention = User(chat = chat, id = "Markus Koller", name = "Markus Koller")
-        val secondSelUserFirstName = secondSelUserToMention.name.orEmpty().split(" ").first().trim()
-        val secondSelUserFullName = secondSelUserToMention.name.orEmpty()
 
-        messageDraft.currentText = "My name is @$firstSelUserFirstName and I'm the new marketing manager"
-        messageDraft.addMentionedUser(firstSelUserToMention, 11)
-        messageDraft.currentText = "I'm @$firstSelUserFullName recommended by @$secondSelUserFirstName who I worked with before"
-        messageDraft.addMentionedUser(secondSelUserToMention, 35)
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userFullName = userToMention.name.orEmpty()
+        val userBriefName = userFullName.split(" ").first().trim()
+        val secondUserToMention = User(chat = chat, id = "Markus Koller", name = "Markus Koller")
+        val secondUserFullName = secondUserToMention.name.orEmpty()
+        val secondUserBriefName = secondUserFullName.split(" ").first().trim().dropLast(2)
 
-        assertEquals(messageDraft.currentText, "I'm @$firstSelUserFullName recommended by @$secondSelUserFullName who I worked with before")
-        assertEquals(messageDraft.getMessagePreview().mentionedUsers[4]?.name, firstSelUserFullName)
-        assertEquals(messageDraft.getMessagePreview().mentionedUsers[35]?.name, secondSelUserFullName)
+        messageDraft.currentText = "My name is @$userBriefName and I'm the new marketing manager"
+        messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
+        messageDraft.currentText = "I'm @$userFullName recommended by @$secondUserBriefName who I worked with before"
+        messageDraft.addMentionedUser(secondUserToMention, messageDraft.currentText.lastIndexOf("@"))
+        assertEquals(messageDraft.currentText, "I'm @$userFullName recommended by @$secondUserFullName who I worked with before")
+
+        val messagePreview = messageDraft.getMessagePreview()
+        assertEquals(messagePreview.mentionedUsers[messageDraft.currentText.indexOf("@")]?.name, userFullName)
+        assertEquals(messagePreview.mentionedUsers[messageDraft.currentText.lastIndexOf("@")]?.name, secondUserFullName)
     }
 
     @Test
-    fun messageDraftReQueryModifiedMentions() {
+    fun messageDraftReQueryModifiedMention() {
         chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
 
         val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-        val selectedUserToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
-        val selectedUserFirstName = selectedUserToMention.name.orEmpty().split(" ").first().trim()
-        val selectedUserFullName = selectedUserToMention.name.orEmpty()
-        val selectedChannelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
-        val selectedChannelBriefName = selectedChannelToMention.name.orEmpty().dropLast(3)
-        val selectedChannelFullName = selectedChannelToMention.name.orEmpty()
 
-        messageDraft.currentText = "Hi, it's @$selectedUserFirstName who needs access to #$selectedChannelBriefName"
-        messageDraft.addMentionedUser(selectedUserToMention, 9)
-        messageDraft.addMentionedChannel(selectedChannelToMention, 45)
-        assertEquals(messageDraft.currentText, "Hi, it's @$selectedUserFullName who needs access to #$selectedChannelFullName")
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userFullName = userToMention.name.orEmpty()
+        val userBriefName = userFullName.split(" ").first().trim()
+        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelFullName = channelToMention.name.orEmpty()
+        val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
+
+        messageDraft.currentText = "Hi, it's @$userBriefName, your new marketing manager"
+        messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
+        assertEquals(messageDraft.currentText, "Hi, it's @$userFullName, your new marketing manager")
 
         messageDraft.onSuggestionsChanged = { _, suggestions ->
-            assertEquals(suggestions.users[9]?.map { it.name.orEmpty() }, channelMembers)
-            assertEquals(suggestions.channels[34]?.map { it.name.orEmpty() }, channelSuggestions)
+            assertEquals(suggestions.users[messageDraft.currentText.indexOf("@")]?.map { it.name.orEmpty() }, channelMembers)
+            assertEquals(suggestions.channels[messageDraft.currentText.indexOf("#")]?.map { it.name.orEmpty() }, channelSuggestions)
         }
-        messageDraft.currentText = "Hi, it's @${selectedUserFirstName.dropLast(3)} who needs access to #$selectedChannelBriefName"
+        messageDraft.currentText = "Hi, it's @${userFullName.dropLast(3)}, your new marketing manager. Add me to the #$channelBriefName channel"
+        assertTrue { messageDraft.getMessagePreview().mentionedUsers.isEmpty() }
     }
 
     @Test
@@ -200,15 +253,23 @@ class MessageDraftTest {
         val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
 
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userFullName = userToMention.name.orEmpty()
+        val userBriefName = userFullName.split(" ").first().trim()
+        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelFullName = channelToMention.name.orEmpty()
+        val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
+
         messageDraft.onSuggestionsChanged = { _, suggestions ->
             when (messageDraft.currentText) {
-                "Hi, please welcome @Mar" -> {
+                "Hi, please welcome @$userBriefName" -> {
                     assertEquals(suggestions.users[19]?.map { it.name.orEmpty() }, channelMembers.map { it })
-                    messageDraft.currentText = "Hi, please welcome @Mar and add her to the #Gen channel"
+                    assertTrue(suggestions.channels.isEmpty())
+                    messageDraft.currentText = "Hi, please welcome @$userBriefName and add her to the #$channelBriefName channel"
                 }
-                "Hi, please welcome @Mar and add her to the #Gen channel" -> {
-                    assertTrue(suggestions.users.isEmpty())
-                    assertEquals(suggestions.channels[43]?.map { it.name.orEmpty() }, channelSuggestions.map { it })
+                "Hi, please welcome @$userBriefName and add her to the #$channelBriefName channel" -> {
+                    assertEquals(suggestions.users[messageDraft.currentText.indexOf("@")]?.map { it.name.orEmpty() }, channelMembers.map { it })
+                    assertEquals(suggestions.channels[messageDraft.currentText.indexOf("#")]?.map { it.name.orEmpty() }, channelSuggestions.map { it })
                 }
                 else -> {
                     fail("Unexpected condition")
@@ -216,7 +277,7 @@ class MessageDraftTest {
             }
         }
 
-        messageDraft.currentText = "Hi, please welcome @Mar"
+        messageDraft.currentText = "Hi, please welcome @$userBriefName"
     }
 
     @Test
@@ -225,15 +286,16 @@ class MessageDraftTest {
 
         val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-        val selectedUserToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userBriefName = userToMention.name.orEmpty().split(" ").first().trim()
 
-        messageDraft.currentText = "Please welcome @Mar in our team!"
-        messageDraft.addMentionedUser(selectedUserToMention, 15)
+        messageDraft.currentText = "Please welcome @$userBriefName in our team!"
+        messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
 
-        val highlightedMention = messageDraft.getHighlightedUserMention(15)
+        val highlightedMention = messageDraft.getHighlightedUserMention(messageDraft.currentText.indexOf("@"))
         val highlightedUser = highlightedMention?.user
 
-        assertEquals(highlightedUser?.name, selectedUserToMention.name.orEmpty())
+        assertEquals(highlightedUser?.name, userToMention.name.orEmpty())
     }
 
     @Test
@@ -242,16 +304,110 @@ class MessageDraftTest {
 
         val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-        val selectedUserToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userBriefName = userToMention.name.orEmpty().split(" ").first().trim()
 
-        messageDraft.currentText = "Please welcome @Mar in our team!"
-        messageDraft.addMentionedUser(selectedUserToMention, 15)
+        messageDraft.currentText = "Please welcome @$userBriefName in our team!"
+        messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
 
-        val highlightedMention = messageDraft.getHighlightedUserMention(10)
+        val highlightedMention = messageDraft.getHighlightedUserMention(30)
         val highlightedUser = highlightedMention?.user
 
         assertNull(highlightedMention)
         assertNull(highlightedUser)
+    }
+
+    @Test
+    fun addLinkedText() {
+        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
+
+        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
+        val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
+        val link = "https://www.pubnub.com"
+
+        messageDraft.currentText = "This is example text. Visit $link to get more"
+
+        val indexOfLink = messageDraft.currentText.indexOf(link)
+        val replacement = "our website"
+
+        messageDraft.addLinkedText(replacement, link, indexOfLink)
+        assertEquals(messageDraft.currentText, "This is example text. Visit our website to get more")
+        assertEquals(messageDraft.getMessagePreview().textLinks.first().link, "https://www.pubnub.com")
+        assertEquals(messageDraft.getMessagePreview().textLinks.first().startIndex, indexOfLink)
+        assertEquals(messageDraft.getMessagePreview().textLinks.first().endIndex, indexOfLink + replacement.length)
+    }
+
+    @Test
+    fun addLinkedTextToTxtWithAlreadyMentionedItems() {
+        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
+
+        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
+        val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
+        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val userFullName = userToMention.name.orEmpty()
+        val userBriefName = userFullName.split(" ").first().trim()
+        val channelFullName = channelToMention.name.orEmpty()
+        val channelBriefName = channelFullName.dropLast(3)
+
+        val link = "https://www.pubnub.com"
+        val replacement = "our website"
+
+        messageDraft.currentText = "Check $link. @$userBriefName is the member of #$channelBriefName channel"
+        messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
+        messageDraft.addMentionedChannel(channelToMention, messageDraft.currentText.indexOf("#"))
+        assertEquals(messageDraft.currentText, "Check $link. @$userFullName is the member of #$channelFullName channel")
+        messageDraft.addLinkedText(replacement, link, messageDraft.currentText.indexOf("https://www.pubnub.com"))
+        assertEquals(messageDraft.currentText, "Check our website. @$userFullName is the member of #$channelFullName channel")
+
+        val preview = messageDraft.getMessagePreview()
+        assertEquals(preview.mentionedUsers[messageDraft.currentText.indexOf("@")]?.name, userFullName)
+        assertEquals(preview.mentionedChannels[messageDraft.currentText.indexOf("#")]?.name, channelFullName)
+    }
+
+    @Test
+    fun removeLinkedText() {
+        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
+
+        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
+        val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
+        val link = "https://www.pubnub.com"
+
+        messageDraft.currentText = "This is example text. Visit $link to get more"
+
+        val indexOfLink = messageDraft.currentText.indexOf(link)
+        val replacement = "our website"
+
+        messageDraft.addLinkedText(replacement, link, indexOfLink)
+        assertEquals(messageDraft.currentText, "This is example text. Visit our website to get more")
+        messageDraft.removeLinkedText(33)
+        assertEquals(messageDraft.currentText, "This is example text. Visit our website to get more")
+        assertTrue(messageDraft.getMessagePreview().textLinks.isEmpty())
+    }
+
+    @Test
+    fun addQuotedMessage() {
+        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
+
+        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
+        val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
+        val message = MessageImpl(chat, 138327382910238921, EventContent.TextMessageContent("Hey!"), channel.id, "userId")
+
+        messageDraft.addQuote(message)
+        assertEquals(messageDraft.getMessagePreview().quotedMessage, message)
+    }
+
+    @Test
+    fun removeQuotedMessage() {
+        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
+
+        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
+        val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
+        val message = MessageImpl(chat, 138327382910238921, EventContent.TextMessageContent("Hey!"), channel.id, "userId")
+
+        messageDraft.addQuote(message)
+        messageDraft.removeQuote()
+        assertNull(messageDraft.getMessagePreview().quotedMessage)
     }
 }
 

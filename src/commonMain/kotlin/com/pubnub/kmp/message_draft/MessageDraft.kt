@@ -14,7 +14,6 @@ import com.pubnub.kmp.types.MessageReferencedChannel
 import com.pubnub.kmp.types.TextLink
 import com.pubnub.kmp.utils.indexOfDifference
 import com.pubnub.kmp.utils.isValidUrl
-import com.pubnub.kmp.utils.shift
 import kotlin.properties.Delegates
 
 class MessageDraft(
@@ -38,24 +37,33 @@ class MessageDraft(
     }
     fun addLinkedText(text: String, link: String, positionInInput: Int) {
         val textLinkDescriptor = TextLinkDescriptor(
-            range = positionInInput..<positionInInput + text.length,
+            range = positionInInput..positionInInput + text.length,
             text = text,
             link = link
         )
 
-        if (link.isValidUrl()) {
-            throw PubNubException("Invalid url $link")
+        if (!link.isValidUrl()) {
+            throw PubNubException("You need to insert a URL")
         }
         if (textLinkDescriptor.overlaps(currentTextLinkDescriptors)) {
             throw PubNubException("You cannot insert a link inside another link")
         }
 
-        currentText = currentText.replaceRange(positionInInput..<link.length, text)
         currentTextLinkDescriptors.add(textLinkDescriptor)
+
+        val before = currentText.substring(0, positionInInput)
+        val after = currentText.substring(positionInInput)
+        val newString = before + after.replaceFirst(link, text)
+
+        currentText = newString
     }
 
     fun removeLinkedText(positionInInput: Int) {
-        currentTextLinkDescriptors.find { it.range.contains(positionInInput) }?.let { currentTextLinkDescriptors.remove(it) }
+        if (!currentTextLinkDescriptors.removeAll {
+            it.range.contains(positionInInput)
+        }) {
+            println("This operation is noop. There is no link at this position.")
+        }
     }
 
     fun addQuote(message: Message) {
@@ -71,11 +79,31 @@ class MessageDraft(
     }
 
     fun addMentionedUser(user: User, positionInInput: Int) {
-        addMention(user, user.id, user.name.orEmpty(), "@", positionInInput, mentionedUsers)
+        if (!addMention(user, user.id, user.name.orEmpty(), "@", positionInInput, mentionedUsers)) {
+            throw PubNubException("The user ${channel.name.orEmpty()} doesn't appear in the text")
+        }
+    }
+
+    fun removeMentionedUser(positionInInput: Int) {
+       if (!mentionedUsers.removeAll {
+           it.fullMentionRange.first == positionInInput
+       }) {
+           println("This is noop. There is no mention occurrence at $positionInInput index")
+       }
     }
 
     fun addMentionedChannel(channel: Channel, positionInInput: Int) {
-        addMention(channel, channel.id, channel.name.orEmpty(), "#", positionInInput, mentionedChannels)
+        if (!addMention(channel, channel.id, channel.name.orEmpty(), "#", positionInInput, mentionedChannels)) {
+            throw PubNubException("The channel ${channel.name.orEmpty()} doesn't appear in the text")
+        }
+    }
+
+    fun removeMentionedChannel(positionInInput: Int) {
+        if (!mentionedChannels.removeAll {
+            it.fullMentionRange.first == positionInInput
+        }) {
+            println("This is noop. There is no channel occurrence at $positionInInput index")
+        }
     }
 
     fun getHighlightedUserMention(selectionStart: Int): HighlightedUser? {
@@ -88,7 +116,7 @@ class MessageDraft(
         return MessageDraftPreview(
             text = currentText,
             mentionedUsers = mentionedUsers.associateBy { it.fullMentionRange.first }.mapValues { MessageMentionedUser(it.value.id, it.value.fullMentionName.drop(1)) },
-            referencedChannels = mentionedChannels.associateBy { it.fullMentionRange.first }.mapValues { MessageReferencedChannel(it.value.id, it.value.fullMentionName.drop(1)) },
+            mentionedChannels = mentionedChannels.associateBy { it.fullMentionRange.first }.mapValues { MessageReferencedChannel(it.value.id, it.value.fullMentionName.drop(1)) },
             textLinks = currentTextLinkDescriptors.map { TextLink(it.range.first, it.range.last, it.link) },
             quotedMessage = quotedMessage
         )
@@ -115,24 +143,36 @@ class MessageDraft(
 
     private fun onTextChanged(oldValue: String, newValue: String) {
         newValue.indexOfDifference(oldValue)?.let { diffIndex ->
-            val userMentionAtDiffIndex = updateMentionDescriptors(mentionedUsers.iterator(), diffIndex).firstOrNull {
+            val existingUserMentionAtDiffIdx = updateMentionDescriptors(mentionedUsers.iterator(), diffIndex).firstOrNull {
                 it.fullMentionRange.contains(diffIndex)
             }
-            val channelMentionAtDiffIndex = updateMentionDescriptors(mentionedChannels.iterator(), diffIndex).firstOrNull {
+            val existingChannelMentionAtDiffIdx = updateMentionDescriptors(mentionedChannels.iterator(), diffIndex).firstOrNull {
                 it.fullMentionRange.contains(diffIndex)
             }
-            val bestUserMentionToQuery = userMentionAtDiffIndex?.let {
+            val bestUserMentionToQuery = existingUserMentionAtDiffIdx?.let {
                 findFirstMention("@", it.fullMentionRange.first, 3)?.let { matchResult ->
                     Pair(matchResult.value, matchResult.range.first)
                 }
-            } ?: findNameToQuery(mentionedUsers, "@", diffIndex, 3)
+            } ?: findNameToQuery(
+                currentMentions = mentionedUsers,
+                prefix = "@",
+                greaterOrEqualThan = 3
+            )
 
-            val bestChannelMentionToQuery = channelMentionAtDiffIndex?.let {
+            val bestChannelMentionToQuery = existingChannelMentionAtDiffIdx?.let {
                 findFirstMention("#", it.fullMentionRange.first, 3)?.let { matchResult ->
                     Pair(matchResult.value, matchResult.range.first)
                 }
-            } ?: findNameToQuery(mentionedChannels, "#", diffIndex, 3)
+            } ?: findNameToQuery(
+                currentMentions = mentionedChannels,
+                prefix = "#",
+                greaterOrEqualThan = 3
+            )
 
+            updateTextLinkDescriptors(
+                indexOfDiff = diffIndex,
+                txtLengthDiff = newValue.length - oldValue.length
+            )
             getSuggestedUsersAndChannels(
                 bestUserMentionToQuery,
                 bestChannelMentionToQuery
@@ -141,7 +181,7 @@ class MessageDraft(
     }
 
     private fun<T> updateMentionDescriptors(withIterator: MutableIterator<MentionDescriptor<T>>, indexOfDiff: Int): List<MentionDescriptor<T>> {
-        var removedElements = emptyList<MentionDescriptor<T>>().toMutableList()
+        val removedElements = emptyList<MentionDescriptor<T>>().toMutableList()
 
         while (withIterator.hasNext()) {
             val it = withIterator.next()
@@ -155,6 +195,26 @@ class MessageDraft(
                     removedElements.add(it)
                     withIterator.remove()
                 }
+            }
+        }
+        return removedElements
+    }
+
+    private fun updateTextLinkDescriptors(indexOfDiff: Int, txtLengthDiff: Int): List<TextLinkDescriptor> {
+        val iterator = currentTextLinkDescriptors.iterator()
+        val removedElements = emptyList<TextLinkDescriptor>().toMutableList()
+
+        while (iterator.hasNext()) {
+            val it = iterator.next()
+            val startIndex = currentText.indexOf(it.text)
+
+            if (startIndex == -1) {
+                removedElements.add(it)
+                iterator.remove()
+            } else if (it.range.first > indexOfDiff) {
+                it.updateRange(it.range.first + txtLengthDiff..<it.range.last + txtLengthDiff)
+            } else {
+                // Text alteration occurred before index of diff. No need to reindex currently iterated text link"
             }
         }
         return removedElements
@@ -224,34 +284,38 @@ class MessageDraft(
         withPrefix: String,
         positionInInput: Int,
         intoCollection: MutableList<MentionDescriptor<T>>
-    ) {
+    ): Boolean {
         if (positionInInput >= currentText.length) {
-            return
+            return false
         }
-        findFirstMention(
+        val matchRes = findFirstMention(
            withPrefix = withPrefix,
            startIndex = positionInInput,
            greaterOrEqualThan = 3
-        )?.let {
-            if (name.startsWith(it.value.drop(withPrefix.length)).and(it.range.first == positionInInput)) {
+        )?.also {
+            val extractedNameWithoutPrefix = name.startsWith(it.value.drop(withPrefix.length))
+            val matchesRangePosition = it.range.first == positionInInput
+
+            if (extractedNameWithoutPrefix.and(matchesRangePosition)) {
                 val fullMentionName = withPrefix + name
                 val fullMentionRange = it.range.first..it.range.first + name.length
                 intoCollection.add(MentionDescriptor(id, mention, fullMentionName, fullMentionRange))
                 currentText = currentText.replaceRange(it.range, fullMentionName)
             }
         }
+
+        return (matchRes != null)
     }
 
     private fun <T> findNameToQuery(
         currentMentions: List<MentionDescriptor<T>>,
         prefix: String,
-        greaterOrEqualThan: Int,
-        indexOfDiff: Int
+        greaterOrEqualThan: Int
     ): Pair<String, Int>? {
         val currentMentionsRanges = currentMentions.map {
             it.fullMentionRange
         }
-        "$prefix(\\w+)".toRegex().findAll(currentText, indexOfDiff).forEach { matchResult ->
+        "$prefix(\\w+)".toRegex().findAll(currentText).forEach { matchResult ->
             if (currentMentionsRanges.intersect(matchResult.range).isEmpty()) {
                 if (matchResult.value.drop(prefix.length).length >= greaterOrEqualThan) {
                     return Pair(matchResult.value.drop(prefix.length), matchResult.range.first)
@@ -283,6 +347,7 @@ private class MentionDescriptor<T> {
         fullMentionRange = newRange
     }
 }
+
 private class TextLinkDescriptor {
     val link: String
     val text: String
@@ -300,7 +365,7 @@ private class TextLinkDescriptor {
         }
     }
 
-    fun shiftRange(byStartOffset: Int, byEndOffset: Int) {
-        range = range.shift(byStartOffset, byEndOffset)
+    fun updateRange(newRange: IntRange) {
+        range = newRange
     }
 }
