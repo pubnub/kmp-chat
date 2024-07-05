@@ -159,6 +159,8 @@ interface Chat {
 
     fun getChannelSuggestions(text: String, limit: Int = 10): PNFuture<Set<Channel>>
 
+    fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<Set<User>>
+
     /* should be internal */
     fun publish( //todo maybe create separate interface Chat : ChatInternal so that publish and signal are not visible by user?
         channelId: String,

@@ -2,6 +2,7 @@ package com.pubnub.integration
 
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.kmp.Membership
 import com.pubnub.kmp.User
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.test.await
@@ -103,5 +104,36 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(ban, secondRestriction.ban)
         assertEquals(mute, secondRestriction.mute)
         assertEquals(reason, secondRestriction.reason)
+    }
+
+    @Test
+    fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest {
+        val userSuggestions = channel01.getUserSuggestions("sas@las").await()
+        assertEquals(0, userSuggestions.size)
+    }
+
+    @Test
+    fun shouldReturnUserSuggestions_whenNoDataInCacheButUserAvailableInChat() = runTest {
+        // given
+        val userName = "userName_${someUser.id}"
+        val user: User = chat.createUser(id = someUser.id, name = userName).await()
+        channel01.invite(someUser).await()
+
+        // when no data in cache
+        val userSuggestionsMemberships: Set<Membership> = channel01.getUserSuggestions("sas@$userName").await()
+
+        // then
+        assertEquals(1, userSuggestionsMemberships.size)
+        assertEquals(someUser.id, userSuggestionsMemberships.first().user.id)
+        assertEquals(userName, userSuggestionsMemberships.first().user.name)
+
+
+        // when data in cache
+        val userSuggestionsMembershipsFromCache: Set<Membership> = channel01.getUserSuggestions("sas@$userName").await()
+
+        // then
+        assertEquals(1, userSuggestionsMembershipsFromCache.size)
+        assertEquals(someUser.id, userSuggestionsMembershipsFromCache.first().user.id)
+        assertEquals(userName, userSuggestionsMembershipsFromCache.first().user.name)
     }
 }

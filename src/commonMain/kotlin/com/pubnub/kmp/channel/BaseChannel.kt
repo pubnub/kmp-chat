@@ -60,6 +60,7 @@ import com.pubnub.kmp.types.JoinResult
 import com.pubnub.kmp.types.MessageMentionedUsers
 import com.pubnub.kmp.types.MessageReferencedChannel
 import com.pubnub.kmp.types.TextLink
+import com.pubnub.kmp.util.getPhraseToLookFor
 import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
 import kotlinx.datetime.Clock
@@ -82,7 +83,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     val channelFactory: (Chat, PNChannelMetadata) -> C,
     val messageFactory: (Chat, PNFetchMessageItem, channelId: String) -> M,
 ) : Channel {
-    private val suggestedNames = mutableMapOf<String, List<Membership>>()
+    private val suggestedMemberships = mutableMapOf<String, Set<Membership>>()
     private var disconnect: AutoCloseable? = null
     private var typingSent: Instant? = null
     internal var typingIndicators = mutableMapOf<String, Instant>()
@@ -322,7 +323,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         sort: Collection<PNSortKey<PNMemberKey>>,
     ): PNFuture<MembersResponse> {
         return chat.pubNub.getChannelMembers(
-            this.id,
+            channel = this.id,
             limit = limit,
             page = page,
             filter = filter,
@@ -375,7 +376,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
             includeType = true,
             filter = channelFilterString,
         ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
-            val resultDisconnect = disconnect ?: connect(callback) //todo assign disconnect = resultDisconnect in subsequent line?
+            val resultDisconnect =
+                disconnect ?: connect(callback) //todo assign disconnect = resultDisconnect in subsequent line?
             chat.pubNub.time().thenAsync { time: PNTimeResult ->
                 Membership.fromMembershipDTO(chat, membershipArray.data.first(), user)
                     .setLastReadMessageTimetoken(time.timetoken)
@@ -540,6 +542,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                                 "join" -> {
                                     ids.add(event.uuid!!)
                                 }
+
                                 "leave", "timeout" -> {
                                     ids.remove(event.uuid)
                                 }
@@ -553,6 +556,21 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
         return AutoCloseable {
             future.then { it.close() }
+        }
+    }
+
+    // todo rename to getMembershipSuggestions?
+    override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<Membership>> {
+        val cacheKey: String = getPhraseToLookFor(text, "@") ?: return emptySet<Membership>().asFuture()
+
+        suggestedMemberships[cacheKey]?.let { nonNullMemberships ->
+            return nonNullMemberships.asFuture()
+        }
+
+        return getMembers(filter = "uuid.name LIKE '${cacheKey}*'", limit = limit).then { membersResponse ->
+            val memberships = membersResponse.members
+            suggestedMemberships[cacheKey] = memberships
+            memberships
         }
     }
 
