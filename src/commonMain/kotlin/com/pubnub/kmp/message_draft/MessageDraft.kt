@@ -20,7 +20,8 @@ class MessageDraft(
     private val chat: Chat,
     private val channel: Channel,
     private val userSuggestionDataSource: UserSuggestionDataSource,
-    private val userSuggestionLimit: Int = 10
+    private val userSuggestionLimit: Int = 10,
+    private val shouldTriggerTypingIndicator: Boolean = false
 ) {
     private var currentTextLinkDescriptors: MutableList<TextLinkDescriptor> = emptyList<TextLinkDescriptor>().toMutableList()
     private var quotedMessage: Message? = null
@@ -166,7 +167,7 @@ class MessageDraft(
                     greaterOrEqualThan = minNameLength
                 )?.let { matchResult ->
                     Pair(
-                        matchResult.value,
+                        matchResult.value.drop(userPrefix.length),
                         matchResult.range.first
                     )
                 }
@@ -184,7 +185,7 @@ class MessageDraft(
                     greaterOrEqualThan = minNameLength
                 )?.let { matchResult ->
                     Pair(
-                        matchResult.value,
+                        matchResult.value.drop(channelPrefix.length),
                         matchResult.range.first
                     )
                 }
@@ -203,6 +204,14 @@ class MessageDraft(
                 userMention = bestUserMentionToQuery,
                 channelMention = bestChannelMentionToQuery
             )
+
+            if (shouldTriggerTypingIndicator) {
+                if (currentText.isNotEmpty()) {
+                    channel.startTyping()
+                } else {
+                    channel.stopTyping()
+                }
+            }
         }
     }
 
@@ -251,14 +260,14 @@ class MessageDraft(
             when (userSuggestionDataSource) {
                 UserSuggestionDataSource.CHANNEL ->
                     channel.getMembers(
-                        filter = "uuid.name LIKE `${userMention.first}`",
+                        filter = "uuid.name LIKE '${userMention.first}'",
                         limit = userSuggestionLimit
                     ).then {
                         it.members.map { membership -> membership.user }
                     }
                 UserSuggestionDataSource.CHAT ->
                     chat.getUsers(
-                        filter = "uuid.name LIKE `${userMention.first}`",
+                        filter = "uuid.name LIKE '${userMention.first}'",
                         limit = 10
                     ).then {
                         it.users.toList()
@@ -269,7 +278,7 @@ class MessageDraft(
         }
 
         getChannelsFuture = if (channelMention != null) {
-            chat.getChannelSuggestions(filter = "name LIKE `${channelMention.first}`", limit = 10)
+            chat.getChannelSuggestions(filter = "name LIKE '${channelMention.first}'", limit = 10)
         } else {
             emptyList<Channel>().asFuture()
         }
