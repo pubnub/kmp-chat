@@ -4,26 +4,41 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.endpoints.objects.channel.GetAllChannelMetadata
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
+import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.objects.PNKey
+import com.pubnub.api.models.consumer.objects.PNMemberKey
+import com.pubnub.api.models.consumer.objects.PNPage
+import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
+import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
+import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.kmp.channel.GetChannelsResponse
+import com.pubnub.kmp.membership.MembersResponse
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.message_draft.MessageDraft
 import com.pubnub.kmp.message_draft.UserSuggestionDataSource
+import com.pubnub.kmp.restrictions.Restriction
+import com.pubnub.kmp.types.ChannelType
+import com.pubnub.kmp.types.CreateDirectConversationResult
+import com.pubnub.kmp.types.CreateGroupConversationResult
+import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.user.GetUsersResponse
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
-import dev.mokkery.verify
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -105,6 +120,7 @@ class MessageDraftTest {
 
         messageDraft.removeMentionedUser(messageDraft.currentText.indexOf("@"))
         messageDraft.removeMentionedChannel(messageDraft.currentText.indexOf("#"))
+        assertEquals(messageDraft.currentText, "I'm @$userFullName and I would like to join the #$channelFullName channel")
         assertTrue(messageDraft.getMessagePreview().mentionedUsers.isEmpty())
         assertTrue(messageDraft.getMessagePreview().mentionedChannels.isEmpty())
     }
@@ -264,12 +280,12 @@ class MessageDraftTest {
         messageDraft.onSuggestionsChanged = { _, suggestions ->
             when (messageDraft.currentText) {
                 "Hi, please welcome @$userBriefName" -> {
-                    assertEquals(suggestions.users[19]?.map { it.name.orEmpty() }, channelMembers.map { it })
+                    assertEquals(suggestions.users[messageDraft.currentText.indexOf("@")]?.map { it.name.orEmpty() }, channelMembers.map { it })
                     assertTrue(suggestions.channels.isEmpty())
                     messageDraft.currentText = "Hi, please welcome @$userBriefName and add her to the #$channelBriefName channel"
                 }
                 "Hi, please welcome @$userBriefName and add her to the #$channelBriefName channel" -> {
-                    assertEquals(suggestions.users[messageDraft.currentText.indexOf("@")]?.map { it.name.orEmpty() }, channelMembers.map { it })
+                    assertTrue(suggestions.users.isEmpty())
                     assertEquals(suggestions.channels[messageDraft.currentText.indexOf("#")]?.map { it.name.orEmpty() }, channelSuggestions.map { it })
                 }
                 else -> {

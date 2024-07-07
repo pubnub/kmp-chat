@@ -29,6 +29,10 @@ class MessageDraft(
     private var getUsersFuture: PNFuture<List<User>> = emptyList<User>().asFuture()
     private var getChannelsFuture: PNFuture<List<Channel>> = emptyList<Channel>().asFuture()
 
+    private var minNameLength: Int = 3
+    private var userPrefix = "@"
+    private var channelPrefix = "#"
+
     var onSuggestionsChanged: (String, SuggestedMessageDraftMentions) -> Unit = { _, _  -> }
     var currentText: String by Delegates.observable("") { _, oldValue, newValue -> onTextChanged(oldValue, newValue) }
 
@@ -79,36 +83,32 @@ class MessageDraft(
     }
 
     fun addMentionedUser(user: User, positionInInput: Int) {
-        if (!addMention(user, user.id, user.name.orEmpty(), "@", positionInInput, mentionedUsers)) {
+        if (!addMention(user, user.id, user.name.orEmpty(), userPrefix, positionInInput, mentionedUsers)) {
             throw PubNubException("The user ${channel.name.orEmpty()} doesn't appear in the text")
         }
     }
 
     fun removeMentionedUser(positionInInput: Int) {
-       if (!mentionedUsers.removeAll {
-           it.fullMentionRange.first == positionInInput
-       }) {
+       if (!mentionedUsers.removeAll { it.fullMentionRange.first == positionInInput }) {
            println("This is noop. There is no mention occurrence at $positionInInput index")
        }
     }
 
     fun addMentionedChannel(channel: Channel, positionInInput: Int) {
-        if (!addMention(channel, channel.id, channel.name.orEmpty(), "#", positionInInput, mentionedChannels)) {
+        if (!addMention(channel, channel.id, channel.name.orEmpty(), channelPrefix, positionInInput, mentionedChannels)) {
             throw PubNubException("The channel ${channel.name.orEmpty()} doesn't appear in the text")
         }
     }
 
     fun removeMentionedChannel(positionInInput: Int) {
-        if (!mentionedChannels.removeAll {
-            it.fullMentionRange.first == positionInInput
-        }) {
+        if (!mentionedChannels.removeAll { it.fullMentionRange.first == positionInInput }) {
             println("This is noop. There is no channel occurrence at $positionInInput index")
         }
     }
 
     fun getHighlightedUserMention(selectionStart: Int): HighlightedUser? {
         return mentionedUsers.firstOrNull { it.fullMentionRange.contains(selectionStart) }?.let {
-            HighlightedUser(user = it.item, nameOccurrenceIndex = it.fullMentionRange.first)
+            HighlightedUser(it.item, it.fullMentionRange.first)
         }
     }
 
@@ -142,32 +142,56 @@ class MessageDraft(
     }
 
     private fun onTextChanged(oldValue: String, newValue: String) {
+        // Returns the first index at which the previous and new text values start to differ
         newValue.indexOfDifference(oldValue)?.let { diffIndex ->
-            val existingUserMentionAtDiffIdx = updateMentionDescriptors(mentionedUsers.iterator(), diffIndex).firstOrNull {
+            // Removes any previously mentioned user and channel that no longer exist in the text.
+            // Grabs user mention and channel mention whose ranges contain the index of difference
+            val existingUserMentionAtDiffIdx = updateMentionDescriptors(
+                mentionedUsers.iterator(),
+                diffIndex
+            ).firstOrNull {
                 it.fullMentionRange.contains(diffIndex)
             }
-            val existingChannelMentionAtDiffIdx = updateMentionDescriptors(mentionedChannels.iterator(), diffIndex).firstOrNull {
+            val existingChannelMentionAtDiffIdx = updateMentionDescriptors(
+                mentionedChannels.iterator(),
+                diffIndex
+            ).firstOrNull {
                 it.fullMentionRange.contains(diffIndex)
             }
+
             val bestUserMentionToQuery = existingUserMentionAtDiffIdx?.let {
-                findFirstMention("@", it.fullMentionRange.first, 3)?.let { matchResult ->
-                    Pair(matchResult.value, matchResult.range.first)
+                findFirstMention(
+                    withPrefix = userPrefix,
+                    startIndex = it.fullMentionRange.first,
+                    greaterOrEqualThan = minNameLength
+                )?.let { matchResult ->
+                    Pair(
+                        matchResult.value,
+                        matchResult.range.first
+                    )
                 }
             } ?: findNameToQuery(
                 currentMentions = mentionedUsers,
-                prefix = "@",
-                greaterOrEqualThan = 3,
+                prefix = userPrefix,
+                greaterOrEqualThan = minNameLength,
                 indexOfDiff = diffIndex
             )
 
             val bestChannelMentionToQuery = existingChannelMentionAtDiffIdx?.let {
-                findFirstMention("#", it.fullMentionRange.first, 3)?.let { matchResult ->
-                    Pair(matchResult.value, matchResult.range.first)
+                findFirstMention(
+                    withPrefix = channelPrefix,
+                    startIndex = it.fullMentionRange.first,
+                    greaterOrEqualThan = minNameLength
+                )?.let { matchResult ->
+                    Pair(
+                        matchResult.value,
+                        matchResult.range.first
+                    )
                 }
             } ?: findNameToQuery(
                 currentMentions = mentionedChannels,
-                prefix = "#",
-                greaterOrEqualThan = 3,
+                prefix = channelPrefix,
+                greaterOrEqualThan = minNameLength,
                 indexOfDiff = diffIndex
             )
 
@@ -176,8 +200,8 @@ class MessageDraft(
                 txtLengthDiff = newValue.length - oldValue.length
             )
             getSuggestedUsersAndChannels(
-                bestUserMentionToQuery,
-                bestChannelMentionToQuery
+                userMention = bestUserMentionToQuery,
+                channelMention = bestChannelMentionToQuery
             )
         }
     }
@@ -306,7 +330,7 @@ class MessageDraft(
             }
         }
 
-        return (matchRes != null)
+        return matchRes != null
     }
 
     private fun <T> findNameToQuery(
@@ -315,19 +339,16 @@ class MessageDraft(
         greaterOrEqualThan: Int,
         indexOfDiff: Int
     ): Pair<String, Int>? {
-        val currentMentionsRanges: List<IntRange> = currentMentions.map {
+        val listOfMentionRanges: List<IntRange> = currentMentions.map {
             it.fullMentionRange
         }
-        "$prefix(\\w+)".toRegex().findAll(currentText).forEach { matchResult ->
-            if (currentMentionsRanges.isNotEmpty()) {
-                currentMentionsRanges.firstOrNull {
-                    it.first != matchResult.range.first && matchResult.value.length >= greaterOrEqualThan && it.first >= indexOfDiff
-                }?.let {
-                    return Pair(matchResult.value.drop(prefix.length), matchResult.range.first)
-                }
-            } else {
-                return Pair(matchResult.value.drop(prefix.length), matchResult.range.first)
-            }
+        "$prefix(\\w+)".toRegex().findAll(currentText).filter {
+            val isNotYetMentioned = !(listOfMentionRanges.map { range -> range.first }.contains(it.range.first))
+            val hasSufficientLength = it.value.length >= greaterOrEqualThan
+            val greaterOrEqualThanIndexOfDiff = it.range.first >= indexOfDiff
+            isNotYetMentioned && hasSufficientLength && greaterOrEqualThanIndexOfDiff
+        }.firstOrNull()?.let {
+            return Pair(it.value.drop(prefix.length), it.range.first)
         }
         return null
     }
