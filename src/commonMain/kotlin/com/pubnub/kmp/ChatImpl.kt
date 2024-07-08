@@ -787,7 +787,7 @@ class ChatImpl(
                 ChannelImpl.fromDTO(this, it)
             }
         }.catch { exception ->
-            Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_USER_DATA.message, exception))
+            Result.failure(PubNubException(FAILED_TO_GET_CHANNELS.message, exception))
         }
     }
 
