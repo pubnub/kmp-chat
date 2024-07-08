@@ -1,3 +1,7 @@
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
+import org.jetbrains.kotlin.gradle.targets.js.yarn.yarn
+
 plugins {
     kotlin("multiplatform") version "2.0.0"
     kotlin("plugin.serialization") version "2.0.0"
@@ -37,18 +41,24 @@ kotlin {
     jvmToolchain(8)
     js {
         useEsModules()
-        browser {
-            testTask {
-//                useMocha {
-//                    timeout = "30s"
+//        browser {
+//            testTask {
+////                useMocha {
+////                    timeout = "30s"
+////                }
+//                useKarma {
+//                    useChrome()
 //                }
-                useKarma {
-                    useChrome()
+//            }
+//        }
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "20s"
                 }
             }
         }
-//        nodejs()
-        binaries.executable()
+//        binaries.executable()
     }
     jvm()
 
@@ -192,3 +202,6 @@ kotlin {
 ////        }
 //    }
 }
+
+yarn.yarnLockMismatchReport = YarnLockMismatchReport.WARNING
+yarn.yarnLockAutoReplace = true
