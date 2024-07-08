@@ -998,7 +998,7 @@ class ChatImpl(
             val threadId = getThreadId(message.channelId, message.timetoken)
 
             val actionTimetoken =
-                message.actions?.get("threadRootId")?.get(threadId)?.get(0)?.actionTimetoken?.toLongOrNull()
+                message.actions?.get("threadRootId")?.get(threadId)?.get(0)?.actionTimetoken
                     ?: return PubNubException("There is no action timetoken corresponding to the thread").asFuture()
 
             return chat.getChannel(threadId).thenAsync { threadChannel ->

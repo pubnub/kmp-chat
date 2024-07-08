@@ -7,10 +7,31 @@ plugins {
 //    id("org.kodein.mock.mockmp") version "1.17.0"
     id("dev.mokkery") version "2.0.0"
     id("org.jetbrains.kotlin.plugin.atomicfu") version "2.0.0"
+//    id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
 }
 
 group = "com.pubnub"
 version = "1.0-SNAPSHOT"
+
+//ktlint {
+//    outputToConsole.set(true)
+//    verbose.set(true)
+//    additionalEditorconfig.set(
+//        mapOf(
+//            "ij_kotlin_imports_layout" to "*,java.**,javax.**,kotlin.**,^",
+//            "indent_size" to "4",
+//            "ktlint_standard_multiline-expression-wrapping" to "disabled",
+//            "ktlint_standard_string-template-indent" to "disabled",
+//            "ktlint_standard_max-line-length" to "disabled",
+//            "ktlint_standard_if-else-wrapping" to "disabled",
+//            "ktlint_standard_discouraged-comment-location" to "disabled",
+//            "ktlint_standard_trailing-comma-on-declaration-site" to "disabled",
+//            "ktlint_standard_trailing-comma-on-call-site" to "disabled",
+//            "ktlint_standard_function-signature" to "disabled",
+//            "ktlint_standard_filename" to "disabled"
+//        )
+//    )
+//}
 
 kotlin {
     jvmToolchain(8)

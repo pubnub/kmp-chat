@@ -220,10 +220,10 @@ abstract class BaseMessage<T : Message>(
             val valueList = (actionValue[actionResult.value]?.toMutableList() ?: mutableListOf()).also {
                 actionValue[actionResult.value] = it
             }
-            if (valueList.any { it.actionTimetoken.toLong() == actionResult.actionTimetoken }) {
+            if (valueList.any { it.actionTimetoken == actionResult.actionTimetoken }) {
                 return newActions
             }
-            valueList.add(PNFetchMessageItem.Action(actionResult.uuid!!, actionResult.actionTimetoken.toString()))
+            valueList.add(PNFetchMessageItem.Action(actionResult.uuid!!, actionResult.actionTimetoken!!))
             return newActions
         }
 
@@ -234,7 +234,7 @@ abstract class BaseMessage<T : Message>(
                         entry.value.forEach { innerEntry ->
                             if (entry.key == action.type && innerEntry.key == action.value) {
                                 put(innerEntry.key, innerEntry.value.filter {
-                                    it.actionTimetoken.toLong() != action.actionTimetoken || it.uuid != action.uuid
+                                    it.actionTimetoken != action.actionTimetoken || it.uuid != action.uuid
                                 })
                             } else {
                                 put(innerEntry.key, innerEntry.value)

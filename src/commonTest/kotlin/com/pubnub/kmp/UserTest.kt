@@ -73,41 +73,44 @@ class UserTest {
     @Test
     fun canSoftDeleteUser() {
         // given
-        val softDeleteTrue = true
+        val softDelete = true
         val chat = object : FakeChat(chatConfig, pubNub) {
-            var called = false
+            var soft: Boolean? = null
             override fun deleteUser(id: String, soft: Boolean): PNFuture<User> {
-                called = soft == softDeleteTrue
+                this.soft = soft
                 return objectUnderTest.asFuture()
             }
         }
         val sut = createUser(chat)
 
         // when
-        sut.delete(softDeleteTrue).async {}
+        sut.delete(softDelete).async {}
 
         // then
-        assertTrue { chat.called }
+        assertEquals(softDelete, chat.soft)
     }
 
     @Test
     fun canHardDeleteUser() {
         // given
-        val softDeleteTrue = false
+        val softDelete = false
         val chat = object : FakeChat(chatConfig, pubNub) {
-            var called = false
+            var softDeleted: Boolean? = null
+            var deletedUserId: String? = null
             override fun deleteUser(id: String, soft: Boolean): PNFuture<User> {
-                called = soft == softDeleteTrue
+                this.softDeleted = soft
+                this.deletedUserId = id
                 return objectUnderTest.asFuture()
             }
         }
         val sut = createUser(chat)
 
         // when
-        sut.delete(softDeleteTrue).async {}
+        sut.delete(softDelete).async {}
 
         // then
-        assertTrue { chat.called }
+        assertEquals(softDelete, chat.softDeleted)
+        assertEquals(sut.id, chat.deletedUserId)
     }
 
     @Test
@@ -170,11 +173,7 @@ class UserTest {
     @Test
     fun getMembershipsShouldResultFailureWhenPubNubReturnsError() {
         // given
-        val limit = 10
-        val page = PNPage.PNNext("nextPageHash")
-        val filter = "channel.name LIKE '*super*'"
         val errorMessage = "Strange exception"
-        val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
 
         val pubNub = object : FakePubNub(pubnubConfig) {
             override fun getMemberships(uuid: String?, limit: Int?, page: PNPage?, filter: String?, sort: Collection<PNSortKey<PNMembershipKey>>, includeCount: Boolean, includeCustom: Boolean, includeChannelDetails: PNChannelDetailsLevel?, includeType: Boolean): GetMemberships {
@@ -184,7 +183,7 @@ class UserTest {
         val chat = object: FakeChat(chatConfig, pubNub) {}
         val sut = createUser(chat)
         // when
-        sut.getMemberships(limit = limit, page = page, filter = filter, sort = sort).async { result ->
+        sut.getMemberships().async { result ->
             // then
             assertTrue(result.isFailure)
             assertEquals("Failed to retrieve getMembership data.", result.exceptionOrNull()?.message)
