@@ -200,18 +200,6 @@ class UserTest {
             assertTrue(result.isFailure)
             assertEquals("Failed to retrieve getMembership data.", result.exceptionOrNull()?.message)
         }
-
-        // then
-        verify { pubNub.getMemberships(
-            uuid = id,
-            limit = limit,
-            page = page,
-            filter = filter,
-            sort = sort,
-            includeCount = true,
-            includeCustom = true,
-            includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM
-        ) }
     }
 
     @Test

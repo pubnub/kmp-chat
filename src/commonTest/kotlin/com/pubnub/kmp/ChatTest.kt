@@ -16,6 +16,10 @@ import com.pubnub.api.endpoints.presence.HereNow
 import com.pubnub.api.endpoints.presence.WhereNow
 import com.pubnub.api.endpoints.pubsub.Publish
 import com.pubnub.api.endpoints.pubsub.Signal
+import com.pubnub.api.endpoints.push.ListPushProvisions
+import com.pubnub.api.endpoints.push.RemoveAllPushChannelsForDevice
+import com.pubnub.api.enums.PNPushEnvironment
+import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNMessageCountResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
@@ -30,6 +34,8 @@ import com.pubnub.api.models.consumer.presence.PNHereNowChannelData
 import com.pubnub.api.models.consumer.presence.PNHereNowOccupantData
 import com.pubnub.api.models.consumer.presence.PNHereNowResult
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
+import com.pubnub.api.models.consumer.push.PNPushListProvisionsResult
+import com.pubnub.api.models.consumer.push.PNPushRemoveAllChannelsResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
@@ -41,7 +47,6 @@ import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
 import com.pubnub.kmp.user.GetUsersResponse
-import com.pubnub.kmp.util.getPhraseToLookFor
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -55,6 +60,7 @@ import dev.mokkery.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -98,6 +104,8 @@ class ChatTest {
     private val timetoken: Long = 123457
     private val pnException404 = PubNubException(statusCode = 404, errorMessage = "Requested object was not found.")
     private val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
+    private val listPushProvisions: ListPushProvisions = mock(MockMode.strict)
+    private val removeAllPushChannelsForDevice: RemoveAllPushChannelsForDevice = mock(MockMode.strict)
     private val messageCounts: MessageCounts = mock(MockMode.strict)
 
     @BeforeTest
@@ -923,6 +931,99 @@ class ChatTest {
             assertTrue(result.isSuccess)
             assertTrue(result.getOrNull()?.isEmpty()!!)
         }
+    }
+
+    @Test
+    fun getPushChannelsShouldFailWhenDeviceTokenIsNull(){
+        val exception: PubNubException = assertFailsWith<PubNubException> {
+            objectUnderTest.getPushChannels()
+        }
+
+        assertEquals("Device Token has to be defined in Chat pushNotifications config.", exception.message)
+    }
+
+    @Test
+    fun whenCallingGetPushChannelsShouldReturnListOfChannels(){
+        val deviceId = "myDeviceId"
+        val pushType = PNPushType.FCM
+        val topic = "topic"
+        val apnsEnvironment = PNPushEnvironment.PRODUCTION
+        chatConfig = ChatConfigImpl(pnConfiguration).apply {
+
+            pushNotifications = PushNotificationsConfig(
+                sendPushes = false,
+                deviceToken = deviceId,
+                deviceGateway = pushType,
+                apnsTopic = topic,
+                apnsEnvironment = apnsEnvironment
+            )
+        }
+        objectUnderTest = ChatImpl(chatConfig, pubnub)
+
+        val channel01 = "channel1"
+        val channel02 = "channel2"
+        every { pubnub.auditPushChannelProvisions(any(), any(), any(), any()) } returns listPushProvisions
+        every { listPushProvisions.async(any()) } calls { ( callback: Consumer<Result<PNPushListProvisionsResult>>) ->
+            callback.accept(Result.success(PNPushListProvisionsResult(channels = listOf(channel01, channel02))))
+        }
+
+        // when
+        objectUnderTest.getPushChannels().async { result: Result<List<String>> ->
+            assertTrue(result.isSuccess)
+            assertTrue(result.getOrNull()?.contains(channel01)!!)
+            assertTrue(result.getOrNull()?.contains(channel02)!!)
+        }
+
+        verify { pubnub.auditPushChannelProvisions(
+            pushType = pushType,
+            deviceId = deviceId,
+            topic = topic,
+            environment = apnsEnvironment
+        )}
+    }
+
+    @Test
+    fun unregisterAllPushChannelsShouldFailWhenDeviceTokenIsNull(){
+        val exception: PubNubException = assertFailsWith<PubNubException> {
+            objectUnderTest.unregisterAllPushChannels()
+        }
+
+        assertEquals("Device Token has to be defined in Chat pushNotifications config.", exception.message)
+    }
+
+    @Test
+    fun whenCallingUnregisterAllPushChannelsShouldPassProperDeviceId(){
+        val deviceId = "myDeviceId"
+        val pushType = PNPushType.FCM
+        val topic = "topic"
+        val apnsEnvironment = PNPushEnvironment.PRODUCTION
+        chatConfig = ChatConfigImpl(pnConfiguration).apply {
+
+            pushNotifications = PushNotificationsConfig(
+                sendPushes = false,
+                deviceToken = deviceId,
+                deviceGateway = pushType,
+                apnsTopic = topic,
+                apnsEnvironment = apnsEnvironment
+            )
+        }
+        objectUnderTest = ChatImpl(chatConfig, pubnub)
+        every { pubnub.removeAllPushNotificationsFromDeviceWithPushToken(any(), any(), any(), any()) } returns removeAllPushChannelsForDevice
+        every { removeAllPushChannelsForDevice.async(any()) } calls {(callback: Consumer<Result<PNPushRemoveAllChannelsResult>>) ->
+            callback.accept(Result.success(PNPushRemoveAllChannelsResult()))
+        }
+
+        // when
+        objectUnderTest.unregisterAllPushChannels().async{ result: Result<Unit> ->
+            assertTrue(result.isSuccess)
+        }
+
+        verify { pubnub.removeAllPushNotificationsFromDeviceWithPushToken(
+            pushType = pushType,
+            deviceId = deviceId,
+            topic = topic,
+            environment = apnsEnvironment
+        ) }
     }
 
     @Test

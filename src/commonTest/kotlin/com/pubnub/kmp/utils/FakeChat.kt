@@ -243,4 +243,12 @@ abstract class FakeChat(override val config: ChatConfig, override val pubNub: Pu
     override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<User>> {
         TODO("Not yet implemented")
     }
+
+    override fun getPushChannels(): PNFuture<List<String>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun unregisterAllPushChannels(): PNFuture<Unit> {
+        TODO("Not yet implemented")
+    }
 }
