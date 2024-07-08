@@ -1,12 +1,17 @@
 package com.pubnub.integration
 
 import com.pubnub.api.PubNubException
+import com.pubnub.api.enums.PNPushEnvironment
+import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.kmp.Channel
+import com.pubnub.kmp.ChatConfigImpl
+import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.Event
 import com.pubnub.kmp.Membership
+import com.pubnub.kmp.PushNotificationsConfig
 import com.pubnub.kmp.User
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
@@ -207,9 +212,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // send message
         channel01.sendText("message01In$channelId01").await()
-        withContext(Dispatchers.Default) {
-            delay(150) // history calls have around 130ms of cache time
-        }
+        delayInMillis(150) // history calls have around 130ms of cache time
+
         // join (implicitly setLastReadMessageTimetoken)
         val joinResult: JoinResult = channel01.join { }.await()
         val membership = joinResult.membership
@@ -218,18 +222,16 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // send message
         channel01.sendText("message02In$channelId01").await()
-        withContext(Dispatchers.Default) {
-            delay(150) // history calls have around 130ms of cache time
-        }
+        delayInMillis(150) // history calls have around 130ms of cache time
+
         val unreadMessageCount02: Long? = membership.getUnreadMessagesCount().await()
         assertEquals(1L, unreadMessageCount02)
 
         // markAllMessagesAsRead
         val markAllMessageAsReadResponse: MarkAllMessageAsReadResponse = chat.markAllMessagesAsRead().await()
         val membershipWithUpgradeLastReadMessageTimetoken = markAllMessageAsReadResponse.memberships.first()
-        withContext(Dispatchers.Default) {
-            delay(1050)
-        }
+        delayInMillis(1500)
+
         val unreadMessageCount03: Long? = membershipWithUpgradeLastReadMessageTimetoken.getUnreadMessagesCount().await()
         assertEquals(0, unreadMessageCount03)
 
@@ -250,9 +252,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         // send message
         channel01.sendText("message01In$channelId01").await()
         channel02.sendText("message01In$channelId02").await()
-        withContext(Dispatchers.Default) {
-            delay(1500) // history calls have around 130ms of cache time
-        }
+        delayInMillis(1500) // history calls have around 130ms of cache time
 
         // read message count
         var unreadMessagesCounts = chat.getUnreadMessagesCounts().await()
@@ -267,9 +267,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // markUnread
         chat.markAllMessagesAsRead().await()
-        withContext(Dispatchers.Default) {
-            delay(5000) // todo not sure why 5s is needed here but without it test doesn't pass in most cases. What can take so long? markAllMessagesAsRead method sets Membership. Does it take so long to propagate?
-        }
+        delayInMillis(5000) // history calls have around 130ms of cache time
+        // todo not sure why 5s is needed here but without it test doesn't pass in most cases. What can take so long? markAllMessagesAsRead method sets Membership. Does it take so long to propagate?
 
         // read message count
         unreadMessagesCounts = chat.getUnreadMessagesCounts().await()
@@ -322,4 +321,61 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(userName, userSuggestions.first().name)
     }
 
+    @Test
+    fun register_unregister_list_pushNotificationOnChannel() = runTest {
+        //set up push config
+        val chatConfig = ChatConfigImpl(chat.config.pubnubConfig).apply {
+            pushNotifications = PushNotificationsConfig(
+                sendPushes = false,
+                deviceToken = "myDeviceId",
+                deviceGateway = PNPushType.FCM,
+                apnsTopic = null,
+                apnsEnvironment = PNPushEnvironment.PRODUCTION
+            )
+        }
+        chat = ChatImpl(chatConfig, pubnub)
+
+        // remove all pushNotificationChannels
+        chat.unregisterAllPushChannels().await()
+        delayInMillis(1500)
+
+        //list pushNotification
+        assertPushChannels(0)
+
+        //register 3 channels
+        val channel01 = "channel01"
+        val channel02 = "channel02"
+        val channel03 = "channel03"
+        chat.registerPushChannels(listOf(channel01, channel02, channel03)).await()
+        delayInMillis(1500)
+
+        //list pushNotification
+        assertPushChannels(3)
+
+        // remove 1 channel
+        chat.unregisterPushChannels(listOf(channel03)).await()
+        delayInMillis(1500)
+
+        //list pushNotification
+        assertPushChannels(2)
+
+        // removeAll
+        chat.unregisterAllPushChannels().await()
+        delayInMillis(1500)
+
+        //list pushNotification
+        assertPushChannels(0)
+    }
+
+    private suspend fun delayInMillis(timeMillis: Long) {
+        withContext(Dispatchers.Default) {
+            delay(timeMillis)
+        }
+    }
+
+
+    private suspend fun assertPushChannels(expectedNumberOfChannels: Int) {
+        val pushChannels = chat.getPushChannels().await()
+        assertEquals(expectedNumberOfChannels, pushChannels.size)
+    }
 }
