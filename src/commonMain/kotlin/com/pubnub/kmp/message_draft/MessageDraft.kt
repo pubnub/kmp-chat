@@ -374,6 +374,7 @@ private class MentionDescriptor<T> {
     val item: T
     val fullMentionName: String
     var fullMentionRange: IntRange private set
+    
     constructor(id: String, item: T, fullMentionName: String, fullMentionRange: IntRange) {
         this.id = id
         this.item = item
