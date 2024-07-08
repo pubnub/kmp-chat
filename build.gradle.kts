@@ -1,14 +1,10 @@
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
-import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 import org.jetbrains.kotlin.gradle.targets.js.yarn.yarn
 
 plugins {
     kotlin("multiplatform") version "2.0.0"
     kotlin("plugin.serialization") version "2.0.0"
-//    kotlin("native.cocoapods") version "2.0.0-RC3"
-//    kotlin("multiplatform") version "1.9.22" //downgrade to 1.9.22 because mockmp uses Kotlin Symbol Processing (KSP) "com.google.devtools.ksp:symbol-processing-api:<new-version>"
-//    kotlin("native.cocoapods") version "1.9.23"
-//    id("org.kodein.mock.mockmp") version "1.17.0"
+//    kotlin("native.cocoapods") version "2.0.0"
     id("dev.mokkery") version "2.0.0"
     id("org.jetbrains.kotlin.plugin.atomicfu") version "2.0.0"
 //    id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
@@ -71,33 +67,6 @@ kotlin {
 //            framework {
 //                baseName = "PubNubChat"
 //                isStatic = true
-//            }
-//        }
-//    }
-
-//        it.compilations.getByName("main") {
-//            val myInterop by cinterops.creating {
-//                // Def-file describing the native API.
-//                // The default path is src/nativeInterop/cinterop/<interop-name>.def
-//                defFile(project.file("def-file.def"))
-//
-//                // Package to place the Kotlin API generated.
-////                packageName("objectivec.pubnub")
-//
-//                // Options to be passed to compiler by cinterop tool.
-//                compilerOpts("-I/Users/wojciech.kalicinski/Library/Developer/Xcode/DerivedData/PubNub-gukbfwdrkubkmtgvokmytmdgrvzf/Build/Products/Debug-iphonesimulator/PubNub.framework/Headers")
-//
-//                // Directories to look for headers.
-////                includeDirs.apply {
-////                    // Directories for header search (an equivalent of the -I<path> compiler option).
-////                    allHeaders("path1")
-////
-////                    // Additional directories to search headers listed in the 'headerFilter' def-file option.
-////                    // -headerFilterAdditionalSearchPrefix command line option equivalent.
-//////                    headerFilterOnly("path1", "path2")
-////                }
-//                // A shortcut for includeDirs.allHeaders.
-////                includeDirs("include/directory", "another/directory")
 //            }
 //        }
 //    }

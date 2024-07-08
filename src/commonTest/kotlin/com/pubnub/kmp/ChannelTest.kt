@@ -17,8 +17,8 @@ import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.channel.MINIMAL_TYPING_INDICATOR_TIMEOUT
-import com.pubnub.kmp.endpoints.FetchMessages
-import com.pubnub.kmp.endpoints.objects.member.GetChannelMembers
+import com.pubnub.api.endpoints.FetchMessages
+import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent

@@ -12,7 +12,7 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.channel.ChannelImpl
-import com.pubnub.kmp.endpoints.objects.membership.GetMemberships
+import com.pubnub.api.endpoints.objects.membership.GetMemberships
 import com.pubnub.kmp.utils.FakeChat
 import com.pubnub.test.FakePubNub
 import dev.mokkery.MockMode
@@ -173,21 +173,45 @@ class UserTest {
     @Test
     fun getMembershipsShouldResultFailureWhenPubNubReturnsError() {
         // given
+        val limit = 10
+        val page = PNPage.PNNext("nextPageHash")
+        val filter = "channel.name LIKE '*super*'"
         val errorMessage = "Strange exception"
-
-        val pubNub = object : FakePubNub(pubnubConfig) {
-            override fun getMemberships(uuid: String?, limit: Int?, page: PNPage?, filter: String?, sort: Collection<PNSortKey<PNMembershipKey>>, includeCount: Boolean, includeCustom: Boolean, includeChannelDetails: PNChannelDetailsLevel?, includeType: Boolean): GetMemberships {
-                return GetMemberships { callback -> callback.accept(Result.failure(Exception(errorMessage))) }
-            }
+        val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
+        val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
+        every { chat.pubNub } returns pubNub
+        every { pubNub.getMemberships(
+            uuid = any(),
+            limit = any(),
+            page = any(),
+            filter = any(),
+            sort = any(),
+            includeCount = any(),
+            includeCustom = any(),
+            includeChannelDetails = any()
+        ) } returns getMembershipsEndpoint
+        every { getMembershipsEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback1.accept(Result.failure(Exception(errorMessage)))
         }
-        val chat = object: FakeChat(chatConfig, pubNub) {}
-        val sut = createUser(chat)
+
         // when
-        sut.getMemberships().async { result ->
+        objectUnderTest.getMemberships(limit = limit, page = page, filter = filter, sort = sort).async { result ->
             // then
             assertTrue(result.isFailure)
             assertEquals("Failed to retrieve getMembership data.", result.exceptionOrNull()?.message)
         }
+
+        // then
+        verify { pubNub.getMemberships(
+            uuid = id,
+            limit = limit,
+            page = page,
+            filter = filter,
+            sort = sort,
+            includeCount = true,
+            includeCustom = true,
+            includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM
+        ) }
     }
 
     @Test
@@ -238,7 +262,7 @@ class UserTest {
     fun canGetRestrictionsWithNoChannelProvided(){
         val noChannelProvided = null
         val limit = 1
-        val page: PNPage? = PNPage.PNNext("nextPageHash")
+        val page: PNPage = PNPage.PNNext("nextPageHash")
         val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
         val getMemberships: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub
