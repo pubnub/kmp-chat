@@ -26,6 +26,7 @@ import com.pubnub.api.models.consumer.presence.PNHereNowOccupantData
 import com.pubnub.api.models.consumer.pubsub.MessageResult
 import com.pubnub.api.models.consumer.pubsub.PNEvent
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
+import com.pubnub.api.models.consumer.push.PNPushListProvisionsResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
@@ -93,7 +94,7 @@ class ChatConfigImpl(override val pubnubConfig: PNConfiguration) : ChatConfig {
     override var saveDebugLog: Boolean = false
     override var typingTimeout: Duration = 5.seconds //millis
     override var rateLimitPerChannel: Any = mutableMapOf<ChannelType, Int>()
-    override val pushNotifications: PushNotificationsConfig = PushNotificationsConfig(
+    override var pushNotifications: PushNotificationsConfig = PushNotificationsConfig(
         false, null, PNPushType.FCM, null, PNPushEnvironment.DEVELOPMENT
     )
 }
@@ -643,11 +644,11 @@ class ChatImpl(
     override fun registerPushChannels(channels: List<String>): PNFuture<PNPushAddChannelResult> {
         return getCommonPushOptions().asFuture().thenAsync { pushOptions ->
             pubNub.addPushNotificationsOnChannels(
-                pushOptions.deviceGateway,
-                channels,
-                pushOptions.deviceToken!!,
-                pushOptions.apnsTopic,
-                pushOptions.apnsEnvironment
+                pushType = pushOptions.deviceGateway,
+                channels = channels,
+                deviceId = pushOptions.deviceToken!!,
+                topic = pushOptions.apnsTopic,
+                environment = pushOptions.apnsEnvironment
             )
         }
     }
@@ -655,12 +656,23 @@ class ChatImpl(
     override fun unregisterPushChannels(channels: List<String>): PNFuture<PNPushRemoveChannelResult> {
         return getCommonPushOptions().asFuture().thenAsync { pushOptions ->
             pubNub.removePushNotificationsFromChannels(
-                pushOptions.deviceGateway,
-                channels,
-                pushOptions.deviceToken!!,
-                pushOptions.apnsTopic,
-                pushOptions.apnsEnvironment
+                pushType = pushOptions.deviceGateway,
+                channels = channels,
+                deviceId = pushOptions.deviceToken!!,
+                topic = pushOptions.apnsTopic,
+                environment = pushOptions.apnsEnvironment
             )
+        }
+    }
+
+    override fun unregisterAllPushChannels(): PNFuture<Unit> {
+        return getCommonPushOptions().asFuture().thenAsync { pushOption ->
+            pubNub.removeAllPushNotificationsFromDeviceWithPushToken(
+                pushType = pushOption.deviceGateway,
+                deviceId = pushOption.deviceToken!!,
+                topic = pushOption.apnsTopic,
+                environment = pushOption.apnsEnvironment
+            ).then { Unit }
         }
     }
 
@@ -812,6 +824,19 @@ class ChatImpl(
             val users: Set<User> = getUsersResponse.users
             suggestedUsersCache[cacheKey] = users
             users
+        }
+    }
+
+    override fun getPushChannels(): PNFuture<List<String>> {
+        return getCommonPushOptions().asFuture().thenAsync { pushOptions: PushNotificationsConfig ->
+            pubNub.auditPushChannelProvisions(
+                pushType = pushOptions.deviceGateway,
+                deviceId = pushOptions.deviceToken!!,
+                topic = pushOptions.apnsTopic,
+                environment = pushOptions.apnsEnvironment
+            ).then { pnPushListProvisionsResult: PNPushListProvisionsResult ->
+                pnPushListProvisionsResult.channels
+            }
         }
     }
 
