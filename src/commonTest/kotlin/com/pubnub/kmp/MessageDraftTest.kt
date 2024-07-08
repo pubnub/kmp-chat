@@ -2,22 +2,13 @@ package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
-import com.pubnub.api.endpoints.objects.channel.GetAllChannelMetadata
-import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
-import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
-import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataArrayResult
-import com.pubnub.api.models.consumer.objects.member.PNMember
-import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
-import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
-import com.pubnub.api.v2.callbacks.Consumer
-import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.channel.ChannelImpl
@@ -33,12 +24,8 @@ import com.pubnub.kmp.types.CreateGroupConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.user.GetUsersResponse
-import dev.mokkery.MockMode
-import dev.mokkery.answering.calls
-import dev.mokkery.answering.returns
-import dev.mokkery.every
-import dev.mokkery.matcher.any
-import dev.mokkery.mock
+import kotlin.reflect.KClass
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -47,52 +34,87 @@ import kotlin.test.assertTrue
 import kotlin.test.fail
 
 class MessageDraftTest {
-    private val channelMembers = listOf("Marian Salazar", "Markus Koller", "Mary Jonson")
-    private val channelSuggestions = listOf("Games", "General", "Game of Thrones")
-    private lateinit var chat: Chat
+    private lateinit var chat: FakeMessageDraftChat
+    private lateinit var channel: FakeMessageDraftChannel
+
+    private fun generalChannel(): Channel {
+        return ChannelImpl(chat = chat, id = "General", name = "General")
+    }
+
+    private fun secondGeneralChannel(): Channel {
+        return ChannelImpl(chat = chat, id = "General 222", name = "General 222")
+    }
+
+    private fun gamesChannel(): Channel {
+        return ChannelImpl(chat = chat, id = "Games", name = "Games")
+    }
+
+    private fun secondGamesChannel(): Channel {
+        return ChannelImpl(chat = chat, id = "Games 222", name = "Games 222")
+    }
+
+    private fun marianSalazar(): User {
+        return  User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+    }
+
+    private fun marianKoch(): User {
+        return  User(chat = chat, id = "Marian Koch", name = "Marian Koch")
+    }
+
+    private fun markusKoller(): User {
+        return  User(chat = chat, id = "Markus Koller", name = "Markus Koller")
+    }
+
+    private fun maryJonson(): User {
+        return  User(chat = chat, id = "Mary Johnson", name = "Mary Johnson")
+    }
+
+    private fun maryJacobsen(): User {
+        return  User(chat = chat, id = "Mary Jacobsen", name = "Mary Jacobsen")
+    }
+
+    @BeforeTest
+    fun beforeEach() {
+        val config = ChatConfigImpl(createPNConfiguration(UserId("userId"), "subscribeKey", "publishKey"))
+        val underlyingChat = ChatImpl(config)
+
+        chat = FakeMessageDraftChat(underlyingChat)
+        chat.allChannelsSuggestions = listOf(generalChannel(), secondGeneralChannel(), gamesChannel(), secondGamesChannel())
+
+        val underlyingChannel = ChannelImpl(id = "test", name = "test", chat = chat)
+        val allChannelMembers = listOf(marianSalazar(), marianKoch(), maryJonson(), maryJacobsen())
+
+        channel = FakeMessageDraftChannel(underlyingChannel, allChannelMembers)
+    }
 
     @Test
     fun checkingSuggestedChannelsAndUsers() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
 
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
-        val userFullName = userToMention.name.orEmpty()
-        val userBriefName = userFullName.split(" ").first().trim()
-        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
-        val channelFullName = channelToMention.name.orEmpty()
-        val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
-
         messageDraft.onSuggestionsChanged = { _, suggestedMentions ->
-            val suggestedUsers = suggestedMentions.users[messageDraft.currentText.indexOf("@")]?.map { it.name }
-            val suggestedChannels = suggestedMentions.channels[messageDraft.currentText.indexOf("#")]?.map { it.name }
-            assertEquals(channelMembers, suggestedUsers)
-            assertEquals(channelSuggestions, suggestedChannels)
+            val actualUsers = suggestedMentions.users[messageDraft.currentText.indexOf("@")]?.map { it.name }
+            val actualChannels = suggestedMentions.channels[messageDraft.currentText.indexOf("#")]?.map { it.name }
+            assertEquals(listOf(marianSalazar(), marianKoch()).map { it.name.orEmpty() }, actualUsers)
+            assertEquals(listOf(gamesChannel(), secondGamesChannel()).map { it.name.orEmpty() }, actualChannels)
         }
-        messageDraft.currentText = "Hey, @$userBriefName here. Please add me to the #$channelBriefName channel"
+        messageDraft.currentText = "Hey, @Mari here. Please add me to the #Game channel"
     }
 
     @Test
     fun addingMentionedUserAndChannel() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = marianSalazar()
         val userFullName = userToMention.name.orEmpty()
         val userBriefName = userFullName.split(" ").first().trim()
-        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelToMention = gamesChannel()
         val channelFullName = channelToMention.name.orEmpty()
         val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
 
         messageDraft.currentText = "I'm @$userBriefName and I would like to join the #$channelBriefName channel"
         messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
-        assertEquals(messageDraft.currentText, "I'm @$userFullName and I would like to join the #$channelBriefName channel")
+        assertEquals("I'm @$userFullName and I would like to join the #$channelBriefName channel", messageDraft.currentText)
         messageDraft.addMentionedChannel(channelToMention, messageDraft.currentText.indexOf("#"))
-        assertEquals(messageDraft.currentText, "I'm @$userFullName and I would like to join the #$channelFullName channel")
+        assertEquals("I'm @$userFullName and I would like to join the #$channelFullName channel", messageDraft.currentText)
 
         val preview = messageDraft.getMessagePreview()
         assertEquals(preview.mentionedUsers[messageDraft.currentText.indexOf("@")]?.name, userFullName)
@@ -101,61 +123,49 @@ class MessageDraftTest {
 
     @Test
     fun removingMentionedUserAndChannel() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = marianSalazar()
         val userFullName = userToMention.name.orEmpty()
         val userBriefName = userFullName.split(" ").first().trim()
-        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelToMention = gamesChannel()
         val channelFullName = channelToMention.name.orEmpty()
         val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
 
         messageDraft.currentText = "I'm @$userBriefName and I would like to join the #$channelBriefName channel"
         messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
         messageDraft.addMentionedChannel(channelToMention, messageDraft.currentText.indexOf("#"))
-        assertEquals(messageDraft.currentText, "I'm @$userFullName and I would like to join the #$channelFullName channel")
+        assertEquals("I'm @$userFullName and I would like to join the #$channelFullName channel", messageDraft.currentText)
 
         messageDraft.removeMentionedUser(messageDraft.currentText.indexOf("@"))
         messageDraft.removeMentionedChannel(messageDraft.currentText.indexOf("#"))
-        assertEquals(messageDraft.currentText, "I'm @$userFullName and I would like to join the #$channelFullName channel")
+        assertEquals("I'm @$userFullName and I would like to join the #$channelFullName channel", messageDraft.currentText)
         assertTrue(messageDraft.getMessagePreview().mentionedUsers.isEmpty())
         assertTrue(messageDraft.getMessagePreview().mentionedChannels.isEmpty())
     }
 
     @Test
     fun addingMentionedUserAndChannelToInvalidPositions() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = marianSalazar()
         val userFullName = userToMention.name.orEmpty()
         val userBriefName = userFullName.split(" ").first().trim()
-        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelToMention = gamesChannel()
         val channelFullName = channelToMention.name.orEmpty()
         val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
 
         messageDraft.currentText = "Thank you @$userBriefName for deciding to join our #$channelBriefName group"
         assertFailsWith<PubNubException> { messageDraft.addMentionedUser(userToMention, 20) }
         assertFailsWith<PubNubException> { messageDraft.addMentionedChannel(channelToMention, 105) }
-        assertEquals(messageDraft.currentText, "Thank you @$userBriefName for deciding to join our #$channelBriefName group")
+        assertEquals("Thank you @$userBriefName for deciding to join our #$channelBriefName group", messageDraft.currentText)
     }
 
     @Test
     fun alteringTextWithAlreadyMentionedUserAndChannel() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = marianSalazar()
         val userFullName = userToMention.name.orEmpty()
         val userBriefName = userFullName.split(" ").first().trim()
-        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelToMention = gamesChannel()
         val channelFullName = channelToMention.name.orEmpty()
         val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
 
@@ -165,21 +175,17 @@ class MessageDraftTest {
         messageDraft.currentText = "Hey all. Nice to meet you. I'm @$userFullName who wants to join #$channelFullName channel"
 
         val messagePreview = messageDraft.getMessagePreview()
-        assertEquals(messagePreview.mentionedUsers[messageDraft.currentText.indexOf("@")]!!.name, userFullName)
-        assertEquals(messagePreview.mentionedChannels[messageDraft.currentText.indexOf("#")]!!.name, channelFullName)
+        assertEquals(userFullName, messagePreview.mentionedUsers[messageDraft.currentText.indexOf("@")]!!.name)
+        assertEquals(channelFullName, messagePreview.mentionedChannels[messageDraft.currentText.indexOf("#")]!!.name)
     }
 
     @Test
     fun anotherTextAlteringWithAlreadyMentionedUserAndChannel() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = marianSalazar()
         val userFullName = userToMention.name.orEmpty()
         val userBriefName = userFullName.split(" ").first().trim()
-        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelToMention = gamesChannel()
         val channelFullName = channelToMention.name.orEmpty()
         val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
 
@@ -189,23 +195,23 @@ class MessageDraftTest {
         messageDraft.currentText = "@$userFullName, have you been added to #$channelFullName?"
 
         val messagePreview = messageDraft.getMessagePreview()
-        assertEquals(messagePreview.mentionedUsers[messageDraft.currentText.indexOf("@")]!!.name, userFullName)
-        assertEquals(messagePreview.mentionedChannels[messageDraft.currentText.indexOf("#")]!!.name, channelFullName)
+        assertEquals(userFullName, messagePreview.mentionedUsers[messageDraft.currentText.indexOf("@")]!!.name)
+        assertEquals(channelFullName, messagePreview.mentionedChannels[messageDraft.currentText.indexOf("#")]!!.name)
     }
 
     @Test
     fun mentionsThatNoLongerMatchDueToStringSubstitution() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = marianSalazar()
         val userFullName = userToMention.name.orEmpty()
         val userBriefName = userFullName.split(" ").first().trim()
+        val channelToMention = gamesChannel()
+        val channelFullName = channelToMention.name.orEmpty()
+        val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
 
-        messageDraft.currentText = "Hello. My name is @$userBriefName and I'm the new marketing manager"
+        messageDraft.currentText = "Hello. My name is @$userBriefName, add me to the #$channelBriefName channel"
         messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
+        messageDraft.addMentionedChannel(channelToMention, messageDraft.currentText.indexOf("#"))
 
         messageDraft.currentText = "I would love to tell you about the strengths I can bring to this role"
         assertTrue(messageDraft.getMessagePreview().mentionedUsers.isEmpty())
@@ -214,15 +220,11 @@ class MessageDraftTest {
 
     @Test
     fun testAppendingAnotherMention() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = marianSalazar()
         val userFullName = userToMention.name.orEmpty()
         val userBriefName = userFullName.split(" ").first().trim()
-        val secondUserToMention = User(chat = chat, id = "Markus Koller", name = "Markus Koller")
+        val secondUserToMention = markusKoller()
         val secondUserFullName = secondUserToMention.name.orEmpty()
         val secondUserBriefName = secondUserFullName.split(" ").first().trim().dropLast(2)
 
@@ -230,63 +232,61 @@ class MessageDraftTest {
         messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
         messageDraft.currentText = "I'm @$userFullName recommended by @$secondUserBriefName who I worked with before"
         messageDraft.addMentionedUser(secondUserToMention, messageDraft.currentText.lastIndexOf("@"))
-        assertEquals(messageDraft.currentText, "I'm @$userFullName recommended by @$secondUserFullName who I worked with before")
+        assertEquals("I'm @$userFullName recommended by @$secondUserFullName who I worked with before", messageDraft.currentText)
 
         val messagePreview = messageDraft.getMessagePreview()
-        assertEquals(messagePreview.mentionedUsers[messageDraft.currentText.indexOf("@")]?.name, userFullName)
-        assertEquals(messagePreview.mentionedUsers[messageDraft.currentText.lastIndexOf("@")]?.name, secondUserFullName)
+        assertEquals(userFullName, messagePreview.mentionedUsers[messageDraft.currentText.indexOf("@")]?.name)
+        assertEquals(secondUserFullName, messagePreview.mentionedUsers[messageDraft.currentText.lastIndexOf("@")]?.name)
     }
 
     @Test
     fun messageDraftReQueryModifiedMention() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = marianSalazar()
         val userFullName = userToMention.name.orEmpty()
         val userBriefName = userFullName.split(" ").first().trim()
-        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelToMention = gamesChannel()
         val channelFullName = channelToMention.name.orEmpty()
         val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
 
         messageDraft.currentText = "Hi, it's @$userBriefName, your new marketing manager"
         messageDraft.addMentionedUser(userToMention, messageDraft.currentText.indexOf("@"))
-        assertEquals(messageDraft.currentText, "Hi, it's @$userFullName, your new marketing manager")
+        assertEquals("Hi, it's @$userFullName, your new marketing manager", messageDraft.currentText)
 
         messageDraft.onSuggestionsChanged = { _, suggestions ->
-            assertEquals(suggestions.users[messageDraft.currentText.indexOf("@")]?.map { it.name.orEmpty() }, channelMembers)
-            assertEquals(suggestions.channels[messageDraft.currentText.indexOf("#")]?.map { it.name.orEmpty() }, channelSuggestions)
+            val actualUsers = suggestions.users[messageDraft.currentText.indexOf("@")]?.map { it.name.orEmpty() }
+            val actualChannels = suggestions.channels[messageDraft.currentText.indexOf("#")]?.map { it.name.orEmpty() }
+            assertEquals(listOf(marianSalazar(), marianKoch()).map { it.name.orEmpty() }, actualUsers)
+            assertEquals(listOf(gamesChannel(), secondGamesChannel()).map { it.name.orEmpty() }, actualChannels)
         }
-        messageDraft.currentText = "Hi, it's @${userBriefName.dropLast(3)}, your new marketing manager. Add me to the #$channelBriefName channel"
-        assertTrue { messageDraft.getMessagePreview().mentionedUsers.isEmpty() }
+
+        messageDraft.currentText = "Hi, it's @${userBriefName.dropLast(2)}, your new marketing manager. Add me to the #$channelBriefName channel"
     }
 
     @Test
     fun testOnSuggestionsChangedClosure() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = marianSalazar()
         val userFullName = userToMention.name.orEmpty()
         val userBriefName = userFullName.split(" ").first().trim()
-        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val channelToMention = gamesChannel()
         val channelFullName = channelToMention.name.orEmpty()
         val channelBriefName = channelFullName.split(" ").first().trim().dropLast(2)
 
         messageDraft.onSuggestionsChanged = { _, suggestions ->
+            val actualUsers = suggestions.users[messageDraft.currentText.indexOf("@")]?.map { it.name.orEmpty() }
+            val actualChannels = suggestions.channels[messageDraft.currentText.indexOf("#")]?.map { it.name.orEmpty() }
+
             when (messageDraft.currentText) {
                 "Hi, please welcome @$userBriefName" -> {
-                    assertEquals(suggestions.users[messageDraft.currentText.indexOf("@")]?.map { it.name.orEmpty() }, channelMembers.map { it })
+                    assertEquals(listOf(marianSalazar(), marianKoch()).map { it.name.orEmpty() }, actualUsers)
                     assertTrue(suggestions.channels.isEmpty())
                     messageDraft.currentText = "Hi, please welcome @$userBriefName and add her to the #$channelBriefName channel"
                 }
                 "Hi, please welcome @$userBriefName and add her to the #$channelBriefName channel" -> {
+                    // Text has been appended to the end, so we expect the next query for user/channel occurrence
                     assertTrue(suggestions.users.isEmpty())
-                    assertEquals(suggestions.channels[messageDraft.currentText.indexOf("#")]?.map { it.name.orEmpty() }, channelSuggestions.map { it })
+                    assertEquals(listOf(gamesChannel(), secondGamesChannel()).map { it.name.orEmpty() }, actualChannels)
                 }
                 else -> {
                     fail("Unexpected condition")
@@ -299,11 +299,8 @@ class MessageDraftTest {
 
     @Test
     fun getHighlightedMention() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = marianSalazar()
         val userBriefName = userToMention.name.orEmpty().split(" ").first().trim()
 
         messageDraft.currentText = "Please welcome @$userBriefName in our team!"
@@ -317,11 +314,8 @@ class MessageDraftTest {
 
     @Test
     fun getHighlightedMentionAtInvalidPosition() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
+        val userToMention = marianSalazar()
         val userBriefName = userToMention.name.orEmpty().split(" ").first().trim()
 
         messageDraft.currentText = "Please welcome @$userBriefName in our team!"
@@ -336,9 +330,6 @@ class MessageDraftTest {
 
     @Test
     fun addLinkedText() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
         val link = "https://www.pubnub.com"
 
@@ -356,12 +347,9 @@ class MessageDraftTest {
 
     @Test
     fun addLinkedTextToTxtWithAlreadyMentionedItems() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
-        val userToMention = User(chat = chat, id = "Marian Salazar", name = "Marian Salazar")
-        val channelToMention = ChannelImpl(chat = chat, id = "General", name = "General")
+        val userToMention = marianSalazar()
+        val channelToMention = gamesChannel()
         val userFullName = userToMention.name.orEmpty()
         val userBriefName = userFullName.split(" ").first().trim()
         val channelFullName = channelToMention.name.orEmpty()
@@ -384,9 +372,6 @@ class MessageDraftTest {
 
     @Test
     fun removeLinkedText() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
         val link = "https://www.pubnub.com"
 
@@ -404,9 +389,6 @@ class MessageDraftTest {
 
     @Test
     fun addQuotedMessage() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
         val message = MessageImpl(chat, 138327382910238921, EventContent.TextMessageContent("Hey!"), channel.id, "userId")
 
@@ -416,9 +398,6 @@ class MessageDraftTest {
 
     @Test
     fun removeQuotedMessage() {
-        chat = configureChat(withChannelMembers = channelMembers, andChannelSuggestions = channelSuggestions)
-
-        val channel = ChannelImpl(chat, id = "test-channel", name = "test-channel")
         val messageDraft = MessageDraft(chat, channel, UserSuggestionDataSource.CHANNEL)
         val message = MessageImpl(chat, 138327382910238921, EventContent.TextMessageContent("Hey!"), channel.id, "userId")
 
@@ -428,85 +407,265 @@ class MessageDraftTest {
     }
 }
 
-private fun MessageDraftTest.configureChat(
-    withChannelMembers: List<String>,
-    andChannelSuggestions: List<String> = emptyList()
-): Chat {
-    val pubnub: PubNub = mock(MockMode.strict)
-    val getChannelMembers: GetChannelMembers = mock(MockMode.strict)
-    val getChannelSuggestions: GetAllChannelMetadata = mock(MockMode.strict)
-
-    every {
-        pubnub.getChannelMembers(any(), any(), any(), any(), any(), any(), any(), any(), any())
-    } returns getChannelMembers
-
-    every {
-        pubnub.getAllChannelMetadata(any(), any(), any(), any(), any(), any())
-    } returns getChannelSuggestions
-
-    every {
-        getChannelMembers.async(any())
-    }.calls { (it: Consumer<Result<PNMemberArrayResult>>) ->
-        it.accept(
-            Result.success(
-                PNMemberArrayResult(
-                    status = 200,
-                    data = withChannelMembers.map {
-                        PNMember(
-                            uuid = PNUUIDMetadata(
-                                id = it,
-                                name = it,
-                                externalId = null,
-                                profileUrl = null,
-                                email = null,
-                                custom = null,
-                                updated = null,
-                                eTag = null,
-                                type = null,
-                                status = null
-                            ),
-                            eTag = "",
-                            status = null,
-                            updated = ""
-                        )
-                    },
-                    totalCount = withChannelMembers.count(),
-                    next = null,
-                    prev = null
-                )
-            )
-        )
+open class FakeChannel(
+    private val underlying: BaseChannel<Channel, Message>
+): BaseChannel<Channel, Message>(
+    channelFactory = underlying.channelFactory,
+    messageFactory = underlying.messageFactory,
+    chat = underlying.chat,
+    id = underlying.id
+) {
+    override fun copyWithStatusDeleted(): Channel {
+        return underlying.copyWithStatusDeleted()
     }
-
-    every {
-        getChannelSuggestions.async(any())
-    }.calls { (it: Consumer<Result<PNChannelMetadataArrayResult>>) ->
-        it.accept(
-            Result.success(
-                PNChannelMetadataArrayResult(
-                    status = 200,
-                    data = andChannelSuggestions.map {
-                        PNChannelMetadata(
-                            id = it,
-                            name = it,
-                            description = null,
-                            custom = null,
-                            updated = null,
-                            eTag = null,
-                            type = null,
-                            status = null
-                        )
-                    },
-                    totalCount = withChannelMembers.count(),
-                    next = null,
-                    prev = null
-                )
-            )
-        )
-    }
-
-    return ChatImpl(
-        config = ChatConfigImpl(createPNConfiguration(UserId("userId"), "subscribeKey", "publishKey")),
-        pubNub = pubnub
-    )
 }
+
+class FakeMessageDraftChannel(
+    private val underlying: BaseChannel<Channel, Message>,
+    private val allChannelMembers: List<User> = emptyList()
+): FakeChannel(underlying) {
+    override fun getMembers(
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNMemberKey>>
+    ): PNFuture<MembersResponse> {
+        val regex = Regex("'([^']*)'")
+        val matchResult = regex.find(filter!!)!!
+        val memberships = allChannelMembers.filter {
+            it.name.orEmpty().startsWith(matchResult.value.dropLast(1).drop(1))
+        }.map {
+            Membership(
+                chat = underlying.chat,
+                channel = underlying,
+                user = it,
+                custom = null,
+                updated = null,
+                eTag = null
+            )
+        }
+        return MembersResponse(
+            next = null,
+            prev = null,
+            total = memberships.count(),
+            status = 200,
+            members = memberships.toSet()
+        ).asFuture()
+    }
+}
+
+class FakeMessageDraftChat(underlying: Chat): FakeChat(underlying) {
+    // Stores the list of all channel members which is filled before each test
+    var allChannelsSuggestions: List<Channel> = emptyList()
+
+    override fun getChannelSuggestions(filter: String?, limit: Int): PNFuture<List<Channel>> {
+        val regex = Regex("'([^']*)'")
+        val matchResult = regex.find(filter!!)!!
+
+        return allChannelsSuggestions.filter {
+            it.name.orEmpty().startsWith(matchResult.value.dropLast(1).drop(1))
+        }.asFuture()
+    }
+}
+
+open class FakeChat(underlying: Chat) : Chat {
+    final override val config: ChatConfig
+    final override val pubNub: PubNub
+    final override val currentUser: User
+    final override val editMessageActionName: String
+    final override val deleteMessageActionName: String
+
+    init {
+        this.config = underlying.config
+        this.pubNub = underlying.pubNub
+        this.currentUser = underlying.currentUser
+        this.editMessageActionName = underlying.editMessageActionName
+        this.deleteMessageActionName = underlying.deleteMessageActionName
+    }
+    override fun createUser(user: User): PNFuture<User> {
+        TODO("Not yet implemented")
+    }
+
+    override fun createUser(
+        id: String,
+        name: String?,
+        externalId: String?,
+        profileUrl: String?,
+        email: String?,
+        custom: CustomObject?,
+        status: String?,
+        type: String?
+    ): PNFuture<User> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getUser(userId: String): PNFuture<User?> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getUsers(
+        filter: String?,
+        sort: Collection<PNSortKey<PNKey>>,
+        limit: Int?,
+        page: PNPage?
+    ): PNFuture<GetUsersResponse> {
+        TODO("Not yet implemented")
+    }
+
+    override fun updateUser(
+        id: String,
+        name: String?,
+        externalId: String?,
+        profileUrl: String?,
+        email: String?,
+        custom: CustomObject?,
+        status: String?,
+        type: String?
+    ): PNFuture<User> {
+        TODO("Not yet implemented")
+    }
+
+    override fun deleteUser(id: String, soft: Boolean): PNFuture<User> {
+        TODO("Not yet implemented")
+    }
+
+    override fun wherePresent(userId: String): PNFuture<List<String>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun isPresent(userId: String, channel: String): PNFuture<Boolean> {
+        TODO("Not yet implemented")
+    }
+
+    override fun createChannel(
+        id: String,
+        name: String?,
+        description: String?,
+        custom: CustomObject?,
+        type: ChannelType?,
+        status: String?
+    ): PNFuture<Channel> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getChannel(channelId: String): PNFuture<Channel?> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getChannels(
+        filter: String?,
+        sort: Collection<PNSortKey<PNKey>>,
+        limit: Int?,
+        page: PNPage?
+    ): PNFuture<GetChannelsResponse> {
+        TODO("Not yet implemented")
+    }
+
+    override fun updateChannel(
+        id: String,
+        name: String?,
+        custom: CustomObject?,
+        description: String?,
+        updated: String?,
+        status: String?,
+        type: ChannelType?
+    ): PNFuture<Channel> {
+        TODO("Not yet implemented")
+    }
+
+    override fun deleteChannel(id: String, soft: Boolean): PNFuture<Channel> {
+        TODO("Not yet implemented")
+    }
+
+    override fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun whoIsPresent(channelId: String): PNFuture<Collection<String>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <T : EventContent> emitEvent(
+        channel: String,
+        payload: T,
+        mergePayloadWith: Map<String, Any>?
+    ): PNFuture<PNPublishResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun createDirectConversation(
+        invitedUser: User,
+        channelId: String?,
+        channelName: String?,
+        channelDescription: String?,
+        channelCustom: CustomObject?,
+        channelStatus: String?,
+        custom: CustomObject?
+    ): PNFuture<CreateDirectConversationResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun createGroupConversation(
+        invitedUsers: Collection<User>,
+        channelId: String,
+        channelName: String?,
+        channelDescription: String?,
+        channelCustom: CustomObject?,
+        channelStatus: String?,
+        custom: CustomObject?
+    ): PNFuture<CreateGroupConversationResult> {
+        TODO("Not yet implemented")
+    }
+
+    @ExperimentalStdlibApi
+    override fun <T : EventContent> listenForEvents(
+        type: KClass<T>,
+        channel: String,
+        customMethod: EmitEventMethod?,
+        callback: (event: Event<T>) -> Unit
+    ): AutoCloseable {
+        TODO("Not yet implemented")
+    }
+
+    override fun setRestrictions(restriction: Restriction): PNFuture<Unit> {
+        TODO("Not yet implemented")
+    }
+
+    override fun registerPushChannels(channels: List<String>): PNFuture<PNPushAddChannelResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun unregisterPushChannels(channels: List<String>): PNFuture<PNPushRemoveChannelResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getThreadChannel(message: Message): PNFuture<ThreadChannel> {
+        TODO("Not yet implemented")
+    }
+
+    override fun publish(
+        channelId: String,
+        message: EventContent,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean?,
+        usePost: Boolean,
+        replicate: Boolean,
+        ttl: Int?,
+        mergeMessageWith: Map<String, Any>?
+    ): PNFuture<PNPublishResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun signal(
+        channelId: String,
+        message: EventContent,
+        mergeMessageWith: Map<String, Any>?
+    ): PNFuture<PNPublishResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getChannelSuggestions(filter: String?, limit: Int): PNFuture<List<Channel>> {
+        TODO("Not yet implemented")
+    }
+}
+
