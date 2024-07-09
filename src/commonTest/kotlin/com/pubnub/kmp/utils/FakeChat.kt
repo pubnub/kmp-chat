@@ -29,7 +29,7 @@ import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.user.GetUsersResponse
 import kotlin.reflect.KClass
 
-abstract class FakeChat(override val config: ChatConfig, override val pubNub: PubNub): Chat {
+abstract class FakeChat(override val config: ChatConfig, override val pubNub: PubNub) : Chat {
     override val currentUser: User
         get() = TODO("Not yet implemented")
     override val editMessageActionName: String

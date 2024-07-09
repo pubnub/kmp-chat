@@ -11,7 +11,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class UserIntegrationTest : BaseChatIntegrationTest() {
-
     @Test
     fun getChannelRestrictions() = runTest {
         val channelId = "channelId01"
@@ -68,7 +67,6 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(ban, secondRestriction.ban)
         assertEquals(mute, secondRestriction.mute)
         assertEquals(reason, secondRestriction.reason)
-
     }
 
     @Test
@@ -102,6 +100,5 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(channelId02, firstRestriction.channelId)
         val secondRestriction = getRestrictionsResponse.restrictions.elementAt(1)
         assertEquals(channelId01, secondRestriction.channelId)
-
     }
 }

@@ -33,8 +33,8 @@ data class Restriction(
             )
         }
 
-        fun fromMemberDTO(channelId: String, pnMember: PNMember) : Restriction{
-            val userId = pnMember.uuid?.id  ?: throw PubNubException(USER_ID_SHOULD_BE_DEFINED.message)
+        fun fromMemberDTO(channelId: String, pnMember: PNMember): Restriction {
+            val userId = pnMember.uuid?.id ?: throw PubNubException(USER_ID_SHOULD_BE_DEFINED.message)
             val customData: Map<String, Any?>? = pnMember.custom
             val ban: Boolean = (customData?.get("ban") as? Boolean) ?: false
             val mute: Boolean = (customData?.get("mute") as? Boolean) ?: false

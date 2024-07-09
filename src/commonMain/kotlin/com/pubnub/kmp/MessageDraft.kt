@@ -1,4 +1,3 @@
 package com.pubnub.kmp
 
-class MessageDraft {
-}
+class MessageDraft

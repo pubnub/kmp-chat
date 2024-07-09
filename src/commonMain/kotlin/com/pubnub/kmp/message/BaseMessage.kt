@@ -80,7 +80,7 @@ abstract class BaseMessage<T : Message>(
     override val reactions get() = actions?.get(MessageActionType.REACTIONS.toString()) ?: emptyMap()
 
     override val textLinks: List<TextLink>? get() = (meta?.get("textLinks") as? List<Any>)?.let { textLinksList: List<Any> ->
-        textLinksList.filterIsInstance<Map<*,*>>().map { textLinkItem: Map<*, *> ->
+        textLinksList.filterIsInstance<Map<*, *>>().map { textLinkItem: Map<*, *> ->
             TextLink(textLinkItem["startIndex"].tryInt()!!, textLinkItem["endIndex"].tryInt()!!, textLinkItem["link"] as String)
         }
     }
@@ -92,8 +92,11 @@ abstract class BaseMessage<T : Message>(
     override fun editText(newText: String): PNFuture<Message> {
         val type = chat.editMessageActionName
         return chat.pubNub.addMessageAction(
-            channelId, PNMessageAction(
-                type, newText, timetoken
+            channelId,
+            PNMessageAction(
+                type,
+                newText,
+                timetoken
             )
         ).then { actionResult: PNAddMessageActionResult ->
             val actions: Actions = assignAction(actions, actionResult)
@@ -104,9 +107,13 @@ abstract class BaseMessage<T : Message>(
     override fun delete(soft: Boolean, preserveFiles: Boolean): PNFuture<Message?> {
         val type = chat.deleteMessageActionName
         if (soft) {
-            return chat.pubNub.addMessageAction(channelId, PNMessageAction(
-                type, type, timetoken
-            )
+            return chat.pubNub.addMessageAction(
+                channelId,
+                PNMessageAction(
+                    type,
+                    type,
+                    timetoken
+                )
             ).then { it: PNAddMessageActionResult ->
                 val actions = assignAction(actions, it)
                 copyWithActions(actions)
@@ -188,7 +195,7 @@ abstract class BaseMessage<T : Message>(
         return Unit.asFuture()
     }
 
-    internal fun asQuotedMessage() : QuotedMessage {
+    internal fun asQuotedMessage(): QuotedMessage {
         return QuotedMessage(
             timetoken,
             text,
@@ -230,17 +237,23 @@ abstract class BaseMessage<T : Message>(
         internal fun filterAction(actions: Actions?, action: PNMessageAction): Actions {
             return buildMap {
                 actions?.entries?.forEach { entry ->
-                    put(entry.key, buildMap {
-                        entry.value.forEach { innerEntry ->
-                            if (entry.key == action.type && innerEntry.key == action.value) {
-                                put(innerEntry.key, innerEntry.value.filter {
-                                    it.actionTimetoken != action.actionTimetoken || it.uuid != action.uuid
-                                })
-                            } else {
-                                put(innerEntry.key, innerEntry.value)
+                    put(
+                        entry.key,
+                        buildMap {
+                            entry.value.forEach { innerEntry ->
+                                if (entry.key == action.type && innerEntry.key == action.value) {
+                                    put(
+                                        innerEntry.key,
+                                        innerEntry.value.filter {
+                                            it.actionTimetoken != action.actionTimetoken || it.uuid != action.uuid
+                                        }
+                                    )
+                                } else {
+                                    put(innerEntry.key, innerEntry.value)
+                                }
                             }
                         }
-                    })
+                    )
                 }
             }
         }

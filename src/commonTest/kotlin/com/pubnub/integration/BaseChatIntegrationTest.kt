@@ -14,7 +14,6 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
 abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
-
     lateinit var chat: ChatImpl
     lateinit var chatPam: ChatImpl
     lateinit var channel01: Channel
@@ -22,7 +21,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     lateinit var channelPam: Channel
     lateinit var someUser: User
     lateinit var userPam: User
-    var cleanup: MutableList<suspend () -> Unit> = mutableListOf() //todo is this used?
+    var cleanup: MutableList<suspend () -> Unit> = mutableListOf() // todo is this used?
 
     @BeforeTest
     override fun before() {

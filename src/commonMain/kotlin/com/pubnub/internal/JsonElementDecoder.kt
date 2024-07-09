@@ -33,13 +33,17 @@ class JsonElementDecoder(
     override val serializersModule: SerializersModule = EmptySerializersModule()
 
     override fun decodeBooleanElement(descriptor: SerialDescriptor, index: Int): Boolean {
-        return (currentMap?.get(descriptor.getElementName(index))?.asBoolean() ?: currentList?.get(index)
-            ?.asBoolean()) ?: error("Can't find boolean for $descriptor")
+        return (
+            currentMap?.get(descriptor.getElementName(index))?.asBoolean() ?: currentList?.get(index)
+                ?.asBoolean()
+        ) ?: error("Can't find boolean for $descriptor")
     }
 
     override fun decodeByteElement(descriptor: SerialDescriptor, index: Int): Byte {
-        return (currentMap?.get(descriptor.getElementName(index))?.asLong() ?: currentList?.get(index)
-            ?.asLong())?.toByte() ?: error("Can't find byte for $descriptor")
+        return (
+            currentMap?.get(descriptor.getElementName(index))?.asLong() ?: currentList?.get(index)
+                ?.asLong()
+        )?.toByte() ?: error("Can't find byte for $descriptor")
     }
 
     override fun decodeCharElement(descriptor: SerialDescriptor, index: Int): Char {
@@ -47,12 +51,14 @@ class JsonElementDecoder(
     }
 
     override fun decodeDoubleElement(descriptor: SerialDescriptor, index: Int): Double {
-        return (currentMap?.get(descriptor.getElementName(index))?.asDouble() ?: currentList?.get(index)
-            ?.asDouble()) ?: error("Can't find double for $descriptor")
+        return (
+            currentMap?.get(descriptor.getElementName(index))?.asDouble() ?: currentList?.get(index)
+                ?.asDouble()
+        ) ?: error("Can't find double for $descriptor")
     }
 
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
-        //println("beginStructure $descriptor")
+        // println("beginStructure $descriptor")
         return when (descriptor.kind) {
             is PolymorphicKind -> {
                 currentMap = jsonElement?.asMap()
@@ -167,8 +173,10 @@ class JsonElementDecoder(
     }
 
     override fun decodeFloatElement(descriptor: SerialDescriptor, index: Int): Float {
-        return (currentMap?.get(descriptor.getElementName(index))?.asDouble() ?: currentList?.get(index)
-            ?.asDouble())?.toFloat() ?: error("Can't find float for $descriptor")
+        return (
+            currentMap?.get(descriptor.getElementName(index))?.asDouble() ?: currentList?.get(index)
+                ?.asDouble()
+        )?.toFloat() ?: error("Can't find float for $descriptor")
     }
 
     override fun decodeInlineElement(descriptor: SerialDescriptor, index: Int): Decoder {
@@ -176,13 +184,17 @@ class JsonElementDecoder(
     }
 
     override fun decodeIntElement(descriptor: SerialDescriptor, index: Int): Int {
-        return (currentMap?.get(descriptor.getElementName(index))?.asLong() ?: currentList?.get(index)
-            ?.asLong())?.toInt() ?: error("Can't find int for $descriptor")
+        return (
+            currentMap?.get(descriptor.getElementName(index))?.asLong() ?: currentList?.get(index)
+                ?.asLong()
+        )?.toInt() ?: error("Can't find int for $descriptor")
     }
 
     override fun decodeLongElement(descriptor: SerialDescriptor, index: Int): Long {
-        return (currentMap?.get(descriptor.getElementName(index))?.asLong() ?: currentList?.get(index)
-            ?.asLong()) ?: error("Can't find long for $descriptor")
+        return (
+            currentMap?.get(descriptor.getElementName(index))?.asLong() ?: currentList?.get(index)
+                ?.asLong()
+        ) ?: error("Can't find long for $descriptor")
     }
 
     @ExperimentalSerializationApi
@@ -206,7 +218,7 @@ class JsonElementDecoder(
         deserializer: DeserializationStrategy<T>,
         previousValue: T?
     ): T {
-        //println("decodeSerializableElement $descriptor $index $deserializer $currentMap $currentList")
+        // println("decodeSerializableElement $descriptor $index $deserializer $currentMap $currentList")
         when (descriptor.kind) {
             is PolymorphicKind -> {
                 return deserializer.deserialize(
@@ -242,8 +254,10 @@ class JsonElementDecoder(
     }
 
     override fun decodeShortElement(descriptor: SerialDescriptor, index: Int): Short {
-        return (currentMap?.get(descriptor.getElementName(index))?.asLong() ?: currentList?.get(index)
-            ?.asLong())?.toShort() ?: error("Can't find short for $descriptor")
+        return (
+            currentMap?.get(descriptor.getElementName(index))?.asLong() ?: currentList?.get(index)
+                ?.asLong()
+        )?.toShort() ?: error("Can't find short for $descriptor")
     }
 
     override fun decodeStringElement(descriptor: SerialDescriptor, index: Int): String {

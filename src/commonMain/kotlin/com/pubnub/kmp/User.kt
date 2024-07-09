@@ -43,8 +43,14 @@ data class User(
         type: String? = null,
     ): PNFuture<User> {
         return chat.updateUser(
-            id, name, externalId, profileUrl, email,
-            custom, status, type
+            id,
+            name,
+            externalId,
+            profileUrl,
+            email,
+            custom,
+            status,
+            type
         )
     }
 
@@ -90,17 +96,19 @@ data class User(
         }
     }
 
-    fun setRestrictions(channel: Channel, ban: Boolean = false, mute: Boolean = false, reason: String? = null) : PNFuture<Unit>{
-        if(chat.config.pubnubConfig.secretKey.isEmpty()){
+    fun setRestrictions(channel: Channel, ban: Boolean = false, mute: Boolean = false, reason: String? = null): PNFuture<Unit> {
+        if (chat.config.pubnubConfig.secretKey.isEmpty()) {
             throw PubNubException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY.message)
         }
-        return chat.setRestrictions(Restriction(
-            userId = id,
-            channelId = channel.id,
-            ban = ban,
-            mute = mute,
-            reason = reason
-        ))
+        return chat.setRestrictions(
+            Restriction(
+                userId = id,
+                channelId = channel.id,
+                ban = ban,
+                mute = mute,
+                reason = reason
+            )
+        )
     }
 
     fun getChannelRestrictions(channel: Channel): PNFuture<Restriction> {
@@ -207,13 +215,13 @@ data class User(
             lastActiveTimestamp = user.custom?.get("lastActiveTimestamp")?.tryLong()
         )
 
-        fun streamUpdatesOn(users: Collection<User>, callback: (users: Collection<User>) -> Unit) : AutoCloseable {
+        fun streamUpdatesOn(users: Collection<User>, callback: (users: Collection<User>) -> Unit): AutoCloseable {
             if (users.isEmpty()) {
                 throw PubNubException("Cannot stream user updates on an empty list")
             }
             val chat = (users.first() as BaseChannel<*, *>).chat
             val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
-                val newUser = when(val message = event.extractedMessage) {
+                val newUser = when (val message = event.extractedMessage) {
                     is PNSetUUIDMetadataEventMessage -> User.fromDTO(chat, message.data)
                     is PNDeleteUUIDMetadataEventMessage -> User(chat, id = message.uuid) // todo verify behavior with TS Chat SDK
                     else -> return@createEventListener
@@ -234,5 +242,4 @@ data class User(
             return subscriptionSet
         }
     }
-
 }

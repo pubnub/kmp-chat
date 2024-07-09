@@ -36,23 +36,23 @@ data class ThreadChannelImpl(
     override val type: ChannelType? = null,
     private var threadCreated: Boolean = true,
 ) : BaseChannel<ThreadChannel, ThreadMessage>(
-    chat,
-    clock,
-    id,
-    name,
-    custom,
-    description,
-    updated,
-    status,
-    type,
-    { chat, pnChannelMetadata ->
-        fromDTO(chat, parentMessage, pnChannelMetadata)
-    },
-    { chat, pnMessageItem, channelId ->
-        ThreadMessageImpl.fromDTO(chat, pnMessageItem, channelId, parentMessage.channelId)
-    }
-), ThreadChannel {
-
+        chat,
+        clock,
+        id,
+        name,
+        custom,
+        description,
+        updated,
+        status,
+        type,
+        { chat, pnChannelMetadata ->
+            fromDTO(chat, parentMessage, pnChannelMetadata)
+        },
+        { chat, pnMessageItem, channelId ->
+            ThreadMessageImpl.fromDTO(chat, pnMessageItem, channelId, parentMessage.channelId)
+        }
+    ),
+    ThreadChannel {
     override val parentChannelId: String
         get() = parentMessage.channelId
 
@@ -83,18 +83,23 @@ data class ThreadChannelImpl(
         quotedMessage: Message?,
         files: List<InputFile>?,
     ): PNFuture<PNPublishResult> {
-        return (if (!threadCreated) {
-            awaitAll(
-                chat.pubNub.setChannelMetadata(id, description = description),
-                chat.pubNub.addMessageAction(
-                    parentMessage.channelId, PNMessageAction(
-                        "threadRootId", id, parentMessage.timetoken
+        return (
+            if (!threadCreated) {
+                awaitAll(
+                    chat.pubNub.setChannelMetadata(id, description = description),
+                    chat.pubNub.addMessageAction(
+                        parentMessage.channelId,
+                        PNMessageAction(
+                            "threadRootId",
+                            id,
+                            parentMessage.timetoken
+                        )
                     )
                 )
-            )
-        } else {
-            Unit.asFuture()
-        }).thenAsync {
+            } else {
+                Unit.asFuture()
+            }
+        ).thenAsync {
             threadCreated = true
             super.sendText(
                 text,

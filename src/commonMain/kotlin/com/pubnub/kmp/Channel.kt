@@ -31,6 +31,7 @@ interface Channel {
     val updated: String?
     val status: String?
     val type: ChannelType?
+
     fun update(
         name: String? = null,
         custom: CustomObject? = null,
@@ -41,12 +42,19 @@ interface Channel {
     ): PNFuture<Channel>
 
     fun delete(soft: Boolean = false): PNFuture<Channel>
+
     fun forwardMessage(message: Message): PNFuture<PNPublishResult>
+
     fun startTyping(): PNFuture<Unit>
+
     fun stopTyping(): PNFuture<Unit>
+
     fun getTyping(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable
+
     fun whoIsPresent(): PNFuture<Collection<String>>
+
     fun isPresent(userId: String): PNFuture<Boolean>
+
     fun getHistory(
         // todo add paging in response
         startTimetoken: Long? = null,
@@ -68,7 +76,9 @@ interface Channel {
     ): PNFuture<PNPublishResult>
 
     fun invite(user: User): PNFuture<Membership>
+
     fun inviteMultiple(users: Collection<User>): PNFuture<List<Membership>>
+
     fun getMembers(
         limit: Int? = null,
         page: PNPage? = null,
@@ -77,14 +87,23 @@ interface Channel {
     ): PNFuture<MembersResponse>
 
     fun connect(callback: (Message) -> Unit): AutoCloseable
+
     fun join(custom: CustomObject? = null, callback: (Message) -> Unit): PNFuture<JoinResult>
+
     fun leave(): PNFuture<Unit>
+
     fun getPinnedMessage(): PNFuture<Message?>
+
     fun getMessage(timetoken: Long): PNFuture<Message?>
+
     fun registerForPush(): PNFuture<PNPushAddChannelResult>
+
     fun unregisterFromPush(): PNFuture<PNPushRemoveChannelResult>
+
     fun pinMessage(message: Message): PNFuture<Channel>
+
     fun unpinMessage(): PNFuture<Channel>
+
     fun setRestrictions(
         user: User,
         ban: Boolean = false,
@@ -93,6 +112,7 @@ interface Channel {
     ): PNFuture<Unit>
 
     fun getUserRestrictions(user: User): PNFuture<Restriction>
+
     fun getUsersRestrictions(
         limit: Int? = null,
         page: PNPage? = null,

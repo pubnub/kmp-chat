@@ -25,17 +25,17 @@ data class MessageImpl(
     override val referencedChannels: MessageReferencedChannels? = null,
     override val quotedMessage: QuotedMessage? = null,
 ) : BaseMessage<Message>(
-    chat = chat,
-    timetoken = timetoken,
-    content = content,
-    channelId = channelId,
-    userId = userId,
-    actions = actions,
-    meta = meta,
-    mentionedUsers = mentionedUsers,
-    referencedChannels = referencedChannels,
-    quotedMessage = quotedMessage
-) {
+        chat = chat,
+        timetoken = timetoken,
+        content = content,
+        channelId = channelId,
+        userId = userId,
+        actions = actions,
+        meta = meta,
+        mentionedUsers = mentionedUsers,
+        referencedChannels = referencedChannels,
+        quotedMessage = quotedMessage
+    ) {
     override fun copyWithActions(actions: Actions): Message = copy(actions = actions)
 
     companion object {

@@ -51,7 +51,6 @@ class ChatJs constructor(private val chatConfig: ChatConfig) {
         ).then { UserJs(it) }.asPromise()
     }
 
-
     fun deleteUser(id: String, params: dynamic = null): Promise<UserJs> {
         return chat.deleteUser(
             id,

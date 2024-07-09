@@ -7,6 +7,4 @@ class CreateGroupConversationResult(
     val channel: Channel,
     val hostMembership: Membership,
     val inviteeMemberships: Array<Membership>
-) {
-
-}
+)

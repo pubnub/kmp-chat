@@ -1,7 +1,6 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
-import com.pubnub.api.asMap
 import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNBoundedPage
@@ -75,7 +74,7 @@ import kotlin.time.Duration.Companion.seconds
 @JsExport
 interface ChatConfig {
     val pubnubConfig: PNConfiguration
-    var uuid: String  //todo change to userId as we have in PNConfiguration?
+    var uuid: String // todo change to userId as we have in PNConfiguration?
     var saveDebugLog: Boolean
     var typingTimeout: Duration
     var rateLimitPerChannel: Any
@@ -93,10 +92,14 @@ class PushNotificationsConfig(
 class ChatConfigImpl(override val pubnubConfig: PNConfiguration) : ChatConfig {
     override var uuid: String = pubnubConfig.userId.value
     override var saveDebugLog: Boolean = false
-    override var typingTimeout: Duration = 5.seconds //millis
+    override var typingTimeout: Duration = 5.seconds // millis
     override var rateLimitPerChannel: Any = mutableMapOf<ChannelType, Int>()
     override var pushNotifications: PushNotificationsConfig = PushNotificationsConfig(
-        false, null, PNPushType.FCM, null, PNPushEnvironment.DEVELOPMENT
+        false,
+        null,
+        PNPushType.FCM,
+        null,
+        PNPushEnvironment.DEVELOPMENT
     )
 }
 
@@ -123,7 +126,7 @@ class ChatImpl(
     private val suggestedChannelsCache: MutableMap<String, Set<Channel>> = mutableMapOf()
     private val suggestedUsersCache: MutableMap<String, Set<User>> = mutableMapOf()
 
-    //todo when creating "chat" ChatConfig contain UUID but PNConfiguration located in ChatConfig has UserId
+    // todo when creating "chat" ChatConfig contain UUID but PNConfiguration located in ChatConfig has UserId
     // maybe we can unified this?
     // shouldn't this method be called on chat.user instead of any user?
     override fun createUser(user: User): PNFuture<User> = createUser(
@@ -137,7 +140,7 @@ class ChatImpl(
         type = user.type
     )
 
-    //todo
+    // todo
     override fun createUser(
         id: String,
         name: String?,
@@ -261,7 +264,6 @@ class ChatImpl(
                     performUserDelete(notNullUser)
                 }
             } ?: error(USER_NOT_EXIST)
-
         }
     }
 
@@ -312,7 +314,6 @@ class ChatImpl(
         }
     }
 
-
     override fun getChannels(
         filter: String?,
         sort: Collection<PNSortKey<PNKey>>,
@@ -358,7 +359,6 @@ class ChatImpl(
                 }
             }
     }
-
 
     override fun updateChannel(
         id: String,
@@ -416,7 +416,6 @@ class ChatImpl(
             Result.failure(PubNubException(FAILED_TO_FORWARD_MESSAGE.message, exception))
         }
     }
-
 
     override fun <T : EventContent> emitEvent(
         channel: String,
@@ -579,10 +578,10 @@ class ChatImpl(
 
             val event = Event(
                 chat = this,
-                timetoken = pnEvent.timetoken!!, //todo can this even be null?
+                timetoken = pnEvent.timetoken!!, // todo can this even be null?
                 payload = payload,
                 channelId = pnEvent.channel,
-                userId = pnEvent.publisher!! //todo can this even be null?
+                userId = pnEvent.publisher!! // todo can this even be null?
             )
             callback(event)
         }
@@ -807,7 +806,7 @@ class ChatImpl(
             return nonNullChannels.asFuture()
         }
 
-        return getChannels(filter = "name LIKE '${cacheKey}*'", limit = limit).then { getChannelsResponse ->
+        return getChannels(filter = "name LIKE '$cacheKey*'", limit = limit).then { getChannelsResponse ->
             val channels: Set<Channel> = getChannelsResponse.channels
             suggestedChannelsCache[cacheKey] = channels
             channels
@@ -821,7 +820,7 @@ class ChatImpl(
             return nonNullUser.asFuture()
         }
 
-        return getUsers(filter = "name LIKE '${cacheKey}*'", limit = limit).then { getUsersResponse ->
+        return getUsers(filter = "name LIKE '$cacheKey*'", limit = limit).then { getUsersResponse ->
             val users: Set<User> = getUsersResponse.users
             suggestedUsersCache[cacheKey] = users
             users
@@ -937,7 +936,6 @@ class ChatImpl(
         }
     }
 
-
     private fun setUserMetadata(
         id: String,
         name: String?,
@@ -985,7 +983,7 @@ class ChatImpl(
         }
 
         internal fun getThreadId(channelId: String, messageTimetoken: Long): String {
-            return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_${messageTimetoken}"
+            return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_$messageTimetoken"
         }
 
         internal fun createThreadChannel(chat: Chat, message: Message): PNFuture<ThreadChannel> {

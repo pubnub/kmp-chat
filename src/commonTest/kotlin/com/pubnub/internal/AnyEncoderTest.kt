@@ -60,7 +60,8 @@ class AnyEncoderTest {
                 "float" to floatValue,
                 "map" to mapValue,
                 "list" to listValue
-            ), encodedMap
+            ),
+            encodedMap
         )
     }
 
@@ -68,7 +69,8 @@ class AnyEncoderTest {
     fun testEncodeSealedClass() {
         // given
         val instance: SealedClass2 = SealedClass2.Sealed1(
-            floatValue, null
+            floatValue,
+            null
         )
 
         // when
@@ -77,8 +79,11 @@ class AnyEncoderTest {
         // then
         assertEquals(
             mapOf(
-                "type" to "com.pubnub.internal.SealedClass2.Sealed1", "aaa" to floatValue, "bbb" to null
-            ), encodedMap
+                "type" to "com.pubnub.internal.SealedClass2.Sealed1",
+                "aaa" to floatValue,
+                "bbb" to null
+            ),
+            encodedMap
         )
     }
 
@@ -86,7 +91,8 @@ class AnyEncoderTest {
     fun testEncodeSealedClassWithSerialName() {
         // given
         val instance: SealedClass2 = SealedClass2.Sealed2(
-            intValue, null
+            intValue,
+            null
         )
 
         // when
@@ -95,8 +101,11 @@ class AnyEncoderTest {
         // then
         assertEquals(
             mapOf(
-                "type" to "sealed2", "bbb" to intValue, "ccc" to null
-            ), encodedMap
+                "type" to "sealed2",
+                "bbb" to intValue,
+                "ccc" to null
+            ),
+            encodedMap
         )
     }
 
@@ -104,7 +113,8 @@ class AnyEncoderTest {
     fun testEncodeListOfClasses() {
         // given
         val instance: SealedClass2 = SealedClass2.Sealed1(
-            floatValue, null
+            floatValue,
+            null
         )
 
         val list = listOf(instance, instance)
@@ -116,11 +126,17 @@ class AnyEncoderTest {
         assertEquals(
             listOf(
                 mapOf(
-                    "type" to "com.pubnub.internal.SealedClass2.Sealed1", "aaa" to floatValue, "bbb" to null
-                ), mapOf(
-                    "type" to "com.pubnub.internal.SealedClass2.Sealed1", "aaa" to floatValue, "bbb" to null
+                    "type" to "com.pubnub.internal.SealedClass2.Sealed1",
+                    "aaa" to floatValue,
+                    "bbb" to null
+                ),
+                mapOf(
+                    "type" to "com.pubnub.internal.SealedClass2.Sealed1",
+                    "aaa" to floatValue,
+                    "bbb" to null
                 )
-            ), encodedList
+            ),
+            encodedList
         )
     }
 
@@ -128,7 +144,8 @@ class AnyEncoderTest {
     fun testEncodeMapOfClasses() {
         // given
         val instance: SealedClass2 = SealedClass2.Sealed1(
-            floatValue, null
+            floatValue,
+            null
         )
 
         val map = mapOf("a" to instance, "b" to instance)
@@ -141,10 +158,12 @@ class AnyEncoderTest {
             mapOf(
                 "a" to mapOf(
                     "type" to "com.pubnub.internal.SealedClass2.Sealed1", "aaa" to floatValue, "bbb" to null
-                ), "b" to mapOf(
+                ),
+                "b" to mapOf(
                     "type" to "com.pubnub.internal.SealedClass2.Sealed1", "aaa" to floatValue, "bbb" to null
                 )
-            ), encodedMap
+            ),
+            encodedMap
         )
     }
 }

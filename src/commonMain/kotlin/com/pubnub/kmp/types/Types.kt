@@ -54,11 +54,14 @@ sealed class EventContent {
 
     @Serializable
     @SerialName("custom")
-    data class Custom(@Contextual val data: Any, @Transient val method: EmitEventMethod = EmitEventMethod.PUBLISH) : EventContent()
+    data class Custom(
+        @Contextual val data: Any,
+        @Transient val method: EmitEventMethod = EmitEventMethod.PUBLISH
+    ) : EventContent()
 
     @Serializable
     @SerialName("moderation")
-    data class Moderation(val channelId: String, val restriction: RestrictionType, val reason: String? = null): EventContent()
+    data class Moderation(val channelId: String, val restriction: RestrictionType, val reason: String? = null) : EventContent()
 
     @Serializable
     @SerialName("text")
@@ -85,12 +88,12 @@ sealed class EventContent {
         override fun toString(): String {
             return "TextMessageContent(text='$text', files=$files)"
         }
-
     }
 
-    class UnknownMessageFormat(val jsonElement: JsonElement): TextMessageContent("", null)
+    class UnknownMessageFormat(val jsonElement: JsonElement) : TextMessageContent("", null)
 }
 
-enum class EmitEventMethod{
-    SIGNAL, PUBLISH;
+enum class EmitEventMethod {
+    SIGNAL,
+    PUBLISH
 }

@@ -53,7 +53,10 @@ class AnyEncoder : Encoder, CompositeEncoder {
     }
 
     override fun <T : Any> encodeNullableSerializableElement(
-        descriptor: SerialDescriptor, index: Int, serializer: SerializationStrategy<T>, value: T?
+        descriptor: SerialDescriptor,
+        index: Int,
+        serializer: SerializationStrategy<T>,
+        value: T?
     ) {
         if (value == null) {
             returnValue = null
@@ -132,7 +135,10 @@ class AnyEncoder : Encoder, CompositeEncoder {
     }
 
     override fun <T> encodeSerializableElement(
-        descriptor: SerialDescriptor, index: Int, serializer: SerializationStrategy<T>, value: T
+        descriptor: SerialDescriptor,
+        index: Int,
+        serializer: SerializationStrategy<T>,
+        value: T
     ) {
         serializer.serialize(this, value)
     }
@@ -216,7 +222,10 @@ class MapEncoder(polymorphicType: Pair<String, String>? = null) : CompositeEncod
 
     @ExperimentalSerializationApi
     override fun <T : Any> encodeNullableSerializableElement(
-        descriptor: SerialDescriptor, index: Int, serializer: SerializationStrategy<T>, value: T?
+        descriptor: SerialDescriptor,
+        index: Int,
+        serializer: SerializationStrategy<T>,
+        value: T?
     ) {
         if (value != null) {
             encodeSerializableElement(descriptor, index, serializer, value)
@@ -226,7 +235,10 @@ class MapEncoder(polymorphicType: Pair<String, String>? = null) : CompositeEncod
     }
 
     override fun <T> encodeSerializableElement(
-        descriptor: SerialDescriptor, index: Int, serializer: SerializationStrategy<T>, value: T
+        descriptor: SerialDescriptor,
+        index: Int,
+        serializer: SerializationStrategy<T>,
+        value: T
     ) {
         encodeValue(descriptor, index, PNDataEncoder.encode(serializer, value))
     }
@@ -296,7 +308,10 @@ class ListEncoder : CompositeEncoder {
 
     @ExperimentalSerializationApi
     override fun <T : Any> encodeNullableSerializableElement(
-        descriptor: SerialDescriptor, index: Int, serializer: SerializationStrategy<T>, value: T?
+        descriptor: SerialDescriptor,
+        index: Int,
+        serializer: SerializationStrategy<T>,
+        value: T?
     ) {
         if (value != null) {
             encodeSerializableElement(descriptor, index, serializer, value)
@@ -306,7 +321,10 @@ class ListEncoder : CompositeEncoder {
     }
 
     override fun <T> encodeSerializableElement(
-        descriptor: SerialDescriptor, index: Int, serializer: SerializationStrategy<T>, value: T
+        descriptor: SerialDescriptor,
+        index: Int,
+        serializer: SerializationStrategy<T>,
+        value: T
     ) {
         list.add(PNDataEncoder.encode(serializer, value))
     }

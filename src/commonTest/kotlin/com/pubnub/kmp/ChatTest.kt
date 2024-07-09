@@ -12,6 +12,7 @@ import com.pubnub.api.endpoints.objects.membership.GetMemberships
 import com.pubnub.api.endpoints.objects.uuid.GetAllUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
+import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
 import com.pubnub.api.endpoints.presence.HereNow
 import com.pubnub.api.endpoints.presence.WhereNow
 import com.pubnub.api.endpoints.pubsub.Publish
@@ -40,7 +41,6 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
-import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
 import com.pubnub.kmp.message.GetUnreadMessagesCounts
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
@@ -176,13 +176,11 @@ class ChatTest {
         ).async { result: Result<User> ->
             assertTrue(result.isFailure)
             assertEquals("User with this ID already exists", result.exceptionOrNull()?.message)
-
         }
     }
 
     @Test
     fun whenCreatingUseriWithcanCreateUser() {
-
     }
 
     @Test
@@ -202,13 +200,11 @@ class ChatTest {
             status = status,
             type = typeAsString
         ).async {
-
         }
 
         // then
         verify { pubnub.getUUIDMetadata(uuid = id, includeCustom = false) }
     }
-
 
     @Test
     fun canHardDeleteUser() {
@@ -216,9 +212,9 @@ class ChatTest {
         val pnUuidMetadataResult = getPNUuidMetadataResult()
         every { pubnub.getUUIDMetadata(any(), any()) } returns getUUIDMetadataEndpoint
         every { getUUIDMetadataEndpoint.async(any()) } calls
-                { (callback1: Consumer<Result<PNUUIDMetadataResult>>) ->
-                    callback1.accept(Result.success(pnUuidMetadataResult))
-                }
+            { (callback1: Consumer<Result<PNUUIDMetadataResult>>) ->
+                callback1.accept(Result.success(pnUuidMetadataResult))
+            }
         every { pubnub.removeUUIDMetadata(any()) } returns removeUUIDMetadataEndpoint
         every { removeUUIDMetadataEndpoint.async(any()) } returns Unit
         val softDeleteFalse = false
@@ -355,7 +351,9 @@ class ChatTest {
         val user01 = "user1"
         val user02 = "user2"
         val pnHereNowResult = PNHereNowResult(
-            1, 2, mutableMapOf(
+            1,
+            2,
+            mutableMapOf(
                 channel01 to PNHereNowChannelData(
                     channel01, 2, listOf(PNHereNowOccupantData(user01), PNHereNowOccupantData(user02))
                 )
@@ -572,7 +570,6 @@ class ChatTest {
                 includeCustom = includeCustomFalse,
                 type = typeAsString.lowercase(),
                 status = status
-
             )
         }
     }
@@ -840,9 +837,7 @@ class ChatTest {
             assertEquals(email, user.email)
             assertEquals(updated, user.updated)
             assertEquals(status, user.status)
-
         }
-
     }
 
     @Test
@@ -915,26 +910,27 @@ class ChatTest {
     }
 
     @Test
-    fun getUnreadMessagesCountsShouldReturnEmptySetWhenUserHasNoMembership(){
+    fun getUnreadMessagesCountsShouldReturnEmptySetWhenUserHasNoMembership() {
         val resultWithEmptyData = PNChannelMembershipArrayResult(
-            status = 200, data = emptyList(),
+            status = 200,
+            data = emptyList(),
             totalCount = 0,
             next = null,
             prev = null,
         )
         every { pubnub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMembershipsEndpoint
-        every { getMembershipsEndpoint.async(any()) } calls { ( callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+        every { getMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
             callback.accept(Result.success(resultWithEmptyData))
         }
 
-        objectUnderTest.getUnreadMessagesCounts().async {result: Result<Set<GetUnreadMessagesCounts>> ->
+        objectUnderTest.getUnreadMessagesCounts().async { result: Result<Set<GetUnreadMessagesCounts>> ->
             assertTrue(result.isSuccess)
             assertTrue(result.getOrNull()?.isEmpty()!!)
         }
     }
 
     @Test
-    fun getPushChannelsShouldFailWhenDeviceTokenIsNull(){
+    fun getPushChannelsShouldFailWhenDeviceTokenIsNull() {
         val exception: PubNubException = assertFailsWith<PubNubException> {
             objectUnderTest.getPushChannels()
         }
@@ -943,13 +939,12 @@ class ChatTest {
     }
 
     @Test
-    fun whenCallingGetPushChannelsShouldReturnListOfChannels(){
+    fun whenCallingGetPushChannelsShouldReturnListOfChannels() {
         val deviceId = "myDeviceId"
         val pushType = PNPushType.FCM
         val topic = "topic"
         val apnsEnvironment = PNPushEnvironment.PRODUCTION
         chatConfig = ChatConfigImpl(pnConfiguration).apply {
-
             pushNotifications = PushNotificationsConfig(
                 sendPushes = false,
                 deviceToken = deviceId,
@@ -963,7 +958,7 @@ class ChatTest {
         val channel01 = "channel1"
         val channel02 = "channel2"
         every { pubnub.auditPushChannelProvisions(any(), any(), any(), any()) } returns listPushProvisions
-        every { listPushProvisions.async(any()) } calls { ( callback: Consumer<Result<PNPushListProvisionsResult>>) ->
+        every { listPushProvisions.async(any()) } calls { (callback: Consumer<Result<PNPushListProvisionsResult>>) ->
             callback.accept(Result.success(PNPushListProvisionsResult(channels = listOf(channel01, channel02))))
         }
 
@@ -974,16 +969,18 @@ class ChatTest {
             assertTrue(result.getOrNull()?.contains(channel02)!!)
         }
 
-        verify { pubnub.auditPushChannelProvisions(
-            pushType = pushType,
-            deviceId = deviceId,
-            topic = topic,
-            environment = apnsEnvironment
-        )}
+        verify {
+            pubnub.auditPushChannelProvisions(
+                pushType = pushType,
+                deviceId = deviceId,
+                topic = topic,
+                environment = apnsEnvironment
+            )
+        }
     }
 
     @Test
-    fun unregisterAllPushChannelsShouldFailWhenDeviceTokenIsNull(){
+    fun unregisterAllPushChannelsShouldFailWhenDeviceTokenIsNull() {
         val exception: PubNubException = assertFailsWith<PubNubException> {
             objectUnderTest.unregisterAllPushChannels()
         }
@@ -992,13 +989,12 @@ class ChatTest {
     }
 
     @Test
-    fun whenCallingUnregisterAllPushChannelsShouldPassProperDeviceId(){
+    fun whenCallingUnregisterAllPushChannelsShouldPassProperDeviceId() {
         val deviceId = "myDeviceId"
         val pushType = PNPushType.FCM
         val topic = "topic"
         val apnsEnvironment = PNPushEnvironment.PRODUCTION
         chatConfig = ChatConfigImpl(pnConfiguration).apply {
-
             pushNotifications = PushNotificationsConfig(
                 sendPushes = false,
                 deviceToken = deviceId,
@@ -1009,36 +1005,38 @@ class ChatTest {
         }
         objectUnderTest = ChatImpl(chatConfig, pubnub)
         every { pubnub.removeAllPushNotificationsFromDeviceWithPushToken(any(), any(), any(), any()) } returns removeAllPushChannelsForDevice
-        every { removeAllPushChannelsForDevice.async(any()) } calls {(callback: Consumer<Result<PNPushRemoveAllChannelsResult>>) ->
+        every { removeAllPushChannelsForDevice.async(any()) } calls { (callback: Consumer<Result<PNPushRemoveAllChannelsResult>>) ->
             callback.accept(Result.success(PNPushRemoveAllChannelsResult()))
         }
 
         // when
-        objectUnderTest.unregisterAllPushChannels().async{ result: Result<Unit> ->
+        objectUnderTest.unregisterAllPushChannels().async { result: Result<Unit> ->
             assertTrue(result.isSuccess)
         }
 
-        verify { pubnub.removeAllPushNotificationsFromDeviceWithPushToken(
-            pushType = pushType,
-            deviceId = deviceId,
-            topic = topic,
-            environment = apnsEnvironment
-        ) }
+        verify {
+            pubnub.removeAllPushNotificationsFromDeviceWithPushToken(
+                pushType = pushType,
+                deviceId = deviceId,
+                topic = topic,
+                environment = apnsEnvironment
+            )
+        }
     }
 
     @Test
-    fun getUnreadMessagesCountsShouldReturnResult(){
+    fun getUnreadMessagesCountsShouldReturnResult() {
         val numberOfMessagesUnread = 2L
         every { pubnub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMembershipsEndpoint
-        every { getMembershipsEndpoint.async(any()) } calls { ( callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+        every { getMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
             callback.accept(Result.success(getPNChannelMembershipArrayResult()))
         }
         every { pubnub.messageCounts(channels = listOf(channelId), channelsTimetoken = any()) } returns messageCounts
-        every { messageCounts.async(any()) } calls {(callback : Consumer<Result<PNMessageCountResult>>)->
+        every { messageCounts.async(any()) } calls { (callback: Consumer<Result<PNMessageCountResult>>) ->
             callback.accept(Result.success(PNMessageCountResult(mapOf(channelId to numberOfMessagesUnread))))
         }
 
-        objectUnderTest.getUnreadMessagesCounts().async {result: Result<Set<GetUnreadMessagesCounts>> ->
+        objectUnderTest.getUnreadMessagesCounts().async { result: Result<Set<GetUnreadMessagesCounts>> ->
             assertTrue(result.isSuccess)
             assertFalse(result.getOrNull()?.isEmpty()!!)
             val messageCountForChannel: GetUnreadMessagesCounts = result.getOrNull()?.first()!!
@@ -1101,7 +1099,6 @@ class ChatTest {
 //        assertEquals(actualPayload["reason"], reason)
 //    }
 
-
     private fun getPNChannelMetadataResult(
         updatedName: String = "",
         updatedDescription: String = "",
@@ -1122,7 +1119,6 @@ class ChatTest {
         )
         return PNChannelMetadataResult(status = 200, data = pnChannelMetadata)
     }
-
 
     private fun createMessage(): Message {
         return MessageImpl(
