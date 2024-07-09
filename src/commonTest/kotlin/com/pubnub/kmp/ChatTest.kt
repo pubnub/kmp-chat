@@ -12,7 +12,6 @@ import com.pubnub.api.endpoints.objects.membership.GetMemberships
 import com.pubnub.api.endpoints.objects.uuid.GetAllUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
-import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
 import com.pubnub.api.endpoints.presence.HereNow
 import com.pubnub.api.endpoints.presence.WhereNow
 import com.pubnub.api.endpoints.pubsub.Publish
@@ -41,6 +40,7 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
 import com.pubnub.kmp.message.GetUnreadMessagesCounts
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType

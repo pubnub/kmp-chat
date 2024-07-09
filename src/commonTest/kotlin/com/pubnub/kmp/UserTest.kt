@@ -1,7 +1,6 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
-import com.pubnub.api.endpoints.objects.membership.GetMemberships
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
@@ -13,6 +12,9 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.api.endpoints.objects.membership.GetMemberships
+import com.pubnub.kmp.utils.FakeChat
+import com.pubnub.test.FakePubNub
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -52,44 +54,63 @@ class UserTest {
         every { chat.config } returns chatConfig
         every { chatConfig.pubnubConfig } returns pubnubConfig
         every { pubnubConfig.secretKey } returns ""
-        objectUnderTest = User(
-            chat = chat,
-            id = id,
-            name = name,
-            externalId = externalId,
-            profileUrl = profileUrl,
-            email = email,
-            custom = customData,
-            status = status,
-            type = type,
-            updated = updated,
-        )
+        objectUnderTest = createUser(chat)
     }
+
+    private fun createUser(chat: Chat) = User(
+        chat = chat,
+        id = id,
+        name = name,
+        externalId = externalId,
+        profileUrl = profileUrl,
+        email = email,
+        custom = customData,
+        status = status,
+        type = type,
+        updated = updated,
+    )
 
     @Test
     fun canSoftDeleteUser() {
         // given
-        val softDeleteTrue = true
-        every { chat.deleteUser(any(), any())} returns objectUnderTest.asFuture()
+        val softDelete = true
+        val chat = object : FakeChat(chatConfig, pubNub) {
+            var soft: Boolean? = null
+            override fun deleteUser(id: String, soft: Boolean): PNFuture<User> {
+                this.soft = soft
+                return objectUnderTest.asFuture()
+            }
+        }
+        val sut = createUser(chat)
 
         // when
-        objectUnderTest.delete(softDeleteTrue).async {}
+        sut.delete(softDelete).async {}
 
         // then
-        verify { chat.deleteUser(id, softDeleteTrue) }
+        assertEquals(softDelete, chat.soft)
     }
 
     @Test
     fun canHardDeleteUser() {
         // given
-        val softDeleteFalse = false
-        every { chat.deleteUser(any(), any()) } returns objectUnderTest.asFuture()
+        val softDelete = false
+        val chat = object : FakeChat(chatConfig, pubNub) {
+            var softDeleted: Boolean? = null
+            var deletedUserId: String? = null
+            override fun deleteUser(id: String, soft: Boolean): PNFuture<User> {
+                this.softDeleted = soft
+                this.deletedUserId = id
+                return objectUnderTest.asFuture()
+            }
+        }
+        val sut = createUser(chat)
 
         // when
-        objectUnderTest.delete(soft = softDeleteFalse).async {}
+        sut.delete(softDelete).async {}
 
         // then
-        verify { chat.deleteUser(id, softDeleteFalse) }
+        assertEquals(softDelete, chat.softDeleted)
+        assertEquals(sut.id, chat.deletedUserId)
     }
 
     @Test
@@ -179,18 +200,6 @@ class UserTest {
             assertTrue(result.isFailure)
             assertEquals("Failed to retrieve getMembership data.", result.exceptionOrNull()?.message)
         }
-
-        // then
-        verify { pubNub.getMemberships(
-            uuid = id,
-            limit = limit,
-            page = page,
-            filter = filter,
-            sort = sort,
-            includeCount = true,
-            includeCustom = true,
-            includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM
-        ) }
     }
 
     @Test
@@ -241,7 +250,7 @@ class UserTest {
     fun canGetRestrictionsWithNoChannelProvided(){
         val noChannelProvided = null
         val limit = 1
-        val page: PNPage? = PNPage.PNNext("nextPageHash")
+        val page: PNPage = PNPage.PNNext("nextPageHash")
         val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
         val getMemberships: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub

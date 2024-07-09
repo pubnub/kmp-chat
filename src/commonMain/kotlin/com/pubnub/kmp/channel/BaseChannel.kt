@@ -65,6 +65,7 @@ import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import tryLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -198,7 +199,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     override fun sendText(
         text: String,
         meta: Map<String, Any>?,
-        shouldStore: Boolean?,
+        shouldStore: Boolean,
         usePost: Boolean,
         ttl: Int?,
         mentionedUsers: MessageMentionedUsers?,
@@ -396,7 +397,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }.alsoAsync { chat.pubNub.removeMemberships(channels = listOf(id)) }
 
     override fun getPinnedMessage(): PNFuture<Message?> {
-        val pinnedMessageTimetoken = this.custom?.get("pinnedMessageTimetoken") as? Long ?: return null.asFuture()
+        val pinnedMessageTimetoken = this.custom?.get("pinnedMessageTimetoken").tryLong() ?: return null.asFuture()
         val pinnedMessageChannelID = this.custom?.get("pinnedMessageChannelID") as? String ?: return null.asFuture()
 
         if (pinnedMessageChannelID == this.id) {
@@ -488,7 +489,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         val timetokensPerUser = mutableMapOf<String, Long>()
         val future = getMembers().then { members -> //what about paging?
             members.members.forEach { m ->
-                val lastTimetoken = m.custom?.get("lastReadMessageTimetoken")?.toString()?.toLongOrNull()
+                val lastTimetoken = m.custom?.get("lastReadMessageTimetoken")?.tryLong()
                 if (lastTimetoken != null) {
                     timetokensPerUser[m.user.id] = lastTimetoken
                 }

@@ -27,6 +27,7 @@ import com.pubnub.kmp.types.MessageReferencedChannels
 import com.pubnub.kmp.types.QuotedMessage
 import com.pubnub.kmp.types.TextLink
 import kotlinx.serialization.ExperimentalSerializationApi
+import tryInt
 
 private const val THREAD_ROOT_ID = "threadRootId"
 private const val INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL"
@@ -80,7 +81,7 @@ abstract class BaseMessage<T : Message>(
 
     override val textLinks: List<TextLink>? get() = (meta?.get("textLinks") as? List<Any>)?.let { textLinksList: List<Any> ->
         textLinksList.filterIsInstance<Map<*,*>>().map { textLinkItem: Map<*, *> ->
-            TextLink(textLinkItem["startIndex"] as Int, textLinkItem["endIndex"] as Int, textLinkItem["link"] as String)
+            TextLink(textLinkItem["startIndex"].tryInt()!!, textLinkItem["endIndex"].tryInt()!!, textLinkItem["link"] as String)
         }
     }
 
@@ -219,10 +220,10 @@ abstract class BaseMessage<T : Message>(
             val valueList = (actionValue[actionResult.value]?.toMutableList() ?: mutableListOf()).also {
                 actionValue[actionResult.value] = it
             }
-            if (valueList.any { it.actionTimetoken.toLong() == actionResult.actionTimetoken }) {
+            if (valueList.any { it.actionTimetoken == actionResult.actionTimetoken }) {
                 return newActions
             }
-            valueList.add(PNFetchMessageItem.Action(actionResult.uuid!!, actionResult.actionTimetoken.toString()))
+            valueList.add(PNFetchMessageItem.Action(actionResult.uuid!!, actionResult.actionTimetoken!!))
             return newActions
         }
 
@@ -233,7 +234,7 @@ abstract class BaseMessage<T : Message>(
                         entry.value.forEach { innerEntry ->
                             if (entry.key == action.type && innerEntry.key == action.value) {
                                 put(innerEntry.key, innerEntry.value.filter {
-                                    it.actionTimetoken.toLong() != action.actionTimetoken || it.uuid != action.uuid
+                                    it.actionTimetoken != action.actionTimetoken || it.uuid != action.uuid
                                 })
                             } else {
                                 put(innerEntry.key, innerEntry.value)

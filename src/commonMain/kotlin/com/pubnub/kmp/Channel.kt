@@ -57,7 +57,7 @@ interface Channel {
     fun sendText(
         text: String,
         meta: Map<String, Any>? = null,
-        shouldStore: Boolean? = null,
+        shouldStore: Boolean = true,
         usePost: Boolean = false,
         ttl: Int? = null,
         mentionedUsers: MessageMentionedUsers? = null,

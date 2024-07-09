@@ -1,6 +1,7 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
+import com.pubnub.api.asMap
 import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNBoundedPage
@@ -529,7 +530,7 @@ class ChatImpl(
         channelId: String,
         message: EventContent,
         meta: Map<String, Any>?,
-        shouldStore: Boolean?,
+        shouldStore: Boolean,
         usePost: Boolean,
         replicate: Boolean,
         ttl: Int?,
@@ -1022,7 +1023,7 @@ class ChatImpl(
             val threadId = getThreadId(message.channelId, message.timetoken)
 
             val actionTimetoken =
-                message.actions?.get("threadRootId")?.get(threadId)?.get(0)?.actionTimetoken?.toLongOrNull()
+                message.actions?.get("threadRootId")?.get(threadId)?.get(0)?.actionTimetoken
                     ?: return PubNubException("There is no action timetoken corresponding to the thread").asFuture()
 
             return chat.getChannel(threadId).thenAsync { threadChannel ->

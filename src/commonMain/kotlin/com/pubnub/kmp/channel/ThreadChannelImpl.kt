@@ -74,7 +74,7 @@ data class ThreadChannelImpl(
     override fun sendText(
         text: String,
         meta: Map<String, Any>?,
-        shouldStore: Boolean?,
+        shouldStore: Boolean,
         usePost: Boolean,
         ttl: Int?,
         mentionedUsers: MessageMentionedUsers?,

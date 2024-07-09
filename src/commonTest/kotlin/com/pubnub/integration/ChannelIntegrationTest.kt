@@ -62,7 +62,6 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val reason = "rude"
         val channelId = channelPam.id
         channelPam.setRestrictions(user = user, ban = ban, mute = mute, reason = reason).await()
-
         val restriction = channelPam.getUserRestrictions(user).await()
 
         assertEquals(userId, restriction.userId)

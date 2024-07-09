@@ -1,30 +1,60 @@
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
+import org.jetbrains.kotlin.gradle.targets.js.yarn.yarn
+
 plugins {
     kotlin("multiplatform") version "2.0.0"
     kotlin("plugin.serialization") version "2.0.0"
-//    kotlin("native.cocoapods") version "2.0.0-RC3"
-//    kotlin("multiplatform") version "1.9.22" //downgrade to 1.9.22 because mockmp uses Kotlin Symbol Processing (KSP) "com.google.devtools.ksp:symbol-processing-api:<new-version>"
-//    kotlin("native.cocoapods") version "1.9.23"
-//    id("org.kodein.mock.mockmp") version "1.17.0"
+//    kotlin("native.cocoapods") version "2.0.0"
     id("dev.mokkery") version "2.0.0"
     id("org.jetbrains.kotlin.plugin.atomicfu") version "2.0.0"
+//    id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
 }
 
 group = "com.pubnub"
 version = "1.0-SNAPSHOT"
 
+//ktlint {
+//    outputToConsole.set(true)
+//    verbose.set(true)
+//    additionalEditorconfig.set(
+//        mapOf(
+//            "ij_kotlin_imports_layout" to "*,java.**,javax.**,kotlin.**,^",
+//            "indent_size" to "4",
+//            "ktlint_standard_multiline-expression-wrapping" to "disabled",
+//            "ktlint_standard_string-template-indent" to "disabled",
+//            "ktlint_standard_max-line-length" to "disabled",
+//            "ktlint_standard_if-else-wrapping" to "disabled",
+//            "ktlint_standard_discouraged-comment-location" to "disabled",
+//            "ktlint_standard_trailing-comma-on-declaration-site" to "disabled",
+//            "ktlint_standard_trailing-comma-on-call-site" to "disabled",
+//            "ktlint_standard_function-signature" to "disabled",
+//            "ktlint_standard_filename" to "disabled"
+//        )
+//    )
+//}
+
 kotlin {
     jvmToolchain(8)
     js {
         useEsModules()
-        browser {
+//        browser {
+//            testTask {
+////                useMocha {
+////                    timeout = "30s"
+////                }
+//                useKarma {
+//                    useChrome()
+//                }
+//            }
+//        }
+        nodejs {
             testTask {
                 useMocha {
-                    timeout = "30s"
+                    timeout = "20s"
                 }
             }
         }
-//        nodejs()
-        binaries.executable()
+//        binaries.executable()
     }
     jvm()
 
@@ -37,33 +67,6 @@ kotlin {
 //            framework {
 //                baseName = "PubNubChat"
 //                isStatic = true
-//            }
-//        }
-//    }
-
-//        it.compilations.getByName("main") {
-//            val myInterop by cinterops.creating {
-//                // Def-file describing the native API.
-//                // The default path is src/nativeInterop/cinterop/<interop-name>.def
-//                defFile(project.file("def-file.def"))
-//
-//                // Package to place the Kotlin API generated.
-////                packageName("objectivec.pubnub")
-//
-//                // Options to be passed to compiler by cinterop tool.
-//                compilerOpts("-I/Users/wojciech.kalicinski/Library/Developer/Xcode/DerivedData/PubNub-gukbfwdrkubkmtgvokmytmdgrvzf/Build/Products/Debug-iphonesimulator/PubNub.framework/Headers")
-//
-//                // Directories to look for headers.
-////                includeDirs.apply {
-////                    // Directories for header search (an equivalent of the -I<path> compiler option).
-////                    allHeaders("path1")
-////
-////                    // Additional directories to search headers listed in the 'headerFilter' def-file option.
-////                    // -headerFilterAdditionalSearchPrefix command line option equivalent.
-//////                    headerFilterOnly("path1", "path2")
-////                }
-//                // A shortcut for includeDirs.allHeaders.
-////                includeDirs("include/directory", "another/directory")
 //            }
 //        }
 //    }
@@ -168,3 +171,6 @@ kotlin {
 ////        }
 //    }
 }
+
+yarn.yarnLockMismatchReport = YarnLockMismatchReport.WARNING
+yarn.yarnLockAutoReplace = true
