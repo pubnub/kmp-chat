@@ -32,6 +32,7 @@ import com.pubnub.kmp.INTERNAL_MODERATION_PREFIX
 import com.pubnub.kmp.Membership
 import com.pubnub.kmp.Message
 import com.pubnub.kmp.PNFuture
+import com.pubnub.kmp.PushNotificationsConfig
 import com.pubnub.kmp.User
 import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
@@ -488,12 +489,12 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
-    override fun streamReadReceipts(callback: (receipts: Map<String, List<String>>) -> Unit): AutoCloseable {
+    override fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable {
         if (type == ChannelType.PUBLIC) {
             throw PubNubException("Read receipts are not supported in Public chats.")
         }
         val timetokensPerUser = mutableMapOf<String, Long>()
-        val future = getMembers().then { members -> // what about paging?
+        val future = getMembers().then { members -> // todo what about paging? maybe not needed in non-public chats...
             members.members.forEach { m ->
                 val lastTimetoken = m.custom?.get("lastReadMessageTimetoken")?.tryLong()
                 if (lastTimetoken != null) {
@@ -582,15 +583,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
-    private fun generateReceipts(timetokensPerUser: Map<String, Long>): Map<String, MutableList<String>> {
-        return buildMap<String, MutableList<String>> {
-            timetokensPerUser.forEach {
-                val list = this.getOrPut(it.value.toString()) { mutableListOf() }
-                list += it.key
-            }
-        }
-    }
-
     internal fun getRestrictions(
         user: User?,
         limit: Int? = null,
@@ -615,7 +607,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
         timetoken: Long,
         text: String,
     ): PNFuture<PNPublishResult> {
-        return chat.emitEvent(userId, EventContent.Mention(timetoken, id), getPushPayload(text))
+        return chat.emitEvent(userId, EventContent.Mention(timetoken, id),
+            getPushPayload(this, text, chat.config.pushNotifications)
+        )
     }
 
     private fun timeoutElapsed(lastTypingSent: Instant, now: Instant): Boolean {
@@ -659,54 +653,64 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     internal abstract fun copyWithStatusDeleted(): C
 
-    private fun getPushPayload(text: String): Map<String, Any> {
-        val pushConfig = chat.config.pushNotifications
-        val apnsTopic = pushConfig.apnsTopic
-        val apnsEnv = pushConfig.apnsEnvironment
-        if (!pushConfig.sendPushes) {
-            return emptyMap()
-        }
-        val title = chat.currentUser.name ?: chat.currentUser.id
-        val pushBuilder = PushPayloadHelper()
-        pushBuilder.fcmPayloadV2 = PushPayloadHelper.FCMPayloadV2().apply {
-            notification = PushPayloadHelper.FCMPayloadV2.Notification().apply {
-                this.title = title
-                this.body = text
+    companion object {
+        internal fun getPushPayload(baseChannel: BaseChannel<*, *>, text: String, pushConfig: PushNotificationsConfig): Map<String, Any> {
+            val apnsTopic = pushConfig.apnsTopic
+            val apnsEnv = pushConfig.apnsEnvironment
+            if (!pushConfig.sendPushes) {
+                return emptyMap()
             }
-            data = buildMap {
-                name?.let { put("subtitle", it) }
-            }
-            this.android = PushPayloadHelper.FCMPayloadV2.AndroidConfig().apply {
-                this.notification = PushPayloadHelper.FCMPayloadV2.AndroidConfig.AndroidNotification().apply {
-                    this.sound = "default"
+            val title = baseChannel.chat.currentUser.name ?: baseChannel.chat.currentUser.id
+            val pushBuilder = PushPayloadHelper()
+            pushBuilder.fcmPayloadV2 = PushPayloadHelper.FCMPayloadV2().apply {
+                notification = PushPayloadHelper.FCMPayloadV2.Notification().apply {
                     this.title = title
                     this.body = text
                 }
-            }
-        }
-        if (apnsTopic != null) {
-            pushBuilder.apnsPayload = PushPayloadHelper.APNSPayload().apply {
-                this.aps = PushPayloadHelper.APNSPayload.APS().apply {
-                    this.alert = mapOf(
-                        "title" to title,
-                        "body" to text
-                    )
-                    this.sound = "default"
+                data = buildMap {
+                    baseChannel.name?.let { put("subtitle", it) }
                 }
-                apns2Configurations = listOf(
-                    PushPayloadHelper.APNSPayload.APNS2Configuration().apply {
-                        this.targets = listOf(
-                            PushPayloadHelper.APNSPayload.APNS2Configuration.Target().apply {
-                                this.topic = apnsTopic
-                                this.environment = apnsEnv
-                            }
-                        )
+                this.android = PushPayloadHelper.FCMPayloadV2.AndroidConfig().apply {
+                    this.notification = PushPayloadHelper.FCMPayloadV2.AndroidConfig.AndroidNotification().apply {
+                        this.sound = "default"
+                        this.title = title
+                        this.body = text
                     }
-                )
-                name?.let { custom = mapOf("subtitle" to it) }
+                }
             }
+            if (apnsTopic != null) {
+                pushBuilder.apnsPayload = PushPayloadHelper.APNSPayload().apply {
+                    this.aps = PushPayloadHelper.APNSPayload.APS().apply {
+                        this.alert = mapOf(
+                            "title" to title,
+                            "body" to text
+                        )
+                        this.sound = "default"
+                    }
+                    apns2Configurations = listOf(
+                        PushPayloadHelper.APNSPayload.APNS2Configuration().apply {
+                            this.targets = listOf(
+                                PushPayloadHelper.APNSPayload.APNS2Configuration.Target().apply {
+                                    this.topic = apnsTopic
+                                    this.environment = apnsEnv
+                                }
+                            )
+                        }
+                    )
+                    baseChannel.name?.let { custom = mapOf("subtitle" to it) }
+                }
+            }
+
+            return pushBuilder.build()
         }
 
-        return pushBuilder.build()
+        internal fun generateReceipts(timetokensPerUser: Map<String, Long>): Map<Long, MutableList<String>> {
+            return buildMap {
+                timetokensPerUser.forEach {
+                    val list = this.getOrPut(it.value) { mutableListOf() }
+                    list += it.key
+                }
+            }
+        }
     }
 }

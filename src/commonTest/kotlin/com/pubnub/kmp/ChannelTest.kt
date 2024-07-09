@@ -5,6 +5,8 @@ import com.pubnub.api.UserId
 import com.pubnub.api.createJsonElement
 import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
+import com.pubnub.api.enums.PNPushEnvironment
+import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.HistoryMessageType
@@ -17,6 +19,7 @@ import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.channel.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.kmp.message.MessageImpl
@@ -625,5 +628,81 @@ class ChannelTest {
     @Test
     fun getTypingShouldRemoveExpiredTypingIndicators() {
         // todo
+    }
+
+    @Test
+    fun getPushPayload_empty_when_sendPushes_is_false() {
+        val config = PushNotificationsConfig(false, null, PNPushType.FCM, null, PNPushEnvironment.PRODUCTION)
+
+        val result = BaseChannel.getPushPayload(createChannel(type), "some text", config)
+
+        assertEquals(emptyMap(), result)
+    }
+
+    @Test
+    fun getPushPayload_no_apns2_topic() {
+        val userId = "some_user"
+        val text = "some text"
+        val config = PushNotificationsConfig(true, "abc", PNPushType.FCM, null, PNPushEnvironment.PRODUCTION)
+
+        every { chat.currentUser } returns User(chat, userId)
+
+        val result = BaseChannel.getPushPayload(createChannel(type), text, config)
+
+        assertEquals(objectUnderTest.name, result["pn_fcm"]["data"]["subtitle"])
+        assertEquals(userId, result["pn_fcm"]["notification"]["title"])
+        assertEquals(text, result["pn_fcm"]["notification"]["body"])
+        assertEquals(userId, result["pn_fcm"]["android"]["notification"]["title"])
+        assertEquals(text, result["pn_fcm"]["android"]["notification"]["body"])
+        assertEquals("default", result["pn_fcm"]["android"]["notification"]["sound"])
+    }
+
+    @Test
+    fun getPushPayload_with_apns2_topic() {
+        val userId = "some_user"
+        val text = "some text"
+        val topic = "apns_topic"
+        val config = PushNotificationsConfig(true, "abc", PNPushType.FCM, topic, PNPushEnvironment.PRODUCTION)
+        every { chat.currentUser } returns User(chat, userId)
+
+        val result = BaseChannel.getPushPayload(createChannel(type), text, config)
+
+        assertEquals(objectUnderTest.name, result["pn_fcm"]["data"]["subtitle"])
+
+        assertEquals(userId, result["pn_fcm"]["notification"]["title"])
+        assertEquals(text, result["pn_fcm"]["notification"]["body"])
+        assertEquals(userId, result["pn_fcm"]["android"]["notification"]["title"])
+        assertEquals(text, result["pn_fcm"]["android"]["notification"]["body"])
+        assertEquals("default", result["pn_fcm"]["android"]["notification"]["sound"])
+
+        assertEquals(userId, result["pn_apns"]["aps"]["alert"]["title"])
+        assertEquals(text, result["pn_apns"]["aps"]["alert"]["body"])
+        assertEquals("default", result["pn_apns"]["aps"]["sound"])
+
+        assertEquals(topic, result["pn_apns"]["pn_push"][0]["targets"][0]["topic"])
+        assertEquals(PNPushEnvironment.PRODUCTION.toParamString(), result["pn_apns"]["pn_push"][0]["targets"][0]["environment"])
+        assertEquals(objectUnderTest.name, result["pn_apns"]["subtitle"])
+    }
+
+    @Test
+    fun generateReceipts() {
+        val result = BaseChannel.generateReceipts(mapOf("user" to 1L, "user2" to 2L, "user3" to 1L, "user4" to 3L))
+        assertEquals(mapOf(1L to listOf("user", "user3"), 2L to listOf("user2"), 3L to listOf("user4")), result)
+    }
+}
+
+private operator fun Any?.get(s: String): Any? {
+    return if (this is Map<*,*>) {
+        this.get(s as Any?)
+    } else {
+        null
+    }
+}
+
+private operator fun Any?.get(i: Int): Any? {
+    return if (this is List<*>) {
+        this.get(i)
+    } else {
+        null
     }
 }

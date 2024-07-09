@@ -7,9 +7,13 @@ import com.pubnub.kmp.User
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.test.await
 import com.pubnub.test.randomString
+import com.pubnub.test.test
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
@@ -126,5 +130,37 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(1, userSuggestionsMembershipsFromCache.size)
         assertEquals(someUser.id, userSuggestionsMembershipsFromCache.first().user.id)
         assertEquals(userName, userSuggestionsMembershipsFromCache.first().user.name)
+    }
+
+    @Test
+    fun streamReadReceipts() = runTest(timeout = 10.seconds) {
+        val completableBeforeMark = CompletableDeferred<Unit>()
+        val completableAfterMark = CompletableDeferred<Unit>()
+
+
+        try { chat.deleteUser("user2", false).await() } finally { }
+        val user2 = chat.createUser(User(chat, "user2")).await()
+
+        val channel = chat.createDirectConversation(user2).await().channel
+        channel.sendText("text1").await().timetoken
+        chat.markAllMessagesAsRead().await()
+
+        val tt = channel.sendText("text2").await().timetoken
+        val dispose = channel.streamReadReceipts { receipts ->
+            val lastRead = receipts.entries.find{ it.value.contains(chat.currentUser.id) }?.key
+            if (lastRead != null) {
+                if (tt > lastRead) {
+                    completableBeforeMark.complete(Unit) // before calling markAllMessagesRead
+                } else {
+                    completableAfterMark.complete(Unit) // after calling markAllMessagesRead
+                }
+            }
+        }
+
+        completableBeforeMark.await()
+        chat.markAllMessagesAsRead().await()
+        completableAfterMark.await()
+
+        dispose.close()
     }
 }
