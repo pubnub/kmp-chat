@@ -14,10 +14,10 @@ enum class RestrictionType(val stringValue: String) {
     @SerialName("lifted")
     LIFT("lifted");
 
-    //todo check if this is required. If not required remove stringValue
-    companion object{
-        fun from(text: String): RestrictionType?{
-            return values().find {it.stringValue== text }
+    // todo check if this is required. If not required remove stringValue
+    companion object {
+        fun from(text: String): RestrictionType? {
+            return values().find { it.stringValue == text }
         }
     }
 

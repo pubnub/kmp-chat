@@ -13,7 +13,6 @@ import com.pubnub.kmp.types.MessageReferencedChannels
 import com.pubnub.kmp.types.QuotedMessage
 import com.pubnub.kmp.types.TextLink
 
-
 interface Message {
     val timetoken: Long
     val content: EventContent.TextMessageContent
@@ -31,15 +30,25 @@ interface Message {
     val files: List<File>
     val reactions: Map<String, List<Action>>
     val textLinks: List<TextLink>?
+
     fun hasUserReaction(reaction: String): Boolean
+
     fun editText(newText: String): PNFuture<Message>
+
     fun delete(soft: Boolean = false, preserveFiles: Boolean = false): PNFuture<Message?>
+
     fun getThread(): PNFuture<ThreadChannel>
+
     fun forward(channelId: String): PNFuture<PNPublishResult>
+
     fun pin(): PNFuture<Channel>
+
     fun report(reason: String): PNFuture<PNPublishResult>
+
     fun createThread(): PNFuture<ThreadChannel>
+
     fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel>>
+
     fun toggleReaction(reaction: String): PNFuture<Message>
 
     fun streamUpdates(callback: (message: Message) -> Unit): AutoCloseable {

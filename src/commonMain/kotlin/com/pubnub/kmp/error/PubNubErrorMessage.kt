@@ -16,7 +16,9 @@ enum class PubNubErrorMessage(val message: String) {
     FAILED_TO_FORWARD_MESSAGE("Failed to forward message."),
     CHANNEL_META_DATA_IS_EMPTY("Channel metadata is empty."),
     CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL("You cannot forward the message to the same channel."),
-    FOR_PUBLISH_PAYLOAD_SHOULD_BE_OF_TYPE_TEXT_MESSAGE_CONTENT("When emitEvent method is PUBLISH payload should be of type EventContent.TextMessageContent"),
+    FOR_PUBLISH_PAYLOAD_SHOULD_BE_OF_TYPE_TEXT_MESSAGE_CONTENT(
+        "When emitEvent method is PUBLISH payload should be of type EventContent.TextMessageContent"
+    ),
     CHANNEL_ID_ALREADY_EXIST("Channel with this ID already exists"),
     USER_ID_ALREADY_EXIST("User with this ID already exists"),
     CHANNEL_NOT_EXIST("Channel does not exist"),
@@ -29,7 +31,9 @@ enum class PubNubErrorMessage(val message: String) {
     FAILED_TO_REMOVE_CHANNEL_MEMBERS("Failed to remove channel members."),
     FAILED_TO_SET_CHANNEL_MEMBERS("Failed to set channel members."),
     CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS("Channel invites are not supported in Public chats."),
-    MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY("Moderation restrictions can only be set by clients initialized with a Secret Key."),
+    MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY(
+        "Moderation restrictions can only be set by clients initialized with a Secret Key."
+    ),
     ;
 
     override fun toString(): String {

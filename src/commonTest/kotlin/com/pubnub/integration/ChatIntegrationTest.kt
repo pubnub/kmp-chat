@@ -38,7 +38,6 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 
 class ChatIntegrationTest : BaseChatIntegrationTest() {
-
     @Test
     fun createUser() = runTest {
         val user = chat.createUser(someUser).await()
@@ -101,7 +100,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         assertEquals(result.channel, result.hostMembership.channel)
         assertEquals(result.channel, result.inviteeMembership.channel)
-
     }
 
     @Test
@@ -127,7 +125,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun can_markAllMessagesAsRead() = runTest {
-        //create two membership for user one with "lastReadMessageTimetoken" and second without.
+        // create two membership for user one with "lastReadMessageTimetoken" and second without.
         val lastReadMessageTimetokenValue: Long = 17195737006492403
         val custom: CustomObject =
             createCustomObject(mapOf("lastReadMessageTimetoken" to lastReadMessageTimetokenValue))
@@ -137,7 +135,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val membership02: ChannelMembershipInput = PNChannelMembership.Partial(channelId02)
         chat.pubNub.setMemberships(listOf(membership01, membership02), chat.currentUser.id).await()
 
-        //to each channel add two messages(we want to check if last message will be taken by fetchMessages with limit = 1)
+        // to each channel add two messages(we want to check if last message will be taken by fetchMessages with limit = 1)
         channel01.sendText("message01In$channelId01").await()
         val lastPublishToChannel01 = channel01.sendText("message02In$channelId01").await()
         channel02.sendText("message01In$channelId02").await()
@@ -152,7 +150,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             channel = channelId01
         ) { event: Event<EventContent.Receipt> ->
             try {
-                //we need to have try/catch here because assertion error will not cause test to fail
+                // we need to have try/catch here because assertion error will not cause test to fail
                 assertEquals(channelId01, event.channelId)
                 assertEquals(chat.currentUser.id, event.userId)
                 assertNotEquals(lastReadMessageTimetokenValue, event.payload.messageTimetoken)
@@ -168,7 +166,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             channel = channelId02
         ) { event: Event<EventContent.Receipt> ->
             try {
-                //we need to have try/catch here because assertion error will not cause test to fail
+                // we need to have try/catch here because assertion error will not cause test to fail
                 assertEquals(channelId02, event.channelId)
                 assertEquals(chat.currentUser.id, event.userId)
                 assertNotEquals(lastReadMessageTimetokenValue, event.payload.messageTimetoken)
@@ -184,7 +182,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // verify response contains updated "lastReadMessageTimetoken"
         markAllMessageAsReadResponse.memberships.forEach { membership: Membership ->
-            //why membership.custom!!["lastReadMessageTimetoken"] returns double? <--this is default behaviour of GSON
+            // why membership.custom!!["lastReadMessageTimetoken"] returns double? <--this is default behaviour of GSON
             assertNotEquals(lastReadMessageTimetokenValue, membership.custom!!["lastReadMessageTimetoken"].tryLong())
         }
 
@@ -198,14 +196,14 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertionErrorInListener01.await()?.let { throw it }
         assertionErrorInListener02.await()?.let { throw it }
 
-        //remove messages
+        // remove messages
         chat.pubNub.deleteMessages(listOf(channelId01, channelId02))
 
         // remove listeners and unsubscribe
         removeListenerAndUnsubscribe01.close()
         removeListenerAndUnsubscribe02.close()
 
-        //remove memberships (user). This will be done in tearDown method
+        // remove memberships (user). This will be done in tearDown method
     }
 
 //    @Ignore // fails from time to time
@@ -238,7 +236,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val unreadMessageCount03: Long? = membershipWithUpgradeLastReadMessageTimetoken.getUnreadMessagesCount().await()
         assertEquals(0, unreadMessageCount03)
 
-        //remove messages
+        // remove messages
         chat.pubNub.deleteMessages(listOf(channelId01))
     }
 
@@ -276,13 +274,19 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         // read message count
         unreadMessagesCounts = chat.getUnreadMessagesCounts().await()
         unreadMessagesCountsForChannel01 =
-            unreadMessagesCounts.find { unreadMessagesCount: GetUnreadMessagesCounts -> unreadMessagesCount.channel.id == channelId01 }?.count
+            unreadMessagesCounts.find {
+                    unreadMessagesCount: GetUnreadMessagesCounts ->
+                unreadMessagesCount.channel.id == channelId01
+            }?.count
                 ?: 0
         unreadMessagesCountsForChannel02 =
-            unreadMessagesCounts.find { unreadMessagesCount: GetUnreadMessagesCounts -> unreadMessagesCount.channel.id == channelId02 }?.count
+            unreadMessagesCounts.find {
+                    unreadMessagesCount: GetUnreadMessagesCounts ->
+                unreadMessagesCount.channel.id == channelId02
+            }?.count
                 ?: 0
         assertEquals(0, unreadMessagesCountsForChannel01)
-        assertEquals(0, unreadMessagesCountsForChannel02) //todo when run in set sometimes fails :/
+        assertEquals(0, unreadMessagesCountsForChannel02) // todo when run in set sometimes fails :/
 
         // remove messages
         chat.pubNub.deleteMessages(listOf(channelId01, channelId02))
@@ -326,7 +330,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun register_unregister_list_pushNotificationOnChannel() = runTest {
-        //set up push config
+        // set up push config
         val chatConfig = ChatConfigImpl(chat.config.pubnubConfig).apply {
             pushNotifications = PushNotificationsConfig(
                 sendPushes = false,
@@ -342,31 +346,31 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         chat.unregisterAllPushChannels().await()
         delayInMillis(1500)
 
-        //list pushNotification
+        // list pushNotification
         assertPushChannels(0)
 
-        //register 3 channels
+        // register 3 channels
         val channel01 = "channel01"
         val channel02 = "channel02"
         val channel03 = "channel03"
         chat.registerPushChannels(listOf(channel01, channel02, channel03)).await()
         delayInMillis(1500)
 
-        //list pushNotification
+        // list pushNotification
         assertPushChannels(3)
 
         // remove 1 channel
         chat.unregisterPushChannels(listOf(channel03)).await()
         delayInMillis(1500)
 
-        //list pushNotification
+        // list pushNotification
         assertPushChannels(2)
 
         // removeAll
         chat.unregisterAllPushChannels().await()
         delayInMillis(1500)
 
-        //list pushNotification
+        // list pushNotification
         assertPushChannels(0)
     }
 
@@ -375,7 +379,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             delay(timeMillis)
         }
     }
-
 
     private suspend fun assertPushChannels(expectedNumberOfChannels: Int) {
         val pushChannels = chat.getPushChannels().await()

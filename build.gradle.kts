@@ -7,31 +7,31 @@ plugins {
 //    kotlin("native.cocoapods") version "2.0.0"
     id("dev.mokkery") version "2.0.0"
     id("org.jetbrains.kotlin.plugin.atomicfu") version "2.0.0"
-//    id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
 }
 
 group = "com.pubnub"
 version = "1.0-SNAPSHOT"
 
-//ktlint {
-//    outputToConsole.set(true)
-//    verbose.set(true)
-//    additionalEditorconfig.set(
-//        mapOf(
-//            "ij_kotlin_imports_layout" to "*,java.**,javax.**,kotlin.**,^",
-//            "indent_size" to "4",
-//            "ktlint_standard_multiline-expression-wrapping" to "disabled",
-//            "ktlint_standard_string-template-indent" to "disabled",
-//            "ktlint_standard_max-line-length" to "disabled",
-//            "ktlint_standard_if-else-wrapping" to "disabled",
-//            "ktlint_standard_discouraged-comment-location" to "disabled",
-//            "ktlint_standard_trailing-comma-on-declaration-site" to "disabled",
-//            "ktlint_standard_trailing-comma-on-call-site" to "disabled",
-//            "ktlint_standard_function-signature" to "disabled",
-//            "ktlint_standard_filename" to "disabled"
-//        )
-//    )
-//}
+ktlint {
+    outputToConsole.set(true)
+    verbose.set(true)
+    additionalEditorconfig.set(
+        mapOf(
+            "ij_kotlin_imports_layout" to "*,java.**,javax.**,kotlin.**,^",
+            "indent_size" to "4",
+            "ktlint_standard_multiline-expression-wrapping" to "disabled",
+            "ktlint_standard_string-template-indent" to "disabled",
+            "ktlint_standard_max-line-length" to "disabled",
+            "ktlint_standard_if-else-wrapping" to "disabled",
+            "ktlint_standard_discouraged-comment-location" to "disabled",
+            "ktlint_standard_trailing-comma-on-declaration-site" to "disabled",
+            "ktlint_standard_trailing-comma-on-call-site" to "disabled",
+            "ktlint_standard_function-signature" to "disabled",
+            "ktlint_standard_filename" to "disabled"
+        )
+    )
+}
 
 kotlin {
     jvmToolchain(8)
@@ -39,9 +39,9 @@ kotlin {
         useEsModules()
 //        browser {
 //            testTask {
-////                useMocha {
-////                    timeout = "30s"
-////                }
+// //                useMocha {
+// //                    timeout = "30s"
+// //                }
 //                useKarma {
 //                    useChrome()
 //                }
@@ -60,7 +60,7 @@ kotlin {
 
 //    listOf(
 //        iosArm64(),
-////        iosX64(),
+// //        iosX64(),
 //        iosSimulatorArm64(),
 //    ).forEach {
 //        it.binaries {
@@ -113,7 +113,6 @@ kotlin {
                 implementation(kotlin("test-js"))
             }
         }
-
     }
 
 //    cocoapods {
@@ -149,26 +148,26 @@ kotlin {
 //            source = git("https://github.com/pubnub/swift") {
 //                branch = "feat/kmp"
 //            }
-////            headers = "PubNub/PubNub.h"
-////            source = path(project.file("swift"))
-////            version = "7.1.0"
+// //            headers = "PubNub/PubNub.h"
+// //            source = path(project.file("swift"))
+// //            version = "7.1.0"
 //
 //            moduleName = "PubNub"
 //            extraOpts += listOf("-compiler-option", "-fmodules")
 //        }
 //
-////        pod("PubNubSwift") {
-//////            headers = "PubNub/PubNub.h"
-////            source = git("https://github.com/pubnub/objective-c") {
-////                branch = "feat/kmp"
-////            }
-//////            source = path(project.file("swift"))
-////
-//////            version = "7.1.0"
-//////            version = "5.3.0"
-////            moduleName = "PubNub"
-////            extraOpts += listOf("-compiler-option", "-fmodules")
-////        }
+// //        pod("PubNubSwift") {
+// ////            headers = "PubNub/PubNub.h"
+// //            source = git("https://github.com/pubnub/objective-c") {
+// //                branch = "feat/kmp"
+// //            }
+// ////            source = path(project.file("swift"))
+// //
+// ////            version = "7.1.0"
+// ////            version = "5.3.0"
+// //            moduleName = "PubNub"
+// //            extraOpts += listOf("-compiler-option", "-fmodules")
+// //        }
 //    }
 }
 

@@ -14,27 +14,28 @@ data class ChannelImpl(
     private val clock: Clock = Clock.System,
     override val id: String,
     override val name: String? = null,
-    override val custom: Map<String,Any?>? = null,
+    override val custom: Map<String, Any?>? = null,
     override val description: String? = null,
     override val updated: String? = null,
     override val status: String? = null,
     override val type: ChannelType? = null,
 ) : BaseChannel<Channel, Message>(
-    chat = chat,
-    clock = clock,
-    id = id,
-    name = name,
-    custom = custom,
-    description = description,
-    updated = updated,
-    status = status,
-    type = type,
-    ::fromDTO,
-    MessageImpl::fromDTO
-) {
+        chat = chat,
+        clock = clock,
+        id = id,
+        name = name,
+        custom = custom,
+        description = description,
+        updated = updated,
+        status = status,
+        type = type,
+        ::fromDTO,
+        MessageImpl::fromDTO
+    ) {
     companion object {
         internal fun fromDTO(chat: Chat, channel: PNChannelMetadata): Channel {
-            return ChannelImpl(chat,
+            return ChannelImpl(
+                chat,
                 id = channel.id,
                 name = channel.name,
                 custom = channel.custom,

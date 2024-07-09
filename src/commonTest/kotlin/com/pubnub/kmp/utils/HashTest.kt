@@ -4,7 +4,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class HashTest {
-
     @Test
     fun cyrb53a() {
         val inputs = listOf("mo3k2 ok", "Ąž< 4ó", "jio jeroiew mn\nmrie rmw\n!$:@\"")

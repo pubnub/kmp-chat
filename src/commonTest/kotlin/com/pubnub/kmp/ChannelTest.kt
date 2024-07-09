@@ -3,6 +3,8 @@ package com.pubnub.kmp
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.createJsonElement
+import com.pubnub.api.endpoints.FetchMessages
+import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.HistoryMessageType
@@ -17,8 +19,6 @@ import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.channel.MINIMAL_TYPING_INDICATOR_TIMEOUT
-import com.pubnub.api.endpoints.FetchMessages
-import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
@@ -59,7 +59,6 @@ class ChannelTest {
     private val updated = "testUpdated"
     private val typingTimeout = 1001.milliseconds
     private val pubNub: PubNub = mock(MockMode.strict)
-
 
     @BeforeTest
     fun setUp() {
@@ -232,7 +231,6 @@ class ChannelTest {
 
     @Test
     fun whenStopTypingAlreadySentStopTypingShouldImmediatelyResultSuccess() {
-
         objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
@@ -259,7 +257,6 @@ class ChannelTest {
         }
 
         verify(exactly(0)) { chat.emitEvent(any(), any(),) }
-
     }
 
     @Test
@@ -325,7 +322,7 @@ class ChannelTest {
     }
 
     @Test
-    fun whenUserIsTypingAndTypingIndicatorMapDoesNotContainEntryShouldAddIt(){
+    fun whenUserIsTypingAndTypingIndicatorMapDoesNotContainEntryShouldAddIt() {
         val now: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val userId = "user1"
         val isTyping = true
@@ -337,7 +334,7 @@ class ChannelTest {
     }
 
     @Test
-    fun whenUserIsNotTypingAndTypingIndicatorMapContainEntryShouldRemoveIt(){
+    fun whenUserIsNotTypingAndTypingIndicatorMapContainEntryShouldRemoveIt() {
         val typingSent1: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val now = typingSent1.plus(50.milliseconds)
         val userId = "user1"
@@ -350,7 +347,7 @@ class ChannelTest {
     }
 
     @Test
-    fun whenUserIsTypingAndTypingIndicatorMapContainEntryShouldUpdateTime(){
+    fun whenUserIsTypingAndTypingIndicatorMapContainEntryShouldUpdateTime() {
         val typingSent1: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val now = typingSent1.plus(50.milliseconds)
         val userId = "user1"
@@ -442,7 +439,8 @@ class ChannelTest {
                                     timetoken2, null, HistoryMessageType.Message, null
                                 ),
                             )
-                        ), null
+                        ),
+                        null
                     )
                 )
             )
@@ -473,7 +471,8 @@ class ChannelTest {
                             null,
                             null
                         ),
-                    ), result
+                    ),
+                    result
                 )
             }
         }
@@ -538,7 +537,7 @@ class ChannelTest {
     }
 
     @Test
-    fun canGetRestrictionsWithNullUser(){
+    fun canGetRestrictionsWithNullUser() {
         val limit = 1
         val page: PNPage? = PNPage.PNNext("nextPageHash")
         val sort = listOf(PNSortKey.PNAsc(PNMemberKey.UUID_ID))
@@ -548,21 +547,23 @@ class ChannelTest {
 
         objectUnderTest.getRestrictions(user = null, limit = limit, page = page, sort = sort)
 
-        verify { pubNub.getChannelMembers(
-            channel = "PUBNUB_INTERNAL_MODERATION_$channelId",
-            limit = limit,
-            page = page,
-            filter = null,
-            sort = sort,
-            includeCount = true,
-            includeCustom = true,
-            includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
-            includeType = true
-        ) }
+        verify {
+            pubNub.getChannelMembers(
+                channel = "PUBNUB_INTERNAL_MODERATION_$channelId",
+                limit = limit,
+                page = page,
+                filter = null,
+                sort = sort,
+                includeCount = true,
+                includeCustom = true,
+                includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
+                includeType = true
+            )
+        }
     }
 
     @Test
-    fun canGetRestrictionsByUser(){
+    fun canGetRestrictionsByUser() {
         val user = User(chat = chat, id = "userId")
         val limit = 1
         val page: PNPage = PNPage.PNNext("nextPageHash")
@@ -573,17 +574,19 @@ class ChannelTest {
 
         objectUnderTest.getRestrictions(user = user, limit = limit, page = page, sort = sort)
 
-        verify { pubNub.getChannelMembers(
-            channel = "PUBNUB_INTERNAL_MODERATION_$channelId",
-            limit = limit,
-            page = page,
-            filter = "uuid.id == 'userId'",
-            sort = sort,
-            includeCount = true,
-            includeCustom = true,
-            includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
-            includeType = true
-        ) }
+        verify {
+            pubNub.getChannelMembers(
+                channel = "PUBNUB_INTERNAL_MODERATION_$channelId",
+                limit = limit,
+                page = page,
+                filter = "uuid.id == 'userId'",
+                sort = sort,
+                includeCount = true,
+                includeCustom = true,
+                includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
+                includeType = true
+            )
+        }
     }
 
     @Test
@@ -606,21 +609,21 @@ class ChannelTest {
 
     @Test
     fun shouldUpdateTypingTimeWhenUserIsTyping() {
-        //todo whenTypingStatusIndicateThatUserIsTypingAndTypingEventReceiveGetTypingShouldUpdateTime
+        // todo whenTypingStatusIndicateThatUserIsTypingAndTypingEventReceiveGetTypingShouldUpdateTime
     }
 
     @Test
     fun shouldRemoveTypingStatusWhenUserStopsTyping() {
-        //todo whenTypingStatusIndicateThatUserIsTypingAndNotTypingEventReceiveGetTypingShouldRemoveTypingStatus
+        // todo whenTypingStatusIndicateThatUserIsTypingAndNotTypingEventReceiveGetTypingShouldRemoveTypingStatus
     }
 
     @Test
     fun shouldCreateTypingStatusWhenUserStartsTyping() {
-        //todo whenThereIsNoTypingStatusForUserAndTypingEventReceiveGetTypingShouldCreateTypingStatus
+        // todo whenThereIsNoTypingStatusForUserAndTypingEventReceiveGetTypingShouldCreateTypingStatus
     }
 
     @Test
     fun getTypingShouldRemoveExpiredTypingIndicators() {
-        //todo
+        // todo
     }
 }

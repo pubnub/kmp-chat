@@ -12,7 +12,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ChannelIntegrationTest : BaseChatIntegrationTest() {
-
     @Test
     fun join() = runTest {
         val channel = chat.createChannel(randomString()).await()
@@ -25,32 +24,26 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun join_receivesMessages() = runTest {
-
     }
 
     @Test
     fun join_close_disconnects() = runTest {
-
     }
 
     @Test
     fun join_updates_lastReadMessageTimetoken() = runTest {
-
     }
 
     @Test
     fun connect() = runTest {
-
     }
 
     @Test
     fun connect_receivesMessages() = runTest {
-
     }
 
     @Test
     fun connect_close_disconnects() = runTest {
-
     }
 
     @Test
@@ -125,7 +118,6 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(1, userSuggestionsMemberships.size)
         assertEquals(someUser.id, userSuggestionsMemberships.first().user.id)
         assertEquals(userName, userSuggestionsMemberships.first().user.name)
-
 
         // when data in cache
         val userSuggestionsMembershipsFromCache: Set<Membership> = channel01.getUserSuggestions("sas@$userName").await()

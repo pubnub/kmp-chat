@@ -2,16 +2,23 @@ package com.pubnub.kmp.types
 
 import kotlinx.serialization.SerialName
 
-private const val stringDirect = "direct"
-private const val stringGroup = "group"
-private const val stringPublic = "public"
-private const val stringUnknown = "unknown"
+private const val CHANNELTYPE_DIRECT = "direct"
+private const val CHANNELTYPE_GROUP = "group"
+private const val CHANNELTYPE_PUBLIC = "public"
+private const val CHANNELTYPE_UNKKNOWN = "unknown"
 
 enum class ChannelType(val stringValue: String) {
-    @SerialName(stringDirect) DIRECT(stringDirect),
-    @SerialName(stringGroup) GROUP(stringGroup),
-    @SerialName(stringPublic) PUBLIC(stringPublic),
-    @SerialName(stringUnknown) UNKNOWN(stringUnknown);
+    @SerialName(CHANNELTYPE_DIRECT)
+    DIRECT(CHANNELTYPE_DIRECT),
+
+    @SerialName(CHANNELTYPE_GROUP)
+    GROUP(CHANNELTYPE_GROUP),
+
+    @SerialName(CHANNELTYPE_PUBLIC)
+    PUBLIC(CHANNELTYPE_PUBLIC),
+
+    @SerialName(CHANNELTYPE_UNKKNOWN)
+    UNKNOWN(CHANNELTYPE_UNKKNOWN);
 
     companion object {
         fun from(type: String?): ChannelType {

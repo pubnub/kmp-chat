@@ -215,19 +215,19 @@ abstract class BaseChannel<C : Channel, M : Message>(
             val newMeta = buildMetaForPublish(meta, mentionedUsers, referencedChannels, textLinks, quotedMessage)
             chat.publish(
                 channelId = id,
-                message = EventContent.TextMessageContent(text, filesData), //todo files
+                message = EventContent.TextMessageContent(text, filesData), // todo files
                 meta = newMeta,
                 shouldStore = shouldStore,
                 usePost = usePost,
                 ttl = ttl,
             ).then { publishResult: PNPublishResult ->
-                //todo chat SDK seems to ignore results of emitting these events?
+                // todo chat SDK seems to ignore results of emitting these events?
                 try {
                     mentionedUsers?.forEach {
                         emitUserMention(it.value.id, publishResult.timetoken, text).async {}
                     }
                 } catch (_: Exception) {
-                    //todo log
+                    // todo log
                 }
                 publishResult
             }
@@ -334,9 +334,15 @@ abstract class BaseChannel<C : Channel, M : Message>(
             includeType = true,
             includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
         ).then { it: PNMemberArrayResult ->
-            MembersResponse(it.next, it.prev, it.totalCount!!, it.status, it.data.map {
-                Membership.fromChannelMemberDTO(chat, it, this)
-            }.toSet())
+            MembersResponse(
+                it.next,
+                it.prev,
+                it.totalCount!!,
+                it.status,
+                it.data.map {
+                    Membership.fromChannelMemberDTO(chat, it, this)
+                }.toSet()
+            )
         }
     }
 
@@ -353,7 +359,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     }
                     callback(MessageImpl.fromDTO(chat, pnMessageResult))
                 } catch (e: Exception) {
-                    e.printStackTrace() //todo add logging
+                    e.printStackTrace() // todo add logging
                 }
             },
         )
@@ -370,7 +376,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     this.id,
                     custom
                 )
-            ), //todo should null overwrite? wait for optionals?
+            ), // todo should null overwrite? wait for optionals?
             includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
             includeCustom = true,
             includeCount = true,
@@ -378,7 +384,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             filter = channelFilterString,
         ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
             val resultDisconnect =
-                disconnect ?: connect(callback) //todo assign disconnect = resultDisconnect in subsequent line?
+                disconnect ?: connect(callback) // todo assign disconnect = resultDisconnect in subsequent line?
             chat.pubNub.time().thenAsync { time: PNTimeResult ->
                 Membership.fromMembershipDTO(chat, membershipArray.data.first(), user)
                     .setLastReadMessageTimetoken(time.timetoken)
@@ -386,7 +392,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 JoinResult(
                     membership,
                     resultDisconnect
-                ) //todo the whole disconnect handling is not safe! state can be made inconsistent
+                ) // todo the whole disconnect handling is not safe! state can be made inconsistent
             }
         }
     }
@@ -487,7 +493,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             throw PubNubException("Read receipts are not supported in Public chats.")
         }
         val timetokensPerUser = mutableMapOf<String, Long>()
-        val future = getMembers().then { members -> //what about paging?
+        val future = getMembers().then { members -> // what about paging?
             members.members.forEach { m ->
                 val lastTimetoken = m.custom?.get("lastReadMessageTimetoken")?.tryLong()
                 if (lastTimetoken != null) {
@@ -549,7 +555,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
                                 }
                             }
                             callback(ids.toSet())
-                        })
+                        }
+                    )
                 )
                 subscription.subscribe()
             }
@@ -568,7 +575,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             return nonNullMemberships.asFuture()
         }
 
-        return getMembers(filter = "uuid.name LIKE '${cacheKey}*'", limit = limit).then { membersResponse ->
+        return getMembers(filter = "uuid.name LIKE '$cacheKey*'", limit = limit).then { membersResponse ->
             val memberships = membersResponse.members
             suggestedMemberships[cacheKey] = memberships
             memberships
@@ -686,12 +693,16 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     )
                     this.sound = "default"
                 }
-                apns2Configurations = listOf(PushPayloadHelper.APNSPayload.APNS2Configuration().apply {
-                    this.targets = listOf(PushPayloadHelper.APNSPayload.APNS2Configuration.Target().apply {
-                        this.topic = apnsTopic
-                        this.environment = apnsEnv
-                    })
-                })
+                apns2Configurations = listOf(
+                    PushPayloadHelper.APNSPayload.APNS2Configuration().apply {
+                        this.targets = listOf(
+                            PushPayloadHelper.APNSPayload.APNS2Configuration.Target().apply {
+                                this.topic = apnsTopic
+                                this.environment = apnsEnv
+                            }
+                        )
+                    }
+                )
                 name?.let { custom = mapOf("subtitle" to it) }
             }
         }

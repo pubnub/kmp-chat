@@ -32,10 +32,11 @@ private class SerializableClass(
 @Serializable
 private sealed class SealedClass {
     @Serializable
-    data class Sealed1(val aaa: Float, val bbb: Boolean?): SealedClass()
+    data class Sealed1(val aaa: Float, val bbb: Boolean?) : SealedClass()
+
     @Serializable
     @SerialName("sealed2")
-    data class Sealed2(val bbb: Int, val ccc: String?): SealedClass()
+    data class Sealed2(val bbb: Int, val ccc: String?) : SealedClass()
 }
 
 class JsonElementDecoderTest {
@@ -75,7 +76,7 @@ class JsonElementDecoderTest {
     fun testDecodeLists() {
         // given
         val boolJson = createJsonElement(listOf(createJsonElement(boolValue)))
-        //println(boolJson)
+        // println(boolJson)
         val intJson = createJsonElement(listOf(createJsonElement(intValue)))
         val longJson = createJsonElement(listOf(createJsonElement(longValue)))
         val stringJson = createJsonElement(listOf(createJsonElement(stringValue)))
@@ -116,14 +117,14 @@ class JsonElementDecoderTest {
         val floatJson = createJsonElement(mapOf("abc" to createJsonElement(floatValue)))
 
         // when
-        val bool: Map<String,Boolean> = PNDataEncoder.decode(boolJson)
-        val int: Map<String,Int> = PNDataEncoder.decode(intJson)
-        val long: Map<String,Long> = PNDataEncoder.decode(longJson)
-        val string: Map<String,String> = PNDataEncoder.decode(stringJson)
-        val nullable: Map<String,String?> = PNDataEncoder.decode(nullJson)
-        val nullablePrimitive: Map<String,Int?> = PNDataEncoder.decode(nullJson)
-        val double: Map<String,Double> = PNDataEncoder.decode(doubleJson)
-        val float: Map<String,Float> = PNDataEncoder.decode(floatJson)
+        val bool: Map<String, Boolean> = PNDataEncoder.decode(boolJson)
+        val int: Map<String, Int> = PNDataEncoder.decode(intJson)
+        val long: Map<String, Long> = PNDataEncoder.decode(longJson)
+        val string: Map<String, String> = PNDataEncoder.decode(stringJson)
+        val nullable: Map<String, String?> = PNDataEncoder.decode(nullJson)
+        val nullablePrimitive: Map<String, Int?> = PNDataEncoder.decode(nullJson)
+        val double: Map<String, Double> = PNDataEncoder.decode(doubleJson)
+        val float: Map<String, Float> = PNDataEncoder.decode(floatJson)
 
         // then
         assertEquals(mapOf("abc" to boolValue), bool)
@@ -171,11 +172,13 @@ class JsonElementDecoderTest {
     @Test
     fun testDecodeSealedClass() {
         // given
-        val instanceJson = createJsonElement(mapOf(
-            "type" to createJsonElement("com.pubnub.internal.SealedClass.Sealed1"),
-            "aaa" to createJsonElement(floatValue),
-            "bbb" to createJsonElement(null)
-        ))
+        val instanceJson = createJsonElement(
+            mapOf(
+                "type" to createJsonElement("com.pubnub.internal.SealedClass.Sealed1"),
+                "aaa" to createJsonElement(floatValue),
+                "bbb" to createJsonElement(null)
+            )
+        )
 
         // when
         val decoded: SealedClass = PNDataEncoder.decode(instanceJson)
@@ -187,11 +190,13 @@ class JsonElementDecoderTest {
     @Test
     fun testDecodeSealedClassWithSerialName() {
         // given
-        val instanceJson = createJsonElement(mapOf(
-            "type" to createJsonElement("sealed2"),
-            "bbb" to createJsonElement(intValue),
-            "ccc" to createJsonElement(null)
-        ))
+        val instanceJson = createJsonElement(
+            mapOf(
+                "type" to createJsonElement("sealed2"),
+                "bbb" to createJsonElement(intValue),
+                "ccc" to createJsonElement(null)
+            )
+        )
 
         // when
         val decoded: SealedClass = PNDataEncoder.decode(instanceJson)
@@ -203,11 +208,13 @@ class JsonElementDecoderTest {
     @Test
     fun testDecodeCollectionOfSealedClass() {
         // given
-        val instanceJson = createJsonElement(mapOf(
-            "type" to createJsonElement("sealed2"),
-            "bbb" to createJsonElement(intValue),
-            "ccc" to createJsonElement(null)
-        ))
+        val instanceJson = createJsonElement(
+            mapOf(
+                "type" to createJsonElement("sealed2"),
+                "bbb" to createJsonElement(intValue),
+                "ccc" to createJsonElement(null)
+            )
+        )
         val list = createJsonElement(listOf(instanceJson, instanceJson))
 
         // when
@@ -220,11 +227,13 @@ class JsonElementDecoderTest {
     @Test
     fun testDecodeMapOfSealedClass() {
         // given
-        val instanceJson = createJsonElement(mapOf(
-            "type" to createJsonElement("sealed2"),
-            "bbb" to createJsonElement(intValue),
-            "ccc" to createJsonElement(null)
-        ))
+        val instanceJson = createJsonElement(
+            mapOf(
+                "type" to createJsonElement("sealed2"),
+                "bbb" to createJsonElement(intValue),
+                "ccc" to createJsonElement(null)
+            )
+        )
         val map = createJsonElement(mapOf("aaa" to instanceJson))
 
         // when
