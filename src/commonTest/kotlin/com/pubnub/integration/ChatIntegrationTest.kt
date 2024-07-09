@@ -372,14 +372,14 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertPushChannels(0)
     }
 
-    private suspend fun delayInMillis(timeMillis: Long) {
-        withContext(Dispatchers.Default) {
-            delay(timeMillis)
-        }
-    }
-
     private suspend fun assertPushChannels(expectedNumberOfChannels: Int) {
         val pushChannels = chat.getPushChannels().await()
         assertEquals(expectedNumberOfChannels, pushChannels.size)
+    }
+}
+
+internal suspend fun delayInMillis(timeMillis: Long) {
+    withContext(Dispatchers.Default) {
+        delay(timeMillis)
     }
 }

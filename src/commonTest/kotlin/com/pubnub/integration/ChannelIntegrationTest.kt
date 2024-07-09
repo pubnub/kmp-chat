@@ -163,4 +163,17 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         dispose.close()
     }
+
+    @Test
+    fun getMessage() = runTest(timeout = 10.seconds){
+        val messageText = "some text"
+        val channel = chat.createChannel(randomString()).await()
+        val tt = channel.sendText(messageText, ttl = 60).await().timetoken
+
+        delayInMillis(150)
+
+        val message = channel.getMessage(tt).await()
+        assertEquals(messageText, message?.text)
+        assertEquals(tt, message?.timetoken)
+    }
 }
