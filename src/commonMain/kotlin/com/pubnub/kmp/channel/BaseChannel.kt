@@ -607,7 +607,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
         timetoken: Long,
         text: String,
     ): PNFuture<PNPublishResult> {
-        return chat.emitEvent(userId, EventContent.Mention(timetoken, id),
+        return chat.emitEvent(
+            userId,
+            EventContent.Mention(timetoken, id),
             getPushPayload(this, text, chat.config.pushNotifications)
         )
     }

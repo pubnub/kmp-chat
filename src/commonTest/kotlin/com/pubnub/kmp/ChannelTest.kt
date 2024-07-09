@@ -692,7 +692,7 @@ class ChannelTest {
 }
 
 private operator fun Any?.get(s: String): Any? {
-    return if (this is Map<*,*>) {
+    return if (this is Map<*, *>) {
         this.get(s as Any?)
     } else {
         null
