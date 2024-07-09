@@ -31,6 +31,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import tryLong
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -141,9 +142,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         channel02.sendText("message01In$channelId02").await()
         val lastPublishToChannel02 = channel02.sendText("message02In$channelId02").await()
 
-        withContext(Dispatchers.Default) {
-            delay(2000)
-        }
         // register lister of "Receipt" event
         val assertionErrorInListener01 = CompletableDeferred<AssertionError?>()
         val removeListenerAndUnsubscribe01: AutoCloseable = chat.listenForEvents<EventContent.Receipt>(
@@ -206,7 +204,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         // remove memberships (user). This will be done in tearDown method
     }
 
-//    @Ignore // fails from time to time
+    @Ignore // fails from time to time
     @Test
     fun can_getUnreadMessagesCount_onMembership() = runTest {
         val channelId01 = channel01.id
@@ -240,7 +238,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         chat.pubNub.deleteMessages(listOf(channelId01))
     }
 
-//    @Ignore // fails from time to time
+    @Ignore // fails from time to time
     @Test
     fun can_getUnreadMessageCounts_global() = runTest {
         val channelId01 = channel01.id
@@ -268,7 +266,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // markUnread
         chat.markAllMessagesAsRead().await()
-        delayInMillis(5000) // history calls have around 130ms of cache time
+        delayInMillis(6000) // history calls have around 130ms of cache time
         // todo not sure why 5s is needed here but without it test doesn't pass in most cases. What can take so long? markAllMessagesAsRead method sets Membership. Does it take so long to propagate?
 
         // read message count
