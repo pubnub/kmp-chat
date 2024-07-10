@@ -5,6 +5,8 @@ import com.pubnub.api.UserId
 import com.pubnub.api.createJsonElement
 import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
+import com.pubnub.api.enums.PNPushEnvironment
+import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.HistoryMessageType
@@ -17,6 +19,7 @@ import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.channel.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.kmp.message.MessageImpl
@@ -25,6 +28,7 @@ import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
 import com.pubnub.kmp.types.TextLink
+import com.pubnub.test.await
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -33,6 +37,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode.Companion.exactly
+import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
@@ -479,6 +484,17 @@ class ChannelTest {
     }
 
     @Test
+    fun sendText_failure_when_quotedmessage_from_another_channel() = runTest {
+        val exception = assertFailsWith<PubNubException> {
+            objectUnderTest.sendText(
+                "text",
+                quotedMessage = MessageImpl(chat, 1L, EventContent.TextMessageContent("text"), "other_channel", "other_user")
+            ).await()
+        }
+        assertEquals("You cannot quote messages from other channels", exception.message)
+    }
+
+    @Test
     fun sendTextAllParametersArePassedToPublish() {
         every { chat.publish(any(), any(), any(), any(), any(), any(), any()) } returns PNPublishResult(1L).asFuture()
         val messageText = "someText"
@@ -625,5 +641,107 @@ class ChannelTest {
     @Test
     fun getTypingShouldRemoveExpiredTypingIndicators() {
         // todo
+    }
+
+    @Test
+    fun getPushPayload_empty_when_sendPushes_is_false() {
+        val config = PushNotificationsConfig(false, null, PNPushType.FCM, null, PNPushEnvironment.PRODUCTION)
+
+        val result = BaseChannel.getPushPayload(createChannel(type), "some text", config)
+
+        assertEquals(emptyMap(), result)
+    }
+
+    @Test
+    fun getPushPayload_no_apns2_topic() {
+        val userId = "some_user"
+        val text = "some text"
+        val config = PushNotificationsConfig(true, "abc", PNPushType.FCM, null, PNPushEnvironment.PRODUCTION)
+
+        every { chat.currentUser } returns User(chat, userId)
+
+        val result = BaseChannel.getPushPayload(createChannel(type), text, config)
+
+        assertEquals(objectUnderTest.name, result["pn_fcm"]["data"]["subtitle"])
+        assertEquals(userId, result["pn_fcm"]["notification"]["title"])
+        assertEquals(text, result["pn_fcm"]["notification"]["body"])
+        assertEquals(userId, result["pn_fcm"]["android"]["notification"]["title"])
+        assertEquals(text, result["pn_fcm"]["android"]["notification"]["body"])
+        assertEquals("default", result["pn_fcm"]["android"]["notification"]["sound"])
+    }
+
+    @Test
+    fun getPushPayload_with_apns2_topic() {
+        val userId = "some_user"
+        val text = "some text"
+        val topic = "apns_topic"
+        val config = PushNotificationsConfig(true, "abc", PNPushType.FCM, topic, PNPushEnvironment.PRODUCTION)
+        every { chat.currentUser } returns User(chat, userId)
+
+        val result = BaseChannel.getPushPayload(createChannel(type), text, config)
+
+        assertEquals(objectUnderTest.name, result["pn_fcm"]["data"]["subtitle"])
+
+        assertEquals(userId, result["pn_fcm"]["notification"]["title"])
+        assertEquals(text, result["pn_fcm"]["notification"]["body"])
+        assertEquals(userId, result["pn_fcm"]["android"]["notification"]["title"])
+        assertEquals(text, result["pn_fcm"]["android"]["notification"]["body"])
+        assertEquals("default", result["pn_fcm"]["android"]["notification"]["sound"])
+
+        assertEquals(userId, result["pn_apns"]["aps"]["alert"]["title"])
+        assertEquals(text, result["pn_apns"]["aps"]["alert"]["body"])
+        assertEquals("default", result["pn_apns"]["aps"]["sound"])
+
+        assertEquals(topic, result["pn_apns"]["pn_push"][0]["targets"][0]["topic"])
+        assertEquals(PNPushEnvironment.PRODUCTION.toParamString(), result["pn_apns"]["pn_push"][0]["targets"][0]["environment"])
+        assertEquals(objectUnderTest.name, result["pn_apns"]["subtitle"])
+    }
+
+    @Test
+    fun generateReceipts() {
+        val result = BaseChannel.generateReceipts(mapOf("user" to 1L, "user2" to 2L, "user3" to 1L, "user4" to 3L))
+        assertEquals(mapOf(1L to listOf("user", "user3"), 2L to listOf("user2"), 3L to listOf("user4")), result)
+    }
+
+    @Test
+    fun registerForPush_calls_chat() {
+        every { chat.registerPushChannels(any()) } returns mock()
+        objectUnderTest.registerForPush()
+
+        verify { chat.registerPushChannels(listOf(objectUnderTest.id)) }
+    }
+
+    @Test
+    fun unregisterFromPush_calls_chat() {
+        every { chat.unregisterPushChannels(any()) } returns mock()
+
+        objectUnderTest.unregisterFromPush()
+
+        verify { chat.unregisterPushChannels(listOf(objectUnderTest.id)) }
+    }
+
+    @Test
+    fun update_calls_chat() {
+        every { chat.updateChannel(any(), any(), any(), any(), any(), any(), any()) } returns mock()
+
+        objectUnderTest.update(name, custom, description, updated, status, type)
+
+        verify { chat.updateChannel(channelId, name, custom, description, updated, status, type) }
+    }
+}
+
+private operator fun Any?.get(s: String): Any? {
+    return if (this is Map<*, *>) {
+        this.get(s as Any?)
+    } else {
+        null
+    }
+}
+
+private operator fun Any?.get(i: Int): Any? {
+    return if (this is List<*>) {
+        this.get(i)
+    } else {
+        null
     }
 }

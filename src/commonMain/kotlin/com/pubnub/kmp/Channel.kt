@@ -125,7 +125,7 @@ interface Channel {
         }
     }
 
-    fun streamReadReceipts(callback: (receipts: Map<String, List<String>>) -> Unit): AutoCloseable
+    fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable
 
     fun getFiles(limit: Int = 100, next: String? = null): PNFuture<GetFilesResult>
 
