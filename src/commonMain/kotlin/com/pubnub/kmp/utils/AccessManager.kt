@@ -22,40 +22,59 @@ internal class AccessManager(private val chat: Chat) {
             resourceType: ResourceType,
             parsedToken: PNToken,
             resourceName: String,
-            permission: Permission,
+            permission: Permission
         ): Boolean {
-            val resource =
-                if (resourceType == ResourceType.UUIDS) parsedToken.resources.uuids else parsedToken.resources.channels
+            val resource = getResourceMap(resourceType, parsedToken)
             val resourcePermission = resource[resourceName]?.let {
-                when (permission) {
-                    Permission.READ -> it.read
-                    Permission.WRITE -> it.write
-                    Permission.MANAGE -> it.manage
-                    Permission.DELETE -> it.delete
-                    Permission.GET -> it.get
-                    Permission.JOIN -> it.join
-                    Permission.UPDATE -> it.update
-                }
+                getPermission(it, permission)
             }
+
             if (resourcePermission != null) {
                 return resourcePermission
             }
 
-            val resourcePatterns =
-                if (resourceType == ResourceType.UUIDS) parsedToken.patterns.uuids else parsedToken.patterns.channels
+            val resourcePatterns = getPatternMap(resourceType, parsedToken)
+            return checkPatterns(resourcePatterns, resourceName, permission)
+        }
+
+        private fun getResourceMap(resourceType: ResourceType, parsedToken: PNToken): Map<String, PNToken.PNResourcePermissions> {
+            return if (resourceType == ResourceType.UUIDS) {
+                parsedToken.resources.uuids
+            } else {
+                parsedToken.resources.channels
+            }
+        }
+
+        private fun getPatternMap(resourceType: ResourceType, parsedToken: PNToken): Map<String, PNToken.PNResourcePermissions> {
+            return if (resourceType == ResourceType.UUIDS) {
+                parsedToken.patterns.uuids
+            } else {
+                parsedToken.patterns.channels
+            }
+        }
+
+        private fun getPermission(resource: PNToken.PNResourcePermissions, permission: Permission): Boolean {
+            return when (permission) {
+                Permission.READ -> resource.read
+                Permission.WRITE -> resource.write
+                Permission.MANAGE -> resource.manage
+                Permission.DELETE -> resource.delete
+                Permission.GET -> resource.get
+                Permission.JOIN -> resource.join
+                Permission.UPDATE -> resource.update
+            }
+        }
+
+        private fun checkPatterns(
+            resourcePatterns: Map<String, PNToken.PNResourcePermissions>,
+            resourceName: String,
+            permission: Permission
+        ): Boolean {
             resourcePatterns.keys.forEach { pattern ->
                 val regex = Regex(pattern)
                 if (regex.matches(resourceName)) {
                     val resPermission = resourcePatterns[pattern] ?: return false
-                    return when (permission) {
-                        Permission.READ -> resPermission.read
-                        Permission.WRITE -> resPermission.write
-                        Permission.MANAGE -> resPermission.manage
-                        Permission.DELETE -> resPermission.delete
-                        Permission.GET -> resPermission.get
-                        Permission.JOIN -> resPermission.join
-                        Permission.UPDATE -> resPermission.update
-                    }
+                    return getPermission(resPermission, permission)
                 }
             }
             return false
