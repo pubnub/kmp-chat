@@ -7,6 +7,8 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteMembershipEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEventMessage
 import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.kmp.types.EventContent
+import com.pubnub.kmp.utils.AccessManager
 import tryLong
 
 data class Membership(
@@ -45,14 +47,23 @@ data class Membership(
         }
     }
 
-    fun setLastReadMessageTimetoken(time: Long): PNFuture<Membership> {
+    fun setLastReadMessageTimetoken(timetoken: Long): PNFuture<Membership> {
         val newCustom = buildMap {
             custom?.let { putAll(it) }
-            put("lastReadMessageTimetoken", time)
+            put("lastReadMessageTimetoken", timetoken)
         }
         return update(createCustomObject(newCustom)).alsoAsync {
-            // todo implement when this.chat.accessManager.canI is done
-            Unit.asFuture()
+            val canISendSignal = AccessManager(chat).canI(AccessManager.Permission.WRITE, AccessManager.ResourceType.CHANNELS, channel.id)
+            if (canISendSignal) {
+                chat.emitEvent(channel.id, EventContent.Receipt(timetoken))
+            } else {
+                if (chat.config.saveDebugLog) {
+                    println(
+                        "'receipt' event was not sent to channel '${this.channel.id}' because PAM did not allow it."
+                    ) // todo change to logging
+                }
+                Unit.asFuture()
+            }
         }
     }
 
