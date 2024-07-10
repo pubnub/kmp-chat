@@ -4,8 +4,8 @@ import com.pubnub.api.models.consumer.access_manager.v3.PNToken
 import com.pubnub.kmp.Chat
 
 internal class AccessManager(private val chat: Chat) {
-
     internal enum class ResourceType { UUIDS, CHANNELS }
+
     internal enum class Permission { READ, WRITE, MANAGE, DELETE, GET, JOIN, UPDATE }
 
     fun canI(permission: Permission, resourceType: ResourceType, resourceName: String): Boolean {
