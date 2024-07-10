@@ -7,6 +7,7 @@ import com.pubnub.kmp.User
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.test.await
 import com.pubnub.test.randomString
+import com.pubnub.test.test
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -165,7 +166,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun getMessage() = runTest(timeout = 10.seconds){
+    fun getMessage() = runTest(timeout = 10.seconds) {
         val messageText = "some text"
         val channel = chat.createChannel(randomString()).await()
         val tt = channel.sendText(messageText, ttl = 60).await().timetoken
@@ -175,5 +176,35 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val message = channel.getMessage(tt).await()
         assertEquals(messageText, message?.text)
         assertEquals(tt, message?.timetoken)
+    }
+
+    @Test
+    fun getTyping() = runTest(timeout = 10.seconds) {
+        val channel = chat.createChannel(randomString()).await()
+        val typingStarted = CompletableDeferred<Unit>()
+        val typingStopped = CompletableDeferred<Unit>()
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel.id)) {
+                dispose = channel.getTyping {
+                    if (it.contains(chat.currentUser.id)) {
+                        typingStarted.complete(Unit)
+                    } else {
+                        if (typingStarted.isCompleted) {
+                            typingStopped.complete(Unit)
+                        } else {
+                            typingStopped.completeExceptionally(Throwable("Stopped before started"))
+                        }
+                    }
+                }
+            }
+
+            channel.startTyping().await()
+            typingStarted.await()
+            channel.stopTyping().await()
+            typingStopped.await()
+
+            dispose?.close()
+        }
     }
 }

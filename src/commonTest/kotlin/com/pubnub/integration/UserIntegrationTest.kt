@@ -2,10 +2,12 @@ package com.pubnub.integration
 
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.kmp.User
 import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.test.await
+import com.pubnub.test.test
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -100,5 +102,26 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(channelId02, firstRestriction.channelId)
         val secondRestriction = getRestrictionsResponse.restrictions.elementAt(1)
         assertEquals(channelId01, secondRestriction.channelId)
+    }
+
+    @Test
+    fun streamUpdatesOn() = runTest(timeout = defaultTimeout) {
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(someUser.id)) {
+                dispose = User.streamUpdatesOn(listOf(someUser)) {
+                    println(it)
+                }
+            }
+
+            chat.createUser(someUser).await()
+
+            someUser.update(name = "newName").await()
+
+            someUser.delete().await()
+
+            delayInMillis(2000)
+            dispose?.close()
+        }
     }
 }

@@ -28,6 +28,7 @@ import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
 import com.pubnub.kmp.types.TextLink
+import com.pubnub.test.await
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -36,6 +37,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode.Companion.exactly
+import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
@@ -482,6 +484,17 @@ class ChannelTest {
     }
 
     @Test
+    fun sendText_failure_when_quotedmessage_from_another_channel() = runTest {
+        val exception = assertFailsWith<PubNubException> {
+            objectUnderTest.sendText(
+                "text",
+                quotedMessage = MessageImpl(chat, 1L, EventContent.TextMessageContent("text"), "other_channel", "other_user")
+            ).await()
+        }
+        assertEquals("You cannot quote messages from other channels", exception.message)
+    }
+
+    @Test
     fun sendTextAllParametersArePassedToPublish() {
         every { chat.publish(any(), any(), any(), any(), any(), any(), any()) } returns PNPublishResult(1L).asFuture()
         val messageText = "someText"
@@ -707,6 +720,14 @@ class ChannelTest {
         verify { chat.unregisterPushChannels(listOf(objectUnderTest.id)) }
     }
 
+    @Test
+    fun update_calls_chat() {
+        every { chat.updateChannel(any(), any(), any(), any(), any(), any(), any()) } returns mock()
+
+        objectUnderTest.update(name, custom, description, updated, status, type)
+
+        verify { chat.updateChannel(channelId, name, custom, description, updated, status, type) }
+    }
 }
 
 private operator fun Any?.get(s: String): Any? {

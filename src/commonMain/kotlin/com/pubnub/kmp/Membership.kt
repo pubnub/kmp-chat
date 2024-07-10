@@ -6,7 +6,6 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteMembershipEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEventMessage
-import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.channel.ChannelImpl
 import tryLong
 
@@ -89,7 +88,7 @@ data class Membership(
             if (memberships.isEmpty()) {
                 throw PubNubException("Cannot stream membership updates on an empty list")
             }
-            val chat = (memberships.first() as BaseChannel<*, *>).chat
+            val chat = memberships.first().chat
             val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
                 val eventUuid = when (val message = event.extractedMessage) {
                     is PNDeleteMembershipEventMessage -> message.data.uuid
