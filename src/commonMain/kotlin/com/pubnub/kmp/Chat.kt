@@ -28,6 +28,12 @@ interface Chat {
     val editMessageActionName: String
     val deleteMessageActionName: String
 
+    companion object {
+        fun init(config: ChatConfig, pubNub: PubNub = createPubNub(config.pubnubConfig)): PNFuture<Chat> {
+            return ChatImpl(config, pubNub).init()
+        }
+    }
+
     fun createUser(user: User): PNFuture<User>
 
     fun createUser(
@@ -169,7 +175,8 @@ interface Chat {
     fun getPushChannels(): PNFuture<List<String>>
 
     // should be internal
-    fun publish( // todo maybe create separate interface Chat : ChatInternal so that publish and signal are not visible by user?
+    fun publish(
+        // todo maybe create separate interface Chat : ChatInternal so that publish and signal are not visible by user?
         channelId: String,
         message: EventContent,
         meta: Map<String, Any>? = null,

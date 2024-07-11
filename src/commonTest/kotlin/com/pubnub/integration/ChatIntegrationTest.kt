@@ -26,10 +26,7 @@ import com.pubnub.kmp.utils.cyrb53a
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
 import tryLong
 import kotlin.test.Ignore
 import kotlin.test.Test
@@ -375,11 +372,5 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     private suspend fun assertPushChannels(expectedNumberOfChannels: Int) {
         val pushChannels = chat.getPushChannels().await()
         assertEquals(expectedNumberOfChannels, pushChannels.size)
-    }
-}
-
-internal suspend fun delayInMillis(timeMillis: Long) {
-    withContext(Dispatchers.Default) {
-        delay(timeMillis)
     }
 }

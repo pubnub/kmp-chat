@@ -35,6 +35,7 @@ import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.channel.GetChannelsResponse
 import com.pubnub.kmp.channel.ThreadChannelImpl
+import com.pubnub.kmp.error.PubNubErrorMessage.APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2
 import com.pubnub.kmp.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_META_DATA_IS_EMPTY
@@ -49,6 +50,7 @@ import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHERE_PRESENT_
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
+import com.pubnub.kmp.error.PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.kmp.membership.MembershipsResponse
@@ -56,6 +58,7 @@ import com.pubnub.kmp.message.GetUnreadMessagesCounts
 import com.pubnub.kmp.message.MarkAllMessageAsReadResponse
 import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.kmp.restrictions.RestrictionType
+import com.pubnub.kmp.timer.PlatformTimer
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.CreateGroupConversationResult
@@ -66,6 +69,7 @@ import com.pubnub.kmp.types.getMethodFor
 import com.pubnub.kmp.user.GetUsersResponse
 import com.pubnub.kmp.util.getPhraseToLookFor
 import com.pubnub.kmp.utils.cyrb53a
+import kotlinx.datetime.Clock
 import kotlin.js.JsExport
 import kotlin.reflect.KClass
 import kotlin.time.Duration
@@ -79,6 +83,8 @@ interface ChatConfig {
     var typingTimeout: Duration
     var rateLimitPerChannel: Any
     val pushNotifications: PushNotificationsConfig
+    var storeUserActivityInterval: Long
+    var storeUserActivityTimestamps: Boolean
 }
 
 class PushNotificationsConfig(
@@ -101,6 +107,8 @@ class ChatConfigImpl(override val pubnubConfig: PNConfiguration) : ChatConfig {
         null,
         PNPushEnvironment.DEVELOPMENT
     )
+    override var storeUserActivityInterval: Long = 600000 // 10 minutes
+    override var storeUserActivityTimestamps: Boolean = false
 }
 
 internal const val DELETED = "Deleted"
@@ -114,17 +122,43 @@ private const val HTTP_ERROR_404 = 404
 internal const val INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_"
 private const val MESSAGE_THREAD_ID_PREFIX = "PUBNUB_INTERNAL_THREAD"
 
-class ChatImpl(
+class ChatImpl internal constructor(
     override val config: ChatConfig,
     override val pubNub: PubNub = createPubNub(config.pubnubConfig),
-    override val editMessageActionName: String = MessageActionType.EDITED.toString(),
-    override val deleteMessageActionName: String = MessageActionType.DELETED.toString(),
+    override val editMessageActionName: String = MessageActionType.EDITED.toString(), // todo should it be here in constructor?
+    override val deleteMessageActionName: String = MessageActionType.DELETED.toString(), // todo should it be here in constructor?
 ) : Chat {
     override var currentUser: User = User(this, config.uuid)
         private set
 
     private val suggestedChannelsCache: MutableMap<String, Set<Channel>> = mutableMapOf()
     private val suggestedUsersCache: MutableMap<String, Set<User>> = mutableMapOf()
+    private var lastSavedActivityInterval: PlatformTimer? = null
+    private var runWithDelayTimer: PlatformTimer? = null
+
+    internal fun init(): PNFuture<Chat> {
+        if (config.storeUserActivityInterval < 60000) { // todo enable
+            throw PubNubException(STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN.message)
+        }
+
+        if (config.pushNotifications.deviceGateway == PNPushType.APNS2 && config.pushNotifications.apnsTopic == null) {
+            throw PubNubException(APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2.message)
+        }
+
+        return getUser(currentUser.id).thenAsync { user: User? ->
+            user?.asFuture() ?: createUser(currentUser.id)
+        }.then { user: User ->
+            currentUser = user
+        }.thenAsync { _: Unit ->
+            if (config.storeUserActivityTimestamps) {
+                storeUserActivityTimestamp()
+            } else {
+                Unit.asFuture()
+            }
+        }.then {
+            this
+        }
+    }
 
     // todo when creating "chat" ChatConfig contain UUID but PNConfiguration located in ChatConfig has UserId
     // maybe we can unified this?
@@ -168,7 +202,7 @@ class ChatImpl(
             return PubNubException(ID_IS_REQUIRED).asFuture()
         }
 
-        return pubNub.getUUIDMetadata(uuid = userId)
+        return pubNub.getUUIDMetadata(uuid = userId, includeCustom = true)
             .then<PNUUIDMetadataResult, User?> { pnUUIDMetadataResult: PNUUIDMetadataResult ->
                 pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
                     User.fromDTO(this, pnUUIDMetadata)
@@ -1032,6 +1066,64 @@ class ChatImpl(
                     chat.pubNub.removeMessageAction(message.channelId, message.timetoken, actionTimetoken),
                     threadChannel.delete(soft)
                 )
+            }
+        }
+    }
+
+    private fun storeUserActivityTimestamp(): PNFuture<Unit> {
+        lastSavedActivityInterval?.cancel()
+        runWithDelayTimer?.cancel()
+
+        return getUser(currentUser.id).thenAsync { user: User? ->
+            if (user?.lastActiveTimestamp == null) {
+                return@thenAsync runSaveTimestampInterval()
+            }
+            val currentTime = Clock.System.now().toEpochMilliseconds()
+            val elapsedTimeSinceLastCheck = currentTime - currentUser.lastActiveTimestamp!!
+
+            if (elapsedTimeSinceLastCheck >= config.storeUserActivityInterval) {
+                return@thenAsync runSaveTimestampInterval()
+            }
+
+            val remainingTime = config.storeUserActivityInterval - elapsedTimeSinceLastCheck
+            runWithDelayTimer = PlatformTimer().apply {
+                runWithDelay(remainingTime) {
+                    runSaveTimestampInterval()
+                }
+            }
+            return@thenAsync runWithDelayTimer.asFuture().then {}
+        }
+    }
+
+    private fun runSaveTimestampInterval(): PNFuture<Unit> {
+        return saveTimeStampFunc().then {
+            lastSavedActivityInterval?.cancel()
+            lastSavedActivityInterval = PlatformTimer().apply {
+                schedule(config.storeUserActivityInterval) {
+                    saveTimeStampFunc().async { result: Result<Unit> ->
+                        result.onFailure { e ->
+                            // todo log e "error setting lastActiveTimestamp"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun saveTimeStampFunc(): PNFuture<Unit> {
+        val customWithUpdatedLastActiveTimestamp = buildMap {
+            currentUser.custom?.let { putAll(it) }
+            put("lastActiveTimestamp", Clock.System.now().toEpochMilliseconds())
+        }
+        return pubNub.setUUIDMetadata(
+            uuid = currentUser.id,
+            custom = createCustomObject(customWithUpdatedLastActiveTimestamp),
+            includeCustom = true,
+        ).then { pnUUIDMetadataResult: PNUUIDMetadataResult ->
+            if (pnUUIDMetadataResult.data != null) {
+                currentUser = User.fromDTO(this, pnUUIDMetadataResult.data!!)
+            } else {
+                error("PNUUIDMetadata is null.")
             }
         }
     }
