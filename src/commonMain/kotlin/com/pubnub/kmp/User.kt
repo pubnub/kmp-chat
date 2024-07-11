@@ -13,10 +13,12 @@ import com.pubnub.api.models.consumer.pubsub.objects.PNSetUUIDMetadataEventMessa
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
+import com.pubnub.kmp.error.PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_IS_FALSE
 import com.pubnub.kmp.membership.IncludeParameters
 import com.pubnub.kmp.membership.MembershipsResponse
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.kmp.restrictions.Restriction
+import kotlinx.datetime.Clock
 import tryLong
 
 data class User(
@@ -95,7 +97,12 @@ data class User(
         }
     }
 
-    fun setRestrictions(channel: Channel, ban: Boolean = false, mute: Boolean = false, reason: String? = null): PNFuture<Unit> {
+    fun setRestrictions(
+        channel: Channel,
+        ban: Boolean = false,
+        mute: Boolean = false,
+        reason: String? = null
+    ): PNFuture<Unit> {
         if (chat.config.pubnubConfig.secretKey.isEmpty()) {
             throw PubNubException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY.message)
         }
@@ -148,6 +155,18 @@ data class User(
         return streamUpdatesOn(listOf(this)) {
             callback(it.first())
         }
+    }
+
+    fun active(): PNFuture<Boolean> {
+        if (!chat.config.storeUserActivityTimestamps) {
+            throw PubNubException(STORE_USER_ACTIVITY_INTERVAL_IS_FALSE.message)
+        }
+        return (
+            lastActiveTimestamp != null && (
+                Clock.System.now()
+                    .toEpochMilliseconds() - lastActiveTimestamp!! <= chat.config.storeUserActivityInterval
+            )
+        ).asFuture()
     }
 
     internal fun getRestrictions(
@@ -222,7 +241,10 @@ data class User(
             val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
                 val newUser = when (val message = event.extractedMessage) {
                     is PNSetUUIDMetadataEventMessage -> fromDTO(chat, message.data)
-                    is PNDeleteUUIDMetadataEventMessage -> User(chat, id = message.uuid) // todo verify behavior with TS Chat SDK
+                    is PNDeleteUUIDMetadataEventMessage -> User(
+                        chat,
+                        id = message.uuid
+                    ) // todo verify behavior with TS Chat SDK
                     else -> return@createEventListener
                 }
                 val newUsers = users.map {

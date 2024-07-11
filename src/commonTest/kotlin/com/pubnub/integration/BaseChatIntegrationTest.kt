@@ -9,7 +9,10 @@ import com.pubnub.kmp.types.ChannelType
 import com.pubnub.test.BaseIntegrationTest
 import com.pubnub.test.await
 import com.pubnub.test.randomString
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
@@ -71,5 +74,11 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
         pubnub.removeChannelMetadata(channel02.id).await()
         pubnub.removeChannelMetadata(channelPam.id).await()
         cleanup.forEach { it.invoke() }
+    }
+
+    internal suspend fun delayInMillis(timeMillis: Long) {
+        withContext(Dispatchers.Default) {
+            delay(timeMillis)
+        }
     }
 }

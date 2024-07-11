@@ -1,7 +1,10 @@
 package com.pubnub.integration
 
+import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.kmp.Chat
+import com.pubnub.kmp.ChatConfigImpl
 import com.pubnub.kmp.User
 import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
@@ -11,6 +14,8 @@ import com.pubnub.test.test
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class UserIntegrationTest : BaseChatIntegrationTest() {
     @Test
@@ -123,5 +128,53 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
             delayInMillis(2000)
             dispose?.close()
         }
+    }
+
+    @Test
+    fun calling_active_should_throw_exception_when_storeUserActivityTimestamps_is_false() = runTest {
+        val e = assertFailsWith<PubNubException> {
+            someUser.active().await()
+        }
+
+        assertEquals(
+            "storeUserActivityTimestamps config property is set to false so can not provide info about user being active",
+            e.message
+        )
+    }
+
+    @Test
+    fun whenUserDoesNotExist_init_should_create_it_with_lastActiveTimestamp() = runTest {
+        // set up storeUserActivityTimestamps
+        val chatConfig = ChatConfigImpl(chat.config.pubnubConfig).apply {
+            storeUserActivityTimestamps = true
+        }
+        val chatNew: Chat = Chat.init(chatConfig, pubnub).await()
+        someUser = chatNew.currentUser
+
+        // when
+        val isUserActive = someUser.active().await()
+
+        // then
+        assertTrue(isUserActive)
+    }
+
+    @Test
+    fun whenUserExists_init_should_update_lastActiveTimestamp() = runTest {
+        // set up storeUserActivityTimestamps
+        val chatConfig = ChatConfigImpl(chat.config.pubnubConfig).apply {
+            storeUserActivityTimestamps = true
+        }
+
+        val chatNew: Chat = Chat.init(chatConfig, pubnub).await()
+        delayInMillis(2000)
+        // call init second time to simulate user existence
+        val chatNew2: Chat = Chat.init(chatConfig, pubnub).await()
+        someUser = chatNew2.currentUser
+
+        // when
+        val isUserActive = someUser.active().await()
+
+        // then
+        assertTrue(isUserActive)
     }
 }

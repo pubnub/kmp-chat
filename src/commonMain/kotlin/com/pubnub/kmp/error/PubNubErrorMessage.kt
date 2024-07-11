@@ -34,6 +34,13 @@ enum class PubNubErrorMessage(val message: String) {
     MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY(
         "Moderation restrictions can only be set by clients initialized with a Secret Key."
     ),
+    STORE_USER_ACTIVITY_INTERVAL_IS_FALSE(
+        "storeUserActivityTimestamps config property is set to false so can not provide info about user being active"
+    ),
+    STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN("storeUserActivityInterval must be at least 60000ms"),
+    APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2(
+        "apnsTopic has to be defined when deviceGateway is set to apns2"
+    ),
     ;
 
     override fun toString(): String {
