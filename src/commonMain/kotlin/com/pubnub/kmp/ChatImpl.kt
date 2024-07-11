@@ -137,7 +137,7 @@ class ChatImpl internal constructor(
     private var runWithDelayTimer: PlatformTimer? = null
 
     internal fun init(): PNFuture<Chat> {
-        if (config.storeUserActivityInterval < 60000) { // todo enable
+        if (config.storeUserActivityInterval < 60000) {
             throw PubNubException(STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN.message)
         }
 
