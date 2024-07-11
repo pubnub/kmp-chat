@@ -59,6 +59,8 @@ import com.pubnub.kmp.message.MarkAllMessageAsReadResponse
 import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.kmp.restrictions.RestrictionType
 import com.pubnub.kmp.timer.PlatformTimer
+import com.pubnub.kmp.timer.PlatformTimer.Companion.runPeriodically
+import com.pubnub.kmp.timer.PlatformTimer.Companion.runWithDelay
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.CreateGroupConversationResult
@@ -73,6 +75,7 @@ import kotlinx.datetime.Clock
 import kotlin.js.JsExport
 import kotlin.reflect.KClass
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @JsExport
@@ -1087,7 +1090,7 @@ class ChatImpl internal constructor(
 
             val remainingTime = config.storeUserActivityInterval - elapsedTimeSinceLastCheck
             runWithDelayTimer = PlatformTimer().apply {
-                runWithDelay(remainingTime) {
+                runWithDelay(remainingTime.milliseconds) {
                     runSaveTimestampInterval()
                 }
             }
@@ -1099,7 +1102,7 @@ class ChatImpl internal constructor(
         return saveTimeStampFunc().then {
             lastSavedActivityInterval?.cancel()
             lastSavedActivityInterval = PlatformTimer().apply {
-                schedule(config.storeUserActivityInterval) {
+                runPeriodically(config.storeUserActivityInterval.milliseconds) {
                     saveTimeStampFunc().async { result: Result<Unit> ->
                         result.onFailure { e ->
                             // todo log e "error setting lastActiveTimestamp"

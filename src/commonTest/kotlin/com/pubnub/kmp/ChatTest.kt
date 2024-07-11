@@ -203,7 +203,7 @@ class ChatTest {
         }
 
         // then
-        verify { pubnub.getUUIDMetadata(uuid = id, includeCustom = false) }
+        verify { pubnub.getUUIDMetadata(uuid = id, includeCustom = true) }
     }
 
     @Test

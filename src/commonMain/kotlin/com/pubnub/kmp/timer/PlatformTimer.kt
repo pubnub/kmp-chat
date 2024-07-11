@@ -1,11 +1,14 @@
 package com.pubnub.kmp.timer
 
 import com.pubnub.kmp.PNFuture
+import kotlin.time.Duration
 
 expect class PlatformTimer() {
-    fun schedule(periodMillis: Long, action: () -> Unit)
+    companion object {
+        fun runPeriodically(periodMillis: Duration, action: () -> Unit): PlatformTimer
+
+        fun runWithDelay(delayMillis: Duration, action: () -> PNFuture<Unit>): PlatformTimer
+    }
 
     fun cancel()
-
-    fun runWithDelay(delayMillis: Long, action: () -> PNFuture<Unit>)
 }
