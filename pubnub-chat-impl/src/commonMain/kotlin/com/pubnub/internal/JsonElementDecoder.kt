@@ -66,17 +66,17 @@ class JsonElementDecoder(
             }
 
             StructureKind.MAP -> {
-                JsonElementDecoder(currentMap = jsonElement?.asMap())
+                com.pubnub.internal.JsonElementDecoder(currentMap = jsonElement?.asMap())
             }
 
             StructureKind.CLASS -> {
                 currentMap?.let {
                     this
-                } ?: JsonElementDecoder(currentMap = jsonElement?.asMap())
+                } ?: com.pubnub.internal.JsonElementDecoder(currentMap = jsonElement?.asMap())
             }
 
             StructureKind.LIST -> {
-                JsonElementDecoder(currentList = jsonElement?.asList())
+                com.pubnub.internal.JsonElementDecoder(currentList = jsonElement?.asList())
             }
 
             else -> error("Not implemented")
@@ -222,7 +222,7 @@ class JsonElementDecoder(
         when (descriptor.kind) {
             is PolymorphicKind -> {
                 return deserializer.deserialize(
-                    JsonElementDecoder(
+                    com.pubnub.internal.JsonElementDecoder(
                         currentMap = currentMap
                     )
                 )
@@ -234,18 +234,26 @@ class JsonElementDecoder(
                     if (index % 2 == 0) {
                         return key as T
                     } else {
-                        return deserializer.deserialize(JsonElementDecoder(map[key]))
+                        return deserializer.deserialize(com.pubnub.internal.JsonElementDecoder(map[key]))
                     }
                 }
             }
 
             StructureKind.CLASS -> {
                 requireNotNull(currentMap)
-                return deserializer.deserialize(JsonElementDecoder((currentMap?.get(descriptor.getElementName(index)))))
+                return deserializer.deserialize(
+                    com.pubnub.internal.JsonElementDecoder(
+                        (currentMap?.get(
+                            descriptor.getElementName(
+                                index
+                            )
+                        ))
+                    )
+                )
             }
 
             StructureKind.LIST -> {
-                return deserializer.deserialize(JsonElementDecoder(currentList?.get(index)))
+                return deserializer.deserialize(com.pubnub.internal.JsonElementDecoder(currentList?.get(index)))
             }
 
             else -> error("Not supported")

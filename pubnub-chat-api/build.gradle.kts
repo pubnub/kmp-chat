@@ -81,41 +81,36 @@ kotlin {
 //                implementation("com.pubnub:pubnub-kotlin-api:9.2-DEV")
 //                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
 //                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.0-RC")
-//                implementation("com.benasher44:uuid:0.8.4")
-////                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0-RC")
-//                implementation("org.jetbrains.kotlinx:atomicfu:0.24.0")
-                api(project(":pubnub-chat-api"))
-                implementation(project(":pubnub-chat-impl"))
             }
         }
-//
-//        val commonTest by getting {
-//            dependencies {
+
+        val commonTest by getting {
+            dependencies {
 //                implementation(kotlin("test"))
 //                implementation("com.pubnub:pubnub-kotlin-test")
-//            }
-//        }
-//
-//        val jvmMain by getting {
-//            dependencies {
+            }
+        }
+
+        val jvmMain by getting {
+            dependencies {
 //                implementation("com.pubnub:pubnub-kotlin:9.2-DEV")
 //                implementation(kotlin("test-junit"))
-//            }
-//        }
-//
-//        val nonJvm by creating {
-//            dependsOn(commonMain)
-//        }
-//
-//        val jsMain by getting {
-//            dependsOn(nonJvm)
-//        }
-//
-//        val jsTest by getting {
-//            dependencies {
+            }
+        }
+
+        val nonJvm by creating {
+            dependsOn(commonMain)
+        }
+
+        val jsMain by getting {
+            dependsOn(nonJvm)
+        }
+
+        val jsTest by getting {
+            dependencies {
 //                implementation(kotlin("test-js"))
-//            }
-//        }
+            }
+        }
     }
 
 //    cocoapods {

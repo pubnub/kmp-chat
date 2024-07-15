@@ -172,7 +172,7 @@ object PNDataEncoder {
     inline fun <reified T> encode(value: T) = encode(serializer(), value)
 
     fun <T> decode(deserializer: DeserializationStrategy<T>, value: JsonElement): T {
-        val encoder = JsonElementDecoder(value)
+        val encoder = com.pubnub.internal.JsonElementDecoder(value)
         return encoder.decodeSerializableValue(deserializer)
     }
 
