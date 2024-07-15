@@ -40,7 +40,8 @@ import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.catch
 import com.pubnub.kmp.config.PushNotificationsConfig
 import com.pubnub.kmp.createEventListener
-import com.pubnub.kmp.error.PubNubErrorMessage
+import com.pubnub.kmp.error.PubNubErrorMessage.CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
+import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA
 import com.pubnub.kmp.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
 import com.pubnub.kmp.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.kmp.listenForEvents
@@ -68,6 +69,8 @@ import kotlinx.atomicfu.locks.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import tryLong
+
+internal const val CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS = "You cannot quote messages from other channels"
 
 abstract class BaseChannel<C : Channel, M : Message>(
     override val chat: Chat,
@@ -111,7 +114,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun startTyping(): PNFuture<Unit> {
         if (type == ChannelType.PUBLIC) {
-            return PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message).asFuture()
+            return PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
 
         val now = clock.now()
@@ -129,7 +132,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun stopTyping(): PNFuture<Unit> {
         if (type == ChannelType.PUBLIC) {
-            return PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message).asFuture()
+            return PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
 
         typingSent?.let { typingSentNotNull: Instant ->
@@ -145,7 +148,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun getTyping(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable {
         if (type == ChannelType.PUBLIC) {
-            throw PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS.message)
+            throw PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS)
         }
 
         return chat.listenForEvents(this.id) { event: Event<EventContent.Typing> ->
@@ -190,7 +193,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 messageFactory(chat, messageItem, id)
             } ?: error("Unable to read messages")
         }.catch {
-            Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA.message, it))
+            Result.failure(PubNubException(FAILED_TO_RETRIEVE_HISTORY_DATA, it))
         }
     }
 
@@ -207,7 +210,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         files: List<InputFile>?,
     ): PNFuture<PNPublishResult> {
         if (quotedMessage != null && quotedMessage.channelId != id) {
-            return PubNubException("You cannot quote messages from other channels").asFuture()
+            return PubNubException(CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS).asFuture()
         }
         return sendFilesForPublish(files).thenAsync { filesData ->
             val newMeta = buildMetaForPublish(meta, mentionedUsers, referencedChannels, textLinks, quotedMessage)
@@ -262,7 +265,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun invite(user: User): PNFuture<Membership> {
         if (this.type == ChannelType.PUBLIC) {
-            return PubNubException(PubNubErrorMessage.CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS.message).asFuture()
+            return PubNubException(CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
         return getMembers(filter = user.uuidFilterString).thenAsync { channelMembers: MembersResponse ->
             if (channelMembers.members.isNotEmpty()) {
@@ -473,7 +476,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         reason: String?,
     ): PNFuture<Unit> {
         if (chat.pubNub.configuration.secretKey.isEmpty()) {
-            throw PubNubException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY.message)
+            throw PubNubException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY)
         }
         return chat.setRestrictions(
             Restriction(

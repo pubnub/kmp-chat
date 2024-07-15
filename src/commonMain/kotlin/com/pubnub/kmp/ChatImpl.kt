@@ -93,11 +93,11 @@ class ChatImpl internal constructor(
     internal fun initialize(): PNFuture<Chat> {
         // todo move this to config initialization?
         if (config.storeUserActivityInterval < 60.seconds) {
-            throw PubNubException(STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN.message)
+            throw PubNubException(STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN)
         }
 
         if (config.pushNotifications.deviceGateway == PNPushType.APNS2 && config.pushNotifications.apnsTopic == null) {
-            throw PubNubException(APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2.message)
+            throw PubNubException(APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2)
         }
 
         return getUser(pubNub.configuration.userId.value).thenAsync { user ->
@@ -143,7 +143,7 @@ class ChatImpl internal constructor(
 
         return getUser(id).thenAsync { user: User? ->
             if (user != null) {
-                throw PubNubException(USER_ID_ALREADY_EXIST.message)
+                throw PubNubException(USER_ID_ALREADY_EXIST)
             }
             setUserMetadata(id, name, externalId, profileUrl, email, custom, type, status)
         }
@@ -192,7 +192,7 @@ class ChatImpl internal constructor(
                 total = pnUUIDMetadataArrayResult.totalCount ?: 0
             )
         }.catch {
-            Result.failure(PubNubException(FAILED_TO_GET_USERS.message, it))
+            Result.failure(PubNubException(FAILED_TO_GET_USERS, it))
         }
     }
 
@@ -233,7 +233,7 @@ class ChatImpl internal constructor(
                 }
             }
         }.catch {
-            Result.failure(PubNubException(FAILED_TO_UPDATE_USER_METADATA.message, it))
+            Result.failure(PubNubException(FAILED_TO_UPDATE_USER_METADATA, it))
         }
     }
 
@@ -261,7 +261,7 @@ class ChatImpl internal constructor(
         return pubNub.whereNow(uuid = userId).then { pnWhereNowResult ->
             pnWhereNowResult.channels
         }.catch { pnException ->
-            Result.Companion.failure(PubNubException(FAILED_TO_RETRIEVE_WHERE_PRESENT_DATA.message, pnException))
+            Result.Companion.failure(PubNubException(FAILED_TO_RETRIEVE_WHERE_PRESENT_DATA, pnException))
         }
     }
 
@@ -276,7 +276,7 @@ class ChatImpl internal constructor(
         return pubNub.whereNow(uuid = userId).then { pnWhereNowResult ->
             pnWhereNowResult.channels.contains(channel)
         }.catch { pnException ->
-            Result.failure(PubNubException(FAILED_TO_RETRIEVE_IS_PRESENT_DATA.message, pnException))
+            Result.failure(PubNubException(FAILED_TO_RETRIEVE_IS_PRESENT_DATA, pnException))
         }
     }
 
@@ -324,7 +324,7 @@ class ChatImpl internal constructor(
                 total = pnChannelMetadataArrayResult.totalCount ?: 0
             )
         }.catch { exception ->
-            Result.failure(PubNubException(FAILED_TO_GET_CHANNELS.message, exception))
+            Result.failure(PubNubException(FAILED_TO_GET_CHANNELS, exception))
         }
     }
 
@@ -387,7 +387,7 @@ class ChatImpl internal constructor(
             return PubNubException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
         if (message.channelId == channelId) {
-            return PubNubException(CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL.message).asFuture()
+            return PubNubException(CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL).asFuture()
         }
 
         val meta = message.meta?.toMutableMap() ?: mutableMapOf()
@@ -399,7 +399,7 @@ class ChatImpl internal constructor(
             meta = meta,
             ttl = message.timetoken.toInt()
         ).catch { exception ->
-            Result.failure(PubNubException(FAILED_TO_FORWARD_MESSAGE.message, exception))
+            Result.failure(PubNubException(FAILED_TO_FORWARD_MESSAGE, exception))
         }
     }
 
@@ -507,7 +507,7 @@ class ChatImpl internal constructor(
         return pubNub.hereNow(listOf(channelId)).then {
             (it.channels[channelId]?.occupants?.map(PNHereNowOccupantData::uuid) ?: emptyList()) as Collection<String>
         }.catch { exception ->
-            Result.failure(PubNubException(FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA.message, exception))
+            Result.failure(PubNubException(FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA, exception))
         }
     }
 
@@ -850,7 +850,7 @@ class ChatImpl internal constructor(
                     ChannelImpl.fromDTO(this, pnChannelMetadata)
                 } ?: error(CHANNEL_META_DATA_IS_EMPTY)
             }.catch { exception ->
-                Result.failure(PubNubException(FAILED_TO_RETRIEVE_CHANNEL_DATA.message, exception))
+                Result.failure(PubNubException(FAILED_TO_RETRIEVE_CHANNEL_DATA, exception))
             }
     }
 
@@ -890,7 +890,7 @@ class ChatImpl internal constructor(
                 ChannelImpl.fromDTO(this, pnChannelMetadata)
             } ?: error("PNChannelMetadata is null.")
         }.catch { exception ->
-            Result.failure(PubNubException(FAILED_TO_SOFT_DELETE_CHANNEL.message, exception))
+            Result.failure(PubNubException(FAILED_TO_SOFT_DELETE_CHANNEL, exception))
         }
     }
 
@@ -918,7 +918,7 @@ class ChatImpl internal constructor(
                 ChannelImpl.fromDTO(this, pnChannelMetadata)
             } ?: error("No data available to create Channel")
         }.catch { exception ->
-            Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA.message, exception))
+            Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA, exception))
         }
     }
 
@@ -947,7 +947,7 @@ class ChatImpl internal constructor(
                 User.fromDTO(this, pnUUIDMetadata)
             } ?: error("No data available to create User")
         }.catch { exception ->
-            Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_USER_DATA.message, exception))
+            Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_USER_DATA, exception))
         }
     }
 

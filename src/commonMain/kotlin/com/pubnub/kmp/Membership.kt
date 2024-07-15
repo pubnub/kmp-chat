@@ -7,6 +7,7 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteMembershipEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEventMessage
 import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.utils.AccessManager
 import tryLong
@@ -31,7 +32,7 @@ data class Membership(
     fun update(custom: CustomObject): PNFuture<Membership> {
         return exists().thenAsync { exists ->
             if (!exists) {
-                error("No such membership exists")
+                throw PubNubException(PubNubErrorMessage.NO_SUCH_MEMBERSHIP_EXISTS)
             }
             chat.pubNub.setMemberships(
                 uuid = user.id,

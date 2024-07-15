@@ -94,13 +94,13 @@ data class User(
                 memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this).toSet()
             )
         }.catch { exception ->
-            Result.failure(PubNubException(FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA.message, exception))
+            Result.failure(PubNubException(FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA, exception))
         }
     }
 
     fun setRestrictions(channel: Channel, ban: Boolean = false, mute: Boolean = false, reason: String? = null): PNFuture<Unit> {
         if (chat.pubNub.configuration.secretKey.isEmpty()) {
-            throw PubNubException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY.message)
+            throw PubNubException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY)
         }
         return chat.setRestrictions(
             Restriction(
@@ -155,7 +155,7 @@ data class User(
 
     fun active(): PNFuture<Boolean> {
         if (!chat.config.storeUserActivityTimestamps) {
-            throw PubNubException(STORE_USER_ACTIVITY_INTERVAL_IS_FALSE.message)
+            throw PubNubException(STORE_USER_ACTIVITY_INTERVAL_IS_FALSE)
         }
         return (
             lastActiveTimestamp?.let { lastActiveTimestampNonNull ->

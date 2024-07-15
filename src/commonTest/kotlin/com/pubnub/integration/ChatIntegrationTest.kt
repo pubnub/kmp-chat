@@ -20,7 +20,6 @@ import com.pubnub.kmp.listenForEvents
 import com.pubnub.kmp.membership.MembershipsResponse
 import com.pubnub.kmp.message.GetUnreadMessagesCounts
 import com.pubnub.kmp.message.MarkAllMessageAsReadResponse
-import com.pubnub.kmp.then
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.JoinResult
 import com.pubnub.kmp.utils.cyrb53a
@@ -81,8 +80,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             chat.updateUser(someUser.id, name = randomString()).await()
         }
 
-        assertEquals(FAILED_TO_UPDATE_USER_METADATA.message, e.message)
-        assertEquals(USER_NOT_EXIST.message, e.cause?.message)
+        assertEquals(FAILED_TO_UPDATE_USER_METADATA, e.message)
+        assertEquals(USER_NOT_EXIST, e.cause?.message)
     }
 
     @Test
@@ -95,7 +94,10 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val sortedUsers = listOf(chat.currentUser.id, someUser.id).sorted()
         assertEquals("direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}", result.channel.id)
 
-        assertEquals(chat.currentUser.copy(updated = null, lastActiveTimestamp = null), result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(
+            chat.currentUser.copy(updated = null, lastActiveTimestamp = null),
+            result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null)
+        )
         assertEquals(someUser, result.inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null))
 
         assertEquals(result.channel, result.hostMembership.channel)
