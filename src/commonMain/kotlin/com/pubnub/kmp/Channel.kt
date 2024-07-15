@@ -24,6 +24,7 @@ import com.pubnub.kmp.types.MessageReferencedChannel
 import com.pubnub.kmp.types.TextLink
 
 interface Channel {
+    val chat: Chat
     val id: String
     val name: String?
     val custom: Map<String, Any?>?

@@ -10,8 +10,10 @@ import com.pubnub.internal.PNDataEncoder
 import com.pubnub.kmp.Channel
 import com.pubnub.kmp.Chat
 import com.pubnub.kmp.ChatImpl
+import com.pubnub.kmp.INTERNAL_ADMIN_CHANNEL
 import com.pubnub.kmp.Message
 import com.pubnub.kmp.PNFuture
+import com.pubnub.kmp.THREAD_ROOT_ID
 import com.pubnub.kmp.ThreadChannel
 import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
@@ -29,13 +31,10 @@ import com.pubnub.kmp.types.TextLink
 import kotlinx.serialization.ExperimentalSerializationApi
 import tryInt
 
-private const val THREAD_ROOT_ID = "threadRootId"
-private const val INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL"
-
 typealias Actions = Map<String, Map<String, List<PNFetchMessageItem.Action>>>
 
 abstract class BaseMessage<T : Message>(
-    private val chat: Chat,
+    override val chat: Chat,
     override val timetoken: Long,
     override val content: EventContent.TextMessageContent,
     override val channelId: String,

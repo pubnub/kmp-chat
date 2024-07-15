@@ -14,7 +14,7 @@ import com.pubnub.kmp.types.MessageReferencedChannels
 import com.pubnub.kmp.types.QuotedMessage
 
 data class MessageImpl(
-    private val chat: Chat,
+    override val chat: Chat,
     override val timetoken: Long,
     override val content: EventContent.TextMessageContent,
     override val channelId: String,

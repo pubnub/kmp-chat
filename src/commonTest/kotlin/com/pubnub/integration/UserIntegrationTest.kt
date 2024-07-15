@@ -4,9 +4,10 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.kmp.Chat
-import com.pubnub.kmp.ChatConfigImpl
 import com.pubnub.kmp.User
 import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.kmp.config.ChatConfiguration
+import com.pubnub.kmp.init
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.kmp.restrictions.Restriction
 import com.pubnub.test.await
@@ -19,7 +20,7 @@ import kotlin.test.assertTrue
 
 class UserIntegrationTest : BaseChatIntegrationTest() {
     @Test
-    fun getChannelRestrictions() = runTest {
+    fun getChannelRestrictions() = runTest(timeout = defaultTimeout) {
         val channelId = "channelId01"
         val channel = ChannelImpl(chat = chatPam, id = channelId)
         val ban = true
@@ -37,7 +38,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun getChannelsRestrictions_sortAsc() = runTest {
+    fun getChannelsRestrictions_sortAsc() = runTest(timeout = defaultTimeout) {
         val channelId01 = "channelId01"
         val channelId02 = "channelId02"
         val ban = true
@@ -77,7 +78,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun getChannelsRestrictions_sortDsc() = runTest {
+    fun getChannelsRestrictions_sortDsc() = runTest(timeout = defaultTimeout) {
         val channelId01 = "channelId01"
         val channelId02 = "channelId02"
         val ban = true
@@ -145,9 +146,9 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun whenUserDoesNotExist_init_should_create_it_with_lastActiveTimestamp() = runTest {
         // set up storeUserActivityTimestamps
-        val chatConfig = ChatConfigImpl(chat.config.pubnubConfig).apply {
+        val chatConfig = ChatConfiguration(
             storeUserActivityTimestamps = true
-        }
+        )
         val chatNew: Chat = Chat.init(chatConfig, pubnub).await()
         someUser = chatNew.currentUser
 
@@ -161,9 +162,9 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun whenUserExists_init_should_update_lastActiveTimestamp() = runTest {
         // set up storeUserActivityTimestamps
-        val chatConfig = ChatConfigImpl(chat.config.pubnubConfig).apply {
+        val chatConfig = ChatConfiguration(
             storeUserActivityTimestamps = true
-        }
+        )
 
         val chatNew: Chat = Chat.init(chatConfig, pubnub).await()
         delayInMillis(2000)

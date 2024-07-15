@@ -5,43 +5,41 @@ import java.util.Timer
 import java.util.TimerTask
 import kotlin.time.Duration
 
-actual class PlatformTimer {
-    private var timer: Timer? = null
-
+actual class PlatformTimer(
+    private val timer: Timer
+) {
     actual companion object {
-        actual fun runPeriodically(periodMillis: Duration, action: () -> Unit): PlatformTimer {
-            val platformTimer = PlatformTimer()
-            platformTimer.timer = Timer().apply {
+        actual fun runPeriodically(period: Duration, action: () -> Unit): PlatformTimer {
+            val timer = Timer().apply {
                 scheduleAtFixedRate(
                     object : TimerTask() {
                         override fun run() {
                             action()
                         }
                     },
-                    periodMillis.inWholeMilliseconds, periodMillis.inWholeMilliseconds
+                    period.inWholeMilliseconds,
+                    period.inWholeMilliseconds
                 )
             }
-            return platformTimer
+            return PlatformTimer(timer)
         }
 
-        actual fun runWithDelay(delayMillis: Duration, action: () -> PNFuture<Unit>): PlatformTimer {
-            val platformTimer = PlatformTimer()
-            platformTimer.timer = Timer().apply {
+        actual fun runWithDelay(delay: Duration, action: () -> PNFuture<Unit>): PlatformTimer {
+            val timer = Timer().apply {
                 schedule(
                     object : TimerTask() {
                         override fun run() {
                             action()
                         }
                     },
-                    delayMillis.inWholeMilliseconds
+                    delay.inWholeMilliseconds
                 )
             }
-            return platformTimer
+            return PlatformTimer(timer)
         }
     }
 
     actual fun cancel() {
-        timer?.cancel()
-        timer = null
+        timer.cancel()
     }
 }

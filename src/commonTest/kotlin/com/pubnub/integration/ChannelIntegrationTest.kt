@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
-    fun join() = runTest {
+    fun join() = runTest(timeout = defaultTimeout) {
         val channel = chat.createChannel(randomString()).await()
 
         val result = channel.join {}.await()
@@ -26,31 +26,31 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun join_receivesMessages() = runTest {
+    fun join_receivesMessages() = runTest(timeout = defaultTimeout) {
     }
 
     @Test
-    fun join_close_disconnects() = runTest {
+    fun join_close_disconnects() = runTest(timeout = defaultTimeout) {
     }
 
     @Test
-    fun join_updates_lastReadMessageTimetoken() = runTest {
+    fun join_updates_lastReadMessageTimetoken() = runTest(timeout = defaultTimeout) {
     }
 
     @Test
-    fun connect() = runTest {
+    fun connect() = runTest(timeout = defaultTimeout) {
     }
 
     @Test
-    fun connect_receivesMessages() = runTest {
+    fun connect_receivesMessages() = runTest(timeout = defaultTimeout) {
     }
 
     @Test
-    fun connect_close_disconnects() = runTest {
+    fun connect_close_disconnects() = runTest(timeout = defaultTimeout) {
     }
 
     @Test
-    fun getUserRestrictions() = runTest {
+    fun getUserRestrictions() = runTest(timeout = defaultTimeout) {
         val userId = "userId"
         val user = User(chat = chatPam, id = userId)
         val ban = true
@@ -68,7 +68,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun getUsersRestrictions() = runTest {
+    fun getUsersRestrictions() = runTest(timeout = defaultTimeout) {
         val userId01 = "userId01"
         val userId02 = "userId02"
         val ban = true
@@ -102,13 +102,13 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest {
+    fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest(timeout = defaultTimeout) {
         val userSuggestions = channel01.getUserSuggestions("sas@las").await()
         assertEquals(0, userSuggestions.size)
     }
 
     @Test
-    fun shouldReturnUserSuggestions_whenNoDataInCacheButUserAvailableInChat() = runTest {
+    fun shouldReturnUserSuggestions_whenNoDataInCacheButUserAvailableInChat() = runTest(timeout = defaultTimeout) {
         // given
         val userName = "userName_${someUser.id}"
         val user: User = chat.createUser(id = someUser.id, name = userName).await()

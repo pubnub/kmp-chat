@@ -6,13 +6,13 @@ import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.kmp.Channel
-import com.pubnub.kmp.ChatConfigImpl
 import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.Event
 import com.pubnub.kmp.Membership
-import com.pubnub.kmp.PushNotificationsConfig
 import com.pubnub.kmp.User
+import com.pubnub.kmp.config.ChatConfiguration
+import com.pubnub.kmp.config.PushNotificationsConfig
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
@@ -20,6 +20,7 @@ import com.pubnub.kmp.listenForEvents
 import com.pubnub.kmp.membership.MembershipsResponse
 import com.pubnub.kmp.message.GetUnreadMessagesCounts
 import com.pubnub.kmp.message.MarkAllMessageAsReadResponse
+import com.pubnub.kmp.then
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.JoinResult
 import com.pubnub.kmp.utils.cyrb53a
@@ -37,7 +38,7 @@ import kotlin.test.assertNotNull
 
 class ChatIntegrationTest : BaseChatIntegrationTest() {
     @Test
-    fun createUser() = runTest {
+    fun createUser() = runTest(timeout = defaultTimeout) {
         val user = chat.createUser(someUser).await()
 
         assertEquals(someUser, user.copy(updated = null, lastActiveTimestamp = null))
@@ -45,7 +46,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun updateUser() = runTest {
+    fun updateUser() = runTest(timeout = defaultTimeout) {
         val user = chat.createUser(someUser).await()
         val expectedUser = user.copy(
             name = randomString(),
@@ -75,7 +76,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun updateUser_doesntExist() = runTest {
+    fun updateUser_doesntExist() = runTest(timeout = defaultTimeout) {
         val e = assertFailsWith<PubNubException> {
             chat.updateUser(someUser.id, name = randomString()).await()
         }
@@ -85,7 +86,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun createDirectConversation() = runTest {
+    fun createDirectConversation() = runTest(timeout = defaultTimeout) {
+        chat.initialize().await()
         // when
         val result = chat.createDirectConversation(someUser).await()
 
@@ -93,7 +95,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val sortedUsers = listOf(chat.currentUser.id, someUser.id).sorted()
         assertEquals("direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}", result.channel.id)
 
-        assertEquals(chat.currentUser, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(chat.currentUser.copy(updated = null, lastActiveTimestamp = null), result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
         assertEquals(someUser, result.inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null))
 
         assertEquals(result.channel, result.hostMembership.channel)
@@ -101,7 +103,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun createGroupConversation() = runTest {
+    fun createGroupConversation() = runTest(timeout = defaultTimeout) {
         val otherUsers = listOf(User(chat, randomString()), User(chat, randomString()))
 
         // when
@@ -122,7 +124,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun can_markAllMessagesAsRead() = runTest {
+    fun can_markAllMessagesAsRead() = runTest(timeout = defaultTimeout) {
         // create two membership for user one with "lastReadMessageTimetoken" and second without.
         val lastReadMessageTimetokenValue: Long = 17195737006492403
         val custom: CustomObject =
@@ -203,7 +205,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Ignore // fails from time to time
     @Test
-    fun can_getUnreadMessagesCount_onMembership() = runTest {
+    fun can_getUnreadMessagesCount_onMembership() = runTest(timeout = defaultTimeout) {
         val channelId01 = channel01.id
 
         // send message
@@ -237,7 +239,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Ignore // fails from time to time
     @Test
-    fun can_getUnreadMessageCounts_global() = runTest {
+    fun can_getUnreadMessageCounts_global() = runTest(timeout = defaultTimeout) {
         val channelId01 = channel01.id
         val channelId02 = channel02.id
 
@@ -288,13 +290,13 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun shouldReturnNoChannelSuggestions_whenNoDataInCacheAndNoChannelsInChat() = runTest {
+    fun shouldReturnNoChannelSuggestions_whenNoDataInCacheAndNoChannelsInChat() = runTest(timeout = defaultTimeout) {
         val channelSuggestions: Set<Channel> = chat.getChannelSuggestions("sas#las").await()
         assertEquals(0, channelSuggestions.size)
     }
 
     @Test
-    fun shouldReturnChannelSuggestions_whenNoDataInCacheButChannelAvailableInChat() = runTest {
+    fun shouldReturnChannelSuggestions_whenNoDataInCacheButChannelAvailableInChat() = runTest(timeout = defaultTimeout) {
         val channelName = "channelName_${channel01.id}"
         chat.createChannel(id = channel01.id, name = channelName).await()
 
@@ -306,13 +308,13 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest {
+    fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest(timeout = defaultTimeout) {
         val userSuggestions = chat.getUserSuggestions("sas@las").await()
         assertEquals(0, userSuggestions.size)
     }
 
     @Test
-    fun shouldReturnUserSuggestions_whenNoDataInCacheButUserAvailableInChat() = runTest {
+    fun shouldReturnUserSuggestions_whenNoDataInCacheButUserAvailableInChat() = runTest(timeout = defaultTimeout) {
         val userName = "userName_${someUser.id}"
         chat.createUser(id = someUser.id, name = userName).await()
 
@@ -324,9 +326,9 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun register_unregister_list_pushNotificationOnChannel() = runTest {
+    fun register_unregister_list_pushNotificationOnChannel() = runTest(timeout = defaultTimeout) {
         // set up push config
-        val chatConfig = ChatConfigImpl(chat.config.pubnubConfig).apply {
+        val chatConfig = ChatConfiguration(
             pushNotifications = PushNotificationsConfig(
                 sendPushes = false,
                 deviceToken = "myDeviceId",
@@ -334,7 +336,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
                 apnsTopic = null,
                 apnsEnvironment = PNPushEnvironment.PRODUCTION
             )
-        }
+        )
         chat = ChatImpl(chatConfig, pubnub)
 
         // remove all pushNotificationChannels

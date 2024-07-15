@@ -12,7 +12,7 @@ import com.pubnub.kmp.utils.AccessManager
 import tryLong
 
 data class Membership(
-    private val chat: Chat,
+    val chat: Chat,
     val channel: Channel,
     val user: User,
     val custom: Map<String, Any?>?,

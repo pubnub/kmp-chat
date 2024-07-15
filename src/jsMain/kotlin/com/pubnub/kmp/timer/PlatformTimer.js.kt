@@ -3,35 +3,29 @@ package com.pubnub.kmp.timer
 import com.pubnub.kmp.PNFuture
 import kotlinx.browser.window
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalTime::class)
-actual class PlatformTimer {
-    private var intervalId: Int? = null
-    private var timeoutId: Int? = null
-
+actual class PlatformTimer(
+    private val intervalId: Int? = null,
+    private val timeoutId: Int? = null
+) {
     actual companion object {
-        actual fun runPeriodically(periodMillis: Duration, action: () -> Unit): PlatformTimer {
-            val platformTimer = PlatformTimer()
-            platformTimer.intervalId = window.setInterval({
+        actual fun runPeriodically(period: Duration, action: () -> Unit): PlatformTimer {
+            val intervalId = window.setInterval({
                 action()
-            }, periodMillis.inWholeMilliseconds.toInt())
-            return platformTimer
+            }, period.inWholeMilliseconds.toInt())
+            return PlatformTimer(intervalId = intervalId)
         }
 
-        actual fun runWithDelay(delayMillis: Duration, action: () -> PNFuture<Unit>): PlatformTimer {
-            val platformTimer = PlatformTimer()
-            platformTimer.timeoutId = window.setTimeout({
+        actual fun runWithDelay(delay: Duration, action: () -> PNFuture<Unit>): PlatformTimer {
+            val timeoutId = window.setTimeout({
                 action()
-            }, delayMillis.inWholeMilliseconds.toInt())
-            return platformTimer
+            }, delay.inWholeMilliseconds.toInt())
+            return PlatformTimer(timeoutId = timeoutId)
         }
     }
 
     actual fun cancel() {
         intervalId?.let { window.clearInterval(it) }
         timeoutId?.let { window.clearTimeout(it) }
-        intervalId = null
-        timeoutId = null
     }
 }

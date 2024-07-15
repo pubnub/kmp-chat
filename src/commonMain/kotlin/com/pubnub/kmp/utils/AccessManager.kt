@@ -9,7 +9,7 @@ internal class AccessManager(private val chat: Chat) {
     internal enum class Permission { READ, WRITE, MANAGE, DELETE, GET, JOIN, UPDATE }
 
     fun canI(permission: Permission, resourceType: ResourceType, resourceName: String): Boolean {
-        val authKey = chat.config.pubnubConfig.authKey
+        val authKey = chat.pubNub.configuration.authKey
         if (authKey.isEmpty()) {
             return true
         }

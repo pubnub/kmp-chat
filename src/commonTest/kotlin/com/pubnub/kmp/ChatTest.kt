@@ -41,6 +41,8 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.kmp.config.ChatConfiguration
+import com.pubnub.kmp.config.PushNotificationsConfig
 import com.pubnub.kmp.message.GetUnreadMessagesCounts
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
@@ -71,7 +73,7 @@ class ChatTest {
     private val chatMock: Chat = mock(MockMode.strict)
     private val pubnub: PubNub = mock(MockMode.strict)
     private lateinit var pnConfiguration: PNConfiguration
-    private lateinit var chatConfig: ChatConfig
+    private lateinit var chatConfig: ChatConfiguration
     private val setUUIDMetadataEndpoint: SetUUIDMetadata = mock(MockMode.strict)
     private val setChannelMetadataEndpoint: SetChannelMetadata = mock(MockMode.strict)
     private val getUUIDMetadataEndpoint: GetUUIDMetadata = mock(MockMode.strict)
@@ -111,9 +113,10 @@ class ChatTest {
     @BeforeTest
     fun setUp() {
         pnConfiguration = createPNConfiguration(UserId(userId), subscribeKey, publishKey)
-        chatConfig = ChatConfigImpl(pnConfiguration).apply {
+        every { pubnub.configuration } returns pnConfiguration
+        chatConfig = ChatConfiguration(
             typingTimeout = 2000.milliseconds
-        }
+        )
         objectUnderTest = ChatImpl(chatConfig, pubnub)
     }
 
@@ -944,7 +947,7 @@ class ChatTest {
         val pushType = PNPushType.FCM
         val topic = "topic"
         val apnsEnvironment = PNPushEnvironment.PRODUCTION
-        chatConfig = ChatConfigImpl(pnConfiguration).apply {
+        chatConfig = ChatConfiguration(
             pushNotifications = PushNotificationsConfig(
                 sendPushes = false,
                 deviceToken = deviceId,
@@ -952,7 +955,7 @@ class ChatTest {
                 apnsTopic = topic,
                 apnsEnvironment = apnsEnvironment
             )
-        }
+        )
         objectUnderTest = ChatImpl(chatConfig, pubnub)
 
         val channel01 = "channel1"
@@ -994,7 +997,7 @@ class ChatTest {
         val pushType = PNPushType.FCM
         val topic = "topic"
         val apnsEnvironment = PNPushEnvironment.PRODUCTION
-        chatConfig = ChatConfigImpl(pnConfiguration).apply {
+        chatConfig = ChatConfiguration(
             pushNotifications = PushNotificationsConfig(
                 sendPushes = false,
                 deviceToken = deviceId,
@@ -1002,7 +1005,7 @@ class ChatTest {
                 apnsTopic = topic,
                 apnsEnvironment = apnsEnvironment
             )
-        }
+        )
         objectUnderTest = ChatImpl(chatConfig, pubnub)
         every { pubnub.removeAllPushNotificationsFromDeviceWithPushToken(any(), any(), any(), any()) } returns removeAllPushChannelsForDevice
         every { removeAllPushChannelsForDevice.async(any()) } calls { (callback: Consumer<Result<PNPushRemoveAllChannelsResult>>) ->

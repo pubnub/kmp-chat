@@ -9,6 +9,7 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.kmp.channel.GetChannelsResponse
+import com.pubnub.kmp.config.ChatConfiguration
 import com.pubnub.kmp.message.GetUnreadMessagesCounts
 import com.pubnub.kmp.message.MarkAllMessageAsReadResponse
 import com.pubnub.kmp.restrictions.Restriction
@@ -21,18 +22,12 @@ import com.pubnub.kmp.user.GetUsersResponse
 import kotlin.reflect.KClass
 
 interface Chat {
-    val config: ChatConfig
-    val pubNub: PubNub
+    val config: ChatConfiguration
+    val pubNub: PubNub // todo change to `sdk` like in TS
     val currentUser: User
 
     val editMessageActionName: String
     val deleteMessageActionName: String
-
-    companion object {
-        fun init(config: ChatConfig, pubNub: PubNub = createPubNub(config.pubnubConfig)): PNFuture<Chat> {
-            return ChatImpl(config, pubNub).init()
-        }
-    }
 
     fun createUser(user: User): PNFuture<User>
 
@@ -193,6 +188,8 @@ interface Chat {
         message: EventContent,
         mergeMessageWith: Map<String, Any>? = null
     ): PNFuture<PNPublishResult>
+
+    companion object
 }
 
 inline fun <reified T : EventContent> Chat.listenForEvents(
@@ -201,4 +198,8 @@ inline fun <reified T : EventContent> Chat.listenForEvents(
     noinline callback: (event: Event<T>) -> Unit
 ): AutoCloseable {
     return listenForEvents(T::class, channel, customMethod, callback)
+}
+
+fun Chat.Companion.init(chatConfiguration: ChatConfiguration, pubnub: PubNub): PNFuture<Chat> {
+    return ChatImpl(chatConfiguration, pubnub).initialize()
 }

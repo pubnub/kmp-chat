@@ -20,7 +20,7 @@ import com.pubnub.kmp.types.MessageReferencedChannels
 import com.pubnub.kmp.types.QuotedMessage
 
 data class ThreadMessageImpl(
-    private val chat: Chat,
+    override val chat: Chat,
     override val parentChannelId: String,
     override val timetoken: Long,
     override val content: EventContent.TextMessageContent,

@@ -21,7 +21,8 @@ import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.channel.ChannelImpl
-import com.pubnub.kmp.channel.MINIMAL_TYPING_INDICATOR_TIMEOUT
+import com.pubnub.kmp.config.ChatConfiguration
+import com.pubnub.kmp.config.PushNotificationsConfig
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
@@ -53,7 +54,7 @@ class ChannelTest {
     private lateinit var objectUnderTest: ChannelImpl
 
     private val chat: Chat = mock(MockMode.strict)
-    private lateinit var chatConfig: ChatConfig
+    private lateinit var chatConfig: ChatConfiguration
     private val channelId = "testId"
     private val name = "testName"
     private val customData = mapOf("testCustom" to "custom")
@@ -67,11 +68,13 @@ class ChannelTest {
 
     @BeforeTest
     fun setUp() {
-        chatConfig = ChatConfigImpl(createPNConfiguration(UserId("myUser"), "demo", "demo")).apply {
+        chatConfig = ChatConfiguration(
             typingTimeout = this@ChannelTest.typingTimeout
-        }
+        )
 
         every { chat.config } returns chatConfig
+        every { chat.pubNub } returns pubNub
+        every { pubNub.configuration } returns createPNConfiguration(UserId("demo"), "demo", "demo")
         objectUnderTest = createChannel(type)
     }
 
@@ -205,7 +208,7 @@ class ChannelTest {
 
     @Test
     fun whenTypingTimoutSetToZeroShouldNotEmitSignalWithinFirstSecond() {
-        chatConfig.typingTimeout = 0.milliseconds
+        every { chat.config } returns ChatConfiguration(typingTimeout = 0.milliseconds)
         val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val currentTimeStampInMillis = typingSent.plus(1.milliseconds)
         val customClock = object : Clock {
@@ -484,7 +487,7 @@ class ChannelTest {
     }
 
     @Test
-    fun sendText_failure_when_quotedmessage_from_another_channel() = runTest {
+    fun sendText_failure_when_quotedmessage_from_another_channel() = runTest(timeout = 10.seconds) {
         val exception = assertFailsWith<PubNubException> {
             objectUnderTest.sendText(
                 "text",

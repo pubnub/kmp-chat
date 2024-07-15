@@ -19,6 +19,7 @@ import com.pubnub.kmp.membership.MembershipsResponse
 import com.pubnub.kmp.restrictions.GetRestrictionsResponse
 import com.pubnub.kmp.restrictions.Restriction
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import tryLong
 
 data class User(
@@ -97,13 +98,8 @@ data class User(
         }
     }
 
-    fun setRestrictions(
-        channel: Channel,
-        ban: Boolean = false,
-        mute: Boolean = false,
-        reason: String? = null
-    ): PNFuture<Unit> {
-        if (chat.config.pubnubConfig.secretKey.isEmpty()) {
+    fun setRestrictions(channel: Channel, ban: Boolean = false, mute: Boolean = false, reason: String? = null): PNFuture<Unit> {
+        if (chat.pubNub.configuration.secretKey.isEmpty()) {
             throw PubNubException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY.message)
         }
         return chat.setRestrictions(
@@ -162,10 +158,9 @@ data class User(
             throw PubNubException(STORE_USER_ACTIVITY_INTERVAL_IS_FALSE.message)
         }
         return (
-            lastActiveTimestamp != null && (
-                Clock.System.now()
-                    .toEpochMilliseconds() - lastActiveTimestamp!! <= chat.config.storeUserActivityInterval
-            )
+            lastActiveTimestamp?.let { lastActiveTimestampNonNull ->
+                Clock.System.now() - Instant.fromEpochMilliseconds(lastActiveTimestampNonNull) <= chat.config.storeUserActivityInterval
+            } ?: false
         ).asFuture()
     }
 

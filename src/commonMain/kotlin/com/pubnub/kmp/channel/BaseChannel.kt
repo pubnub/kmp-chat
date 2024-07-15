@@ -29,15 +29,16 @@ import com.pubnub.kmp.ChatImpl.Companion.pinMessageToChannel
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.Event
 import com.pubnub.kmp.INTERNAL_MODERATION_PREFIX
+import com.pubnub.kmp.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.kmp.Membership
 import com.pubnub.kmp.Message
 import com.pubnub.kmp.PNFuture
-import com.pubnub.kmp.PushNotificationsConfig
 import com.pubnub.kmp.User
 import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.catch
+import com.pubnub.kmp.config.PushNotificationsConfig
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.error.PubNubErrorMessage
 import com.pubnub.kmp.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
@@ -67,13 +68,9 @@ import kotlinx.atomicfu.locks.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import tryLong
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
-
-internal val MINIMAL_TYPING_INDICATOR_TIMEOUT: Duration = 1.seconds
 
 abstract class BaseChannel<C : Channel, M : Message>(
-    internal open val chat: Chat,
+    override val chat: Chat,
     private val clock: Clock = Clock.System,
     override val id: String,
     override val name: String? = null,
@@ -475,7 +472,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         mute: Boolean,
         reason: String?,
     ): PNFuture<Unit> {
-        if (chat.config.pubnubConfig.secretKey.isEmpty()) {
+        if (chat.pubNub.configuration.secretKey.isEmpty()) {
             throw PubNubException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY.message)
         }
         return chat.setRestrictions(

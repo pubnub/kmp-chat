@@ -1,10 +1,10 @@
 package com.pubnub.integration
 
 import com.pubnub.kmp.Channel
-import com.pubnub.kmp.ChatConfigImpl
 import com.pubnub.kmp.ChatImpl
 import com.pubnub.kmp.User
 import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.kmp.config.ChatConfiguration
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.test.BaseIntegrationTest
 import com.pubnub.test.await
@@ -29,8 +29,8 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     @BeforeTest
     override fun before() {
         super.before()
-        chat = ChatImpl(ChatConfigImpl(config), pubnub)
-        chatPam = ChatImpl(ChatConfigImpl(configPam), pubnubPam)
+        chat = ChatImpl(ChatConfiguration(), pubnub)
+        chatPam = ChatImpl(ChatConfiguration(), pubnubPam)
         channel01 = ChannelImpl(
             chat = chat,
             id = randomString(),
@@ -67,7 +67,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     }
 
     @AfterTest
-    fun afterTest() = runTest {
+    fun afterTest() = runTest(timeout = defaultTimeout) {
         pubnub.removeUUIDMetadata(someUser.id).await()
         pubnub.removeUUIDMetadata(userPam.id).await()
         pubnub.removeChannelMetadata(channel01.id).await()

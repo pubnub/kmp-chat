@@ -13,6 +13,7 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.kmp.config.ChatConfiguration
 import com.pubnub.kmp.utils.FakeChat
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -31,7 +32,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class UserTest {
     private lateinit var objectUnderTest: User
     private val chat: Chat = mock(MockMode.strict)
-    private val chatConfig: ChatConfig = mock(MockMode.strict)
+    private val chatConfig: ChatConfiguration = mock(MockMode.strict)
     private val pubnubConfig: PNConfiguration = mock(MockMode.strict)
     private val pubNub: PubNub = mock(MockMode.strict)
     private val id = "testId"
@@ -51,7 +52,8 @@ class UserTest {
     fun setUp() {
         every { chatConfig.typingTimeout } returns 2000.milliseconds
         every { chat.config } returns chatConfig
-        every { chatConfig.pubnubConfig } returns pubnubConfig
+        every { chat.pubNub } returns pubNub
+        every { pubNub.configuration } returns pubnubConfig
         every { pubnubConfig.secretKey } returns ""
         objectUnderTest = createUser(chat)
     }

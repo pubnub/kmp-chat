@@ -9,7 +9,6 @@ import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.kmp.Channel
 import com.pubnub.kmp.Chat
-import com.pubnub.kmp.ChatConfig
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.Event
 import com.pubnub.kmp.Message
@@ -18,6 +17,7 @@ import com.pubnub.kmp.PubNub
 import com.pubnub.kmp.ThreadChannel
 import com.pubnub.kmp.User
 import com.pubnub.kmp.channel.GetChannelsResponse
+import com.pubnub.kmp.config.ChatConfiguration
 import com.pubnub.kmp.message.GetUnreadMessagesCounts
 import com.pubnub.kmp.message.MarkAllMessageAsReadResponse
 import com.pubnub.kmp.restrictions.Restriction
@@ -29,7 +29,7 @@ import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.user.GetUsersResponse
 import kotlin.reflect.KClass
 
-abstract class FakeChat(override val config: ChatConfig, override val pubNub: PubNub) : Chat {
+abstract class FakeChat(override val config: ChatConfiguration, override val pubNub: PubNub) : Chat {
     override val currentUser: User
         get() = TODO("Not yet implemented")
     override val editMessageActionName: String
