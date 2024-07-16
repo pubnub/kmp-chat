@@ -100,7 +100,7 @@ interface Chat {
         type: ChannelType? = null,
     ): PNFuture<Channel>
 
-    fun deleteChannel(id: String, soft: Boolean): PNFuture<Channel>
+    fun deleteChannel(id: String, soft: Boolean = false): PNFuture<Channel>
 
     fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult>
 
