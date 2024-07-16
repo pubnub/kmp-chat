@@ -117,7 +117,7 @@ interface Channel {
         sort: Collection<PNSortKey<PNMemberKey>> = listOf()
     ): PNFuture<GetRestrictionsResponse>
 
-    fun streamUpdates(callback: (channel: Channel) -> Unit): AutoCloseable
+    fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable
 
     fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable
 

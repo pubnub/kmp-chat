@@ -6,6 +6,7 @@ import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
+import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.serialization.PNDataEncoder
@@ -40,55 +41,7 @@ data class MessageImpl(
     ) {
     override fun copyWithActions(actions: Actions): Message = copy(actions = actions)
 
-    override fun streamUpdates(callback: (message: Message) -> Unit): AutoCloseable {
-        return streamUpdatesOn(listOf(this)) {
-            callback(it.first())
-        }
-    }
-
     companion object {
-        fun streamUpdatesOn(
-            messages: Collection<Message>,
-            callback: (messages: Collection<Message>) -> Unit,
-        ): AutoCloseable {
-            if (messages.isEmpty()) {
-                throw PubNubException("Cannot stream message updates on an empty list")
-            }
-            val chat = messages.first().chat
-            val listener = createEventListener(chat.pubNub, onMessageAction = { pubNub, event ->
-                val message =
-                    messages.find { it.timetoken == event.messageAction.messageTimetoken } ?: return@createEventListener
-                if (message.channelId != event.channel) return@createEventListener
-                val actions = if (event.event == "added") {
-                    assignAction(
-                        message.actions,
-                        event.messageAction
-                    )
-                } else {
-                    filterAction(
-                        message.actions,
-                        event.messageAction
-                    )
-                }
-                val newMessage = (message as BaseMessage<*>).copyWithActions(actions)
-                val newMessages = messages.map {
-                    if (it.timetoken == newMessage.timetoken) {
-                        newMessage
-                    } else {
-                        it
-                    }
-                }
-                callback(newMessages)
-            })
-
-            val subscriptionSet = chat.pubNub.subscriptionSetOf(
-                messages.map { it.channelId }.toSet()
-            )
-            subscriptionSet.addListener(listener)
-            subscriptionSet.subscribe()
-            return subscriptionSet
-        }
-
         internal fun fromDTO(chat: ChatInternal, pnMessageResult: PNMessageResult): Message {
             return MessageImpl(
                 chat,

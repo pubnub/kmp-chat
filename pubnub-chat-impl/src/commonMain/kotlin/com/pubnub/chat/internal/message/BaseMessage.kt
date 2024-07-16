@@ -1,6 +1,7 @@
 package com.pubnub.chat.internal.message
 
 import com.pubnub.api.JsonElement
+import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
@@ -25,6 +26,7 @@ import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
+import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -211,7 +213,55 @@ abstract class BaseMessage<T : Message>(
 
     internal abstract fun copyWithActions(actions: Actions): T
 
+    override fun <M : Message> streamUpdates(callback: (message: M) -> Unit): AutoCloseable {
+        return streamUpdatesOn(listOf(this as M)) {
+            callback(it.first())
+        }
+    }
+
     companion object {
+        fun <T: Message> streamUpdatesOn(
+            messages: Collection<T>,
+            callback: (messages: Collection<T>) -> Unit,
+        ): AutoCloseable {
+            if (messages.isEmpty()) {
+                throw PubNubException("Cannot stream message updates on an empty list")
+            }
+            var latestMessages = messages
+            val chat = messages.first().chat
+            val listener = createEventListener(chat.pubNub, onMessageAction = { _, event ->
+                val message =
+                    messages.find { it.timetoken == event.messageAction.messageTimetoken } ?: return@createEventListener
+                if (message.channelId != event.channel) return@createEventListener
+                val actions = if (event.event == "added") {
+                    assignAction(
+                        message.actions,
+                        event.messageAction
+                    )
+                } else {
+                    filterAction(
+                        message.actions,
+                        event.messageAction
+                    )
+                }
+                val newMessage = (message as BaseMessage<T>).copyWithActions(actions)
+                latestMessages = latestMessages.map {
+                    if (it.timetoken == newMessage.timetoken) {
+                        newMessage
+                    } else {
+                        it
+                    }
+                }.also(callback)
+            })
+
+            val subscriptionSet = chat.pubNub.subscriptionSetOf(
+                messages.map { it.channelId }.toSet()
+            )
+            subscriptionSet.addListener(listener)
+            subscriptionSet.subscribe()
+            return subscriptionSet
+        }
+
         internal fun JsonElement?.extractMentionedUsers(): MessageMentionedUsers? {
             return this?.asMap()?.get("mentionedUsers")?.let { PNDataEncoder.decode(it) }
         }

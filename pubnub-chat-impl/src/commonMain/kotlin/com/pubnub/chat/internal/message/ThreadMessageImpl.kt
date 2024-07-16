@@ -6,6 +6,7 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.chat.Channel
+import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
@@ -91,10 +92,6 @@ data class ThreadMessageImpl(
     override fun pinToParentChannel() = pinOrUnpinFromParentChannel(this)
 
     override fun unpinFromParentChannel() = pinOrUnpinFromParentChannel(null)
-
-    override fun streamUpdates(callback: (message: Message) -> Unit): AutoCloseable {
-        TODO()
-    }
 
     private fun pinOrUnpinFromParentChannel(message: ThreadMessage?): PNFuture<Channel> {
         return chat.getChannel(parentChannelId).thenAsync { parentChannel ->

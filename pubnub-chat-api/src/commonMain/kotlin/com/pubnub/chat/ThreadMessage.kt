@@ -8,4 +8,6 @@ interface ThreadMessage : Message {
     fun pinToParentChannel(): PNFuture<Channel>
 
     fun unpinFromParentChannel(): PNFuture<Channel>
+
+    companion object
 }

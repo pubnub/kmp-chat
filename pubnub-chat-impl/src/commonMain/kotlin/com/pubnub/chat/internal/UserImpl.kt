@@ -12,6 +12,7 @@ import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteUUIDMetadataEventMe
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetUUIDMetadataEventMessage
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
+import com.pubnub.chat.Chat
 import com.pubnub.chat.Membership
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.error.PubNubErrorMessage
@@ -155,9 +156,9 @@ data class UserImpl(
         }
     }
 
-    override fun streamUpdates(callback: (user: User) -> Unit): AutoCloseable {
+    override fun streamUpdates(callback: (user: User?) -> Unit): AutoCloseable {
         return streamUpdatesOn(listOf(this)) {
-            callback(it.first())
+            callback(it.firstOrNull())
         }
     }
 
@@ -238,24 +239,19 @@ data class UserImpl(
             if (users.isEmpty()) {
                 throw PubNubException("Cannot stream user updates on an empty list")
             }
+            var latestUsers = users
             val chat = users.first().chat as ChatInternal
             val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
-                val newUser = when (val message = event.extractedMessage) {
-                    is PNSetUUIDMetadataEventMessage -> fromDTO(chat, message.data)
-                    is PNDeleteUUIDMetadataEventMessage -> UserImpl(
-                        chat,
-                        id = message.uuid
-                    ) // todo verify behavior with TS Chat SDK
+                val (newUser, newUserId) = when (val message = event.extractedMessage) {
+                    is PNSetUUIDMetadataEventMessage -> fromDTO(chat, message.data) to message.data.id
+                    is PNDeleteUUIDMetadataEventMessage -> null to message.uuid
                     else -> return@createEventListener
                 }
-                val newUsers = users.map {
-                    if (it.id == newUser.id) {
-                        newUser
-                    } else {
-                        it
-                    }
-                }
-                callback(newUsers)
+
+                latestUsers = latestUsers.asSequence().filter {
+                    it.id != newUserId
+                }.apply { newUser?.let { plus(it) } }.toList()
+                    .also(callback)
             })
 
             val subscriptionSet = chat.pubNub.subscriptionSetOf(users.map { it.id }.toSet())

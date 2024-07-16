@@ -5,6 +5,7 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteChannelMetadataEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetChannelMetadataEventMessage
 import com.pubnub.chat.Channel
+import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
@@ -36,9 +37,9 @@ data class ChannelImpl(
         ::fromDTO,
         MessageImpl::fromDTO
     ) {
-    override fun streamUpdates(callback: (channel: Channel) -> Unit): AutoCloseable {
+    override fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable {
         return streamUpdatesOn(listOf(this)) {
-            callback(it.first())
+            callback(it.firstOrNull())
         }
     }
 
@@ -50,24 +51,19 @@ data class ChannelImpl(
             if (channels.isEmpty()) {
                 throw PubNubException("Cannot stream channel updates on an empty list")
             }
+            var latestChannels = channels
             val chat = channels.first().chat as ChatInternal
-            val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
-                val newChannel = when (val message = event.extractedMessage) {
-                    is PNSetChannelMetadataEventMessage -> fromDTO(chat, message.data)
-                    is PNDeleteChannelMetadataEventMessage -> ChannelImpl(
-                        chat,
-                        id = event.channel
-                    ) // todo verify behavior with TS Chat SDK
+            val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
+                val (newChannel, newChannelId) = when (val message = event.extractedMessage) {
+                    is PNSetChannelMetadataEventMessage -> fromDTO(chat, message.data) to message.data.id
+                    is PNDeleteChannelMetadataEventMessage -> null to message.channel
                     else -> return@createEventListener
                 }
-                val newChannels = channels.map {
-                    if (it.id == newChannel.id) {
-                        newChannel
-                    } else {
-                        it
-                    }
-                }
-                callback(newChannels)
+
+                latestChannels = latestChannels.asSequence().filter {
+                    it.id != newChannelId
+                }.apply { newChannel?.let { plus(it) } }.toList()
+                    .also(callback)
             })
 
             val subscriptionSet = chat.pubNub.subscriptionSetOf(channels.map { it.id }.toSet())
