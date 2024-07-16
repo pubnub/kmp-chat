@@ -25,7 +25,7 @@ data class MessageImpl(
     override val mentionedUsers: com.pubnub.chat.types.MessageMentionedUsers? = null,
     override val referencedChannels: MessageReferencedChannels? = null,
     override val quotedMessage: QuotedMessage? = null,
-) : com.pubnub.chat.internal.message.BaseMessage<Message>(
+) : BaseMessage<Message>(
         chat = chat,
         timetoken = timetoken,
         content = content,
@@ -37,10 +37,10 @@ data class MessageImpl(
         referencedChannels = referencedChannels,
         quotedMessage = quotedMessage
     ) {
-    override fun copyWithActions(actions: com.pubnub.chat.internal.message.Actions): Message = copy(actions = actions)
+    override fun copyWithActions(actions: Actions): Message = copy(actions = actions)
 
     override fun streamUpdates(callback: (message: Message) -> Unit): AutoCloseable {
-        return com.pubnub.chat.internal.message.MessageImpl.Companion.streamUpdatesOn(listOf(this)) {
+        return streamUpdatesOn(listOf(this)) {
             callback(it.first())
         }
     }
@@ -59,17 +59,17 @@ data class MessageImpl(
                     messages.find { it.timetoken == event.messageAction.messageTimetoken } ?: return@createEventListener
                 if (message.channelId != event.channel) return@createEventListener
                 val actions = if (event.event == "added") {
-                    com.pubnub.chat.internal.message.BaseMessage.Companion.assignAction(
+                    assignAction(
                         message.actions,
                         event.messageAction
                     )
                 } else {
-                    com.pubnub.chat.internal.message.BaseMessage.Companion.filterAction(
+                    filterAction(
                         message.actions,
                         event.messageAction
                     )
                 }
-                val newMessage = (message as com.pubnub.chat.internal.message.BaseMessage<*>).copyWithActions(actions)
+                val newMessage = (message as BaseMessage<*>).copyWithActions(actions)
                 val newMessages = messages.map {
                     if (it.timetoken == newMessage.timetoken) {
                         newMessage
@@ -89,7 +89,7 @@ data class MessageImpl(
         }
 
         internal fun fromDTO(chat: Chat, pnMessageResult: PNMessageResult): Message {
-            return com.pubnub.chat.internal.message.MessageImpl(
+            return MessageImpl(
                 chat,
                 pnMessageResult.timetoken!!,
                 PNDataEncoder.decode<EventContent>(pnMessageResult.message) as EventContent.TextMessageContent,
@@ -111,7 +111,7 @@ data class MessageImpl(
                 EventContent.UnknownMessageFormat(messageItem.message)
             }
 
-            return com.pubnub.chat.internal.message.MessageImpl(
+            return MessageImpl(
                 chat,
                 messageItem.timetoken!!,
                 eventContent,
