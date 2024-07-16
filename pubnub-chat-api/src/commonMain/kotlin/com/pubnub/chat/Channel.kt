@@ -7,7 +7,6 @@ import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
-import com.pubnub.chat.Message.Companion.streamUpdatesOn
 import com.pubnub.chat.membership.MembersResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
@@ -118,11 +117,7 @@ interface Channel {
         sort: Collection<PNSortKey<PNMemberKey>> = listOf()
     ): PNFuture<GetRestrictionsResponse>
 
-    fun streamUpdates(callback: (channel: Channel) -> Unit): AutoCloseable {
-        return streamUpdatesOn(listOf(this)) {
-            callback(it.first())
-        }
-    }
+    fun streamUpdates(callback: (channel: Channel) -> Unit): AutoCloseable
 
     fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable
 
@@ -134,7 +129,5 @@ interface Channel {
 
     fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<Set<Membership>>
 
-    companion object {
-
-    }
+    companion object
 }

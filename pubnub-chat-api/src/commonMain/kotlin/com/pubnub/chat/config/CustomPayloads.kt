@@ -2,7 +2,7 @@ package com.pubnub.chat.config
 
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
-import com.pubnub.kmp.types.EventContent
+import com.pubnub.chat.types.EventContent
 
 interface CustomPayloads {
     val getMessagePublishBody: ((m: EventContent.TextMessageContent, channelId: String) -> Any)?

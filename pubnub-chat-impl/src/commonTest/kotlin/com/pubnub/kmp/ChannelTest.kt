@@ -20,10 +20,10 @@ import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.chat.Channel
-import com.pubnub.kmp.channel.BaseChannel
-import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
+import com.pubnub.kmp.channel.BaseChannel
+import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent

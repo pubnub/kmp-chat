@@ -82,7 +82,7 @@ kotlin {
 //                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
 //                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.0-RC")
 //                implementation("com.benasher44:uuid:0.8.4")
-////                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0-RC")
+// //                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0-RC")
 //                implementation("org.jetbrains.kotlinx:atomicfu:0.24.0")
                 api(project(":pubnub-chat-api"))
                 implementation(project(":pubnub-chat-impl"))

@@ -8,9 +8,9 @@ interface ChatConfiguration {
     val typingTimeout: Duration
     val storeUserActivityInterval: Duration
     val storeUserActivityTimestamps: Boolean
-    val pushNotifications: com.pubnub.kmp.config.PushNotificationsConfig
+    val pushNotifications: PushNotificationsConfig
     val rateLimitFactor: Int
     val rateLimitPerChannel: Map<ChannelType, Int>
     val errorLogger: Any?
-    val customPayloads: com.pubnub.kmp.config.CustomPayloads?
+    val customPayloads: CustomPayloads?
 }

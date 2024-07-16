@@ -3,13 +3,13 @@ package com.pubnub.integration
 import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.restrictions.GetRestrictionsResponse
+import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.kmp.Chat
 import com.pubnub.kmp.User
 import com.pubnub.kmp.channel.ChannelImpl
-import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.kmp.init
-import com.pubnub.chat.restrictions.GetRestrictionsResponse
-import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.test.await
 import com.pubnub.test.test
 import kotlinx.coroutines.test.runTest

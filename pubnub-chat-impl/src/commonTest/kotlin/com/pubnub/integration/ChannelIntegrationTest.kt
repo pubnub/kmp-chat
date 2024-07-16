@@ -2,9 +2,9 @@ package com.pubnub.integration
 
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.kmp.Membership
 import com.pubnub.kmp.User
-import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test

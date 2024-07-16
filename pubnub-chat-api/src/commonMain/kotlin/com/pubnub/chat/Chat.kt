@@ -201,5 +201,3 @@ inline fun <reified T : EventContent> Chat.listenForEvents(
 ): AutoCloseable {
     return listenForEvents(T::class, channel, customMethod, callback)
 }
-
-

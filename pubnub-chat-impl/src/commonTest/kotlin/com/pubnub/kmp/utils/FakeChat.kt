@@ -8,23 +8,23 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.chat.Channel
-import com.pubnub.kmp.Chat
-import com.pubnub.kmp.CustomObject
 import com.pubnub.chat.Event
-import com.pubnub.kmp.PNFuture
-import com.pubnub.kmp.PubNub
-import com.pubnub.kmp.ThreadChannel
-import com.pubnub.kmp.User
-import com.pubnub.chat.types.GetChannelsResponse
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
 import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.chat.types.GetChannelsResponse
+import com.pubnub.chat.user.GetUsersResponse
+import com.pubnub.kmp.Chat
+import com.pubnub.kmp.CustomObject
+import com.pubnub.kmp.PNFuture
+import com.pubnub.kmp.PubNub
+import com.pubnub.kmp.ThreadChannel
+import com.pubnub.kmp.User
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.CreateGroupConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
-import com.pubnub.chat.user.GetUsersResponse
 import kotlin.reflect.KClass
 
 abstract class FakeChat(override val config: ChatConfiguration, override val pubNub: PubNub) : Chat {

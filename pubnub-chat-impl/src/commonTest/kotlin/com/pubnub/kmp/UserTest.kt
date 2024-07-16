@@ -12,8 +12,8 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArra
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.kmp.channel.ChannelImpl
 import com.pubnub.kmp.utils.FakeChat
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls

@@ -45,11 +45,11 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.message.GetUnreadMessagesCounts
+import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
-import com.pubnub.chat.user.GetUsersResponse
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns

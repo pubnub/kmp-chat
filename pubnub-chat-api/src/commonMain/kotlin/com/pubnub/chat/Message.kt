@@ -1,20 +1,18 @@
 package com.pubnub.chat
 
-import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.kmp.PNFuture
-import com.pubnub.kmp.message.BaseMessage
-import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.types.File
-import com.pubnub.kmp.types.MessageMentionedUsers
-import com.pubnub.kmp.types.MessageReferencedChannels
-import com.pubnub.kmp.types.QuotedMessage
-import com.pubnub.kmp.types.TextLink
+import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.File
+import com.pubnub.chat.types.MessageMentionedUsers
+import com.pubnub.chat.types.MessageReferencedChannels
+import com.pubnub.chat.types.QuotedMessage
+import com.pubnub.chat.types.TextLink
 
 interface Message {
-    val chat: com.pubnub.chat.Chat
+    val chat: Chat
     val timetoken: Long
     val content: EventContent.TextMessageContent
     val channelId: String
@@ -52,47 +50,5 @@ interface Message {
 
     fun toggleReaction(reaction: String): PNFuture<Message>
 
-    fun streamUpdates(callback: (message: com.pubnub.chat.Message) -> Unit): AutoCloseable {
-        return com.pubnub.chat.Message.Companion.streamUpdatesOn(listOf(this)) {
-            callback(it.first())
-        }
-    }
-
-    companion object {
-        fun streamUpdatesOn(
-            messages: Collection<com.pubnub.chat.Message>,
-            callback: (messages: Collection<com.pubnub.chat.Message>) -> Unit,
-        ): AutoCloseable {
-            if (messages.isEmpty()) {
-                throw PubNubException("Cannot stream message updates on an empty list")
-            }
-            val chat = messages.first().chat
-            val listener = createEventListener(chat.pubNub, onMessageAction = { pubNub, event ->
-                val message =
-                    messages.find { it.timetoken == event.messageAction.messageTimetoken } ?: return@createEventListener
-                if (message.channelId != event.channel) return@createEventListener
-                val actions = if (event.event == "added") {
-                    BaseMessage.assignAction(message.actions, event.messageAction)
-                } else {
-                    BaseMessage.filterAction(message.actions, event.messageAction)
-                }
-                val newMessage = (message as BaseMessage<*>).copyWithActions(actions)
-                val newMessages = messages.map {
-                    if (it.timetoken == newMessage.timetoken) {
-                        newMessage
-                    } else {
-                        it
-                    }
-                }
-                callback(newMessages)
-            })
-
-            val subscriptionSet = chat.pubNub.subscriptionSetOf(
-                messages.map { it.channelId }.toSet()
-            )
-            subscriptionSet.addListener(listener)
-            subscriptionSet.subscribe()
-            return subscriptionSet
-        }
-    }
+    fun streamUpdates(callback: (message: Message) -> Unit): AutoCloseable
 }

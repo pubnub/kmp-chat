@@ -1,6 +1,6 @@
 package com.pubnub.chat.types
 
-import com.pubnub.kmp.Membership
+import com.pubnub.chat.Membership
 
 class JoinResult(
     val membership: Membership,

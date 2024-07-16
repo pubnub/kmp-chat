@@ -21,6 +21,7 @@ interface User {
     val type: String?
     val updated: String?
     val lastActiveTimestamp: Long?
+
     fun update(
         name: String? = null,
         externalId: String? = null,
@@ -32,8 +33,11 @@ interface User {
     ): PNFuture<User>
 
     fun delete(soft: Boolean = false): PNFuture<User>
+
     fun wherePresent(): PNFuture<List<String>>
+
     fun isPresentOn(channelId: String): PNFuture<Boolean>
+
     fun getMemberships(
         limit: Int? = null,
         page: PNPage? = null,
@@ -49,6 +53,7 @@ interface User {
     ): PNFuture<Unit>
 
     fun getChannelRestrictions(channel: Channel): PNFuture<Restriction>
+
     fun getChannelsRestrictions(
         limit: Int? = null,
         page: PNPage? = null,
@@ -56,5 +61,6 @@ interface User {
     ): PNFuture<GetRestrictionsResponse>
 
     fun streamUpdates(callback: (user: User) -> Unit): AutoCloseable
+
     fun active(): PNFuture<Boolean>
 }
