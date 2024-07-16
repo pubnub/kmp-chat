@@ -1,5 +1,6 @@
 package com.pubnub.kmp.utils
 
+import com.pubnub.chat.internal.utils.cyrb53a
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

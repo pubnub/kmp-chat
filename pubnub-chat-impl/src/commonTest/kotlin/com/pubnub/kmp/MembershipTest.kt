@@ -4,7 +4,10 @@ import com.pubnub.api.endpoints.MessageCounts
 import com.pubnub.api.models.consumer.history.PNMessageCountResult
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.chat.Chat
+import com.pubnub.chat.internal.MembershipImpl
+import com.pubnub.chat.internal.UserImpl
+import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.test.await
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -23,14 +26,14 @@ class MembershipTest {
     private val chat: Chat = mock<Chat>(MockMode.strict).also {
         every { it.pubNub } returns pubNub
     }
-    private val user = User(chat, "user")
+    private val user = UserImpl(chat, "user")
     private val channel = ChannelImpl(chat, id = "abc")
     private val lastMessageTimetoken = 123L
 
     @Test
     fun lastReadMessageTimetoken() {
         val membership =
-            Membership(
+            MembershipImpl(
                 chat,
                 channel,
                 user,
@@ -45,7 +48,7 @@ class MembershipTest {
     @Test
     fun getUnreadMessagesCount_when_no_lastReadMessage() = runTest(timeout = 10.seconds) {
         val membership =
-            Membership(
+            MembershipImpl(
                 chat,
                 channel,
                 user,
@@ -59,7 +62,7 @@ class MembershipTest {
     @Test
     fun getUnreadMessagesCount() = runTest(timeout = 10.seconds) {
         val membership =
-            Membership(
+            MembershipImpl(
                 chat,
                 channel,
                 user,

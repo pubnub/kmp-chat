@@ -1,6 +1,6 @@
 package com.pubnub.internal
 
-import com.pubnub.internal.serialization.PNDataEncoder
+import com.pubnub.chat.internal.serialization.PNDataEncoder
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.test.Test

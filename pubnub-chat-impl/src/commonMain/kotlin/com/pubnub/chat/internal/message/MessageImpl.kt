@@ -8,10 +8,10 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
+import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
-import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.kmp.createEventListener
 
 data class MessageImpl(

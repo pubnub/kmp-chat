@@ -1,11 +1,11 @@
 package com.pubnub.integration
 
 import com.pubnub.chat.Channel
-import com.pubnub.chat.config.ChatConfiguration
-import com.pubnub.internal.ChatImpl
-import com.pubnub.kmp.User
-import com.pubnub.kmp.channel.ChannelImpl
-import com.pubnub.kmp.types.ChannelType
+import com.pubnub.chat.User
+import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.config.ChatConfiguration
+import com.pubnub.chat.types.ChannelType
 import com.pubnub.test.BaseIntegrationTest
 import com.pubnub.test.await
 import com.pubnub.test.randomString
@@ -17,8 +17,8 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
 abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
-    lateinit var chat: com.pubnub.internal.ChatImpl
-    lateinit var chatPam: com.pubnub.internal.ChatImpl
+    lateinit var chat: ChatImpl
+    lateinit var chatPam: ChatImpl
     lateinit var channel01: Channel
     lateinit var channel02: Channel
     lateinit var channelPam: Channel
@@ -29,8 +29,8 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     @BeforeTest
     override fun before() {
         super.before()
-        chat = com.pubnub.internal.ChatImpl(ChatConfiguration(), pubnub)
-        chatPam = com.pubnub.internal.ChatImpl(ChatConfiguration(), pubnubPam)
+        chat = ChatImpl(ChatConfiguration(), pubnub)
+        chatPam = ChatImpl(ChatConfiguration(), pubnubPam)
         channel01 = ChannelImpl(
             chat = chat,
             id = randomString(),

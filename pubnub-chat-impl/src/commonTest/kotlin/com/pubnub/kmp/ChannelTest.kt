@@ -20,14 +20,18 @@ import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.chat.Channel
+import com.pubnub.chat.Chat
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
-import com.pubnub.kmp.channel.BaseChannel
-import com.pubnub.kmp.channel.ChannelImpl
-import com.pubnub.kmp.message.MessageImpl
-import com.pubnub.kmp.types.ChannelType
-import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.types.MessageReferencedChannel
+import com.pubnub.chat.internal.MINIMAL_TYPING_INDICATOR_TIMEOUT
+import com.pubnub.chat.internal.UserImpl
+import com.pubnub.chat.internal.channel.BaseChannel
+import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.config.ChatConfiguration
+import com.pubnub.chat.internal.message.MessageImpl
+import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.test.await
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -582,7 +586,7 @@ class ChannelTest {
 
     @Test
     fun canGetRestrictionsByUser() {
-        val user = User(chat = chat, id = "userId")
+        val user = UserImpl(chat = chat, id = "userId")
         val limit = 1
         val page: PNPage = PNPage.PNNext("nextPageHash")
         val sort = listOf(PNSortKey.PNAsc(PNMemberKey.UUID_ID))
@@ -609,7 +613,7 @@ class ChannelTest {
 
     @Test
     fun shouldThrowExceptionWhenSecretKeyIsNotSet() {
-        val user = User(chat = chat, id = "userId")
+        val user = UserImpl(chat = chat, id = "userId")
         val e = assertFailsWith<PubNubException> {
             objectUnderTest.setRestrictions(user)
         }
@@ -660,7 +664,7 @@ class ChannelTest {
         val text = "some text"
         val config = PushNotificationsConfig(true, "abc", PNPushType.FCM, null, PNPushEnvironment.PRODUCTION)
 
-        every { chat.currentUser } returns User(chat, userId)
+        every { chat.currentUser } returns UserImpl(chat, userId)
 
         val result = BaseChannel.getPushPayload(createChannel(type), text, config)
 
@@ -678,7 +682,7 @@ class ChannelTest {
         val text = "some text"
         val topic = "apns_topic"
         val config = PushNotificationsConfig(true, "abc", PNPushType.FCM, topic, PNPushEnvironment.PRODUCTION)
-        every { chat.currentUser } returns User(chat, userId)
+        every { chat.currentUser } returns UserImpl(chat, userId)
 
         val result = BaseChannel.getPushPayload(createChannel(type), text, config)
 

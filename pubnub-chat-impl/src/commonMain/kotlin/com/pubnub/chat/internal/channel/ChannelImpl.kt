@@ -7,9 +7,9 @@ import com.pubnub.api.models.consumer.pubsub.objects.PNSetChannelMetadataEventMe
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
-import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.internal.DELETED
 import com.pubnub.chat.internal.message.MessageImpl
+import com.pubnub.chat.types.ChannelType
 import com.pubnub.kmp.createEventListener
 import kotlinx.datetime.Clock
 
@@ -36,7 +36,6 @@ data class ChannelImpl(
         ::fromDTO,
         com.pubnub.chat.internal.message.MessageImpl::fromDTO
     ) {
-
     override fun streamUpdates(callback: (channel: Channel) -> Unit): AutoCloseable {
         return streamUpdatesOn(listOf(this)) {
             callback(it.first())

@@ -3,13 +3,13 @@ package com.pubnub.integration
 import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
-import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.Chat
+import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.UserImpl
+import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.config.ChatConfiguration
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
-import com.pubnub.kmp.Chat
-import com.pubnub.kmp.User
-import com.pubnub.kmp.channel.ChannelImpl
-import com.pubnub.kmp.init
 import com.pubnub.test.await
 import com.pubnub.test.test
 import kotlinx.coroutines.test.runTest
@@ -115,7 +115,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(someUser.id)) {
-                dispose = User.streamUpdatesOn(listOf(someUser)) {
+                dispose = UserImpl.streamUpdatesOn(listOf(someUser)) {
                     println(it)
                 }
             }
@@ -149,7 +149,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         val chatConfig = ChatConfiguration(
             storeUserActivityTimestamps = true
         )
-        val chatNew: Chat = Chat.init(chatConfig, pubnub).await()
+        val chatNew: Chat = ChatImpl(chatConfig, pubnub).initialize().await()
         someUser = chatNew.currentUser
 
         // when
@@ -166,10 +166,10 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
             storeUserActivityTimestamps = true
         )
 
-        val chatNew: Chat = Chat.init(chatConfig, pubnub).await()
+        val chatNew: Chat = ChatImpl(chatConfig, pubnub).initialize().await()
         delayInMillis(2000)
         // call init second time to simulate user existence
-        val chatNew2: Chat = Chat.init(chatConfig, pubnub).await()
+        val chatNew2: Chat = ChatImpl(chatConfig, pubnub).initialize().await()
         someUser = chatNew2.currentUser
 
         // when

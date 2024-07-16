@@ -3,10 +3,10 @@ package com.pubnub.chat.internal.restrictions
 import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
-import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_ID_MUST_BE_DEFINED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_ID_MUST_BE_DEFINED
+import com.pubnub.chat.restrictions.Restriction
 
 class RestrictionImpl {
     companion object {

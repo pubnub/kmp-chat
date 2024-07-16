@@ -1,6 +1,6 @@
 package com.pubnub.kmp.utils
 
-import com.pubnub.kmp.util.getPhraseToLookFor
+import com.pubnub.chat.internal.util.getPhraseToLookFor
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

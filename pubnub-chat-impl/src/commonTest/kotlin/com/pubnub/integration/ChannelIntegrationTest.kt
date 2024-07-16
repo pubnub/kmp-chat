@@ -2,9 +2,10 @@ package com.pubnub.integration
 
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.chat.Membership
+import com.pubnub.chat.User
+import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
-import com.pubnub.kmp.Membership
-import com.pubnub.kmp.User
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
@@ -52,7 +53,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun getUserRestrictions() = runTest(timeout = defaultTimeout) {
         val userId = "userId"
-        val user = User(chat = chatPam, id = userId)
+        val user = UserImpl(chat = chatPam, id = userId)
         val ban = true
         val mute = true
         val reason = "rude"
@@ -79,9 +80,9 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val sort: Collection<PNSortKey<PNMemberKey>> = listOf(PNSortKey.PNAsc(PNMemberKey.UUID_ID))
         val channelId = channelPam.id
 
-        channelPam.setRestrictions(user = User(chat = chatPam, id = userId01), ban = ban, mute = mute, reason = reason)
+        channelPam.setRestrictions(user = UserImpl(chat = chatPam, id = userId01), ban = ban, mute = mute, reason = reason)
             .await()
-        channelPam.setRestrictions(user = User(chat = chatPam, id = userId02), ban = ban, mute = mute, reason = reason)
+        channelPam.setRestrictions(user = UserImpl(chat = chatPam, id = userId02), ban = ban, mute = mute, reason = reason)
             .await()
 
         val getRestrictionsResponse: GetRestrictionsResponse =
@@ -140,7 +141,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             chat.deleteUser("user2", false).await()
         } finally {
         }
-        val user2 = chat.createUser(User(chat, "user2")).await()
+        val user2 = chat.createUser(UserImpl(chat, "user2")).await()
 
         val channel = chat.createDirectConversation(user2).await().channel
         channel.sendText("text1").await().timetoken

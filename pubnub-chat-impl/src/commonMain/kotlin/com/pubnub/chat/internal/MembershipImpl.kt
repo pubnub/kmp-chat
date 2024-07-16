@@ -10,10 +10,10 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Membership
 import com.pubnub.chat.User
-import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.utils.AccessManager
+import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.alsoAsync

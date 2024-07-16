@@ -1,7 +1,8 @@
 package com.pubnub.kmp.utils
 
 import com.pubnub.api.models.consumer.access_manager.v3.PNToken
-import com.pubnub.kmp.utils.AccessManager.Companion.canI
+import com.pubnub.chat.internal.utils.AccessManager
+import com.pubnub.chat.internal.utils.AccessManager.Companion.canI
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

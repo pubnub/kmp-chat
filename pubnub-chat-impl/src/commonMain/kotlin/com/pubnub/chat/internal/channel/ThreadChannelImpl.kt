@@ -8,12 +8,11 @@ import com.pubnub.chat.Chat
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
-import com.pubnub.chat.internal.ChatImpl.Companion
+import com.pubnub.chat.internal.DELETED
+import com.pubnub.chat.internal.message.ThreadMessageImpl
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageReferencedChannel
-import com.pubnub.chat.internal.DELETED
-import com.pubnub.chat.internal.message.ThreadMessageImpl
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll

@@ -9,12 +9,12 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadMessage
-import com.pubnub.chat.types.EventContent
-import com.pubnub.chat.types.MessageReferencedChannels
-import com.pubnub.chat.types.QuotedMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.MessageReferencedChannels
+import com.pubnub.chat.types.QuotedMessage
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync

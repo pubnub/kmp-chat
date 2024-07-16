@@ -7,21 +7,22 @@ import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
-import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.Membership
+import com.pubnub.chat.User
 import com.pubnub.chat.config.PushNotificationsConfig
+import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.UserImpl
+import com.pubnub.chat.internal.config.ChatConfiguration
+import com.pubnub.chat.internal.error.PubNubErrorMessage
+import com.pubnub.chat.internal.utils.cyrb53a
+import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
-import com.pubnub.internal.ChatImpl
+import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.JoinResult
 import com.pubnub.kmp.CustomObject
-import com.pubnub.kmp.Membership
-import com.pubnub.kmp.User
 import com.pubnub.kmp.createCustomObject
-import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
-import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
-import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.types.JoinResult
-import com.pubnub.kmp.utils.cyrb53a
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import kotlinx.coroutines.CompletableDeferred
@@ -39,14 +40,14 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     fun createUser() = runTest(timeout = defaultTimeout) {
         val user = chat.createUser(someUser).await()
 
-        assertEquals(someUser, user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(someUser, user.asImpl().copy(updated = null, lastActiveTimestamp = null))
         assertNotNull(user.updated)
     }
 
     @Test
     fun updateUser() = runTest(timeout = defaultTimeout) {
         val user = chat.createUser(someUser).await()
-        val expectedUser = user.copy(
+        val expectedUser = user.asImpl().copy(
             name = randomString(),
             externalId = randomString(),
             profileUrl = randomString(),
@@ -69,7 +70,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             expectedUser.type
         ).await()
 
-        assertEquals(expectedUser, updatedUser.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(expectedUser, updatedUser.asImpl().copy(updated = null, lastActiveTimestamp = null))
         assertNotNull(updatedUser.updated)
     }
 
@@ -79,8 +80,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             chat.updateUser(someUser.id, name = randomString()).await()
         }
 
-        assertEquals(FAILED_TO_UPDATE_USER_METADATA, e.message)
-        assertEquals(USER_NOT_EXIST, e.cause?.message)
+        assertEquals(PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA, e.message)
+        assertEquals(PubNubErrorMessage.USER_NOT_EXIST, e.cause?.message)
     }
 
     @Test
@@ -94,10 +95,10 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals("direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}", result.channel.id)
 
         assertEquals(
-            chat.currentUser.copy(updated = null, lastActiveTimestamp = null),
-            result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null)
+            chat.currentUser.asImpl().copy(updated = null, lastActiveTimestamp = null),
+            result.hostMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null)
         )
-        assertEquals(someUser, result.inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(someUser, result.inviteeMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null))
 
         assertEquals(result.channel, result.hostMembership.channel)
         assertEquals(result.channel, result.inviteeMembership.channel)
@@ -105,18 +106,18 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun createGroupConversation() = runTest(timeout = defaultTimeout) {
-        val otherUsers = listOf(User(chat, randomString()), User(chat, randomString()))
+        val otherUsers = listOf(UserImpl(chat, randomString()), UserImpl(chat, randomString()))
 
         // when
         val result = chat.createGroupConversation(otherUsers).await()
 
         // then
-        assertEquals(chat.currentUser, result.hostMembership.user.copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(chat.currentUser, result.hostMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null))
         assertEquals(otherUsers.size, result.inviteeMemberships.size)
         result.inviteeMemberships.forEach { inviteeMembership ->
             assertEquals(
                 otherUsers.first { it.id == inviteeMembership.user.id },
-                inviteeMembership.user.copy(updated = null, lastActiveTimestamp = null)
+                inviteeMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null)
             )
             assertEquals(result.channel, inviteeMembership.channel)
         }
@@ -338,7 +339,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
                 apnsEnvironment = PNPushEnvironment.PRODUCTION
             )
         )
-        chat = com.pubnub.internal.ChatImpl(chatConfig, pubnub)
+        chat = ChatImpl(chatConfig, pubnub)
 
         // remove all pushNotificationChannels
         chat.unregisterAllPushChannels().await()
@@ -377,3 +378,5 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(expectedNumberOfChannels, pushChannels.size)
     }
 }
+
+fun User.asImpl() = this as UserImpl

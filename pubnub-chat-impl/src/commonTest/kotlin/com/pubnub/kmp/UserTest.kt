@@ -12,8 +12,11 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArra
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.chat.Chat
+import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
-import com.pubnub.kmp.channel.ChannelImpl
+import com.pubnub.chat.internal.UserImpl
+import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.kmp.utils.FakeChat
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -58,7 +61,7 @@ class UserTest {
         objectUnderTest = createUser(chat)
     }
 
-    private fun createUser(chat: Chat) = User(
+    private fun createUser(chat: Chat) = UserImpl(
         chat = chat,
         id = id,
         name = name,
@@ -265,7 +268,7 @@ class UserTest {
         every { chat.pubNub } returns pubNub
         every { pubNub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMemberships
 
-        objectUnderTest.getRestrictions(channel = noChannelProvided, limit = limit, page = page, sort = sort)
+        (objectUnderTest as UserImpl).getRestrictions(channel = noChannelProvided, limit = limit, page = page, sort = sort)
 
         val expectedFilter = "channel.id LIKE 'PUBNUB_INTERNAL_MODERATION_*'"
         verify {
@@ -294,7 +297,7 @@ class UserTest {
         every { chat.pubNub } returns pubNub
         every { pubNub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMemberships
 
-        objectUnderTest.getRestrictions(channel = channel, limit = limit, page = page, sort = sort)
+        (objectUnderTest as UserImpl).getRestrictions(channel = channel, limit = limit, page = page, sort = sort)
 
         val expectedFilter = "channel.id == 'PUBNUB_INTERNAL_MODERATION_channelId'"
         verify {
