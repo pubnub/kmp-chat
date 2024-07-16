@@ -71,6 +71,7 @@ import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.catch
+import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import kotlinx.datetime.Clock
@@ -124,7 +125,7 @@ class ChatImpl(
         externalId = user.externalId,
         profileUrl = user.profileUrl,
         email = user.email,
-        custom = user.custom?.let { com.pubnub.kmp.createCustomObject(it) },
+        custom = user.custom?.let { createCustomObject(it) },
         status = user.status,
         type = user.type
     )
@@ -616,7 +617,7 @@ class ChatImpl(
                         )
                     }
             } else {
-                val custom = com.pubnub.kmp.createCustomObject(
+                val custom = createCustomObject(
                     mapOf(
                         "ban" to restriction.ban,
                         "mute" to restriction.mute,
@@ -754,7 +755,7 @@ class ChatImpl(
 
                             PNChannelMembership.Partial(
                                 channelId = channelId,
-                                custom = com.pubnub.kmp.createCustomObject(customMap)
+                                custom = createCustomObject(customMap)
                             )
                         }.toList()
                         val filterExpression = relevantChannelIds.joinToString(" || ") { "channel.id == '$it'" }
@@ -874,7 +875,7 @@ class ChatImpl(
             externalId = updatedUser.externalId,
             profileUrl = updatedUser.profileUrl,
             email = updatedUser.email,
-            custom = updatedUser.custom?.let { com.pubnub.kmp.createCustomObject(it) },
+            custom = updatedUser.custom?.let { createCustomObject(it) },
             includeCustom = false,
             type = updatedUser.type,
             status = updatedUser.status,
@@ -893,7 +894,7 @@ class ChatImpl(
             channel = channel.id,
             name = updatedChannel.name,
             description = updatedChannel.description,
-            custom = updatedChannel.custom?.let { com.pubnub.kmp.createCustomObject(it) },
+            custom = updatedChannel.custom?.let { createCustomObject(it) },
             includeCustom = false,
             type = updatedChannel.type.toString().lowercase(),
             status = updatedChannel.status
@@ -977,7 +978,7 @@ class ChatImpl(
                 customMetadataToSet["pinnedMessageTimetoken"] = message.timetoken
                 customMetadataToSet["pinnedMessageChannelID"] = message.channelId
             }
-            return pubNub.setChannelMetadata(channel.id, custom = com.pubnub.kmp.createCustomObject(customMetadataToSet))
+            return pubNub.setChannelMetadata(channel.id, custom = createCustomObject(customMetadataToSet))
         }
 
         internal fun getThreadId(channelId: String, messageTimetoken: Long): String {
@@ -1079,7 +1080,7 @@ class ChatImpl(
         }
         return pubNub.setUUIDMetadata(
             uuid = currentUser.id,
-            custom = com.pubnub.kmp.createCustomObject(customWithUpdatedLastActiveTimestamp),
+            custom = createCustomObject(customWithUpdatedLastActiveTimestamp),
             includeCustom = true,
         ).then { pnUUIDMetadataResult: PNUUIDMetadataResult ->
             if (pnUUIDMetadataResult.data != null) {
