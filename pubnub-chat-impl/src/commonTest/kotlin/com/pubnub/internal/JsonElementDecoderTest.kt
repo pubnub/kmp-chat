@@ -1,6 +1,7 @@
 package com.pubnub.internal
 
 import com.pubnub.api.createJsonElement
+import com.pubnub.internal.serialization.PNDataEncoder
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.test.Test

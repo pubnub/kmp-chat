@@ -77,10 +77,10 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-//                implementation("com.pubnub:pubnub-core-api:9.2-DEV")
-//                implementation("com.pubnub:pubnub-kotlin-api:9.2-DEV")
+                api("com.pubnub:pubnub-core-api:9.2-DEV")
+                api("com.pubnub:pubnub-kotlin-api:9.2-DEV")
 //                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
-//                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.0-RC")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.0-RC")
             }
         }
 

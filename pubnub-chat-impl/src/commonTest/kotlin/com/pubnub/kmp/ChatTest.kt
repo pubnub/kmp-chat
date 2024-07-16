@@ -41,14 +41,15 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
-import com.pubnub.kmp.config.ChatConfiguration
-import com.pubnub.kmp.config.PushNotificationsConfig
-import com.pubnub.kmp.message.GetUnreadMessagesCounts
+import com.pubnub.chat.Channel
+import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.config.PushNotificationsConfig
+import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.EventContent.TextMessageContent
-import com.pubnub.kmp.user.GetUsersResponse
+import com.pubnub.chat.user.GetUsersResponse
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -69,7 +70,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
 class ChatTest {
-    private lateinit var objectUnderTest: ChatImpl
+    private lateinit var objectUnderTest: com.pubnub.internal.ChatImpl
     private val chatMock: Chat = mock(MockMode.strict)
     private val pubnub: PubNub = mock(MockMode.strict)
     private lateinit var pnConfiguration: PNConfiguration
@@ -117,7 +118,7 @@ class ChatTest {
         chatConfig = ChatConfiguration(
             typingTimeout = 2000.milliseconds
         )
-        objectUnderTest = ChatImpl(chatConfig, pubnub)
+        objectUnderTest = com.pubnub.internal.ChatImpl(chatConfig, pubnub)
     }
 
     @Test
@@ -956,7 +957,7 @@ class ChatTest {
                 apnsEnvironment = apnsEnvironment
             )
         )
-        objectUnderTest = ChatImpl(chatConfig, pubnub)
+        objectUnderTest = com.pubnub.internal.ChatImpl(chatConfig, pubnub)
 
         val channel01 = "channel1"
         val channel02 = "channel2"
@@ -1006,7 +1007,7 @@ class ChatTest {
                 apnsEnvironment = apnsEnvironment
             )
         )
-        objectUnderTest = ChatImpl(chatConfig, pubnub)
+        objectUnderTest = com.pubnub.internal.ChatImpl(chatConfig, pubnub)
         every { pubnub.removeAllPushNotificationsFromDeviceWithPushToken(any(), any(), any(), any()) } returns removeAllPushChannelsForDevice
         every { removeAllPushChannelsForDevice.async(any()) } calls { (callback: Consumer<Result<PNPushRemoveAllChannelsResult>>) ->
             callback.accept(Result.success(PNPushRemoveAllChannelsResult()))
@@ -1123,7 +1124,7 @@ class ChatTest {
         return PNChannelMetadataResult(status = 200, data = pnChannelMetadata)
     }
 
-    private fun createMessage(): Message {
+    private fun createMessage(): com.pubnub.chat.Message {
         return MessageImpl(
             chat = chatMock,
             timetoken = 123345,

@@ -19,16 +19,15 @@ import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
+import com.pubnub.chat.Channel
 import com.pubnub.kmp.channel.BaseChannel
 import com.pubnub.kmp.channel.ChannelImpl
-import com.pubnub.kmp.config.ChatConfiguration
-import com.pubnub.kmp.config.PushNotificationsConfig
+import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.kmp.message.MessageImpl
 import com.pubnub.kmp.types.ChannelType
 import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.types.MessageMentionedUser
 import com.pubnub.kmp.types.MessageReferencedChannel
-import com.pubnub.kmp.types.TextLink
 import com.pubnub.test.await
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -368,7 +367,7 @@ class ChannelTest {
         assertEquals(now, objectUnderTest.typingIndicators[userId])
     }
 
-    private fun createMessage(): Message {
+    private fun createMessage(): com.pubnub.chat.Message {
         return MessageImpl(
             chat = chat,
             timetoken = 123345,
@@ -515,9 +514,9 @@ class ChannelTest {
             shouldStore = true,
             usePost = false,
             ttl = ttl,
-            mentionedUsers = mapOf(0 to MessageMentionedUser(mentionedUser1, userName)),
+            mentionedUsers = mapOf(0 to com.pubnub.chat.types.MessageMentionedUser(mentionedUser1, userName)),
             referencedChannels = mapOf(0 to MessageReferencedChannel(referencedChannel1, channelName)),
-            textLinks = listOf(TextLink(1, 20, link)),
+            textLinks = listOf(com.pubnub.chat.types.TextLink(1, 20, link)),
             quotedMessage = message,
             null, // todo when files work
         ).async {}

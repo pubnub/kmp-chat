@@ -5,21 +5,20 @@ import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
-import com.pubnub.kmp.Channel
-import com.pubnub.kmp.ChatImpl
+import com.pubnub.chat.Channel
+import com.pubnub.internal.ChatImpl
 import com.pubnub.kmp.CustomObject
-import com.pubnub.kmp.Event
+import com.pubnub.chat.Event
 import com.pubnub.kmp.Membership
 import com.pubnub.kmp.User
-import com.pubnub.kmp.config.ChatConfiguration
-import com.pubnub.kmp.config.PushNotificationsConfig
+import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.error.PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA
 import com.pubnub.kmp.error.PubNubErrorMessage.USER_NOT_EXIST
-import com.pubnub.kmp.listenForEvents
-import com.pubnub.kmp.membership.MembershipsResponse
-import com.pubnub.kmp.message.GetUnreadMessagesCounts
-import com.pubnub.kmp.message.MarkAllMessageAsReadResponse
+import com.pubnub.chat.membership.MembershipsResponse
+import com.pubnub.chat.message.GetUnreadMessagesCounts
+import com.pubnub.chat.message.MarkAllMessageAsReadResponse
 import com.pubnub.kmp.types.EventContent
 import com.pubnub.kmp.types.JoinResult
 import com.pubnub.kmp.utils.cyrb53a
@@ -339,7 +338,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
                 apnsEnvironment = PNPushEnvironment.PRODUCTION
             )
         )
-        chat = ChatImpl(chatConfig, pubnub)
+        chat = com.pubnub.internal.ChatImpl(chatConfig, pubnub)
 
         // remove all pushNotificationChannels
         chat.unregisterAllPushChannels().await()

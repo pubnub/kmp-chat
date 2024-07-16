@@ -7,26 +7,24 @@ import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
-import com.pubnub.kmp.Channel
+import com.pubnub.chat.Channel
 import com.pubnub.kmp.Chat
 import com.pubnub.kmp.CustomObject
-import com.pubnub.kmp.Event
-import com.pubnub.kmp.Message
+import com.pubnub.chat.Event
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.PubNub
 import com.pubnub.kmp.ThreadChannel
 import com.pubnub.kmp.User
-import com.pubnub.kmp.channel.GetChannelsResponse
-import com.pubnub.kmp.config.ChatConfiguration
-import com.pubnub.kmp.message.GetUnreadMessagesCounts
-import com.pubnub.kmp.message.MarkAllMessageAsReadResponse
-import com.pubnub.kmp.restrictions.Restriction
+import com.pubnub.chat.types.GetChannelsResponse
+import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.message.GetUnreadMessagesCounts
+import com.pubnub.chat.message.MarkAllMessageAsReadResponse
+import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.kmp.types.ChannelType
-import com.pubnub.kmp.types.CreateDirectConversationResult
 import com.pubnub.kmp.types.CreateGroupConversationResult
 import com.pubnub.kmp.types.EmitEventMethod
 import com.pubnub.kmp.types.EventContent
-import com.pubnub.kmp.user.GetUsersResponse
+import com.pubnub.chat.user.GetUsersResponse
 import kotlin.reflect.KClass
 
 abstract class FakeChat(override val config: ChatConfiguration, override val pubNub: PubNub) : Chat {
@@ -132,7 +130,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult> {
+    override fun forwardMessage(message: com.pubnub.chat.Message, channelId: String): PNFuture<PNPublishResult> {
         TODO("Not yet implemented")
     }
 
@@ -156,7 +154,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         channelCustom: CustomObject?,
         channelStatus: String?,
         custom: CustomObject?,
-    ): PNFuture<CreateDirectConversationResult> {
+    ): PNFuture<com.pubnub.chat.types.CreateDirectConversationResult> {
         TODO("Not yet implemented")
     }
 
@@ -193,7 +191,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun getThreadChannel(message: Message): PNFuture<ThreadChannel> {
+    override fun getThreadChannel(message: com.pubnub.chat.Message): PNFuture<ThreadChannel> {
         TODO("Not yet implemented")
     }
 
