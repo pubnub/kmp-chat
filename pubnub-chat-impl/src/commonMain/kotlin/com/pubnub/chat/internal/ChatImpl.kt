@@ -903,7 +903,7 @@ class ChatImpl(
             description = updatedChannel.description,
             custom = updatedChannel.custom?.let { createCustomObject(it) },
             includeCustom = false,
-            type = updatedChannel.type.toString().lowercase(),
+            type = updatedChannel.type?.stringValue,
             status = updatedChannel.status
         ).then { pnChannelMetadataResult ->
             pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
@@ -931,7 +931,7 @@ class ChatImpl(
             description = description,
             custom = custom,
             includeCustom = true,
-            type = type?.name?.lowercase(),
+            type = type?.stringValue,
             status = status
         ).then { pnChannelMetadataResult ->
             pnChannelMetadataResult.data?.let { pnChannelMetadata ->
