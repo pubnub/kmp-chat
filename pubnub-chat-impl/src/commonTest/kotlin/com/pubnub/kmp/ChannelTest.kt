@@ -21,6 +21,7 @@ import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
+import com.pubnub.chat.Message
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.MINIMAL_TYPING_INDICATOR_TIMEOUT
@@ -31,6 +32,7 @@ import com.pubnub.chat.internal.config.ChatConfiguration
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.test.await
 import dev.mokkery.MockMode
@@ -371,7 +373,7 @@ class ChannelTest {
         assertEquals(now, objectUnderTest.typingIndicators[userId])
     }
 
-    private fun createMessage(): com.pubnub.chat.Message {
+    private fun createMessage(): Message {
         return MessageImpl(
             chat = chat,
             timetoken = 123345,
@@ -518,7 +520,7 @@ class ChannelTest {
             shouldStore = true,
             usePost = false,
             ttl = ttl,
-            mentionedUsers = mapOf(0 to com.pubnub.chat.types.MessageMentionedUser(mentionedUser1, userName)),
+            mentionedUsers = mapOf(0 to MessageMentionedUser(mentionedUser1, userName)),
             referencedChannels = mapOf(0 to MessageReferencedChannel(referencedChannel1, channelName)),
             textLinks = listOf(com.pubnub.chat.types.TextLink(1, 20, link)),
             quotedMessage = message,

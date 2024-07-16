@@ -5,4 +5,4 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class MessageMentionedUser(val id: String, val name: String)
 
-typealias MessageMentionedUsers = Map<Int, com.pubnub.chat.types.MessageMentionedUser>
+typealias MessageMentionedUsers = Map<Int, MessageMentionedUser>

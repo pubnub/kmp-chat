@@ -8,6 +8,7 @@ import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
+import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.INTERNAL_ADMIN_CHANNEL
@@ -16,8 +17,10 @@ import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
+import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
+import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
@@ -29,7 +32,7 @@ import tryInt
 
 typealias Actions = Map<String, Map<String, List<PNFetchMessageItem.Action>>>
 
-abstract class BaseMessage<T : com.pubnub.chat.Message>(
+abstract class BaseMessage<T : Message>(
     override val chat: Chat,
     override val timetoken: Long,
     override val content: EventContent.TextMessageContent,
@@ -37,10 +40,10 @@ abstract class BaseMessage<T : com.pubnub.chat.Message>(
     override val userId: String,
     override val actions: Map<String, Map<String, List<PNFetchMessageItem.Action>>>? = null,
     override val meta: Map<String, Any>? = null,
-    override val mentionedUsers: com.pubnub.chat.types.MessageMentionedUsers? = null,
+    override val mentionedUsers: MessageMentionedUsers? = null,
     override val referencedChannels: MessageReferencedChannels? = null,
     override val quotedMessage: QuotedMessage? = null,
-) : com.pubnub.chat.Message {
+) : Message {
     override val text: String
         get() {
             val edits = actions?.get(chat.editMessageActionName) ?: return content.text
@@ -74,13 +77,13 @@ abstract class BaseMessage<T : com.pubnub.chat.Message>(
 
     override val reactions get() = actions?.get(com.pubnub.chat.types.MessageActionType.REACTIONS.toString()) ?: emptyMap()
 
-    override val textLinks: List<com.pubnub.chat.types.TextLink>? get() = (
+    override val textLinks: List<TextLink>? get() = (
         meta?.get(
             "textLinks"
         ) as? List<Any>
     )?.let { textLinksList: List<Any> ->
         textLinksList.filterIsInstance<Map<*, *>>().map { textLinkItem: Map<*, *> ->
-            com.pubnub.chat.types.TextLink(
+            TextLink(
                 textLinkItem["startIndex"].tryInt()!!,
                 textLinkItem["endIndex"].tryInt()!!,
                 textLinkItem["link"] as String
@@ -92,7 +95,7 @@ abstract class BaseMessage<T : com.pubnub.chat.Message>(
         return reactions[reaction]?.any { it.uuid == chat.pubNub.configuration.userId.value } ?: false
     }
 
-    override fun editText(newText: String): PNFuture<com.pubnub.chat.Message> {
+    override fun editText(newText: String): PNFuture<Message> {
         val type = chat.editMessageActionName
         return chat.pubNub.addMessageAction(
             channelId,
@@ -107,7 +110,7 @@ abstract class BaseMessage<T : com.pubnub.chat.Message>(
         }
     }
 
-    override fun delete(soft: Boolean, preserveFiles: Boolean): PNFuture<com.pubnub.chat.Message?> {
+    override fun delete(soft: Boolean, preserveFiles: Boolean): PNFuture<Message?> {
         val type = chat.deleteMessageActionName
         if (soft) {
             return chat.pubNub.addMessageAction(
@@ -174,7 +177,7 @@ abstract class BaseMessage<T : com.pubnub.chat.Message>(
 
     override fun removeThread() = ChatImpl.removeThreadChannel(chat, this)
 
-    override fun toggleReaction(reaction: String): PNFuture<com.pubnub.chat.Message> {
+    override fun toggleReaction(reaction: String): PNFuture<Message> {
         val existingReaction = reactions[reaction]?.find {
             it.uuid == chat.currentUser.id
         }
@@ -209,7 +212,7 @@ abstract class BaseMessage<T : com.pubnub.chat.Message>(
     internal abstract fun copyWithActions(actions: Actions): T
 
     companion object {
-        internal fun JsonElement?.extractMentionedUsers(): com.pubnub.chat.types.MessageMentionedUsers? {
+        internal fun JsonElement?.extractMentionedUsers(): MessageMentionedUsers? {
             return this?.asMap()?.get("mentionedUsers")?.let { PNDataEncoder.decode(it) }
         }
 

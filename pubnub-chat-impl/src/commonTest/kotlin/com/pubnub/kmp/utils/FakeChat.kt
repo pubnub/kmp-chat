@@ -10,6 +10,7 @@ import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
+import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
@@ -130,7 +131,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun forwardMessage(message: com.pubnub.chat.Message, channelId: String): PNFuture<PNPublishResult> {
+    override fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult> {
         TODO("Not yet implemented")
     }
 
@@ -191,7 +192,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun getThreadChannel(message: com.pubnub.chat.Message): PNFuture<ThreadChannel> {
+    override fun getThreadChannel(message: Message): PNFuture<ThreadChannel> {
         TODO("Not yet implemented")
     }
 

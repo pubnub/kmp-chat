@@ -34,7 +34,7 @@ data class ChannelImpl(
         status = status,
         type = type,
         ::fromDTO,
-        com.pubnub.chat.internal.message.MessageImpl::fromDTO
+        MessageImpl::fromDTO
     ) {
     override fun streamUpdates(callback: (channel: Channel) -> Unit): AutoCloseable {
         return streamUpdatesOn(listOf(this)) {

@@ -9,6 +9,7 @@ import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEventMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Membership
+import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
@@ -37,7 +38,7 @@ data class MembershipImpl(
             return custom?.get("lastReadMessageTimetoken").tryLong()
         }
 
-    override fun setLastReadMessage(message: com.pubnub.chat.Message): PNFuture<Membership> {
+    override fun setLastReadMessage(message: Message): PNFuture<Membership> {
         return setLastReadMessageTimetoken(message.timetoken)
     }
 

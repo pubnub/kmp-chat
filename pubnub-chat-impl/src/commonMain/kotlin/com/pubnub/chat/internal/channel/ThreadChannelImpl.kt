@@ -5,6 +5,7 @@ import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
+import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
@@ -12,6 +13,7 @@ import com.pubnub.chat.internal.DELETED
 import com.pubnub.chat.internal.message.ThreadMessageImpl
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.InputFile
+import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
@@ -21,7 +23,7 @@ import com.pubnub.kmp.thenAsync
 import kotlinx.datetime.Clock
 
 data class ThreadChannelImpl(
-    override val parentMessage: com.pubnub.chat.Message,
+    override val parentMessage: Message,
     override val chat: Chat,
     val clock: Clock = Clock.System,
     override val id: String,
@@ -74,10 +76,10 @@ data class ThreadChannelImpl(
         shouldStore: Boolean,
         usePost: Boolean,
         ttl: Int?,
-        mentionedUsers: com.pubnub.chat.types.MessageMentionedUsers?,
+        mentionedUsers: MessageMentionedUsers?,
         referencedChannels: Map<Int, MessageReferencedChannel>?,
         textLinks: List<com.pubnub.chat.types.TextLink>?,
-        quotedMessage: com.pubnub.chat.Message?,
+        quotedMessage: Message?,
         files: List<InputFile>?,
     ): PNFuture<PNPublishResult> {
         return (
@@ -120,7 +122,7 @@ data class ThreadChannelImpl(
     override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
 
     companion object {
-        internal fun fromDTO(chat: Chat, parentMessage: com.pubnub.chat.Message, channel: PNChannelMetadata): ThreadChannel {
+        internal fun fromDTO(chat: Chat, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {
             return ThreadChannelImpl(
                 parentMessage,
                 chat,

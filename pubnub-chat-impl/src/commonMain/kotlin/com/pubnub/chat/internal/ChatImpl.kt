@@ -33,6 +33,7 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
+import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
@@ -61,17 +62,23 @@ import com.pubnub.chat.message.MarkAllMessageAsReadResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.restrictions.RestrictionType
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.CreateDirectConversationResult
 import com.pubnub.chat.types.CreateGroupConversationResult
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetChannelsResponse
+import com.pubnub.chat.types.MessageActionType
 import com.pubnub.chat.types.getMethodFor
 import com.pubnub.chat.user.GetUsersResponse
+import com.pubnub.kmp.CustomObject
+import com.pubnub.kmp.PNFuture
+import com.pubnub.kmp.PubNub
 import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.catch
 import com.pubnub.kmp.createCustomObject
+import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import kotlinx.datetime.Clock
@@ -81,9 +88,9 @@ import kotlin.time.Duration.Companion.seconds
 
 class ChatImpl(
     override val config: ChatConfiguration,
-    override val pubNub: com.pubnub.kmp.PubNub,
-    override val editMessageActionName: String = com.pubnub.chat.types.MessageActionType.EDITED.toString(),
-    override val deleteMessageActionName: String = com.pubnub.chat.types.MessageActionType.DELETED.toString(),
+    override val pubNub: PubNub,
+    override val editMessageActionName: String = MessageActionType.EDITED.toString(),
+    override val deleteMessageActionName: String = MessageActionType.DELETED.toString(),
 ) : Chat {
     override var currentUser: User =
         UserImpl(this, pubNub.configuration.userId.value, name = pubNub.configuration.userId.value)
@@ -94,7 +101,7 @@ class ChatImpl(
     private var lastSavedActivityInterval: PlatformTimer? = null
     private var runWithDelayTimer: PlatformTimer? = null
 
-    fun initialize(): com.pubnub.kmp.PNFuture<Chat> {
+    fun initialize(): PNFuture<Chat> {
         // todo move this to config initialization?
         if (config.storeUserActivityInterval < 60.seconds) {
             throw PubNubException(PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN)
@@ -119,7 +126,7 @@ class ChatImpl(
         }
     }
 
-    override fun createUser(user: User): com.pubnub.kmp.PNFuture<User> = createUser(
+    override fun createUser(user: User): PNFuture<User> = createUser(
         id = user.id,
         name = user.name,
         externalId = user.externalId,
@@ -137,10 +144,10 @@ class ChatImpl(
         externalId: String?,
         profileUrl: String?,
         email: String?,
-        custom: com.pubnub.kmp.CustomObject?,
+        custom: CustomObject?,
         status: String?,
         type: String?,
-    ): com.pubnub.kmp.PNFuture<User> {
+    ): PNFuture<User> {
         if (!isValidId(id)) {
             return PubNubException(ID_IS_REQUIRED).asFuture()
         }
@@ -153,7 +160,7 @@ class ChatImpl(
         }
     }
 
-    override fun getUser(userId: String): com.pubnub.kmp.PNFuture<User?> {
+    override fun getUser(userId: String): PNFuture<User?> {
         if (!isValidId(userId)) {
             return PubNubException(ID_IS_REQUIRED).asFuture()
         }
@@ -177,7 +184,7 @@ class ChatImpl(
         sort: Collection<PNSortKey<PNKey>>,
         limit: Int?,
         page: PNPage?,
-    ): com.pubnub.kmp.PNFuture<GetUsersResponse> {
+    ): PNFuture<GetUsersResponse> {
         return pubNub.getAllUUIDMetadata(
             limit = limit,
             page = page,
@@ -206,10 +213,10 @@ class ChatImpl(
         externalId: String?,
         profileUrl: String?,
         email: String?,
-        custom: com.pubnub.kmp.CustomObject?,
+        custom: CustomObject?,
         status: String?,
         type: String?
-    ): com.pubnub.kmp.PNFuture<User> {
+    ): PNFuture<User> {
         if (!isValidId(id)) {
             return PubNubException(ID_IS_REQUIRED).asFuture()
         }
@@ -241,7 +248,7 @@ class ChatImpl(
         }
     }
 
-    override fun deleteUser(id: String, soft: Boolean): com.pubnub.kmp.PNFuture<User> {
+    override fun deleteUser(id: String, soft: Boolean): PNFuture<User> {
         if (!isValidId(id)) {
             return PubNubException(ID_IS_REQUIRED).asFuture()
         }
@@ -257,7 +264,7 @@ class ChatImpl(
         }
     }
 
-    override fun wherePresent(userId: String): com.pubnub.kmp.PNFuture<List<String>> {
+    override fun wherePresent(userId: String): PNFuture<List<String>> {
         if (!isValidId(userId)) {
             return PubNubException(ID_IS_REQUIRED).asFuture()
         }
@@ -269,7 +276,7 @@ class ChatImpl(
         }
     }
 
-    override fun isPresent(userId: String, channel: String): com.pubnub.kmp.PNFuture<Boolean> {
+    override fun isPresent(userId: String, channel: String): PNFuture<Boolean> {
         if (!isValidId(userId)) {
             return PubNubException(ID_IS_REQUIRED).asFuture()
         }
@@ -288,10 +295,10 @@ class ChatImpl(
         id: String,
         name: String?,
         description: String?,
-        custom: com.pubnub.kmp.CustomObject?,
+        custom: CustomObject?,
         type: ChannelType?,
         status: String?
-    ): com.pubnub.kmp.PNFuture<Channel> {
+    ): PNFuture<Channel> {
         if (!isValidId(id)) {
             return PubNubException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
@@ -309,7 +316,7 @@ class ChatImpl(
         sort: Collection<PNSortKey<PNKey>>,
         limit: Int?,
         page: PNPage?
-    ): com.pubnub.kmp.PNFuture<GetChannelsResponse> {
+    ): PNFuture<GetChannelsResponse> {
         return pubNub.getAllChannelMetadata(
             limit = limit,
             page = page,
@@ -332,7 +339,7 @@ class ChatImpl(
         }
     }
 
-    override fun getChannel(channelId: String): com.pubnub.kmp.PNFuture<Channel?> {
+    override fun getChannel(channelId: String): PNFuture<Channel?> {
         if (!isValidId(channelId)) {
             return PubNubException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
@@ -353,12 +360,12 @@ class ChatImpl(
     override fun updateChannel(
         id: String,
         name: String?,
-        custom: com.pubnub.kmp.CustomObject?,
+        custom: CustomObject?,
         description: String?,
         updated: String?,
         status: String?,
         type: ChannelType?
-    ): com.pubnub.kmp.PNFuture<Channel> {
+    ): PNFuture<Channel> {
         if (!isValidId(id)) {
             return PubNubException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
@@ -372,7 +379,7 @@ class ChatImpl(
         }
     }
 
-    override fun deleteChannel(id: String, soft: Boolean): com.pubnub.kmp.PNFuture<Channel> {
+    override fun deleteChannel(id: String, soft: Boolean): PNFuture<Channel> {
         if (!isValidId(id)) {
             return PubNubException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
@@ -386,7 +393,7 @@ class ChatImpl(
         }
     }
 
-    override fun forwardMessage(message: com.pubnub.chat.Message, channelId: String): com.pubnub.kmp.PNFuture<PNPublishResult> {
+    override fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult> {
         if (!isValidId(channelId)) {
             return PubNubException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
@@ -411,7 +418,7 @@ class ChatImpl(
         channel: String,
         payload: T,
         mergePayloadWith: Map<String, Any>?
-    ): com.pubnub.kmp.PNFuture<PNPublishResult> {
+    ): PNFuture<PNPublishResult> {
         return if (getMethodFor(payload::class) == EmitEventMethod.SIGNAL) {
             signal(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
         } else {
@@ -424,10 +431,10 @@ class ChatImpl(
         channelId: String?,
         channelName: String?,
         channelDescription: String?,
-        channelCustom: com.pubnub.kmp.CustomObject?,
+        channelCustom: CustomObject?,
         channelStatus: String?,
-        custom: com.pubnub.kmp.CustomObject?,
-    ): com.pubnub.kmp.PNFuture<com.pubnub.chat.types.CreateDirectConversationResult> {
+        custom: CustomObject?,
+    ): PNFuture<CreateDirectConversationResult> {
         val user = this.currentUser
         val sortedUsers = listOf(invitedUser.id, user.id).sorted()
         val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
@@ -450,11 +457,11 @@ class ChatImpl(
                 includeCount = true,
                 includeType = true,
             )
-            com.pubnub.kmp.awaitAll(
+            awaitAll(
                 hostMembershipFuture,
                 channel.invite(invitedUser)
             ).then { (hostMembershipResponse: PNChannelMembershipArrayResult, inviteeMembership: Membership) ->
-                com.pubnub.chat.types.CreateDirectConversationResult(
+                CreateDirectConversationResult(
                     channel,
                     MembershipImpl.fromMembershipDTO(
                         this,
@@ -472,10 +479,10 @@ class ChatImpl(
         channelId: String?,
         channelName: String?,
         channelDescription: String?,
-        channelCustom: com.pubnub.kmp.CustomObject?,
+        channelCustom: CustomObject?,
         channelStatus: String?,
-        custom: com.pubnub.kmp.CustomObject?
-    ): com.pubnub.kmp.PNFuture<CreateGroupConversationResult> {
+        custom: CustomObject?
+    ): PNFuture<CreateGroupConversationResult> {
         val user = this.currentUser
         val finalChannelId = channelId ?: uuid4().toString()
         return getChannel(finalChannelId).thenAsync { channel ->
@@ -496,7 +503,7 @@ class ChatImpl(
                 includeCount = true,
                 includeType = true,
             )
-            com.pubnub.kmp.awaitAll(
+            awaitAll(
                 hostMembershipFuture,
                 channel.inviteMultiple(invitedUsers)
             ).then { (hostMembershipResponse: PNChannelMembershipArrayResult, inviteeMemberships: List<Membership>) ->
@@ -513,7 +520,7 @@ class ChatImpl(
         }
     }
 
-    override fun whoIsPresent(channelId: String): com.pubnub.kmp.PNFuture<Collection<String>> {
+    override fun whoIsPresent(channelId: String): PNFuture<Collection<String>> {
         if (!isValidId(channelId)) {
             return PubNubException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
@@ -533,7 +540,7 @@ class ChatImpl(
         replicate: Boolean,
         ttl: Int?,
         mergeMessageWith: Map<String, Any>?,
-    ): com.pubnub.kmp.PNFuture<PNPublishResult> {
+    ): PNFuture<PNPublishResult> {
         val finalMessage = merge(message, mergeMessageWith)
         return pubNub.publish(channelId, finalMessage, meta, shouldStore, usePost, replicate, ttl)
     }
@@ -542,7 +549,7 @@ class ChatImpl(
         channelId: String,
         message: EventContent,
         mergeMessageWith: Map<String, Any>?,
-    ): com.pubnub.kmp.PNFuture<PNPublishResult> {
+    ): PNFuture<PNPublishResult> {
         val finalMessage = merge(message, mergeMessageWith)
         return pubNub.signal(channelId, finalMessage)
     }
@@ -567,7 +574,7 @@ class ChatImpl(
         customMethod: EmitEventMethod?,
         callback: (event: Event<T>) -> Unit
     ): AutoCloseable {
-        val handler = fun(_: com.pubnub.kmp.PubNub, pnEvent: PNEvent) {
+        val handler = fun(_: PubNub, pnEvent: PNEvent) {
             if (pnEvent.channel != channel) return
             val message = (pnEvent as? MessageResult)?.message ?: return
             val eventContent: EventContent = PNDataEncoder.decode(message)
@@ -585,7 +592,7 @@ class ChatImpl(
             callback(event)
         }
         val method = getMethodFor(type) ?: customMethod
-        val listener = com.pubnub.kmp.createEventListener(
+        val listener = createEventListener(
             pubNub,
             onMessage = if (method == EmitEventMethod.PUBLISH) handler else { _, _ -> },
             onSignal = if (method == EmitEventMethod.SIGNAL) handler else { _, _ -> },
@@ -599,11 +606,11 @@ class ChatImpl(
 
     override fun setRestrictions(
         restriction: Restriction
-    ): com.pubnub.kmp.PNFuture<Unit> {
+    ): PNFuture<Unit> {
         val channel: String = INTERNAL_MODERATION_PREFIX + restriction.channelId
         val userId = restriction.userId
 
-        val moderationEvent: com.pubnub.kmp.PNFuture<PNMemberArrayResult> =
+        val moderationEvent: PNFuture<PNMemberArrayResult> =
             if (!restriction.ban && !restriction.mute) {
                 pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
                     .alsoAsync { _ ->
@@ -640,7 +647,7 @@ class ChatImpl(
         return moderationEvent.then { }
     }
 
-    override fun registerPushChannels(channels: List<String>): com.pubnub.kmp.PNFuture<PNPushAddChannelResult> {
+    override fun registerPushChannels(channels: List<String>): PNFuture<PNPushAddChannelResult> {
         return getCommonPushOptions().asFuture().thenAsync { pushOptions ->
             pubNub.addPushNotificationsOnChannels(
                 pushType = pushOptions.deviceGateway,
@@ -652,7 +659,7 @@ class ChatImpl(
         }
     }
 
-    override fun unregisterPushChannels(channels: List<String>): com.pubnub.kmp.PNFuture<PNPushRemoveChannelResult> {
+    override fun unregisterPushChannels(channels: List<String>): PNFuture<PNPushRemoveChannelResult> {
         return getCommonPushOptions().asFuture().thenAsync { pushOptions ->
             pubNub.removePushNotificationsFromChannels(
                 pushType = pushOptions.deviceGateway,
@@ -664,7 +671,7 @@ class ChatImpl(
         }
     }
 
-    override fun unregisterAllPushChannels(): com.pubnub.kmp.PNFuture<Unit> {
+    override fun unregisterAllPushChannels(): PNFuture<Unit> {
         return getCommonPushOptions().asFuture().thenAsync { pushOption ->
             pubNub.removeAllPushNotificationsFromDeviceWithPushToken(
                 pushType = pushOption.deviceGateway,
@@ -675,7 +682,7 @@ class ChatImpl(
         }
     }
 
-    override fun getThreadChannel(message: com.pubnub.chat.Message): com.pubnub.kmp.PNFuture<ThreadChannel> {
+    override fun getThreadChannel(message: Message): PNFuture<ThreadChannel> {
         val threadChannelId = getThreadId(message.channelId, message.timetoken)
         return pubNub.getChannelMetadata(threadChannelId).then {
             ThreadChannelImpl.fromDTO(this, message, it.data!!)
@@ -693,7 +700,7 @@ class ChatImpl(
         page: PNPage?,
         filter: String?,
         sort: Collection<PNSortKey<PNMembershipKey>>
-    ): com.pubnub.kmp.PNFuture<Set<GetUnreadMessagesCounts>> {
+    ): PNFuture<Set<GetUnreadMessagesCounts>> {
         return currentUser.getMemberships(limit = limit, page = page, filter = filter, sort = sort)
             .thenAsync { membershipsResponse: MembershipsResponse ->
                 val memberships = membershipsResponse.memberships
@@ -726,7 +733,7 @@ class ChatImpl(
         page: PNPage?,
         filter: String?,
         sort: Collection<PNSortKey<PNMembershipKey>>,
-    ): com.pubnub.kmp.PNFuture<MarkAllMessageAsReadResponse> {
+    ): PNFuture<MarkAllMessageAsReadResponse> {
         return currentUser.getMemberships(limit = limit, page = page, filter = filter, sort = sort)
             .thenAsync { userMembershipsResponse: MembershipsResponse ->
                 if (userMembershipsResponse.memberships.isEmpty()) {
@@ -769,7 +776,7 @@ class ChatImpl(
                             includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
                             includeType = true
                         ).alsoAsync { _: PNChannelMembershipArrayResult ->
-                            val emitEventFutures: List<com.pubnub.kmp.PNFuture<PNPublishResult>> =
+                            val emitEventFutures: List<PNFuture<PNPublishResult>> =
                                 relevantChannelIds.map { channelId: String ->
                                     val relevantLastMessageTimeToken =
                                         getTimetokenFromHistoryMessage(channelId, lastMessagesFromMembershipChannels)
@@ -798,7 +805,7 @@ class ChatImpl(
             }
     }
 
-    override fun getChannelSuggestions(text: String, limit: Int): com.pubnub.kmp.PNFuture<Set<Channel>> {
+    override fun getChannelSuggestions(text: String, limit: Int): PNFuture<Set<Channel>> {
         val cacheKey: String = getPhraseToLookFor(text, "#") ?: return emptySet<Channel>().asFuture()
 
         suggestedChannelsCache[cacheKey]?.let { nonNullChannels ->
@@ -812,7 +819,7 @@ class ChatImpl(
         }
     }
 
-    override fun getUserSuggestions(text: String, limit: Int): com.pubnub.kmp.PNFuture<Set<User>> {
+    override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<User>> {
         val cacheKey: String = getPhraseToLookFor(text, "@") ?: return emptySet<User>().asFuture()
 
         suggestedUsersCache[cacheKey]?.let { nonNullUser ->
@@ -826,7 +833,7 @@ class ChatImpl(
         }
     }
 
-    override fun getPushChannels(): com.pubnub.kmp.PNFuture<List<String>> {
+    override fun getPushChannels(): PNFuture<List<String>> {
         return getCommonPushOptions().asFuture().thenAsync { pushOptions: PushNotificationsConfig ->
             pubNub.auditPushChannelProvisions(
                 pushType = pushOptions.deviceGateway,
@@ -856,7 +863,7 @@ class ChatImpl(
         return id.isNotEmpty()
     }
 
-    private fun getChannelData(id: String): com.pubnub.kmp.PNFuture<Channel> {
+    private fun getChannelData(id: String): PNFuture<Channel> {
         return pubNub.getChannelMetadata(channel = id, includeCustom = false)
             .then { pnChannelMetadataResult: PNChannelMetadataResult ->
                 pnChannelMetadataResult.data?.let { pnChannelMetadata ->
@@ -867,7 +874,7 @@ class ChatImpl(
             }
     }
 
-    private fun performSoftUserDelete(user: User): com.pubnub.kmp.PNFuture<User> {
+    private fun performSoftUserDelete(user: User): PNFuture<User> {
         val updatedUser = (user as UserImpl).copy(status = DELETED)
         return pubNub.setUUIDMetadata(
             uuid = user.id,
@@ -886,9 +893,9 @@ class ChatImpl(
         }
     }
 
-    private fun performUserDelete(user: User): com.pubnub.kmp.PNFuture<User> = pubNub.removeUUIDMetadata(uuid = user.id).then { user }
+    private fun performUserDelete(user: User): PNFuture<User> = pubNub.removeUUIDMetadata(uuid = user.id).then { user }
 
-    private fun performSoftChannelDelete(channel: Channel): com.pubnub.kmp.PNFuture<Channel> {
+    private fun performSoftChannelDelete(channel: Channel): PNFuture<Channel> {
         val updatedChannel = (channel as BaseChannel<*, *>).copyWithStatusDeleted()
         return pubNub.setChannelMetadata(
             channel = channel.id,
@@ -914,10 +921,10 @@ class ChatImpl(
         id: String,
         name: String?,
         description: String?,
-        custom: com.pubnub.kmp.CustomObject?,
+        custom: CustomObject?,
         type: ChannelType?,
         status: String?,
-    ): com.pubnub.kmp.PNFuture<Channel> {
+    ): PNFuture<Channel> {
         return pubNub.setChannelMetadata(
             channel = id,
             name = name,
@@ -941,10 +948,10 @@ class ChatImpl(
         externalId: String?,
         profileUrl: String?,
         email: String?,
-        custom: com.pubnub.kmp.CustomObject?,
+        custom: CustomObject?,
         type: String? = null,
         status: String? = null,
-    ): com.pubnub.kmp.PNFuture<User> {
+    ): PNFuture<User> {
         return pubNub.setUUIDMetadata(
             uuid = id,
             name = name,
@@ -966,10 +973,10 @@ class ChatImpl(
 
     companion object {
         internal fun pinMessageToChannel(
-            pubNub: com.pubnub.kmp.PubNub,
-            message: com.pubnub.chat.Message?,
+            pubNub: PubNub,
+            message: Message?,
             channel: Channel
-        ): com.pubnub.kmp.PNFuture<PNChannelMetadataResult> {
+        ): PNFuture<PNChannelMetadataResult> {
             val customMetadataToSet = channel.custom?.toMutableMap() ?: mutableMapOf()
             if (message == null) {
                 customMetadataToSet.remove("pinnedMessageTimetoken")
@@ -985,7 +992,7 @@ class ChatImpl(
             return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_$messageTimetoken"
         }
 
-        internal fun createThreadChannel(chat: Chat, message: com.pubnub.chat.Message): com.pubnub.kmp.PNFuture<ThreadChannel> {
+        internal fun createThreadChannel(chat: Chat, message: Message): PNFuture<ThreadChannel> {
             if (message.channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
                 return PubNubException("Only one level of thread nesting is allowed").asFuture()
             }
@@ -1011,9 +1018,9 @@ class ChatImpl(
 
         internal fun removeThreadChannel(
             chat: Chat,
-            message: com.pubnub.chat.Message,
+            message: Message,
             soft: Boolean = false
-        ): com.pubnub.kmp.PNFuture<Pair<PNRemoveMessageActionResult, Channel>> {
+        ): PNFuture<Pair<PNRemoveMessageActionResult, Channel>> {
             if (!message.hasThread) {
                 return PubNubException("There is no thread to be deleted").asFuture()
             }
@@ -1028,7 +1035,7 @@ class ChatImpl(
                 if (threadChannel == null) {
                     throw PubNubException("There is no thread with id: $threadId")
                 }
-                com.pubnub.kmp.awaitAll(
+                awaitAll(
                     chat.pubNub.removeMessageAction(message.channelId, message.timetoken, actionTimetoken),
                     threadChannel.delete(soft)
                 )
@@ -1036,7 +1043,7 @@ class ChatImpl(
         }
     }
 
-    private fun storeUserActivityTimestamp(): com.pubnub.kmp.PNFuture<Unit> {
+    private fun storeUserActivityTimestamp(): PNFuture<Unit> {
         lastSavedActivityInterval?.cancel()
         runWithDelayTimer?.cancel()
 
@@ -1059,7 +1066,7 @@ class ChatImpl(
         }
     }
 
-    private fun runSaveTimestampInterval(): com.pubnub.kmp.PNFuture<Unit> {
+    private fun runSaveTimestampInterval(): PNFuture<Unit> {
         return saveTimeStampFunc().then {
             lastSavedActivityInterval?.cancel()
             lastSavedActivityInterval =
@@ -1073,7 +1080,7 @@ class ChatImpl(
         }
     }
 
-    private fun saveTimeStampFunc(): com.pubnub.kmp.PNFuture<Unit> {
+    private fun saveTimeStampFunc(): PNFuture<Unit> {
         val customWithUpdatedLastActiveTimestamp = buildMap {
             currentUser.custom?.let { putAll(it) }
             put("lastActiveTimestamp", Clock.System.now().toEpochMilliseconds())

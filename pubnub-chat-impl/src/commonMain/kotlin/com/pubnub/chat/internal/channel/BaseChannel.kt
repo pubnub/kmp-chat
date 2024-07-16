@@ -26,6 +26,7 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
+import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl.Companion.pinMessageToChannel
@@ -53,7 +54,9 @@ import com.pubnub.chat.types.GetFileItem
 import com.pubnub.chat.types.GetFilesResult
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
+import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.alsoAsync
@@ -72,7 +75,7 @@ import tryLong
 
 internal const val CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS = "You cannot quote messages from other channels"
 
-abstract class BaseChannel<C : Channel, M : com.pubnub.chat.Message>(
+abstract class BaseChannel<C : Channel, M : Message>(
     override val chat: Chat,
     private val clock: Clock = Clock.System,
     override val id: String,
@@ -108,7 +111,7 @@ abstract class BaseChannel<C : Channel, M : com.pubnub.chat.Message>(
         return chat.deleteChannel(id, soft)
     }
 
-    override fun forwardMessage(message: com.pubnub.chat.Message): PNFuture<PNPublishResult> {
+    override fun forwardMessage(message: Message): PNFuture<PNPublishResult> {
         return chat.forwardMessage(message, this.id)
     }
 
@@ -203,10 +206,10 @@ abstract class BaseChannel<C : Channel, M : com.pubnub.chat.Message>(
         shouldStore: Boolean,
         usePost: Boolean,
         ttl: Int?,
-        mentionedUsers: com.pubnub.chat.types.MessageMentionedUsers?,
+        mentionedUsers: MessageMentionedUsers?,
         referencedChannels: Map<Int, MessageReferencedChannel>?,
-        textLinks: List<com.pubnub.chat.types.TextLink>?,
-        quotedMessage: com.pubnub.chat.Message?,
+        textLinks: List<TextLink>?,
+        quotedMessage: Message?,
         files: List<InputFile>?,
     ): PNFuture<PNPublishResult> {
         if (quotedMessage != null && quotedMessage.channelId != id) {
@@ -246,10 +249,10 @@ abstract class BaseChannel<C : Channel, M : com.pubnub.chat.Message>(
 
     private fun buildMetaForPublish(
         meta: Map<String, Any>?,
-        mentionedUsers: com.pubnub.chat.types.MessageMentionedUsers?,
+        mentionedUsers: MessageMentionedUsers?,
         referencedChannels: Map<Int, MessageReferencedChannel>?,
-        textLinks: List<com.pubnub.chat.types.TextLink>?,
-        quotedMessage: com.pubnub.chat.Message?,
+        textLinks: List<TextLink>?,
+        quotedMessage: Message?,
     ): Map<String, Any> = buildMap {
         meta?.let { putAll(it) }
         mentionedUsers?.let { put("mentionedUsers", PNDataEncoder.encode(it)!!) }
@@ -347,7 +350,7 @@ abstract class BaseChannel<C : Channel, M : com.pubnub.chat.Message>(
         }
     }
 
-    override fun connect(callback: (com.pubnub.chat.Message) -> Unit): AutoCloseable {
+    override fun connect(callback: (Message) -> Unit): AutoCloseable {
         val channelEntity = chat.pubNub.channel(id)
         val subscription = channelEntity.subscription()
         val listener = createEventListener(
@@ -369,7 +372,7 @@ abstract class BaseChannel<C : Channel, M : com.pubnub.chat.Message>(
         return subscription
     }
 
-    override fun join(custom: CustomObject?, callback: (com.pubnub.chat.Message) -> Unit): PNFuture<JoinResult> {
+    override fun join(custom: CustomObject?, callback: (Message) -> Unit): PNFuture<JoinResult> {
         val user = this.chat.currentUser
         return chat.pubNub.setMemberships(
             channels = listOf(
@@ -403,7 +406,7 @@ abstract class BaseChannel<C : Channel, M : com.pubnub.chat.Message>(
         disconnect = null
     }.alsoAsync { chat.pubNub.removeMemberships(channels = listOf(id)) }
 
-    override fun getPinnedMessage(): PNFuture<com.pubnub.chat.Message?> {
+    override fun getPinnedMessage(): PNFuture<Message?> {
         val pinnedMessageTimetoken = this.custom?.get("pinnedMessageTimetoken").tryLong() ?: return null.asFuture()
         val pinnedMessageChannelID = this.custom?.get("pinnedMessageChannelID") as? String ?: return null.asFuture()
 
@@ -418,7 +421,7 @@ abstract class BaseChannel<C : Channel, M : com.pubnub.chat.Message>(
         }
     }
 
-    override fun getMessage(timetoken: Long): PNFuture<com.pubnub.chat.Message?> {
+    override fun getMessage(timetoken: Long): PNFuture<Message?> {
         val previousTimetoken = timetoken + 1
         return getHistory(previousTimetoken, timetoken).then {
             it.firstOrNull()
@@ -429,7 +432,7 @@ abstract class BaseChannel<C : Channel, M : com.pubnub.chat.Message>(
 
     override fun unregisterFromPush() = chat.unregisterPushChannels(listOf(id))
 
-    override fun pinMessage(message: com.pubnub.chat.Message): PNFuture<C> {
+    override fun pinMessage(message: Message): PNFuture<C> {
         return pinMessageToChannel(chat.pubNub, message, this).then { channelFactory(chat, it.data!!) }
     }
 

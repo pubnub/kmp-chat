@@ -43,6 +43,7 @@ import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
+import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
@@ -1127,7 +1128,7 @@ class ChatTest {
         return PNChannelMetadataResult(status = 200, data = pnChannelMetadata)
     }
 
-    private fun createMessage(): com.pubnub.chat.Message {
+    private fun createMessage(): Message {
         return MessageImpl(
             chat = chatMock,
             timetoken = 123345,

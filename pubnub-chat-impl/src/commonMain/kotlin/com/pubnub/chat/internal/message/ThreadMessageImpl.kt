@@ -13,6 +13,7 @@ import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
 import com.pubnub.kmp.PNFuture
@@ -28,7 +29,7 @@ data class ThreadMessageImpl(
     override val userId: String,
     override val actions: Map<String, Map<String, List<Action>>>? = null,
     override val meta: Map<String, Any>? = null,
-    override val mentionedUsers: com.pubnub.chat.types.MessageMentionedUsers? = null,
+    override val mentionedUsers: MessageMentionedUsers? = null,
     override val referencedChannels: MessageReferencedChannels? = null,
     override val quotedMessage: QuotedMessage? = null,
 ) : BaseMessage<ThreadMessage>(
