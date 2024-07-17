@@ -12,7 +12,6 @@ import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteUUIDMetadataEventMe
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetUUIDMetadataEventMessage
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Membership
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.error.PubNubErrorMessage
