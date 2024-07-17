@@ -9,6 +9,7 @@ import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
 import com.pubnub.chat.internal.message.ThreadMessageImpl
 import com.pubnub.chat.types.ChannelType
@@ -24,7 +25,7 @@ import kotlinx.datetime.Clock
 
 data class ThreadChannelImpl(
     override val parentMessage: Message,
-    override val chat: Chat,
+    override val chat: ChatInternal,
     val clock: Clock = Clock.System,
     override val id: String,
     override val name: String? = null,
@@ -125,7 +126,7 @@ data class ThreadChannelImpl(
         internal fun fromDTO(chat: Chat, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {
             return ThreadChannelImpl(
                 parentMessage,
-                chat,
+                chat as ChatInternal,
                 id = channel.id,
                 name = channel.name,
                 custom = channel.custom,

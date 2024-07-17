@@ -8,6 +8,7 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
+import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageMentionedUsers
@@ -16,7 +17,7 @@ import com.pubnub.chat.types.QuotedMessage
 import com.pubnub.kmp.createEventListener
 
 data class MessageImpl(
-    override val chat: Chat,
+    override val chat: ChatInternal,
     override val timetoken: Long,
     override val content: EventContent.TextMessageContent,
     override val channelId: String,
@@ -91,7 +92,7 @@ data class MessageImpl(
 
         internal fun fromDTO(chat: Chat, pnMessageResult: PNMessageResult): Message {
             return MessageImpl(
-                chat,
+                chat as ChatInternal,
                 pnMessageResult.timetoken!!,
                 PNDataEncoder.decode<EventContent>(pnMessageResult.message) as EventContent.TextMessageContent,
                 pnMessageResult.channel,
@@ -113,7 +114,7 @@ data class MessageImpl(
             }
 
             return MessageImpl(
-                chat,
+                chat as ChatInternal,
                 messageItem.timetoken!!,
                 eventContent,
                 channelId,

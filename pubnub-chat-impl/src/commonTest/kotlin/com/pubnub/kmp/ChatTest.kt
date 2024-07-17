@@ -42,12 +42,12 @@ import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.config.ChatConfiguration
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.message.GetUnreadMessagesCounts
@@ -75,7 +75,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class ChatTest {
     private lateinit var objectUnderTest: ChatImpl
-    private val chatMock: Chat = mock(MockMode.strict)
+    private val chatMock: ChatInternal = mock(MockMode.strict)
     private val pubnub: PubNub = mock(MockMode.strict)
     private lateinit var pnConfiguration: PNConfiguration
     private lateinit var chatConfig: ChatConfiguration

@@ -91,7 +91,7 @@ class ChatImpl(
     override val pubNub: PubNub,
     override val editMessageActionName: String = MessageActionType.EDITED.toString(),
     override val deleteMessageActionName: String = MessageActionType.DELETED.toString(),
-) : Chat {
+) : ChatInternal {
     override var currentUser: User =
         UserImpl(this, pubNub.configuration.userId.value, name = pubNub.configuration.userId.value)
         private set
@@ -1008,7 +1008,7 @@ class ChatImpl(
                 }
                 ThreadChannelImpl(
                     message,
-                    chat,
+                    chat as ChatInternal,
                     description = "Thread on channel ${message.channelId} with message timetoken ${message.timetoken}",
                     id = threadChannelId,
                     threadCreated = false

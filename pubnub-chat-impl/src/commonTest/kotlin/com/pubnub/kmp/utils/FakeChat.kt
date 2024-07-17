@@ -8,12 +8,12 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
 import com.pubnub.chat.restrictions.Restriction
@@ -28,7 +28,7 @@ import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.PubNub
 import kotlin.reflect.KClass
 
-abstract class FakeChat(override val config: ChatConfiguration, override val pubNub: PubNub) : Chat {
+abstract class FakeChat(override val config: ChatConfiguration, override val pubNub: PubNub) : ChatInternal {
     override val currentUser: User
         get() = TODO("Not yet implemented")
     override val editMessageActionName: String

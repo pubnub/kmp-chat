@@ -10,6 +10,7 @@ import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
@@ -21,7 +22,7 @@ import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 
 data class ThreadMessageImpl(
-    override val chat: Chat,
+    override val chat: ChatInternal,
     override val parentChannelId: String,
     override val timetoken: Long,
     override val content: EventContent.TextMessageContent,
@@ -73,7 +74,7 @@ data class ThreadMessageImpl(
             }
 
             return ThreadMessageImpl(
-                chat = chat,
+                chat = chat as ChatInternal,
                 parentChannelId = parentChannelId,
                 timetoken = messageItem.timetoken!!,
                 content = eventContent,

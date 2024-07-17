@@ -171,26 +171,7 @@ interface Chat {
 
     fun getPushChannels(): PNFuture<List<String>>
 
-    // should be internal
-    fun publish(
-        // todo maybe create separate interface Chat : ChatInternal so that publish and signal are not visible by user?
-        channelId: String,
-        message: EventContent,
-        meta: Map<String, Any>? = null,
-        shouldStore: Boolean = true,
-        usePost: Boolean = false,
-        replicate: Boolean = true,
-        ttl: Int? = null,
-        mergeMessageWith: Map<String, Any>? = null,
-    ): PNFuture<PNPublishResult>
-
-    // should be internal
-    fun signal(
-        channelId: String,
-        message: EventContent,
-        mergeMessageWith: Map<String, Any>? = null
-    ): PNFuture<PNPublishResult>
-
+    // Companion object required for extending this class elsewhere
     companion object
 }
 

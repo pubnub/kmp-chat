@@ -4,7 +4,7 @@ import com.pubnub.api.endpoints.MessageCounts
 import com.pubnub.api.models.consumer.history.PNMessageCountResult
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.chat.Chat
+import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
@@ -23,7 +23,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class MembershipTest {
     private val pubNub: PubNub = mock(MockMode.strict)
-    private val chat: Chat = mock<Chat>(MockMode.strict).also {
+    private val chat: ChatInternal = mock<ChatInternal>(MockMode.strict).also {
         every { it.pubNub } returns pubNub
     }
     private val user = UserImpl(chat, "user")

@@ -15,6 +15,7 @@ import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Chat
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.kmp.utils.FakeChat
@@ -34,7 +35,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class UserTest {
     private lateinit var objectUnderTest: User
-    private val chat: Chat = mock(MockMode.strict)
+    private val chat: ChatInternal = mock(MockMode.strict)
     private val chatConfig: ChatConfiguration = mock(MockMode.strict)
     private val pubnubConfig: PNConfiguration = mock(MockMode.strict)
     private val pubNub: PubNub = mock(MockMode.strict)

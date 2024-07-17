@@ -7,10 +7,10 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_ADMIN_CHANNEL
 import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.channel.ChannelImpl
@@ -33,7 +33,7 @@ import tryInt
 typealias Actions = Map<String, Map<String, List<PNFetchMessageItem.Action>>>
 
 abstract class BaseMessage<T : Message>(
-    override val chat: Chat,
+    override val chat: ChatInternal,
     override val timetoken: Long,
     override val content: EventContent.TextMessageContent,
     override val channelId: String,
