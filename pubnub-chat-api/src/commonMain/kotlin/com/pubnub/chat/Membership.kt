@@ -20,12 +20,7 @@ interface Membership {
 
     fun getUnreadMessagesCount(): PNFuture<Long?>
 
-    fun streamUpdates(callback: (membership: Membership) -> Unit): AutoCloseable
+    fun streamUpdates(callback: (membership: Membership?) -> Unit): AutoCloseable
 
-//    companion object {
-//        fun streamUpdatesOn(
-//            memberships: Collection<Membership>,
-//            callback: (memberships: Collection<Membership>) -> Unit,
-//        ): AutoCloseable
-//    }
+    companion object
 }

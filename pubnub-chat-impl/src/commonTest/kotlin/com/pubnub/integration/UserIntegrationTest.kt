@@ -4,6 +4,7 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.Chat
+import com.pubnub.chat.User
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
@@ -112,23 +113,33 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun streamUpdatesOn() = runTest(timeout = defaultTimeout) {
+        val newName = "newName"
+        val expectedUpdates = listOf(
+            listOf(someUser),
+            listOf(someUser.asImpl().copy(name = newName)),
+            emptyList()
+        )
+        val actualUpdates = mutableListOf<List<User>>()
+
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(someUser.id)) {
                 dispose = UserImpl.streamUpdatesOn(listOf(someUser)) {
-                    println(it)
+                    actualUpdates.add(it.map { it.asImpl().copy(updated = null) })
                 }
             }
 
             chat.createUser(someUser).await()
 
-            someUser.update(name = "newName").await()
+            someUser.update(name = newName).await()
 
             someUser.delete().await()
 
             delayInMillis(2000)
             dispose?.close()
         }
+
+        assertEquals(expectedUpdates, actualUpdates)
     }
 
     @Test

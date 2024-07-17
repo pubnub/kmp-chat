@@ -2,10 +2,14 @@ package com.pubnub.integration
 
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.chat.Channel
 import com.pubnub.chat.Membership
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.UserImpl
+import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
+import com.pubnub.chat.types.ChannelType
+import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
@@ -167,6 +171,106 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun streamUpdatesOn() = runTest(timeout = defaultTimeout) {
+        val newName = "newName"
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let {
+                createCustomObject(it)
+            },
+            channel01.type,
+            channel01.status
+        ).await()
+        chat.createChannel(
+            channel02.id,
+            channel02.name,
+            channel02.description,
+            channel02.custom?.let {
+                createCustomObject(it)
+            },
+            channel02.type,
+            channel02.status
+        ).await()
+        delayInMillis(1000)
+
+        // todo there are big problems with update handling in PN SDK that prevent this for working in a sane way
+        // e.g. getting an update to one property (e.g. description) will return an object with all other properties set to null
+        val expectedUpdates = listOf<List<Channel>>(
+            listOf(
+                channel01.asImpl().copy(
+                    name = newName,
+                    custom = null,
+                    description = null,
+                    type = ChannelType.UNKNOWN,
+                    status = null,
+                    updated = null
+                ),
+                channel02.asImpl().copy(updated = null)
+            ).sortedBy {
+                it.id
+            },
+            listOf(
+                channel01.asImpl().copy(
+                    name = newName,
+                    custom = null,
+                    description = null,
+                    type = ChannelType.UNKNOWN,
+                    status = null,
+                    updated = null
+                ),
+                channel02.asImpl().copy(
+                    custom = null,
+                    name = null,
+                    description = newName,
+                    type = ChannelType.UNKNOWN,
+                    status = null,
+                    updated = null
+                )
+            ).sortedBy {
+                it.id
+            },
+            listOf(
+                channel02.asImpl().copy(
+                    custom = null,
+                    name = null,
+                    description = newName,
+                    type = ChannelType.UNKNOWN,
+                    status = null,
+                    updated = null
+                )
+            ).sortedBy {
+                it.id
+            },
+            emptyList()
+        )
+        val actualUpdates = mutableListOf<List<Channel>>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id, channel02.id)) {
+                dispose = ChannelImpl.streamUpdatesOn(listOf(channel01, channel02)) { channels ->
+                    actualUpdates.add(channels.map { it.asImpl().copy(updated = null) }.sortedBy { it.id })
+                }
+            }
+
+            channel01.update(name = newName).await()
+
+            channel02.update(description = newName).await()
+
+            channel01.delete().await()
+
+            channel02.delete().await()
+
+            delayInMillis(1000)
+            dispose?.close()
+        }
+
+        assertEquals(expectedUpdates, actualUpdates)
+    }
+
+    @Test
     fun getMessage() = runTest(timeout = 10.seconds) {
         val messageText = "some text"
         val channel = chat.createChannel(randomString()).await()
@@ -208,4 +312,8 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             dispose?.close()
         }
     }
+}
+
+private fun Channel.asImpl(): ChannelImpl {
+    return this as ChannelImpl
 }

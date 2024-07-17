@@ -91,9 +91,9 @@ data class MembershipImpl(
         } ?: (null as Long?).asFuture()
     }
 
-    override fun streamUpdates(callback: (membership: Membership) -> Unit): AutoCloseable {
+    override fun streamUpdates(callback: (membership: Membership?) -> Unit): AutoCloseable {
         return streamUpdatesOn(listOf(this)) {
-            callback(it.first())
+            callback(it.firstOrNull())
         }
     }
 
@@ -112,8 +112,9 @@ data class MembershipImpl(
             if (memberships.isEmpty()) {
                 throw PubNubException("Cannot stream membership updates on an empty list")
             }
+            var latestMemberships = memberships
             val chat = memberships.first().chat as ChatInternal
-            val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
+            val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
                 val eventUuid = when (val message = event.extractedMessage) {
                     is PNDeleteMembershipEventMessage -> message.data.uuid
                     is PNSetMembershipEventMessage -> message.data.uuid
@@ -130,25 +131,13 @@ data class MembershipImpl(
                         updated = message.data.updated,
                         eTag = message.data.eTag
                     )
-
-                    is PNDeleteMembershipEventMessage -> MembershipImpl(
-                        chat,
-                        user = membership.user,
-                        channel = membership.channel,
-                        custom = null,
-                        updated = null,
-                        eTag = null
-                    ) // todo verify behavior with TS Chat SDK
+                    is PNDeleteMembershipEventMessage -> null
                     else -> return@createEventListener
                 }
-                val newMemberships = memberships.map {
-                    if (it.channel.id == newMembership.channel.id && it.user.id == newMembership.user.id) {
-                        newMembership
-                    } else {
-                        it
-                    }
-                }
-                callback(newMemberships)
+                latestMemberships = latestMemberships.asSequence().filter {
+                    it.channel.id != event.channel || it.user.id != eventUuid
+                }.run { newMembership?.let { plus(it) } ?: this }.toList()
+                callback(latestMemberships)
             })
 
             val subscriptionSet = chat.pubNub.subscriptionSetOf(memberships.map { it.channel.id }.toSet())

@@ -60,7 +60,9 @@ interface User {
         sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
     ): PNFuture<GetRestrictionsResponse>
 
-    fun streamUpdates(callback: (user: User) -> Unit): AutoCloseable
+    fun streamUpdates(callback: (user: User?) -> Unit): AutoCloseable
 
     fun active(): PNFuture<Boolean>
+
+    companion object
 }
