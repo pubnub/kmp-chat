@@ -1,0 +1,356 @@
+package com.pubnub.kmp
+
+import com.pubnub.api.PubNubException
+import com.pubnub.api.endpoints.objects.membership.GetMemberships
+import com.pubnub.api.models.consumer.objects.PNMembershipKey
+import com.pubnub.api.models.consumer.objects.PNPage
+import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
+import com.pubnub.api.v2.PNConfiguration
+import com.pubnub.api.v2.callbacks.Consumer
+import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.chat.Chat
+import com.pubnub.chat.User
+import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.internal.UserImpl
+import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.kmp.utils.FakeChat
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
+
+class UserTest {
+    private lateinit var objectUnderTest: User
+    private val chat: Chat = mock(MockMode.strict)
+    private val chatConfig: ChatConfiguration = mock(MockMode.strict)
+    private val pubnubConfig: PNConfiguration = mock(MockMode.strict)
+    private val pubNub: PubNub = mock(MockMode.strict)
+    private val id = "testId"
+    private val name = "testName"
+    private val externalId = "testExternalId"
+    private val profileUrl = "testProfileUrl"
+    private val email = "testEmail"
+    private val customData = mapOf("testCustom" to "custom")
+    private val custom = createCustomObject(customData)
+    private val status = "testStatus"
+    private val type = "testType"
+    private val updated = "testUpdated"
+    private val callbackUser: (Result<User>) -> Unit = { }
+    private val channelId = "channelId01"
+
+    @BeforeTest
+    fun setUp() {
+        every { chatConfig.typingTimeout } returns 2000.milliseconds
+        every { chat.config } returns chatConfig
+        every { chat.pubNub } returns pubNub
+        every { pubNub.configuration } returns pubnubConfig
+        every { pubnubConfig.secretKey } returns ""
+        objectUnderTest = createUser(chat)
+    }
+
+    private fun createUser(chat: Chat) = UserImpl(
+        chat = chat,
+        id = id,
+        name = name,
+        externalId = externalId,
+        profileUrl = profileUrl,
+        email = email,
+        custom = customData,
+        status = status,
+        type = type,
+        updated = updated,
+    )
+
+    @Test
+    fun canSoftDeleteUser() {
+        // given
+        val softDelete = true
+        val chat = object : FakeChat(chatConfig, pubNub) {
+            var soft: Boolean? = null
+
+            override fun deleteUser(id: String, soft: Boolean): PNFuture<User> {
+                this.soft = soft
+                return objectUnderTest.asFuture()
+            }
+        }
+        val sut = createUser(chat)
+
+        // when
+        sut.delete(softDelete).async {}
+
+        // then
+        assertEquals(softDelete, chat.soft)
+    }
+
+    @Test
+    fun canHardDeleteUser() {
+        // given
+        val softDelete = false
+        val chat = object : FakeChat(chatConfig, pubNub) {
+            var softDeleted: Boolean? = null
+            var deletedUserId: String? = null
+
+            override fun deleteUser(id: String, soft: Boolean): PNFuture<User> {
+                this.softDeleted = soft
+                this.deletedUserId = id
+                return objectUnderTest.asFuture()
+            }
+        }
+        val sut = createUser(chat)
+
+        // when
+        sut.delete(softDelete).async {}
+
+        // then
+        assertEquals(softDelete, chat.softDeleted)
+        assertEquals(sut.id, chat.deletedUserId)
+    }
+
+    @Test
+    fun canUpdateUser() {
+        // given
+        every {
+            chat.updateUser(
+                id = any(),
+                name = any(),
+                externalId = any(),
+                profileUrl = any(),
+                email = any(),
+                custom = any(),
+                status = any(),
+                type = any()
+            )
+        } returns objectUnderTest.asFuture()
+
+        // when
+        objectUnderTest.update(
+            name = name,
+            externalId = externalId,
+            profileUrl = profileUrl,
+            email = email,
+            custom = custom,
+            status = status,
+            type = type
+        ).async {}
+
+        // then
+        verify { chat.updateUser(id, name, externalId, profileUrl, email, custom, status, type) }
+    }
+
+    @Test
+    fun canWherePresent() {
+        // given
+        val callback: (Result<List<String>>) -> Unit = {}
+        every { chat.wherePresent(any()) } returns emptyList<String>().asFuture()
+
+        // when
+        objectUnderTest.wherePresent().async {}
+
+        // then
+        verify { chat.wherePresent(id) }
+    }
+
+    @Test
+    fun canIsPresentOn() {
+        // given
+        val callback: (Result<Boolean>) -> Unit = {}
+        every { chat.isPresent(any(), any()) } returns true.asFuture()
+
+        // when
+        objectUnderTest.isPresentOn(channelId = channelId).async {}
+
+        // then
+        verify { chat.isPresent(id, channelId) }
+    }
+
+    @Test
+    fun getMembershipsShouldResultFailureWhenPubNubReturnsError() {
+        // given
+        val limit = 10
+        val page = PNPage.PNNext("nextPageHash")
+        val filter = "channel.name LIKE '*super*'"
+        val errorMessage = "Strange exception"
+        val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
+        val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
+        every { chat.pubNub } returns pubNub
+        every {
+            pubNub.getMemberships(
+                uuid = any(),
+                limit = any(),
+                page = any(),
+                filter = any(),
+                sort = any(),
+                includeCount = any(),
+                includeCustom = any(),
+                includeChannelDetails = any()
+            )
+        } returns getMembershipsEndpoint
+        every { getMembershipsEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback1.accept(Result.failure(Exception(errorMessage)))
+        }
+
+        // when
+        objectUnderTest.getMemberships(limit = limit, page = page, filter = filter, sort = sort).async { result ->
+            // then
+            assertTrue(result.isFailure)
+            assertEquals("Failed to retrieve getMembership data.", result.exceptionOrNull()?.message)
+        }
+    }
+
+    @Test
+    fun getMembershipsShouldResultSuccessWhenPubNubReturnsSuccess() {
+        // given
+        val limit = 10
+        val page = PNPage.PNNext("nextPageHash")
+        val filter = "channel.name LIKE '*super*'"
+        val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
+        val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
+        every { chat.pubNub } returns pubNub
+        every {
+            pubNub.getMemberships(
+                uuid = any(),
+                limit = any(),
+                page = any(),
+                filter = any(),
+                sort = any(),
+                includeCount = any(),
+                includeCustom = any(),
+                includeChannelDetails = any()
+            )
+        } returns getMembershipsEndpoint
+        every { getMembershipsEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback1.accept(Result.success(getPNChannelMembershipArrayResult()))
+        }
+
+        // when
+        objectUnderTest.getMemberships(limit = limit, page = page, filter = filter, sort = sort).async { result ->
+            // then
+            assertTrue(result.isSuccess)
+            assertEquals(1, result.getOrNull()!!.memberships.size)
+            assertEquals(channelId, result.getOrNull()!!.memberships.first().channel.id)
+        }
+
+        // then
+        verify {
+            pubNub.getMemberships(
+                uuid = id,
+                limit = limit,
+                page = page,
+                filter = filter,
+                sort = sort,
+                includeCount = true,
+                includeCustom = true,
+                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM
+            )
+        }
+    }
+
+    @Test
+    fun canGetRestrictionsWithNoChannelProvided() {
+        val noChannelProvided = null
+        val limit = 1
+        val page: PNPage = PNPage.PNNext("nextPageHash")
+        val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
+        val getMemberships: GetMemberships = mock(MockMode.strict)
+        every { chat.pubNub } returns pubNub
+        every { pubNub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMemberships
+
+        (objectUnderTest as UserImpl).getRestrictions(channel = noChannelProvided, limit = limit, page = page, sort = sort)
+
+        val expectedFilter = "channel.id LIKE 'PUBNUB_INTERNAL_MODERATION_*'"
+        verify {
+            pubNub.getMemberships(
+                uuid = id,
+                limit = limit,
+                page = page,
+                filter = expectedFilter,
+                sort = sort,
+                includeCount = true,
+                includeCustom = true,
+                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+                includeType = true
+            )
+        }
+    }
+
+    @Test
+    fun canGetRestrictionsByChannel() {
+        val channelId = "channelId"
+        val channel = ChannelImpl(chat = chat, id = channelId)
+        val limit = 1
+        val page: PNPage? = PNPage.PNNext("nextPageHash")
+        val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
+        val getMemberships: GetMemberships = mock(MockMode.strict)
+        every { chat.pubNub } returns pubNub
+        every { pubNub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMemberships
+
+        (objectUnderTest as UserImpl).getRestrictions(channel = channel, limit = limit, page = page, sort = sort)
+
+        val expectedFilter = "channel.id == 'PUBNUB_INTERNAL_MODERATION_channelId'"
+        verify {
+            pubNub.getMemberships(
+                uuid = id,
+                limit = limit,
+                page = page,
+                filter = expectedFilter,
+                sort = sort,
+                includeCount = true,
+                includeCustom = true,
+                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+                includeType = true
+            )
+        }
+    }
+
+    @Test
+    fun shouldThrowExceptionWhenSecretKeyIsNotSet() {
+        val channel = ChannelImpl(chat = chat, id = "channelId")
+        val e = assertFailsWith<PubNubException> {
+            objectUnderTest.setRestrictions(channel)
+        }
+        assertEquals("Moderation restrictions can only be set by clients initialized with a Secret Key.", e.message)
+    }
+
+    private fun getPNChannelMembershipArrayResult(): PNChannelMembershipArrayResult {
+        val channelMetadata = PNChannelMetadata(
+            id = channelId,
+            name = null,
+            description = null,
+            custom = null,
+            updated = null,
+            eTag = null,
+            type = null,
+            status = null
+        )
+
+        val channelMembership = PNChannelMembership(
+            channel = channelMetadata,
+            custom = null,
+            updated = "2024-05-20T14:50:19.972361Z",
+            eTag = "AZO/t53al7m8fw",
+            status = null
+        )
+
+        val data: List<PNChannelMembership> = mutableListOf(channelMembership)
+        return PNChannelMembershipArrayResult(
+            status = 200,
+            data = data,
+            totalCount = 1,
+            next = null,
+            prev = null
+        )
+    }
+}

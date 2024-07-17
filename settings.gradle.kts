@@ -13,3 +13,6 @@ dependencyResolutionManagement {
 includeBuild("pubnub-kotlin") {
     name = "pubnub"
 }
+
+include(":pubnub-chat-api")
+include(":pubnub-chat-impl")
