@@ -62,7 +62,7 @@ data class ChannelImpl(
 
                 latestChannels = latestChannels.asSequence().filter {
                     it.id != newChannelId
-                }.apply { newChannel?.let { plus(it) } }.toList()
+                }.run { newChannel?.let { plus(it) } ?: this }.toList()
                     .also(callback)
             })
 

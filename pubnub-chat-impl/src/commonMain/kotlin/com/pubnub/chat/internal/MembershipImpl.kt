@@ -137,7 +137,7 @@ data class MembershipImpl(
                 }
                 latestMemberships = latestMemberships.asSequence().filter {
                     it.channel.id != event.channel || it.user.id != eventUuid
-                }.apply { newMembership?.let { plus(it) } }.toList()
+                }.run { newMembership?.let { plus(it) } ?: this }.toList()
                     .also(callback)
             })
 

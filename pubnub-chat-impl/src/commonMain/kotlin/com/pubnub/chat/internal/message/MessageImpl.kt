@@ -9,6 +9,7 @@ import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.ChatInternal
+import com.pubnub.chat.internal.message.ThreadMessageImpl.Companion
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageMentionedUsers

@@ -220,7 +220,7 @@ abstract class BaseMessage<T : Message>(
     }
 
     companion object {
-        fun <T: Message> streamUpdatesOn(
+        fun <T : Message> streamUpdatesOn(
             messages: Collection<T>,
             callback: (messages: Collection<T>) -> Unit,
         ): AutoCloseable {
@@ -231,7 +231,7 @@ abstract class BaseMessage<T : Message>(
             val chat = messages.first().chat
             val listener = createEventListener(chat.pubNub, onMessageAction = { _, event ->
                 val message =
-                    messages.find { it.timetoken == event.messageAction.messageTimetoken } ?: return@createEventListener
+                    latestMessages.find { it.timetoken == event.messageAction.messageTimetoken } ?: return@createEventListener
                 if (message.channelId != event.channel) return@createEventListener
                 val actions = if (event.event == "added") {
                     assignAction(

@@ -400,9 +400,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
-    override fun leave(): PNFuture<Unit> = PNFuture<Unit> {
+    override fun leave(): PNFuture<Unit> = PNFuture { callback ->
         disconnect?.close()
         disconnect = null
+        callback.accept(Result.success(Unit))
     }.alsoAsync { chat.pubNub.removeMemberships(channels = listOf(id)) }
 
     override fun getPinnedMessage(): PNFuture<Message?> {

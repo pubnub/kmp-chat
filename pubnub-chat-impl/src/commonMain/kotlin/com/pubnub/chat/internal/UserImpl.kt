@@ -250,7 +250,7 @@ data class UserImpl(
 
                 latestUsers = latestUsers.asSequence().filter {
                     it.id != newUserId
-                }.apply { newUser?.let { plus(it) } }.toList()
+                }.run { newUser?.let { plus(it) } ?: this }.toList()
                     .also(callback)
             })
 

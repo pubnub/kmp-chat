@@ -50,7 +50,7 @@ interface Message {
 
     fun toggleReaction(reaction: String): PNFuture<Message>
 
-    fun <T: Message> streamUpdates(callback: (message: T) -> Unit): AutoCloseable
+    fun <T : Message> streamUpdates(callback: (message: T) -> Unit): AutoCloseable
 
     companion object
 }

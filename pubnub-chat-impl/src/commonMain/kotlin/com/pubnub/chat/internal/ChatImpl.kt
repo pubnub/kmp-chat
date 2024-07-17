@@ -272,7 +272,12 @@ class ChatImpl(
         return pubNub.whereNow(uuid = userId).then { pnWhereNowResult ->
             pnWhereNowResult.channels
         }.catch { pnException ->
-            Result.Companion.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_WHERE_PRESENT_DATA, pnException))
+            Result.Companion.failure(
+                PubNubException(
+                    PubNubErrorMessage.FAILED_TO_RETRIEVE_WHERE_PRESENT_DATA,
+                    pnException
+                )
+            )
         }
     }
 
