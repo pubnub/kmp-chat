@@ -4,7 +4,6 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.ThreadMessage
@@ -123,10 +122,10 @@ data class ThreadChannelImpl(
     override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
 
     companion object {
-        internal fun fromDTO(chat: Chat, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {
+        internal fun fromDTO(chat: ChatInternal, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {
             return ThreadChannelImpl(
                 parentMessage,
-                chat as ChatInternal,
+                chat,
                 id = channel.id,
                 name = channel.name,
                 custom = channel.custom,

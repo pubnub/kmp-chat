@@ -992,7 +992,7 @@ class ChatImpl(
             return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_$messageTimetoken"
         }
 
-        internal fun createThreadChannel(chat: Chat, message: Message): PNFuture<ThreadChannel> {
+        internal fun createThreadChannel(chat: ChatInternal, message: Message): PNFuture<ThreadChannel> {
             if (message.channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
                 return PubNubException("Only one level of thread nesting is allowed").asFuture()
             }
@@ -1008,7 +1008,7 @@ class ChatImpl(
                 }
                 ThreadChannelImpl(
                     message,
-                    chat as ChatInternal,
+                    chat,
                     description = "Thread on channel ${message.channelId} with message timetoken ${message.timetoken}",
                     id = threadChannelId,
                     threadCreated = false

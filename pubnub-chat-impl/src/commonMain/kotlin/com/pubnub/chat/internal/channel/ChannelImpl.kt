@@ -5,7 +5,6 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteChannelMetadataEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetChannelMetadataEventMessage
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
@@ -77,9 +76,9 @@ data class ChannelImpl(
             return subscriptionSet
         }
 
-        fun fromDTO(chat: Chat, channel: PNChannelMetadata): Channel {
+        fun fromDTO(chat: ChatInternal, channel: PNChannelMetadata): Channel {
             return ChannelImpl(
-                chat as ChatInternal,
+                chat,
                 id = channel.id,
                 name = channel.name,
                 custom = channel.custom,

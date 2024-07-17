@@ -23,7 +23,6 @@ import com.pubnub.api.models.consumer.push.payload.PushPayloadHelper
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.subscriptions.SubscriptionOptions
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
@@ -85,8 +84,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
     override val updated: String? = null,
     override val status: String? = null,
     override val type: ChannelType? = null,
-    val channelFactory: (Chat, PNChannelMetadata) -> C,
-    val messageFactory: (Chat, PNFetchMessageItem, channelId: String) -> M,
+    val channelFactory: (ChatInternal, PNChannelMetadata) -> C,
+    val messageFactory: (ChatInternal, PNFetchMessageItem, channelId: String) -> M,
 ) : Channel {
     private val suggestedMemberships = mutableMapOf<String, Set<Membership>>()
     private var disconnect: AutoCloseable? = null

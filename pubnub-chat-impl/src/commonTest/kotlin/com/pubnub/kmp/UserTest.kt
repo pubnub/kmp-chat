@@ -12,7 +12,6 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArra
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.chat.Chat
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatInternal
@@ -49,7 +48,6 @@ class UserTest {
     private val status = "testStatus"
     private val type = "testType"
     private val updated = "testUpdated"
-    private val callbackUser: (Result<User>) -> Unit = { }
     private val channelId = "channelId01"
 
     @BeforeTest
@@ -62,7 +60,7 @@ class UserTest {
         objectUnderTest = createUser(chat)
     }
 
-    private fun createUser(chat: Chat) = UserImpl(
+    private fun createUser(chat: ChatInternal) = UserImpl(
         chat = chat,
         id = id,
         name = name,

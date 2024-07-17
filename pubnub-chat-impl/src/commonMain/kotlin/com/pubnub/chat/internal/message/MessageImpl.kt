@@ -6,7 +6,6 @@ import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.serialization.PNDataEncoder
@@ -90,9 +89,9 @@ data class MessageImpl(
             return subscriptionSet
         }
 
-        internal fun fromDTO(chat: Chat, pnMessageResult: PNMessageResult): Message {
+        internal fun fromDTO(chat: ChatInternal, pnMessageResult: PNMessageResult): Message {
             return MessageImpl(
-                chat as ChatInternal,
+                chat,
                 pnMessageResult.timetoken!!,
                 PNDataEncoder.decode<EventContent>(pnMessageResult.message) as EventContent.TextMessageContent,
                 pnMessageResult.channel,
@@ -104,7 +103,7 @@ data class MessageImpl(
             )
         }
 
-        internal fun fromDTO(chat: Chat, messageItem: PNFetchMessageItem, channelId: String): Message {
+        internal fun fromDTO(chat: ChatInternal, messageItem: PNFetchMessageItem, channelId: String): Message {
             val eventContent = try {
                 messageItem.message.asString()?.let { text ->
                     EventContent.TextMessageContent(text, null)
@@ -114,7 +113,7 @@ data class MessageImpl(
             }
 
             return MessageImpl(
-                chat as ChatInternal,
+                chat,
                 messageItem.timetoken!!,
                 eventContent,
                 channelId,

@@ -12,7 +12,6 @@ import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteUUIDMetadataEventMe
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetUUIDMetadataEventMessage
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Membership
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.error.PubNubErrorMessage
@@ -32,7 +31,7 @@ import kotlinx.datetime.Instant
 import tryLong
 
 data class UserImpl(
-    override val chat: Chat,
+    override val chat: ChatInternal,
     override val id: String,
     override val name: String? = null,
     override val externalId: String? = null,
@@ -219,7 +218,7 @@ data class UserImpl(
     }
 
     companion object {
-        internal fun fromDTO(chat: Chat, user: PNUUIDMetadata): User = UserImpl(
+        internal fun fromDTO(chat: ChatInternal, user: PNUUIDMetadata): User = UserImpl(
             // todo chat already has user (chat.config.uuid or  chat.config.pubnubConfig.userId)
             // consider creating new chat that has "user.id" in chat.config.uuid and chat.config.pubnubConfig.userId ?
             chat,
@@ -239,7 +238,7 @@ data class UserImpl(
             if (users.isEmpty()) {
                 throw PubNubException("Cannot stream user updates on an empty list")
             }
-            val chat = users.first().chat
+            val chat = users.first().chat as ChatInternal
             val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
                 val newUser = when (val message = event.extractedMessage) {
                     is PNSetUUIDMetadataEventMessage -> fromDTO(chat, message.data)

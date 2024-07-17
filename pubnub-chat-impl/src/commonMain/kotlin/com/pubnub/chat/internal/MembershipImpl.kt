@@ -7,7 +7,6 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteMembershipEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEventMessage
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
@@ -26,7 +25,7 @@ import com.pubnub.kmp.thenAsync
 import tryLong
 
 data class MembershipImpl(
-    override val chat: Chat,
+    override val chat: ChatInternal,
     override val channel: Channel,
     override val user: User,
     override val custom: Map<String, Any?>?,
@@ -113,7 +112,7 @@ data class MembershipImpl(
             if (memberships.isEmpty()) {
                 throw PubNubException("Cannot stream membership updates on an empty list")
             }
-            val chat = memberships.first().chat
+            val chat = memberships.first().chat as ChatInternal
             val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
                 val eventUuid = when (val message = event.extractedMessage) {
                     is PNDeleteMembershipEventMessage -> message.data.uuid
@@ -158,7 +157,7 @@ data class MembershipImpl(
             return subscriptionSet
         }
 
-        internal fun fromMembershipDTO(chat: Chat, channelMembership: PNChannelMembership, user: User) = MembershipImpl(
+        internal fun fromMembershipDTO(chat: ChatInternal, channelMembership: PNChannelMembership, user: User) = MembershipImpl(
             chat,
             ChannelImpl.fromDTO(chat, channelMembership.channel!!),
             user,
@@ -167,7 +166,7 @@ data class MembershipImpl(
             channelMembership.eTag
         )
 
-        internal fun fromChannelMemberDTO(chat: Chat, userMembership: PNMember, channel: Channel) = MembershipImpl(
+        internal fun fromChannelMemberDTO(chat: ChatInternal, userMembership: PNMember, channel: Channel) = MembershipImpl(
             chat,
             channel,
             UserImpl.fromDTO(chat, userMembership.uuid!!),

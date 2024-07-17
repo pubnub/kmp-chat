@@ -6,7 +6,6 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
@@ -64,7 +63,7 @@ data class ThreadMessageImpl(
             )
         }
 
-        internal fun fromDTO(chat: Chat, messageItem: PNFetchMessageItem, channelId: String, parentChannelId: String): ThreadMessage {
+        internal fun fromDTO(chat: ChatInternal, messageItem: PNFetchMessageItem, channelId: String, parentChannelId: String): ThreadMessage {
             val eventContent = try {
                 messageItem.message.asString()?.let { text ->
                     EventContent.TextMessageContent(text, null)
@@ -74,7 +73,7 @@ data class ThreadMessageImpl(
             }
 
             return ThreadMessageImpl(
-                chat = chat as ChatInternal,
+                chat = chat,
                 parentChannelId = parentChannelId,
                 timetoken = messageItem.timetoken!!,
                 content = eventContent,
