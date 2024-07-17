@@ -91,7 +91,7 @@ class ChatImpl(
     override val pubNub: PubNub,
     override val editMessageActionName: String = MessageActionType.EDITED.toString(),
     override val deleteMessageActionName: String = MessageActionType.DELETED.toString(),
-) : Chat {
+) : ChatInternal {
     override var currentUser: User =
         UserImpl(this, pubNub.configuration.userId.value, name = pubNub.configuration.userId.value)
         private set
@@ -992,7 +992,7 @@ class ChatImpl(
             return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_$messageTimetoken"
         }
 
-        internal fun createThreadChannel(chat: Chat, message: Message): PNFuture<ThreadChannel> {
+        internal fun createThreadChannel(chat: ChatInternal, message: Message): PNFuture<ThreadChannel> {
             if (message.channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
                 return PubNubException("Only one level of thread nesting is allowed").asFuture()
             }

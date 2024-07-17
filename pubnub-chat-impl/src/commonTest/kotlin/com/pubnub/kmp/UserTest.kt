@@ -12,9 +12,9 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArra
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.chat.Chat
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.kmp.utils.FakeChat
@@ -34,7 +34,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class UserTest {
     private lateinit var objectUnderTest: User
-    private val chat: Chat = mock(MockMode.strict)
+    private val chat: ChatInternal = mock(MockMode.strict)
     private val chatConfig: ChatConfiguration = mock(MockMode.strict)
     private val pubnubConfig: PNConfiguration = mock(MockMode.strict)
     private val pubNub: PubNub = mock(MockMode.strict)
@@ -48,7 +48,6 @@ class UserTest {
     private val status = "testStatus"
     private val type = "testType"
     private val updated = "testUpdated"
-    private val callbackUser: (Result<User>) -> Unit = { }
     private val channelId = "channelId01"
 
     @BeforeTest
@@ -61,7 +60,7 @@ class UserTest {
         objectUnderTest = createUser(chat)
     }
 
-    private fun createUser(chat: Chat) = UserImpl(
+    private fun createUser(chat: ChatInternal) = UserImpl(
         chat = chat,
         id = id,
         name = name,

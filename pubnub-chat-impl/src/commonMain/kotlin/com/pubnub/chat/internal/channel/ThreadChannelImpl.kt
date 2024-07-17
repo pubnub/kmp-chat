@@ -4,11 +4,11 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
 import com.pubnub.chat.internal.message.ThreadMessageImpl
 import com.pubnub.chat.types.ChannelType
@@ -24,7 +24,7 @@ import kotlinx.datetime.Clock
 
 data class ThreadChannelImpl(
     override val parentMessage: Message,
-    override val chat: Chat,
+    override val chat: ChatInternal,
     val clock: Clock = Clock.System,
     override val id: String,
     override val name: String? = null,
@@ -122,7 +122,7 @@ data class ThreadChannelImpl(
     override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
 
     companion object {
-        internal fun fromDTO(chat: Chat, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {
+        internal fun fromDTO(chat: ChatInternal, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {
             return ThreadChannelImpl(
                 parentMessage,
                 chat,

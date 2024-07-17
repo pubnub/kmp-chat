@@ -5,8 +5,8 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteChannelMetadataEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetChannelMetadataEventMessage
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
+import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.types.ChannelType
@@ -14,7 +14,7 @@ import com.pubnub.kmp.createEventListener
 import kotlinx.datetime.Clock
 
 data class ChannelImpl(
-    override val chat: Chat,
+    override val chat: ChatInternal,
     private val clock: Clock = Clock.System,
     override val id: String,
     override val name: String? = null,
@@ -50,7 +50,7 @@ data class ChannelImpl(
             if (channels.isEmpty()) {
                 throw PubNubException("Cannot stream channel updates on an empty list")
             }
-            val chat = channels.first().chat
+            val chat = channels.first().chat as ChatInternal
             val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
                 val newChannel = when (val message = event.extractedMessage) {
                     is PNSetChannelMetadataEventMessage -> fromDTO(chat, message.data)
@@ -76,7 +76,7 @@ data class ChannelImpl(
             return subscriptionSet
         }
 
-        fun fromDTO(chat: Chat, channel: PNChannelMetadata): Channel {
+        fun fromDTO(chat: ChatInternal, channel: PNChannelMetadata): Channel {
             return ChannelImpl(
                 chat,
                 id = channel.id,

@@ -20,10 +20,10 @@ import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
+import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
@@ -58,7 +58,7 @@ import kotlin.time.Duration.Companion.seconds
 class ChannelTest {
     private lateinit var objectUnderTest: ChannelImpl
 
-    private val chat: Chat = mock(MockMode.strict)
+    private val chat: ChatInternal = mock(MockMode.strict)
     private lateinit var chatConfig: ChatConfiguration
     private val channelId = "testId"
     private val name = "testName"
