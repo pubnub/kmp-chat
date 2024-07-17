@@ -251,7 +251,8 @@ abstract class BaseMessage<T : Message>(
                     } else {
                         it
                     }
-                }.also(callback)
+                }
+                callback(latestMessages)
             })
 
             val subscriptionSet = chat.pubNub.subscriptionSetOf(

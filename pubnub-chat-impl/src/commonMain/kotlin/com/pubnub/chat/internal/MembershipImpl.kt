@@ -137,7 +137,7 @@ data class MembershipImpl(
                 latestMemberships = latestMemberships.asSequence().filter {
                     it.channel.id != event.channel || it.user.id != eventUuid
                 }.run { newMembership?.let { plus(it) } ?: this }.toList()
-                    .also(callback)
+                callback(latestMemberships)
             })
 
             val subscriptionSet = chat.pubNub.subscriptionSetOf(memberships.map { it.channel.id }.toSet())

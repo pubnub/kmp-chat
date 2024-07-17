@@ -250,7 +250,7 @@ data class UserImpl(
                 latestUsers = latestUsers.asSequence().filter {
                     it.id != newUserId
                 }.run { newUser?.let { plus(it) } ?: this }.toList()
-                    .also(callback)
+                callback(latestUsers)
             })
 
             val subscriptionSet = chat.pubNub.subscriptionSetOf(users.map { it.id }.toSet())

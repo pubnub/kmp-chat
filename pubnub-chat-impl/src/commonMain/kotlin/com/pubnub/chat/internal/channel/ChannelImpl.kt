@@ -62,7 +62,7 @@ data class ChannelImpl(
                 latestChannels = latestChannels.asSequence().filter {
                     it.id != newChannelId
                 }.run { newChannel?.let { plus(it) } ?: this }.toList()
-                    .also(callback)
+                callback(latestChannels)
             })
 
             val subscriptionSet = chat.pubNub.subscriptionSetOf(channels.map { it.id }.toSet())
