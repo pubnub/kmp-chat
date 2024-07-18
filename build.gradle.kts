@@ -89,6 +89,12 @@ kotlin {
                 implementation(project(":pubnub-chat-impl"))
             }
         }
+
+        val iosMain by getting {
+            dependencies {
+                api(project(":pubnub-chat-impl"))
+            }
+        }
 //
 //        val commonTest by getting {
 //            dependencies {
@@ -141,6 +147,8 @@ kotlin {
             // Optional properties
             // Specify the framework linking type. It's dynamic by default.
             isStatic = true
+            export(project(":pubnub-chat-api"))
+            export(project(":pubnub-chat-impl"))
             transitiveExport = true
         }
 
