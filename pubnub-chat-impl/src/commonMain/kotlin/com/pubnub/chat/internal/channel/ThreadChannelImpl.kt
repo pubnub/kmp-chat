@@ -115,10 +115,6 @@ data class ThreadChannelImpl(
         }
     }
 
-    override fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable {
-        TODO()
-    }
-
     override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
 
     companion object {

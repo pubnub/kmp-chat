@@ -4,6 +4,7 @@ import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.UserImpl
+import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.kmp.PNFuture
@@ -26,7 +27,12 @@ fun ThreadMessage.Companion.streamUpdatesOn(
 fun Channel.Companion.streamUpdatesOn(
     channels: Collection<Channel>,
     callback: (channels: Collection<Channel>) -> Unit,
-): AutoCloseable = ChannelImpl.streamUpdatesOn(channels, callback)
+): AutoCloseable = BaseChannel.streamUpdatesOn(channels, callback)
+
+fun ThreadChannel.Companion.streamUpdatesOn(
+    channels: Collection<Channel>,
+    callback: (channels: Collection<Channel>) -> Unit,
+): AutoCloseable = BaseChannel.streamUpdatesOn(channels, callback)
 
 fun Membership.Companion.streamUpdatesOn(
     memberships: Collection<Membership>,

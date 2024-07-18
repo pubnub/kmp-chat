@@ -12,6 +12,7 @@ import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.GetFilesResult
+import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
@@ -54,11 +55,10 @@ interface Channel {
     fun isPresent(userId: String): PNFuture<Boolean>
 
     fun getHistory(
-        // todo add paging in response
         startTimetoken: Long? = null,
         endTimetoken: Long? = null,
-        count: Int? = 25,
-    ): PNFuture<List<Message>>
+        count: Int = 25,
+    ): PNFuture<HistoryResponse<*>>
 
     fun sendText(
         text: String,

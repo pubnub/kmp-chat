@@ -438,7 +438,7 @@ class ChatImpl(
         channelDescription: String?,
         channelCustom: CustomObject?,
         channelStatus: String?,
-        custom: CustomObject?,
+        membershipCustom: CustomObject?,
     ): PNFuture<CreateDirectConversationResult> {
         val user = this.currentUser
         val sortedUsers = listOf(invitedUser.id, user.id).sorted()
@@ -455,7 +455,7 @@ class ChatImpl(
             )
         }.thenAsync { channel: Channel ->
             val hostMembershipFuture = pubNub.setMemberships(
-                listOf(PNChannelMembership.Partial(channel.id, custom)),
+                listOf(PNChannelMembership.Partial(channel.id, membershipCustom)),
                 filter = "channel.id == '${channel.id}'",
                 includeCustom = true,
                 includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,

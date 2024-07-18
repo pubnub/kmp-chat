@@ -154,7 +154,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         channelDescription: String?,
         channelCustom: CustomObject?,
         channelStatus: String?,
-        custom: CustomObject?,
+        membershipCustom: CustomObject?,
     ): PNFuture<com.pubnub.chat.types.CreateDirectConversationResult> {
         TODO("Not yet implemented")
     }

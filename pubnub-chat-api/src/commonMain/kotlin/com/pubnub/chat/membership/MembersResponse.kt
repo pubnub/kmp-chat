@@ -8,5 +8,5 @@ class MembersResponse(
     val prev: PNPage?,
     val total: Int,
     val status: Int,
-    val members: Set<Membership> // todo why members is of typ Membership? Shouldn't it be of type PNMember
+    val members: Set<Membership>
 )

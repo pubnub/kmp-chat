@@ -485,7 +485,7 @@ class ChannelTest {
                             null
                         ),
                     ),
-                    result
+                    result.messages
                 )
             }
         }
