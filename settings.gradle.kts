@@ -1,3 +1,11 @@
+pluginManagement {
+    includeBuild("pubnub-kotlin/build-logic/gradle-plugins")
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.5.0"
 }
