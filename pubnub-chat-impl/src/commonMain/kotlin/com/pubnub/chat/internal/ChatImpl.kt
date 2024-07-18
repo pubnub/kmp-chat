@@ -100,8 +100,8 @@ class ChatImpl(
     private var lastSavedActivityInterval: PlatformTimer? = null
     private var runWithDelayTimer: PlatformTimer? = null
 
-    fun initialize(): PNFuture<Chat> {
-        // todo move this to config initialization?
+    init {
+        // todo move this to config initialization or setters?
         if (config.storeUserActivityInterval < 60.seconds) {
             throw PubNubException(PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN)
         }
@@ -110,6 +110,10 @@ class ChatImpl(
             throw PubNubException(PubNubErrorMessage.APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2)
         }
 
+        //TODO from TS, but config is immutable at this point: pubnub._config._addPnsdkSuffix("chat-sdk", `__PLATFORM__/__VERSION__`)
+    }
+
+    fun initialize(): PNFuture<Chat> {
         return getUser(pubNub.configuration.userId.value).thenAsync { user ->
             user?.asFuture() ?: createUser(currentUser)
         }.then { user ->

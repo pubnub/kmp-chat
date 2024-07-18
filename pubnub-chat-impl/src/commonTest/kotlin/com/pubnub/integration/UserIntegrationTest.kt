@@ -5,10 +5,10 @@ import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.Chat
 import com.pubnub.chat.User
+import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
-import com.pubnub.chat.internal.config.ChatConfiguration
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.test.await

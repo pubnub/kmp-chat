@@ -9,10 +9,10 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
 import com.pubnub.chat.User
+import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.UserImpl
-import com.pubnub.chat.internal.config.ChatConfiguration
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.utils.cyrb53a
 import com.pubnub.chat.listenForEvents

@@ -33,8 +33,8 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
             channel02.status
         ).await()
         delayInMillis(1000)
-        val membership1 = channel01.join { }.await().also { it.disconnect.close() }.membership
-        val membership2 = channel02.join { }.await().also { it.disconnect.close() }.membership
+        val membership1 = channel01.join { }.await().also { it.disconnect?.close() }.membership
+        val membership2 = channel02.join { }.await().also { it.disconnect?.close() }.membership
         delayInMillis(1000)
 
         val expectedUpdates = listOf<List<Membership>>(
