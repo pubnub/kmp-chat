@@ -236,7 +236,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 usePost = usePost,
                 ttl = ttl,
             ).then { publishResult: PNPublishResult ->
-                // todo chat SDK seems to ignore results of emitting these events?
                 try {
                     mentionedUsers?.forEach {
                         emitUserMention(it.value.id, publishResult.timetoken, text).async {}
@@ -383,7 +382,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return subscription
     }
 
-    override fun join(custom: CustomObject?, callback: (Message) -> Unit): PNFuture<JoinResult> {
+    override fun join(custom: CustomObject?, callback: ((Message) -> Unit)?): PNFuture<JoinResult> {
         val user = this.chat.currentUser
         return chat.pubNub.setMemberships(
             channels = listOf(
@@ -398,8 +397,14 @@ abstract class BaseChannel<C : Channel, M : Message>(
             includeType = true,
             filter = channelFilterString,
         ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
-            val resultDisconnect =
-                disconnect ?: connect(callback) // todo assign disconnect = resultDisconnect in subsequent line?
+            val resultDisconnect = if (callback != null) {
+                connect(callback).also {
+                    disconnect = it // todo the whole disconnect handling is not safe! state can be made inconsistent
+                }
+            } else {
+                null
+            }
+
             chat.pubNub.time().thenAsync { time: PNTimeResult ->
                 MembershipImpl.fromMembershipDTO(chat, membershipArray.data.first(), user)
                     .setLastReadMessageTimetoken(time.timetoken)
@@ -407,7 +412,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 JoinResult(
                     membership,
                     resultDisconnect
-                ) // todo the whole disconnect handling is not safe! state can be made inconsistent
+                )
             }
         }
     }

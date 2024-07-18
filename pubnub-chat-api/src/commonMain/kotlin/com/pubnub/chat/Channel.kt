@@ -86,7 +86,7 @@ interface Channel {
 
     fun connect(callback: (Message) -> Unit): AutoCloseable
 
-    fun join(custom: CustomObject? = null, callback: (Message) -> Unit): PNFuture<JoinResult>
+    fun join(custom: CustomObject? = null, callback: ((Message) -> Unit)? = null): PNFuture<JoinResult>
 
     fun leave(): PNFuture<Unit>
 
