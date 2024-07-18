@@ -68,7 +68,6 @@ import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetChannelsResponse
 import com.pubnub.chat.types.MessageActionType
-import com.pubnub.chat.types.getMethodFor
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -424,7 +423,7 @@ class ChatImpl(
         payload: T,
         mergePayloadWith: Map<String, Any>?
     ): PNFuture<PNPublishResult> {
-        return if (getMethodFor(payload::class) == EmitEventMethod.SIGNAL) {
+        return if (payload::class.getEmitMethod() == EmitEventMethod.SIGNAL) {
             signal(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
         } else {
             publish(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
@@ -596,7 +595,7 @@ class ChatImpl(
             )
             callback(event)
         }
-        val method = getMethodFor(type) ?: customMethod
+        val method = type.getEmitMethod() ?: customMethod
         val listener = createEventListener(
             pubNub,
             onMessage = if (method == EmitEventMethod.PUBLISH) handler else { _, _ -> },
@@ -1101,5 +1100,13 @@ class ChatImpl(
                 error("PNUUIDMetadata is null.")
             }
         }
+    }
+}
+
+private fun KClass<out EventContent>.getEmitMethod(): EmitEventMethod? {
+    return when (this) {
+        EventContent.Custom::class -> null
+        EventContent.Receipt::class, EventContent.Typing::class -> EmitEventMethod.SIGNAL
+        else -> EmitEventMethod.PUBLISH
     }
 }

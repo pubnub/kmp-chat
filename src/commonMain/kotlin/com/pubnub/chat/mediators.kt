@@ -5,7 +5,6 @@ import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
-import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.PubNub

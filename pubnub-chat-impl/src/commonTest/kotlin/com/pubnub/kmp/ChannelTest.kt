@@ -40,6 +40,7 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode.Companion.exactly
@@ -187,7 +188,7 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channel = channelId,
-                payload = EventContent.Typing(true),
+                payload = matching { it is EventContent.Typing && it.value },
             )
         }
     }
@@ -206,7 +207,7 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channel = channelId,
-                payload = EventContent.Typing(true),
+                payload = matching { it is EventContent.Typing && it.value },
             )
         }
     }
@@ -295,7 +296,7 @@ class ChannelTest {
         verify {
             chat.emitEvent(
                 channel = channelId,
-                payload = EventContent.Typing(false),
+                payload = matching { it is EventContent.Typing && !it.value },
             )
         }
     }
