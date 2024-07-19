@@ -583,7 +583,7 @@ class ChatImpl(
         val handler = fun(_: PubNub, pnEvent: PNEvent) {
             if (pnEvent.channel != channel) return
             val message = (pnEvent as? MessageResult)?.message ?: return
-            val eventContent: EventContent = PNDataEncoder.decode(message)
+            val eventContent: EventContent = PNDataEncoder.decode<EventContent>(message)
 
             @Suppress("UNCHECKED_CAST")
             val payload = eventContent as? T ?: return

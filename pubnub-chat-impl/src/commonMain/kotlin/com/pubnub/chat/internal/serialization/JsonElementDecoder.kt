@@ -100,7 +100,7 @@ class JsonElementDecoder(
     }
 
     override fun decodeEnum(enumDescriptor: SerialDescriptor): Int {
-        TODO("Not yet implemented")
+        return jsonElement?.asString()?.let { enumDescriptor.getElementIndex(it) } ?: error("Can't decode as enum")
     }
 
     override fun decodeFloat(): Float {
