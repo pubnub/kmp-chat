@@ -68,7 +68,6 @@ import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetChannelsResponse
 import com.pubnub.chat.types.MessageActionType
-import com.pubnub.chat.types.getMethodFor
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -101,8 +100,8 @@ class ChatImpl(
     private var lastSavedActivityInterval: PlatformTimer? = null
     private var runWithDelayTimer: PlatformTimer? = null
 
-    fun initialize(): PNFuture<Chat> {
-        // todo move this to config initialization?
+    init {
+        // todo move this to config initialization or setters?
         if (config.storeUserActivityInterval < 60.seconds) {
             throw PubNubException(PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN)
         }
@@ -111,6 +110,10 @@ class ChatImpl(
             throw PubNubException(PubNubErrorMessage.APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2)
         }
 
+        //TODO from TS, but config is immutable at this point: pubnub._config._addPnsdkSuffix("chat-sdk", `__PLATFORM__/__VERSION__`)
+    }
+
+    fun initialize(): PNFuture<Chat> {
         return getUser(pubNub.configuration.userId.value).thenAsync { user ->
             user?.asFuture() ?: createUser(currentUser)
         }.then { user ->
@@ -424,7 +427,7 @@ class ChatImpl(
         payload: T,
         mergePayloadWith: Map<String, Any>?
     ): PNFuture<PNPublishResult> {
-        return if (getMethodFor(payload::class) == EmitEventMethod.SIGNAL) {
+        return if (payload::class.getEmitMethod() == EmitEventMethod.SIGNAL) {
             signal(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
         } else {
             publish(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
@@ -438,7 +441,7 @@ class ChatImpl(
         channelDescription: String?,
         channelCustom: CustomObject?,
         channelStatus: String?,
-        custom: CustomObject?,
+        membershipCustom: CustomObject?,
     ): PNFuture<CreateDirectConversationResult> {
         val user = this.currentUser
         val sortedUsers = listOf(invitedUser.id, user.id).sorted()
@@ -455,7 +458,7 @@ class ChatImpl(
             )
         }.thenAsync { channel: Channel ->
             val hostMembershipFuture = pubNub.setMemberships(
-                listOf(PNChannelMembership.Partial(channel.id, custom)),
+                listOf(PNChannelMembership.Partial(channel.id, membershipCustom)),
                 filter = "channel.id == '${channel.id}'",
                 includeCustom = true,
                 includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
@@ -596,7 +599,7 @@ class ChatImpl(
             )
             callback(event)
         }
-        val method = getMethodFor(type) ?: customMethod
+        val method = type.getEmitMethod() ?: customMethod
         val listener = createEventListener(
             pubNub,
             onMessage = if (method == EmitEventMethod.PUBLISH) handler else { _, _ -> },
@@ -1101,5 +1104,13 @@ class ChatImpl(
                 error("PNUUIDMetadata is null.")
             }
         }
+    }
+}
+
+private fun KClass<out EventContent>.getEmitMethod(): EmitEventMethod? {
+    return when (this) {
+        EventContent.Custom::class -> null
+        EventContent.Receipt::class, EventContent.Typing::class -> EmitEventMethod.SIGNAL
+        else -> EmitEventMethod.PUBLISH
     }
 }

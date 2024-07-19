@@ -2,9 +2,9 @@ package com.pubnub.integration
 
 import com.pubnub.chat.Channel
 import com.pubnub.chat.User
+import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
-import com.pubnub.chat.internal.config.ChatConfiguration
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.test.BaseIntegrationTest
 import com.pubnub.test.await

@@ -10,7 +10,7 @@ interface Membership {
     val custom: Map<String, Any?>?
     val updated: String?
     val eTag: String?
-    val lastReadMessageTimetoken: Long? // todo shouldn't we call here getMetadata.custom.lastReadMessageTimetoken to have current data?
+    val lastReadMessageTimetoken: Long?
 
     fun setLastReadMessage(message: Message): PNFuture<Membership>
 
