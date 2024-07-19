@@ -20,7 +20,9 @@ import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
 import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.JoinResult
+import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
@@ -34,6 +36,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ChatIntegrationTest : BaseChatIntegrationTest() {
     @Test
@@ -112,7 +116,10 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val result = chat.createGroupConversation(otherUsers).await()
 
         // then
-        assertEquals(chat.currentUser, result.hostMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(
+            chat.currentUser,
+            result.hostMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null)
+        )
         assertEquals(otherUsers.size, result.inviteeMemberships.size)
         result.inviteeMemberships.forEach { inviteeMembership ->
             assertEquals(
@@ -236,7 +243,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(0, unreadMessageCount03)
 
         // remove messages
-        chat.pubNub.deleteMessages(listOf(channelId01))
+        chat.pubNub.deleteMessages(listOf(channelId01)).await()
     }
 
     @Ignore // fails from time to time
@@ -273,14 +280,12 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         // read message count
         unreadMessagesCounts = chat.getUnreadMessagesCounts().await()
         unreadMessagesCountsForChannel01 =
-            unreadMessagesCounts.find {
-                    unreadMessagesCount: GetUnreadMessagesCounts ->
+            unreadMessagesCounts.find { unreadMessagesCount: GetUnreadMessagesCounts ->
                 unreadMessagesCount.channel.id == channelId01
             }?.count
                 ?: 0
         unreadMessagesCountsForChannel02 =
-            unreadMessagesCounts.find {
-                    unreadMessagesCount: GetUnreadMessagesCounts ->
+            unreadMessagesCounts.find { unreadMessagesCount: GetUnreadMessagesCounts ->
                 unreadMessagesCount.channel.id == channelId02
             }?.count
                 ?: 0
@@ -298,16 +303,17 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun shouldReturnChannelSuggestions_whenNoDataInCacheButChannelAvailableInChat() = runTest(timeout = defaultTimeout) {
-        val channelName = "channelName_${channel01.id}"
-        chat.createChannel(id = channel01.id, name = channelName).await()
+    fun shouldReturnChannelSuggestions_whenNoDataInCacheButChannelAvailableInChat() =
+        runTest(timeout = defaultTimeout) {
+            val channelName = "channelName_${channel01.id}"
+            chat.createChannel(id = channel01.id, name = channelName).await()
 
-        val channelSuggestions: Set<Channel> = chat.getChannelSuggestions("sas#$channelName").await()
+            val channelSuggestions: Set<Channel> = chat.getChannelSuggestions("sas#$channelName").await()
 
-        assertEquals(1, channelSuggestions.size)
-        assertEquals(channel01.id, channelSuggestions.first().id)
-        assertEquals(channelName, channelSuggestions.first().name)
-    }
+            assertEquals(1, channelSuggestions.size)
+            assertEquals(channel01.id, channelSuggestions.first().id)
+            assertEquals(channelName, channelSuggestions.first().name)
+        }
 
     @Test
     fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest(timeout = defaultTimeout) {
@@ -371,6 +377,39 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // list pushNotification
         assertPushChannels(0)
+    }
+
+    @Test
+    fun can_getEventsHistory() = runTest(timeout = defaultTimeout) {
+        // given
+        val channelId01 = channel01.id
+        val userId = someUser.id
+        val userName: String = someUser.name ?: ""
+        val count = 2
+        channel01.invite(someUser).await()
+        channel01.sendText(
+            text = "message01In$channelId01",
+            mentionedUsers = mapOf(1 to MessageMentionedUser(userId, userName))
+        ).await()
+        channel01.sendText("message02In$channelId01").await()
+        channel01.sendText("message03In$channelId01").await()
+
+        // when
+        val eventsForUser: GetEventsHistoryResult = chat.getEventsHistory(channelId = userId, count = count).await()
+        val messageEvents = chat.getEventsHistory(channelId = channelId01, count = count).await()
+
+        // then
+        assertNotNull(eventsForUser.events?.find { it.payload is EventContent.Invite })
+        assertNotNull(eventsForUser.events?.find { it.payload is EventContent.Mention })
+        assertNull(messageEvents.events?.find { it.payload !is EventContent.TextMessageContent })
+        assertEquals(2, messageEvents.events?.size)
+        assertEquals(channelId01, messageEvents.events?.first()?.channelId)
+        assertEquals(channelId01, messageEvents.events?.last()?.channelId)
+        assertEquals(messageEvents.events?.first()?.userId, messageEvents.events?.last()?.userId)
+        assertTrue(messageEvents.isMore)
+
+        // remove messages
+        chat.pubNub.deleteMessages(listOf(channelId01)).await()
     }
 
     private suspend fun assertPushChannels(expectedNumberOfChannels: Int) {

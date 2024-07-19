@@ -67,6 +67,7 @@ import com.pubnub.chat.types.CreateGroupConversationResult
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetChannelsResponse
+import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.MessageActionType
 import com.pubnub.chat.types.getMethodFor
 import com.pubnub.chat.user.GetUsersResponse
@@ -587,7 +588,7 @@ class ChatImpl(
             @Suppress("UNCHECKED_CAST")
             val payload = eventContent as? T ?: return
 
-            val event = Event(
+            val event = EventImpl(
                 chat = this,
                 timetoken = pnEvent.timetoken!!, // todo can this even be null?
                 payload = payload,
@@ -848,6 +849,32 @@ class ChatImpl(
             ).then { pnPushListProvisionsResult: PNPushListProvisionsResult ->
                 pnPushListProvisionsResult.channels
             }
+        }
+    }
+
+    override fun getEventsHistory(
+        channelId: String,
+        startTimetoken: Long?,
+        endTimetoken: Long?,
+        count: Int?
+    ): PNFuture<GetEventsHistoryResult> {
+        return pubNub.fetchMessages(
+            channels = listOf(channelId),
+            page = PNBoundedPage(startTimetoken, endTimetoken, count),
+            includeUUID = true,
+            includeMeta = false,
+            includeMessageActions = false,
+            includeMessageType = true
+        ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
+            val pnFetchMessageItems: List<PNFetchMessageItem> = pnFetchMessagesResult.channels[channelId] ?: emptyList()
+            val events: Set<Event<EventContent>> =
+                pnFetchMessageItems.map { pnFetchMessageItem: PNFetchMessageItem ->
+                    EventImpl.fromDTO(chat = this, channelId = channelId, pnFetchMessageItem = pnFetchMessageItem)
+                }.toSet()
+
+            val isMore: Boolean = count?.let { it == pnFetchMessageItems.size } ?: (pnFetchMessageItems.size == 100)
+
+            GetEventsHistoryResult(events = events, isMore = isMore)
         }
     }
 

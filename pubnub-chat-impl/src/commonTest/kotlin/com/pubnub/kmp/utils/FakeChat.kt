@@ -22,6 +22,7 @@ import com.pubnub.chat.types.CreateGroupConversationResult
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetChannelsResponse
+import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -31,6 +32,16 @@ import kotlin.reflect.KClass
 abstract class FakeChat(override val config: ChatConfiguration, override val pubNub: PubNub) : ChatInternal {
     override val currentUser: User
         get() = TODO("Not yet implemented")
+
+    override fun getEventsHistory(
+        channel: String,
+        startTimetoken: Long?,
+        endTimetoken: Long?,
+        count: Int?
+    ): PNFuture<GetEventsHistoryResult> {
+        TODO("Not yet implemented")
+    }
+
     override val editMessageActionName: String
         get() = TODO("Not yet implemented")
     override val deleteMessageActionName: String

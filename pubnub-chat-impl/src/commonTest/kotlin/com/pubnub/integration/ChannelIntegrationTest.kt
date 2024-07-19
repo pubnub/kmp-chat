@@ -136,6 +136,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(userName, userSuggestionsMembershipsFromCache.first().user.name)
     }
 
+    // todo fix
     @Test
     fun streamReadReceipts() = runTest(timeout = 10.seconds) {
         val completableBeforeMark = CompletableDeferred<Unit>()

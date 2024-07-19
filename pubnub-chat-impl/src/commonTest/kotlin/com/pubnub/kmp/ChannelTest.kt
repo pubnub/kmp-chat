@@ -2,15 +2,12 @@ package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
-import com.pubnub.api.createJsonElement
 import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
-import com.pubnub.api.models.consumer.history.HistoryMessageType
-import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
@@ -34,6 +31,7 @@ import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.kmp.utils.BaseTest
 import com.pubnub.test.await
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -55,7 +53,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-class ChannelTest {
+class ChannelTest : BaseTest() {
     private lateinit var objectUnderTest: ChannelImpl
 
     private val chat: ChatInternal = mock(MockMode.strict)
@@ -162,12 +160,12 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(),) }
+        verify(exactly(0)) { chat.emitEvent(any(), any()) }
     }
 
     @Test
     fun whenTypingSentAlreadyButTimeoutExpiredStartTypingShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any(),) } returns PNPublishResult(1L).asFuture()
+        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
         val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val currentTimeStampInMillis =
             typingSent.plus(typingTimeout).plus(MINIMAL_TYPING_INDICATOR_TIMEOUT).plus(1.milliseconds)
@@ -194,7 +192,7 @@ class ChannelTest {
 
     @Test
     fun whenTypingNotSendShouldEmitStartTypingEvent() {
-        every { chat.emitEvent(any(), any(),) } returns PNPublishResult(1L).asFuture()
+        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
 
         // when
         objectUnderTest.startTyping().async { result ->
@@ -229,7 +227,7 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(),) }
+        verify(exactly(0)) { chat.emitEvent(any(), any()) }
     }
 
     @Test
@@ -249,7 +247,7 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(),) }
+        verify(exactly(0)) { chat.emitEvent(any(), any()) }
     }
 
     @Test
@@ -269,7 +267,7 @@ class ChannelTest {
             assertEquals(Unit, result.getOrNull())
         }
 
-        verify(exactly(0)) { chat.emitEvent(any(), any(),) }
+        verify(exactly(0)) { chat.emitEvent(any(), any()) }
     }
 
     @Test
@@ -283,7 +281,7 @@ class ChannelTest {
         }
         objectUnderTest = createChannel(type, customClock)
         objectUnderTest.setTypingSent(typingSent)
-        every { chat.emitEvent(any(), any(),) } returns PNPublishResult(1L).asFuture()
+        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
 
         // when
         objectUnderTest.stopTyping().async { result ->
@@ -440,21 +438,7 @@ class ChannelTest {
         every { fetchMessages.async(any()) } calls { (callback1: Consumer<Result<PNFetchMessagesResult>>) ->
             callback1.accept(
                 Result.success(
-                    PNFetchMessagesResult(
-                        mapOf(
-                            channelId to listOf(
-                                PNFetchMessageItem(
-                                    user1, createJsonElement(mapOf("type" to "text", "text" to message1)), null,
-                                    timetoken1, null, HistoryMessageType.Message, null
-                                ),
-                                PNFetchMessageItem(
-                                    user2, createJsonElement(mapOf("text" to message2, "files" to null)), null,
-                                    timetoken2, null, HistoryMessageType.Message, null
-                                ),
-                            )
-                        ),
-                        null
-                    )
+                    createPnFetchMessagesResult(channelId, user1, message1, timetoken1, user2, message2, timetoken2)
                 )
             )
         }
@@ -496,7 +480,13 @@ class ChannelTest {
         val exception = assertFailsWith<PubNubException> {
             objectUnderTest.sendText(
                 "text",
-                quotedMessage = MessageImpl(chat, 1L, EventContent.TextMessageContent("text"), "other_channel", "other_user")
+                quotedMessage = MessageImpl(
+                    chat,
+                    1L,
+                    EventContent.TextMessageContent("text"),
+                    "other_channel",
+                    "other_user"
+                )
             ).await()
         }
         assertEquals("You cannot quote messages from other channels", exception.message)
@@ -567,7 +557,19 @@ class ChannelTest {
         val sort = listOf(PNSortKey.PNAsc(PNMemberKey.UUID_ID))
         val fetChannelMembers: GetChannelMembers = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub
-        every { pubNub.getChannelMembers(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns fetChannelMembers
+        every {
+            pubNub.getChannelMembers(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns fetChannelMembers
 
         objectUnderTest.getRestrictions(user = null, limit = limit, page = page, sort = sort)
 
@@ -594,7 +596,19 @@ class ChannelTest {
         val sort = listOf(PNSortKey.PNAsc(PNMemberKey.UUID_ID))
         val getChannelMembers: GetChannelMembers = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub
-        every { pubNub.getChannelMembers(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getChannelMembers
+        every {
+            pubNub.getChannelMembers(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns getChannelMembers
 
         objectUnderTest.getRestrictions(user = user, limit = limit, page = page, sort = sort)
 
@@ -701,7 +715,10 @@ class ChannelTest {
         assertEquals("default", result["pn_apns"]["aps"]["sound"])
 
         assertEquals(topic, result["pn_apns"]["pn_push"][0]["targets"][0]["topic"])
-        assertEquals(PNPushEnvironment.PRODUCTION.toParamString(), result["pn_apns"]["pn_push"][0]["targets"][0]["environment"])
+        assertEquals(
+            PNPushEnvironment.PRODUCTION.toParamString(),
+            result["pn_apns"]["pn_push"][0]["targets"][0]["environment"]
+        )
         assertEquals(objectUnderTest.name, result["pn_apns"]["subtitle"])
     }
 

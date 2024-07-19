@@ -17,6 +17,7 @@ import com.pubnub.chat.types.CreateGroupConversationResult
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetChannelsResponse
+import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -170,6 +171,13 @@ interface Chat {
     fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<Set<User>>
 
     fun getPushChannels(): PNFuture<List<String>>
+
+    fun getEventsHistory(
+        channel: String,
+        startTimetoken: Long? = null,
+        endTimetoken: Long? = null,
+        count: Int? = 100
+    ): PNFuture<GetEventsHistoryResult>
 
     // Companion object required for extending this class elsewhere
     companion object
