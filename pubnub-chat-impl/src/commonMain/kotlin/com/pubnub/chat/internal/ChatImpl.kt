@@ -130,6 +130,7 @@ class ChatImpl(
         }
     }
 
+    // todo consider moving to ChatInternal since it is not present in TS
     override fun createUser(user: User): PNFuture<User> = createUser(
         id = user.id,
         name = user.name,
@@ -433,6 +434,25 @@ class ChatImpl(
         } else {
             publish(channelId = channelId, message = payload, mergeMessageWith = mergePayloadWith)
         }
+    }
+
+    override fun createPublicConversation(
+        channelId: String?,
+        channelName: String?,
+        channelDescription: String?,
+        channelCustom: CustomObject?,
+        channelStatus: String?
+    ): PNFuture<Channel> {
+        val finalChannelId: String = channelId ?: uuid4().toString()
+
+        return createChannel(
+            id = finalChannelId,
+            name = channelName,
+            description = channelDescription,
+            custom = channelCustom,
+            type = ChannelType.PUBLIC,
+            status = channelStatus
+        )
     }
 
     override fun createDirectConversation(

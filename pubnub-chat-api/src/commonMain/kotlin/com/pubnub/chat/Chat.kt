@@ -32,6 +32,7 @@ interface Chat {
     val editMessageActionName: String
     val deleteMessageActionName: String
 
+    // todo consider moving to ChatInternal since it is not present in TS(inform Karolina)
     fun createUser(user: User): PNFuture<User>
 
     fun createUser(
@@ -112,6 +113,14 @@ interface Chat {
         payload: T,
         mergePayloadWith: Map<String, Any>? = null,
     ): PNFuture<PNPublishResult>
+
+    fun createPublicConversation(
+        channelId: String? = null,
+        channelName: String? = null,
+        channelDescription: String? = null,
+        channelCustom: CustomObject? = null,
+        channelStatus: String? = null,
+    ): PNFuture<Channel>
 
     fun createDirectConversation(
         invitedUser: User,
