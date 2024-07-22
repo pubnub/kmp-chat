@@ -36,11 +36,13 @@ import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.channel.ChannelImpl.Companion.fromDTO
+import com.pubnub.chat.internal.defaultGetMessageResponseBody
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
 import com.pubnub.chat.internal.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.chat.internal.message.BaseMessage
+import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.util.getPhraseToLookFor
@@ -70,6 +72,7 @@ import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.remember
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
+import encodeForSending
 import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
 import kotlinx.datetime.Clock
@@ -228,9 +231,13 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
         return sendFilesForPublish(files).thenAsync { filesData ->
             val newMeta = buildMetaForPublish(meta, mentionedUsers, referencedChannels, textLinks, quotedMessage)
-            chat.publish(
-                channelId = id,
-                message = EventContent.TextMessageContent(text, filesData),
+            chat.pubNub.publish(
+                channel = id,
+                message = EventContent.TextMessageContent(text, filesData).encodeForSending(
+                    id,
+                    chat.config.customPayloads?.getMessagePublishBody,
+                    getPushPayload(this, text, chat.config.pushNotifications)
+                ),
                 meta = newMeta,
                 shouldStore = shouldStore,
                 usePost = usePost,
@@ -367,11 +374,15 @@ abstract class BaseChannel<C : Channel, M : Message>(
             chat.pubNub,
             onMessage = { _, pnMessageResult ->
                 try {
-                    val eventContent: EventContent = PNDataEncoder.decode(pnMessageResult.message)
-                    if (eventContent !is EventContent.TextMessageContent) {
+                    if (
+                        (
+                            chat.config.customPayloads?.getMessageResponseBody?.invoke(pnMessageResult.message)
+                                ?: defaultGetMessageResponseBody(pnMessageResult.message)
+                        ) == null
+                    ) {
                         return@createEventListener
                     }
-                    callback(com.pubnub.chat.internal.message.MessageImpl.fromDTO(chat, pnMessageResult))
+                    callback(MessageImpl.fromDTO(chat, pnMessageResult))
                 } catch (e: Exception) {
                     e.printStackTrace() // todo add logging
                 }

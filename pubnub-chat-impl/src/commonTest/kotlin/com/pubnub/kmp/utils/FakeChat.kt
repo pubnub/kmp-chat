@@ -239,27 +239,6 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun publish(
-        channelId: String,
-        message: EventContent,
-        meta: Map<String, Any>?,
-        shouldStore: Boolean,
-        usePost: Boolean,
-        replicate: Boolean,
-        ttl: Int?,
-        mergeMessageWith: Map<String, Any>?,
-    ): PNFuture<PNPublishResult> {
-        TODO("Not yet implemented")
-    }
-
-    override fun signal(
-        channelId: String,
-        message: EventContent,
-        mergeMessageWith: Map<String, Any>?,
-    ): PNFuture<PNPublishResult> {
-        TODO("Not yet implemented")
-    }
-
     override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<User>> {
         TODO("Not yet implemented")
     }

@@ -4,6 +4,7 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
+import com.pubnub.api.endpoints.pubsub.Publish
 import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNBoundedPage
@@ -495,7 +496,8 @@ class ChannelTest : BaseTest() {
 
     @Test
     fun sendTextAllParametersArePassedToPublish() {
-        every { chat.publish(any(), any(), any(), any(), any(), any(), any()) } returns PNPublishResult(1L).asFuture()
+        val publish: Publish = mock(MockMode.autofill)
+        every { pubNub.publish(any(), any(), any(), any(), any(), any(), any()) } returns publish
         val messageText = "someText"
         val message =
             MessageImpl(chat, 1000L, EventContent.TextMessageContent(messageText), channelId, "some user", null, null)
@@ -519,9 +521,9 @@ class ChannelTest : BaseTest() {
         ).async {}
 
         verify {
-            chat.publish(
+            pubNub.publish(
                 channelId,
-                EventContent.TextMessageContent(messageText, emptyList()),
+                mapOf("type" to "text", "text" to messageText, "files" to emptyList<String>()),
                 mapOf(
                     "custom_meta" to "custom",
                     "mentionedUsers" to mapOf(

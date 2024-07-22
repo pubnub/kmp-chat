@@ -9,7 +9,7 @@ Pod::Spec.new do |spec|
     spec.vendored_frameworks      = 'build/cocoapods/framework/pubnub_chat.framework'
     spec.libraries                = 'c++'
     spec.ios.deployment_target    = '14'
-    spec.dependency 'PubNubSwift'
+                
                 
     if !Dir.exist?('build/cocoapods/framework/pubnub_chat.framework') || Dir.empty?('build/cocoapods/framework/pubnub_chat.framework')
         raise "

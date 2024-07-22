@@ -1,4 +1,6 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
+import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
 import org.jetbrains.kotlin.gradle.targets.js.yarn.yarn
 
@@ -58,13 +60,11 @@ kotlin {
                 }
             }
         }
-//        binaries.executable()
     }
     jvm()
 
     listOf(
         iosArm64(),
-        // iosX64(),
         iosSimulatorArm64(),
     ).forEach {
         it.binaries {
@@ -85,7 +85,6 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.0-RC")
                 implementation("com.benasher44:uuid:0.8.4")
-//                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0-RC")
                 implementation("org.jetbrains.kotlinx:atomicfu:0.24.0")
                 implementation(project(":pubnub-chat-api"))
             }
