@@ -1,6 +1,6 @@
 {
   "name": "PubNubSwift",
-  "version": "7.1.0",
+  "version": "7.3.1",
   "homepage": "https://github.com/pubnub/swift",
   "documentation_url": "https://www.pubnub.com/docs/swift-native/pubnub-swift-sdk",
   "authors": {
@@ -13,7 +13,7 @@
   },
   "source": {
     "git": "https://github.com/pubnub/swift.git",
-    "tag": "7.1.0"
+    "tag": "7.3.1"
   },
   "summary": "PubNub Swift-based SDK for iOS, macOS, tvOS, & watchOS",
   "description": "The PubNub Real-Time Network. Build real-time apps quickly and scale them globally.",
@@ -26,6 +26,11 @@
   "swift_versions": "5.0",
   "module_name": "PubNub",
   "source_files": "Sources/**/*.swift",
+  "resource_bundles": {
+    "PubNubSwift": [
+      "Sources/PubNub/PrivacyInfo.xcprivacy"
+    ]
+  },
   "static_framework": false,
   "swift_version": "5.0"
 }

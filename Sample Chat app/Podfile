@@ -7,6 +7,6 @@ target 'Sample Chat app' do
 
   # Pods for Sample Chat app
   # pod "PubNubSwift", "~> 7"
-  pod "PubNubChat", :path => '../'
-  pod "PubNubSwift", :path => '../swift'
+  pod "pubnub_chat", :path => '../'
+  pod "PubNubSwift", :path => '../pubnub-kotlin/swift'
 end
