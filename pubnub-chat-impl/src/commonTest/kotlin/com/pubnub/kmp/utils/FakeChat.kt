@@ -22,6 +22,7 @@ import com.pubnub.chat.types.CreateGroupConversationResult
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetChannelsResponse
+import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -31,6 +32,16 @@ import kotlin.reflect.KClass
 abstract class FakeChat(override val config: ChatConfiguration, override val pubNub: PubNub) : ChatInternal {
     override val currentUser: User
         get() = TODO("Not yet implemented")
+
+    override fun getEventsHistory(
+        channelId: String,
+        startTimetoken: Long?,
+        endTimetoken: Long?,
+        count: Int
+    ): PNFuture<GetEventsHistoryResult> {
+        TODO("Not yet implemented")
+    }
+
     override val editMessageActionName: String
         get() = TODO("Not yet implemented")
     override val deleteMessageActionName: String
@@ -87,7 +98,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun isPresent(userId: String, channel: String): PNFuture<Boolean> {
+    override fun isPresent(userId: String, channelId: String): PNFuture<Boolean> {
         TODO("Not yet implemented")
     }
 
@@ -140,7 +151,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     }
 
     override fun <T : EventContent> emitEvent(
-        channel: String,
+        channelId: String,
         payload: T,
         mergePayloadWith: Map<String, Any>?,
     ): PNFuture<PNPublishResult> {
@@ -173,7 +184,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
 
     override fun <T : EventContent> listenForEvents(
         type: KClass<T>,
-        channel: String,
+        channelId: String,
         customMethod: EmitEventMethod?,
         callback: (event: Event<T>) -> Unit,
     ): AutoCloseable {

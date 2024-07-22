@@ -2,6 +2,7 @@ package com.pubnub.kmp
 
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
+import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.endpoints.MessageCounts
 import com.pubnub.api.endpoints.objects.channel.GetAllChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.GetChannelMetadata
@@ -21,7 +22,9 @@ import com.pubnub.api.endpoints.push.ListPushProvisions
 import com.pubnub.api.endpoints.push.RemoveAllPushChannelsForDevice
 import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
+import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.history.PNMessageCountResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataArrayResult
@@ -52,7 +55,9 @@ import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
+import com.pubnub.kmp.utils.BaseTest
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -68,11 +73,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
-class ChatTest {
+class ChatTest : BaseTest() {
     private lateinit var objectUnderTest: ChatImpl
     private val chatMock: ChatInternal = mock(MockMode.strict)
     private val pubnub: PubNub = mock(MockMode.strict)
@@ -112,6 +118,7 @@ class ChatTest {
     private val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
     private val listPushProvisions: ListPushProvisions = mock(MockMode.strict)
     private val removeAllPushChannelsForDevice: RemoveAllPushChannelsForDevice = mock(MockMode.strict)
+    private val fetchMessages: FetchMessages = mock(MockMode.strict)
     private val messageCounts: MessageCounts = mock(MockMode.strict)
 
     @BeforeTest
@@ -632,7 +639,7 @@ class ChatTest {
         val payload = EventContent.Typing(true)
 
         objectUnderTest.emitEvent(
-            channel = channelId,
+            channelId = channelId,
             payload = payload,
         ).async { result ->
             assertTrue(result.isSuccess)
@@ -651,7 +658,7 @@ class ChatTest {
         val payload = EventContent.TextMessageContent(text = "messageContent")
 
         objectUnderTest.emitEvent(
-            channel = channelId,
+            channelId = channelId,
             payload = payload,
         ).async { result ->
             assertTrue(result.isSuccess)
@@ -925,7 +932,19 @@ class ChatTest {
             next = null,
             prev = null,
         )
-        every { pubnub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMembershipsEndpoint
+        every {
+            pubnub.getMemberships(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns getMembershipsEndpoint
         every { getMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
             callback.accept(Result.success(resultWithEmptyData))
         }
@@ -1011,7 +1030,14 @@ class ChatTest {
             )
         )
         objectUnderTest = ChatImpl(chatConfig, pubnub)
-        every { pubnub.removeAllPushNotificationsFromDeviceWithPushToken(any(), any(), any(), any()) } returns removeAllPushChannelsForDevice
+        every {
+            pubnub.removeAllPushNotificationsFromDeviceWithPushToken(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns removeAllPushChannelsForDevice
         every { removeAllPushChannelsForDevice.async(any()) } calls { (callback: Consumer<Result<PNPushRemoveAllChannelsResult>>) ->
             callback.accept(Result.success(PNPushRemoveAllChannelsResult()))
         }
@@ -1032,9 +1058,108 @@ class ChatTest {
     }
 
     @Test
+    fun getEventsHistoryShouldReturnIsMoreWhenCountIsProvided() {
+        val message1 = "message text"
+        val message2 = "second message"
+        val user1 = "myUser"
+        val user2 = "myUser2"
+        val startTimetoken = 123L
+        val endTimetoken = 456L
+        val count = 2
+        every { pubnub.fetchMessages(any(), any(), any(), any(), any(), any()) } returns fetchMessages
+        every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
+            callback.accept(
+                Result.success(
+                    createPnFetchMessagesResult(
+                        channelId = channelId,
+                        user1 = user1,
+                        message1 = message1,
+                        timetoken1 = startTimetoken,
+                        user2 = user2,
+                        message2 = message2,
+                        timetoken2 = endTimetoken
+                    )
+                )
+            )
+        }
+
+        objectUnderTest.getEventsHistory(
+            channelId = channelId,
+            startTimetoken = startTimetoken,
+            endTimetoken = endTimetoken,
+            count = count
+        ).async { result: Result<GetEventsHistoryResult> ->
+            assertTrue(result.isSuccess)
+            result.getOrNull()?.let { assertTrue(it.isMore) }
+            assertNotNull(result.getOrNull()?.events?.find { event -> event.userId == user1 })
+            assertNotNull(result.getOrNull()?.events?.find { event -> event.userId == user2 })
+        }
+
+        verify {
+            pubnub.fetchMessages(
+                channels = listOf(channelId),
+                page = PNBoundedPage(startTimetoken, endTimetoken, count),
+                includeUUID = true,
+                includeMeta = false,
+                includeMessageActions = false,
+                includeMessageType = true
+            )
+        }
+    }
+
+    @Test
+    fun getEventsHistoryShouldReturnIsMoreFalseWhenCountIsNotProvided() {
+        val message1 = "message text"
+        val message2 = "second message"
+        val user1 = "myUser"
+        val user2 = "myUser2"
+        val startTimetoken = 123L
+        val endTimetoken = 456L
+        every { pubnub.fetchMessages(any(), any(), any(), any(), any(), any()) } returns fetchMessages
+        every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
+            callback.accept(
+                Result.success(
+                    createPnFetchMessagesResult(
+                        channelId = channelId,
+                        user1 = user1,
+                        message1 = message1,
+                        timetoken1 = startTimetoken,
+                        user2 = user2,
+                        message2 = message2,
+                        timetoken2 = endTimetoken
+                    )
+                )
+            )
+        }
+
+        objectUnderTest.getEventsHistory(
+            channelId = channelId,
+            startTimetoken = startTimetoken,
+            endTimetoken = endTimetoken,
+        ).async { result: Result<GetEventsHistoryResult> ->
+            assertTrue(result.isSuccess)
+            result.getOrNull()?.let { assertFalse(it.isMore) }
+            assertNotNull(result.getOrNull()?.events?.first()?.channelId == channelId)
+            assertNotNull(result.getOrNull()?.events?.last()?.channelId == channelId)
+        }
+    }
+
+    @Test
     fun getUnreadMessagesCountsShouldReturnResult() {
         val numberOfMessagesUnread = 2L
-        every { pubnub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMembershipsEndpoint
+        every {
+            pubnub.getMemberships(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns getMembershipsEndpoint
         every { getMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
             callback.accept(Result.success(getPNChannelMembershipArrayResult()))
         }

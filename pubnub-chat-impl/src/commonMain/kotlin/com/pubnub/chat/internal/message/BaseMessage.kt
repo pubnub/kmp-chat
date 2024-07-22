@@ -264,14 +264,17 @@ abstract class BaseMessage<T : Message>(
         }
 
         internal fun JsonElement?.extractMentionedUsers(): MessageMentionedUsers? {
+            // todo create "mentionedUsers" constant and reuse across SDK
             return this?.asMap()?.get("mentionedUsers")?.let { PNDataEncoder.decode(it) }
         }
 
         internal fun JsonElement?.extractReferencedChannels(): MessageReferencedChannels? {
+            // todo create "referencedChannels" constant and reuse across SDK
             return this?.asMap()?.get("referencedChannels")?.let { PNDataEncoder.decode(it) }
         }
 
         internal fun JsonElement?.extractQuotedMessage(): QuotedMessage? {
+            // todo create "quotedMessage" constant and reuse across SDK
             return this?.asMap()?.get("quotedMessage")?.let { PNDataEncoder.decode(it) }
         }
 

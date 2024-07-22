@@ -640,7 +640,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     private fun sendTypingSignal(value: Boolean): PNFuture<Unit> {
         return chat.emitEvent(
-            channel = this.id,
+            channelId = this.id,
             payload = EventContent.Typing(value),
         ).then { }
     }

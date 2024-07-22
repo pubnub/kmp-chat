@@ -42,4 +42,5 @@ internal object PubNubErrorMessage {
     internal const val APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2 =
         "apnsTopic has to be defined when deviceGateway is set to apns2"
     internal const val NO_SUCH_MEMBERSHIP_EXISTS = "No such membership exists"
+    internal const val UNKNOWN_EVENT_TYPE = "Unknown event type: "
 }

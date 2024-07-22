@@ -130,5 +130,6 @@ interface Channel {
     fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<Set<Membership>>
 
     // Companion object required for extending this class elsewhere
+    // toDo Is this needed? Where do we extend this?
     companion object
 }

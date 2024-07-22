@@ -17,6 +17,7 @@ import com.pubnub.chat.types.CreateGroupConversationResult
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetChannelsResponse
+import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -69,7 +70,7 @@ interface Chat {
 
     fun wherePresent(userId: String): PNFuture<List<String>>
 
-    fun isPresent(userId: String, channel: String): PNFuture<Boolean>
+    fun isPresent(userId: String, channelId: String): PNFuture<Boolean>
 
     fun createChannel(
         id: String,
@@ -107,7 +108,7 @@ interface Chat {
     fun whoIsPresent(channelId: String): PNFuture<Collection<String>>
 
     fun <T : EventContent> emitEvent(
-        channel: String,
+        channelId: String,
         payload: T,
         mergePayloadWith: Map<String, Any>? = null,
     ): PNFuture<PNPublishResult>
@@ -134,7 +135,7 @@ interface Chat {
 
     fun <T : EventContent> listenForEvents(
         type: KClass<T>,
-        channel: String,
+        channelId: String,
         customMethod: EmitEventMethod? = null,
         callback: (event: Event<T>) -> Unit
     ): AutoCloseable
@@ -171,14 +172,21 @@ interface Chat {
 
     fun getPushChannels(): PNFuture<List<String>>
 
+    fun getEventsHistory(
+        channelId: String,
+        startTimetoken: Long? = null,
+        endTimetoken: Long? = null,
+        count: Int = 100
+    ): PNFuture<GetEventsHistoryResult>
+
     // Companion object required for extending this class elsewhere
     companion object
 }
 
 inline fun <reified T : EventContent> Chat.listenForEvents(
-    channel: String,
+    channelId: String,
     customMethod: EmitEventMethod? = null,
     noinline callback: (event: Event<T>) -> Unit
 ): AutoCloseable {
-    return listenForEvents(T::class, channel, customMethod, callback)
+    return listenForEvents(T::class, channelId, customMethod, callback)
 }

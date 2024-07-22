@@ -67,6 +67,7 @@ import com.pubnub.chat.types.CreateGroupConversationResult
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetChannelsResponse
+import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.MessageActionType
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
@@ -110,7 +111,7 @@ class ChatImpl(
             throw PubNubException(PubNubErrorMessage.APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2)
         }
 
-        //TODO from TS, but config is immutable at this point: pubnub._config._addPnsdkSuffix("chat-sdk", `__PLATFORM__/__VERSION__`)
+        // TODO from TS, but config is immutable at this point: pubnub._config._addPnsdkSuffix("chat-sdk", `__PLATFORM__/__VERSION__`)
     }
 
     fun initialize(): PNFuture<Chat> {
@@ -284,16 +285,16 @@ class ChatImpl(
         }
     }
 
-    override fun isPresent(userId: String, channel: String): PNFuture<Boolean> {
+    override fun isPresent(userId: String, channelId: String): PNFuture<Boolean> {
         if (!isValidId(userId)) {
             return PubNubException(ID_IS_REQUIRED).asFuture()
         }
-        if (!isValidId(channel)) {
+        if (!isValidId(channelId)) {
             return PubNubException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
 
         return pubNub.whereNow(uuid = userId).then { pnWhereNowResult ->
-            pnWhereNowResult.channels.contains(channel)
+            pnWhereNowResult.channels.contains(channelId)
         }.catch { pnException ->
             Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_IS_PRESENT_DATA, pnException))
         }
@@ -423,14 +424,14 @@ class ChatImpl(
     }
 
     override fun <T : EventContent> emitEvent(
-        channel: String,
+        channelId: String,
         payload: T,
         mergePayloadWith: Map<String, Any>?
     ): PNFuture<PNPublishResult> {
         return if (payload::class.getEmitMethod() == EmitEventMethod.SIGNAL) {
-            signal(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
+            signal(channelId = channelId, message = payload, mergeMessageWith = mergePayloadWith)
         } else {
-            publish(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
+            publish(channelId = channelId, message = payload, mergeMessageWith = mergePayloadWith)
         }
     }
 
@@ -578,19 +579,19 @@ class ChatImpl(
 
     override fun <T : EventContent> listenForEvents(
         type: KClass<T>,
-        channel: String,
+        channelId: String,
         customMethod: EmitEventMethod?,
         callback: (event: Event<T>) -> Unit
     ): AutoCloseable {
         val handler = fun(_: PubNub, pnEvent: PNEvent) {
-            if (pnEvent.channel != channel) return
+            if (pnEvent.channel != channelId) return
             val message = (pnEvent as? MessageResult)?.message ?: return
-            val eventContent: EventContent = PNDataEncoder.decode(message)
+            val eventContent: EventContent = PNDataEncoder.decode<EventContent>(message)
 
             @Suppress("UNCHECKED_CAST")
             val payload = eventContent as? T ?: return
 
-            val event = Event(
+            val event = EventImpl(
                 chat = this,
                 timetoken = pnEvent.timetoken!!, // todo can this even be null?
                 payload = payload,
@@ -605,7 +606,7 @@ class ChatImpl(
             onMessage = if (method == EmitEventMethod.PUBLISH) handler else { _, _ -> },
             onSignal = if (method == EmitEventMethod.SIGNAL) handler else { _, _ -> },
         )
-        val channelEntity = pubNub.channel(channel)
+        val channelEntity = pubNub.channel(channelId)
         val subscription = channelEntity.subscription()
         subscription.addListener(listener)
         subscription.subscribe()
@@ -623,7 +624,7 @@ class ChatImpl(
                 pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
                     .alsoAsync { _ ->
                         emitEvent(
-                            channel = userId,
+                            channelId = userId,
                             payload = EventContent.Moderation(
                                 channelId = channel,
                                 restriction = RestrictionType.LIFT,
@@ -643,7 +644,7 @@ class ChatImpl(
                 pubNub.setChannelMembers(channel = channel, uuids = uuids)
                     .alsoAsync { _ ->
                         emitEvent(
-                            channel = userId,
+                            channelId = userId,
                             payload = EventContent.Moderation(
                                 channelId = channel,
                                 restriction = if (restriction.ban) RestrictionType.BAN else RestrictionType.MUTE,
@@ -789,7 +790,7 @@ class ChatImpl(
                                     val relevantLastMessageTimeToken =
                                         getTimetokenFromHistoryMessage(channelId, lastMessagesFromMembershipChannels)
                                     emitEvent(
-                                        channel = channelId,
+                                        channelId = channelId,
                                         payload = EventContent.Receipt(relevantLastMessageTimeToken)
                                     )
                                 }
@@ -851,6 +852,32 @@ class ChatImpl(
             ).then { pnPushListProvisionsResult: PNPushListProvisionsResult ->
                 pnPushListProvisionsResult.channels
             }
+        }
+    }
+
+    override fun getEventsHistory(
+        channelId: String,
+        startTimetoken: Long?,
+        endTimetoken: Long?,
+        count: Int
+    ): PNFuture<GetEventsHistoryResult> {
+        return pubNub.fetchMessages(
+            channels = listOf(channelId),
+            page = PNBoundedPage(startTimetoken, endTimetoken, count),
+            includeUUID = true,
+            includeMeta = false,
+            includeMessageActions = false,
+            includeMessageType = true
+        ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
+            val pnFetchMessageItems: List<PNFetchMessageItem> = pnFetchMessagesResult.channels[channelId] ?: emptyList()
+            val events: Set<Event<EventContent>> =
+                pnFetchMessageItems.map { pnFetchMessageItem: PNFetchMessageItem ->
+                    EventImpl.fromDTO(chat = this, channelId = channelId, pnFetchMessageItem = pnFetchMessageItem)
+                }.toSet()
+
+            val isMore: Boolean = (count == pnFetchMessageItems.size)
+
+            GetEventsHistoryResult(events = events, isMore = isMore)
         }
     }
 
@@ -1105,12 +1132,12 @@ class ChatImpl(
             }
         }
     }
-}
 
-private fun KClass<out EventContent>.getEmitMethod(): EmitEventMethod? {
-    return when (this) {
-        EventContent.Custom::class -> null
-        EventContent.Receipt::class, EventContent.Typing::class -> EmitEventMethod.SIGNAL
-        else -> EmitEventMethod.PUBLISH
+    private fun KClass<out EventContent>.getEmitMethod(): EmitEventMethod? {
+        return when (this) {
+            EventContent.Custom::class -> null
+            EventContent.Receipt::class, EventContent.Typing::class -> EmitEventMethod.SIGNAL
+            else -> EmitEventMethod.PUBLISH
+        }
     }
 }
