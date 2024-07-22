@@ -130,7 +130,6 @@ class ChatImpl(
         }
     }
 
-    // todo consider moving to ChatInternal since it is not present in TS
     override fun createUser(user: User): PNFuture<User> = createUser(
         id = user.id,
         name = user.name,

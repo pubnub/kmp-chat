@@ -1173,7 +1173,7 @@ class ChatTest : BaseTest() {
                         updatedDescription = description,
                         updatedCustom = customData,
                         updatedUpdated = updated,
-                        updatedType =  ChannelType.PUBLIC.toString().lowercase(),
+                        updatedType = ChannelType.PUBLIC.toString().lowercase(),
                         updatedStatus = status
                     )
                 )

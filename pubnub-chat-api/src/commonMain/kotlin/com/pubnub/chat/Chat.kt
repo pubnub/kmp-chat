@@ -32,9 +32,6 @@ interface Chat {
     val editMessageActionName: String
     val deleteMessageActionName: String
 
-    // todo consider moving to ChatInternal since it is not present in TS(inform Karolina)
-    fun createUser(user: User): PNFuture<User>
-
     fun createUser(
         id: String,
         name: String? = null,
