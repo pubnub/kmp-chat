@@ -59,18 +59,18 @@ kotlin {
     }
     jvm()
 
-//    listOf(
-//        iosArm64(),
-// //        iosX64(),
-//        iosSimulatorArm64(),
-//    ).forEach {
-//        it.binaries {
-//            framework {
-//                baseName = "PubNubChat"
-//                isStatic = true
-//            }
-//        }
-//    }
+    listOf(
+        iosArm64(),
+ //        iosX64(),
+        iosSimulatorArm64(),
+    ).forEach {
+        it.binaries {
+            framework {
+                baseName = "PubNubChat"
+                isStatic = true
+            }
+        }
+    }
 
     applyDefaultHierarchyTemplate()
 

@@ -1,22 +1,22 @@
 PODS:
-  - PubNubChat (1.0):
+  - pubnub_chat (1.0):
     - PubNubSwift
-  - PubNubSwift (7.1.0)
+  - PubNubSwift (7.3.1)
 
 DEPENDENCIES:
-  - PubNubChat (from `../`)
-  - PubNubSwift (from `../swift`)
+  - pubnub_chat (from `../`)
+  - PubNubSwift (from `../pubnub-kotlin/swift`)
 
 EXTERNAL SOURCES:
-  PubNubChat:
+  pubnub_chat:
     :path: "../"
   PubNubSwift:
-    :path: "../swift"
+    :path: "../pubnub-kotlin/swift"
 
 SPEC CHECKSUMS:
-  PubNubChat: a4291515e5ca5ca5a49849ba18dd37e5d3d49eb5
-  PubNubSwift: d20d42c99a035f8026e6df43e171bda9d719f46b
+  pubnub_chat: 9aaa76a00599d89f31aedd2adb392351dfe808f9
+  PubNubSwift: 9db89fbc1e29712bf3089bbceabb9593e121eeb7
 
-PODFILE CHECKSUM: e8c859fa599e7549a81ee7163cc53ed15ac61bd8
+PODFILE CHECKSUM: 41a6f05888d1bb127c4186d8fa8ec199f39a14c9
 
 COCOAPODS: 1.15.2
