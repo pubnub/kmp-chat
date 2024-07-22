@@ -34,10 +34,10 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         get() = TODO("Not yet implemented")
 
     override fun getEventsHistory(
-        channel: String,
+        channelId: String,
         startTimetoken: Long?,
         endTimetoken: Long?,
-        count: Int?
+        count: Int
     ): PNFuture<GetEventsHistoryResult> {
         TODO("Not yet implemented")
     }
@@ -98,7 +98,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun isPresent(userId: String, channel: String): PNFuture<Boolean> {
+    override fun isPresent(userId: String, channelId: String): PNFuture<Boolean> {
         TODO("Not yet implemented")
     }
 
@@ -151,7 +151,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     }
 
     override fun <T : EventContent> emitEvent(
-        channel: String,
+        channelId: String,
         payload: T,
         mergePayloadWith: Map<String, Any>?,
     ): PNFuture<PNPublishResult> {
@@ -184,7 +184,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
 
     override fun <T : EventContent> listenForEvents(
         type: KClass<T>,
-        channel: String,
+        channelId: String,
         customMethod: EmitEventMethod?,
         callback: (event: Event<T>) -> Unit,
     ): AutoCloseable {

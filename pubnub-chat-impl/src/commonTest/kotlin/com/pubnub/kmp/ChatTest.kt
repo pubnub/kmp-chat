@@ -640,7 +640,7 @@ class ChatTest : BaseTest() {
         val payload = EventContent.Typing(true)
 
         objectUnderTest.emitEvent(
-            channel = channelId,
+            channelId = channelId,
             payload = payload,
         ).async { result ->
             assertTrue(result.isSuccess)
@@ -659,7 +659,7 @@ class ChatTest : BaseTest() {
         val payload = EventContent.TextMessageContent(text = "messageContent")
 
         objectUnderTest.emitEvent(
-            channel = channelId,
+            channelId = channelId,
             payload = payload,
         ).async { result ->
             assertTrue(result.isSuccess)
@@ -1116,7 +1116,6 @@ class ChatTest : BaseTest() {
         val user2 = "myUser2"
         val startTimetoken = 123L
         val endTimetoken = 456L
-        val count = null
         every { pubnub.fetchMessages(any(), any(), any(), any(), any(), any()) } returns fetchMessages
         every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
             callback.accept(
@@ -1138,7 +1137,6 @@ class ChatTest : BaseTest() {
             channelId = channelId,
             startTimetoken = startTimetoken,
             endTimetoken = endTimetoken,
-            count = count
         ).async { result: Result<GetEventsHistoryResult> ->
             assertTrue(result.isSuccess)
             result.getOrNull()?.let { assertFalse(it.isMore) }

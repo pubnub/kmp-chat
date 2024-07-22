@@ -282,16 +282,16 @@ class ChatImpl(
         }
     }
 
-    override fun isPresent(userId: String, channel: String): PNFuture<Boolean> {
+    override fun isPresent(userId: String, channelId: String): PNFuture<Boolean> {
         if (!isValidId(userId)) {
             return PubNubException(ID_IS_REQUIRED).asFuture()
         }
-        if (!isValidId(channel)) {
+        if (!isValidId(channelId)) {
             return PubNubException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
 
         return pubNub.whereNow(uuid = userId).then { pnWhereNowResult ->
-            pnWhereNowResult.channels.contains(channel)
+            pnWhereNowResult.channels.contains(channelId)
         }.catch { pnException ->
             Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_IS_PRESENT_DATA, pnException))
         }
@@ -421,14 +421,14 @@ class ChatImpl(
     }
 
     override fun <T : EventContent> emitEvent(
-        channel: String,
+        channelId: String,
         payload: T,
         mergePayloadWith: Map<String, Any>?
     ): PNFuture<PNPublishResult> {
         return if (getMethodFor(payload::class) == EmitEventMethod.SIGNAL) {
-            signal(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
+            signal(channelId = channelId, message = payload, mergeMessageWith = mergePayloadWith)
         } else {
-            publish(channelId = channel, message = payload, mergeMessageWith = mergePayloadWith)
+            publish(channelId = channelId, message = payload, mergeMessageWith = mergePayloadWith)
         }
     }
 
@@ -576,12 +576,12 @@ class ChatImpl(
 
     override fun <T : EventContent> listenForEvents(
         type: KClass<T>,
-        channel: String,
+        channelId: String,
         customMethod: EmitEventMethod?,
         callback: (event: Event<T>) -> Unit
     ): AutoCloseable {
         val handler = fun(_: PubNub, pnEvent: PNEvent) {
-            if (pnEvent.channel != channel) return
+            if (pnEvent.channel != channelId) return
             val message = (pnEvent as? MessageResult)?.message ?: return
             val eventContent: EventContent = PNDataEncoder.decode<EventContent>(message)
 
@@ -603,7 +603,7 @@ class ChatImpl(
             onMessage = if (method == EmitEventMethod.PUBLISH) handler else { _, _ -> },
             onSignal = if (method == EmitEventMethod.SIGNAL) handler else { _, _ -> },
         )
-        val channelEntity = pubNub.channel(channel)
+        val channelEntity = pubNub.channel(channelId)
         val subscription = channelEntity.subscription()
         subscription.addListener(listener)
         subscription.subscribe()
@@ -621,7 +621,7 @@ class ChatImpl(
                 pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
                     .alsoAsync { _ ->
                         emitEvent(
-                            channel = userId,
+                            channelId = userId,
                             payload = EventContent.Moderation(
                                 channelId = channel,
                                 restriction = RestrictionType.LIFT,
@@ -641,7 +641,7 @@ class ChatImpl(
                 pubNub.setChannelMembers(channel = channel, uuids = uuids)
                     .alsoAsync { _ ->
                         emitEvent(
-                            channel = userId,
+                            channelId = userId,
                             payload = EventContent.Moderation(
                                 channelId = channel,
                                 restriction = if (restriction.ban) RestrictionType.BAN else RestrictionType.MUTE,
@@ -787,7 +787,7 @@ class ChatImpl(
                                     val relevantLastMessageTimeToken =
                                         getTimetokenFromHistoryMessage(channelId, lastMessagesFromMembershipChannels)
                                     emitEvent(
-                                        channel = channelId,
+                                        channelId = channelId,
                                         payload = EventContent.Receipt(relevantLastMessageTimeToken)
                                     )
                                 }
@@ -856,7 +856,7 @@ class ChatImpl(
         channelId: String,
         startTimetoken: Long?,
         endTimetoken: Long?,
-        count: Int?
+        count: Int
     ): PNFuture<GetEventsHistoryResult> {
         return pubNub.fetchMessages(
             channels = listOf(channelId),
@@ -872,7 +872,7 @@ class ChatImpl(
                     EventImpl.fromDTO(chat = this, channelId = channelId, pnFetchMessageItem = pnFetchMessageItem)
                 }.toSet()
 
-            val isMore: Boolean = count?.let { it == pnFetchMessageItems.size } ?: (pnFetchMessageItems.size == 100)
+            val isMore: Boolean = (count == pnFetchMessageItems.size)
 
             GetEventsHistoryResult(events = events, isMore = isMore)
         }

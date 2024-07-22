@@ -153,7 +153,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         // register lister of "Receipt" event
         val assertionErrorInListener01 = CompletableDeferred<AssertionError?>()
         val removeListenerAndUnsubscribe01: AutoCloseable = chat.listenForEvents<EventContent.Receipt>(
-            channel = channelId01
+            channelId = channelId01
         ) { event: Event<EventContent.Receipt> ->
             try {
                 // we need to have try/catch here because assertion error will not cause test to fail
@@ -169,7 +169,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val assertionErrorInListener02 = CompletableDeferred<AssertionError?>()
         val removeListenerAndUnsubscribe02 = chat.listenForEvents(
             type = EventContent.Receipt::class,
-            channel = channelId02
+            channelId = channelId02
         ) { event: Event<EventContent.Receipt> ->
             try {
                 // we need to have try/catch here because assertion error will not cause test to fail
@@ -399,13 +399,13 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val messageEvents = chat.getEventsHistory(channelId = channelId01, count = count).await()
 
         // then
-        assertNotNull(eventsForUser.events?.find { it.payload is EventContent.Invite })
-        assertNotNull(eventsForUser.events?.find { it.payload is EventContent.Mention })
-        assertNull(messageEvents.events?.find { it.payload !is EventContent.TextMessageContent })
-        assertEquals(2, messageEvents.events?.size)
-        assertEquals(channelId01, messageEvents.events?.first()?.channelId)
-        assertEquals(channelId01, messageEvents.events?.last()?.channelId)
-        assertEquals(messageEvents.events?.first()?.userId, messageEvents.events?.last()?.userId)
+        assertNotNull(eventsForUser.events.find { it.payload is EventContent.Invite })
+        assertNotNull(eventsForUser.events.find { it.payload is EventContent.Mention })
+        assertNull(messageEvents.events.find { it.payload !is EventContent.TextMessageContent })
+        assertEquals(2, messageEvents.events.size)
+        assertEquals(channelId01, messageEvents.events.first().channelId)
+        assertEquals(channelId01, messageEvents.events.last().channelId)
+        assertEquals(messageEvents.events.first().userId, messageEvents.events.last().userId)
         assertTrue(messageEvents.isMore)
 
         // remove messages

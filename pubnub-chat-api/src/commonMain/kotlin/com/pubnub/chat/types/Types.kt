@@ -46,7 +46,7 @@ sealed class EventContent {
 
     @Serializable
     @SerialName("mention")
-    data class Mention(val messageTimetoken: Long, val channel: String) : EventContent()
+    data class Mention(val messageTimetoken: Long, val channelId: String) : EventContent()
 
     @Serializable
     @SerialName("invite")

@@ -184,7 +184,7 @@ class ChannelTest : BaseTest() {
 
         verify {
             chat.emitEvent(
-                channel = channelId,
+                channelId = channelId,
                 payload = EventContent.Typing(true),
             )
         }
@@ -203,7 +203,7 @@ class ChannelTest : BaseTest() {
         // then
         verify {
             chat.emitEvent(
-                channel = channelId,
+                channelId = channelId,
                 payload = EventContent.Typing(true),
             )
         }
@@ -292,7 +292,7 @@ class ChannelTest : BaseTest() {
         // then
         verify {
             chat.emitEvent(
-                channel = channelId,
+                channelId = channelId,
                 payload = EventContent.Typing(false),
             )
         }
