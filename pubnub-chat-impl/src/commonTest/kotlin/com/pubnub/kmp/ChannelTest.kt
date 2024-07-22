@@ -25,7 +25,6 @@ import com.pubnub.chat.internal.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
-import com.pubnub.chat.internal.config.ChatConfiguration
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
@@ -38,6 +37,7 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode.Companion.exactly
@@ -185,7 +185,7 @@ class ChannelTest : BaseTest() {
         verify {
             chat.emitEvent(
                 channelId = channelId,
-                payload = EventContent.Typing(true),
+                payload = matching { it is EventContent.Typing && it.value },
             )
         }
     }
@@ -204,7 +204,7 @@ class ChannelTest : BaseTest() {
         verify {
             chat.emitEvent(
                 channelId = channelId,
-                payload = EventContent.Typing(true),
+                payload = matching { it is EventContent.Typing && it.value },
             )
         }
     }
@@ -293,7 +293,7 @@ class ChannelTest : BaseTest() {
         verify {
             chat.emitEvent(
                 channelId = channelId,
-                payload = EventContent.Typing(false),
+                payload = matching { it is EventContent.Typing && !it.value },
             )
         }
     }

@@ -1,5 +1,6 @@
 package com.pubnub.chat
 
+import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.kmp.PNFuture
 
 interface ThreadChannel : Channel {
@@ -10,9 +11,11 @@ interface ThreadChannel : Channel {
 
     override fun unpinMessage(): PNFuture<ThreadChannel>
 
-    override fun getHistory(startTimetoken: Long?, endTimetoken: Long?, count: Int?): PNFuture<List<ThreadMessage>>
+    override fun getHistory(startTimetoken: Long?, endTimetoken: Long?, count: Int): PNFuture<HistoryResponse<ThreadMessage>>
 
     fun pinMessageToParentChannel(message: ThreadMessage): PNFuture<Channel>
 
     fun unpinMessageFromParentChannel(): PNFuture<Channel>
+
+    companion object
 }

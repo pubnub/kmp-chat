@@ -4,5 +4,5 @@ import com.pubnub.chat.Membership
 
 class JoinResult(
     val membership: Membership,
-    val disconnect: AutoCloseable,
+    val disconnect: AutoCloseable?,
 )

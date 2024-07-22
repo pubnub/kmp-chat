@@ -51,7 +51,6 @@ import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
-import com.pubnub.chat.internal.config.ChatConfiguration
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.types.ChannelType

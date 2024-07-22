@@ -19,6 +19,8 @@ import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
+import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteChannelMetadataEventMessage
+import com.pubnub.api.models.consumer.pubsub.objects.PNSetChannelMetadataEventMessage
 import com.pubnub.api.models.consumer.push.payload.PushPayloadHelper
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.subscriptions.SubscriptionOptions
@@ -33,6 +35,7 @@ import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.chat.internal.MembershipImpl
+import com.pubnub.chat.internal.channel.ChannelImpl.Companion.fromDTO
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
@@ -51,6 +54,7 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.chat.types.GetFileItem
 import com.pubnub.chat.types.GetFilesResult
+import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
@@ -179,21 +183,29 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return chat.isPresent(userId, id)
     }
 
+    override fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable {
+        return streamUpdatesOn(listOf(this)) {
+            callback(it.firstOrNull())
+        }
+    }
+
     override fun getHistory(
-        // todo add paging in response
         startTimetoken: Long?,
         endTimetoken: Long?,
-        count: Int?,
-    ): PNFuture<List<M>> {
+        count: Int,
+    ): PNFuture<HistoryResponse<M>> {
         return chat.pubNub.fetchMessages(
             listOf(id),
             PNBoundedPage(startTimetoken, endTimetoken, count),
             includeMessageActions = true,
             includeMeta = true
         ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
-            pnFetchMessagesResult.channels[id]?.map { messageItem: PNFetchMessageItem ->
-                messageFactory(chat, messageItem, id)
-            } ?: error("Unable to read messages")
+            HistoryResponse(
+                pnFetchMessagesResult.channels[id]?.map { messageItem: PNFetchMessageItem ->
+                    messageFactory(chat, messageItem, id)
+                } ?: error("Unable to read messages"),
+                pnFetchMessagesResult.channels[id]?.size == count
+            )
         }.catch {
             Result.failure(PubNubException(FAILED_TO_RETRIEVE_HISTORY_DATA, it))
         }
@@ -218,13 +230,12 @@ abstract class BaseChannel<C : Channel, M : Message>(
             val newMeta = buildMetaForPublish(meta, mentionedUsers, referencedChannels, textLinks, quotedMessage)
             chat.publish(
                 channelId = id,
-                message = EventContent.TextMessageContent(text, filesData), // todo files
+                message = EventContent.TextMessageContent(text, filesData),
                 meta = newMeta,
                 shouldStore = shouldStore,
                 usePost = usePost,
                 ttl = ttl,
             ).then { publishResult: PNPublishResult ->
-                // todo chat SDK seems to ignore results of emitting these events?
                 try {
                     mentionedUsers?.forEach {
                         emitUserMention(it.value.id, publishResult.timetoken, text).async {}
@@ -371,7 +382,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return subscription
     }
 
-    override fun join(custom: CustomObject?, callback: (Message) -> Unit): PNFuture<JoinResult> {
+    override fun join(custom: CustomObject?, callback: ((Message) -> Unit)?): PNFuture<JoinResult> {
         val user = this.chat.currentUser
         return chat.pubNub.setMemberships(
             channels = listOf(
@@ -386,8 +397,14 @@ abstract class BaseChannel<C : Channel, M : Message>(
             includeType = true,
             filter = channelFilterString,
         ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
-            val resultDisconnect =
-                disconnect ?: connect(callback) // todo assign disconnect = resultDisconnect in subsequent line?
+            val resultDisconnect = if (callback != null) {
+                connect(callback).also {
+                    disconnect = it // todo the whole disconnect handling is not safe! state can be made inconsistent
+                }
+            } else {
+                null
+            }
+
             chat.pubNub.time().thenAsync { time: PNTimeResult ->
                 MembershipImpl.fromMembershipDTO(chat, membershipArray.data.first(), user)
                     .setLastReadMessageTimetoken(time.timetoken)
@@ -395,7 +412,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 JoinResult(
                     membership,
                     resultDisconnect
-                ) // todo the whole disconnect handling is not safe! state can be made inconsistent
+                )
             }
         }
     }
@@ -424,7 +441,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     override fun getMessage(timetoken: Long): PNFuture<Message?> {
         val previousTimetoken = timetoken + 1
         return getHistory(previousTimetoken, timetoken).then {
-            it.firstOrNull()
+            it.messages.firstOrNull()
         }
     }
 
@@ -659,6 +676,34 @@ abstract class BaseChannel<C : Channel, M : Message>(
     internal abstract fun copyWithStatusDeleted(): C
 
     companion object {
+        fun streamUpdatesOn(
+            channels: Collection<Channel>,
+            callback: (channels: Collection<Channel>) -> Unit
+        ): AutoCloseable {
+            if (channels.isEmpty()) {
+                throw PubNubException("Cannot stream channel updates on an empty list")
+            }
+            var latestChannels = channels
+            val chat = channels.first().chat as ChatInternal
+            val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
+                val (newChannel, newChannelId) = when (val message = event.extractedMessage) {
+                    is PNSetChannelMetadataEventMessage -> fromDTO(chat, message.data) to message.data.id
+                    is PNDeleteChannelMetadataEventMessage -> null to message.channel
+                    else -> return@createEventListener
+                }
+
+                latestChannels = latestChannels.asSequence().filter {
+                    it.id != newChannelId
+                }.run { newChannel?.let { plus(it) } ?: this }.toList()
+                callback(latestChannels)
+            })
+
+            val subscriptionSet = chat.pubNub.subscriptionSetOf(channels.map { it.id }.toSet())
+            subscriptionSet.addListener(listener)
+            subscriptionSet.subscribe()
+            return subscriptionSet
+        }
+
         internal fun getPushPayload(baseChannel: BaseChannel<*, *>, text: String, pushConfig: PushNotificationsConfig): Map<String, Any> {
             val apnsTopic = pushConfig.apnsTopic
             val apnsEnv = pushConfig.apnsEnvironment

@@ -6,6 +6,7 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.Membership
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.UserImpl
+import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.types.ChannelType
@@ -251,7 +252,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id, channel02.id)) {
-                dispose = ChannelImpl.streamUpdatesOn(listOf(channel01, channel02)) { channels ->
+                dispose = BaseChannel.streamUpdatesOn(listOf(channel01, channel02)) { channels ->
                     actualUpdates.add(channels.map { it.asImpl().copy(updated = null) }.sortedBy { it.id })
                 }
             }
