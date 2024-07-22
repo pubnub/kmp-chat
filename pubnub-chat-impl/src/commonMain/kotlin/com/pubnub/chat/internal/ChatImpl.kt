@@ -111,7 +111,7 @@ class ChatImpl(
             throw PubNubException(PubNubErrorMessage.APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2)
         }
 
-        //TODO from TS, but config is immutable at this point: pubnub._config._addPnsdkSuffix("chat-sdk", `__PLATFORM__/__VERSION__`)
+        // TODO from TS, but config is immutable at this point: pubnub._config._addPnsdkSuffix("chat-sdk", `__PLATFORM__/__VERSION__`)
     }
 
     fun initialize(): PNFuture<Chat> {
@@ -1130,6 +1130,14 @@ class ChatImpl(
             } else {
                 error("PNUUIDMetadata is null.")
             }
+        }
+    }
+
+    private fun KClass<out EventContent>.getEmitMethod(): EmitEventMethod? {
+        return when (this) {
+            EventContent.Custom::class -> null
+            EventContent.Receipt::class, EventContent.Typing::class -> EmitEventMethod.SIGNAL
+            else -> EmitEventMethod.PUBLISH
         }
     }
 }

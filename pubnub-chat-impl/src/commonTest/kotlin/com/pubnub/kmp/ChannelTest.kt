@@ -28,6 +28,7 @@ import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.kmp.utils.BaseTest
@@ -447,7 +448,7 @@ class ChannelTest : BaseTest() {
         objectUnderTest.getHistory(startToken, endToken).async {
             // then
             assertTrue { it.isSuccess }
-            it.onSuccess { result ->
+            it.onSuccess { result: HistoryResponse<Message> ->
                 assertEquals(
                     listOf(
                         MessageImpl(
@@ -469,7 +470,7 @@ class ChannelTest : BaseTest() {
                             null
                         ),
                     ),
-                    result
+                    result.messages
                 )
             }
         }
