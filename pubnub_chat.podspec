@@ -6,15 +6,15 @@ Pod::Spec.new do |spec|
     spec.authors                  = ''
     spec.license                  = ''
     spec.summary                  = 'Some description for a Kotlin/Native module'
-    spec.vendored_frameworks      = 'build/cocoapods/framework/pubnub_chat.framework'
+    spec.vendored_frameworks      = 'build/cocoapods/framework/PubNubChat.framework'
     spec.libraries                = 'c++'
     spec.ios.deployment_target    = '14'
+    spec.dependency 'PubNubSwift'
                 
-                
-    if !Dir.exist?('build/cocoapods/framework/pubnub_chat.framework') || Dir.empty?('build/cocoapods/framework/pubnub_chat.framework')
+    if !Dir.exist?('build/cocoapods/framework/PubNubChat.framework') || Dir.empty?('build/cocoapods/framework/PubNubChat.framework')
         raise "
 
-        Kotlin framework 'pubnub_chat' doesn't exist yet, so a proper Xcode project can't be generated.
+        Kotlin framework 'PubNubChat' doesn't exist yet, so a proper Xcode project can't be generated.
         'pod install' should be executed after running ':generateDummyFramework' Gradle task:
 
             ./gradlew :generateDummyFramework
@@ -28,7 +28,7 @@ Pod::Spec.new do |spec|
                 
     spec.pod_target_xcconfig = {
         'KOTLIN_PROJECT_PATH' => '',
-        'PRODUCT_MODULE_NAME' => 'pubnub_chat',
+        'PRODUCT_MODULE_NAME' => 'PubNubChat',
     }
                 
     spec.script_phases = [

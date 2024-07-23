@@ -60,15 +60,15 @@ kotlin {
     jvm()
 
     listOf(
-        iosArm64(),
+//        iosArm64(),
         iosSimulatorArm64(),
     ).forEach {
-        it.binaries {
-            framework {
-                baseName = "PubNubChat"
-                isStatic = true
-            }
-        }
+//        it.binaries {
+//            framework {
+//                baseName = "PubNubChat"
+//                isStatic = true
+//            }
+//        }
     }
 
     applyDefaultHierarchyTemplate()
@@ -116,12 +116,12 @@ kotlin {
         }
 
         pod("PubNubSwift") {
- //                        source = git("https://github.com/pubnub/swift") {
- //                            branch = "feat/kmp"
- //                        }
- //            headers = "PubNub/PubNub.h"
+            //                        source = git("https://github.com/pubnub/swift") {
+            //                            branch = "feat/kmp"
+            //                        }
+            //            headers = "PubNub/PubNub.h"
             source = path(rootProject.file("pubnub-kotlin/swift"))
- //            version = "7.1.0"
+            //            version = "7.1.0"
 
             moduleName = "PubNub"
             extraOpts += listOf("-compiler-option", "-fmodules")

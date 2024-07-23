@@ -81,6 +81,7 @@ import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
+import encodeForSending
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.reflect.KClass

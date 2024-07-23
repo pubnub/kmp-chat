@@ -1,6 +1,4 @@
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
-import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
 import org.jetbrains.kotlin.gradle.targets.js.yarn.yarn
 
@@ -64,15 +62,15 @@ kotlin {
     jvm()
 
     listOf(
-        iosArm64(),
+//        iosArm64(),
         iosSimulatorArm64(),
     ).forEach {
-        it.binaries {
-            framework {
-                baseName = "PubNubChat"
-                isStatic = true
-            }
-        }
+//        it.binaries {
+//            framework {
+//                baseName = "PubNubChat"
+//                isStatic = true
+//            }
+//        }
     }
 
     applyDefaultHierarchyTemplate()
