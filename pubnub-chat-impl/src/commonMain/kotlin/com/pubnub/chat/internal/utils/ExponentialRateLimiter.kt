@@ -15,8 +15,10 @@ class ExponentialRateLimiter(
     private val exponentialFactor: Int = 2,
 ) {
     private var lock = reentrantLock()
+
     @Volatile
     private var isProcessing: Boolean = false
+
     @Volatile
     private var currentPenalty: Int = 0
     private val queue: ArrayDeque<Pair<PNFuture<Any>, Consumer<Result<Any>>>> = ArrayDeque()

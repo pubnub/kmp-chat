@@ -18,13 +18,12 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class ExponentialRateLimiterTest {
-
     private fun PNFuture<Int>.saveTimeElapsed(start: Instant, times: MutableList<Duration>) = this.then {
         println(Clock.System.now() - start)
         times.add(Clock.System.now() - start)
     }
 
-    //todo fix on iOS
+    // todo fix on iOS
     @Test
     fun testDelays() = runTest(timeout = 10.seconds) {
         val start = Clock.System.now()
@@ -52,7 +51,7 @@ class ExponentialRateLimiterTest {
         rateLimiter.runWithinLimits(future6).await() // 2900
 
         expectedTimes.forEachIndexed { index, i ->
-            //within 80ms accuracy
+            // within 80ms accuracy
             assertContains(i..(i + 80), times[index].inWholeMilliseconds.toInt())
         }
     }

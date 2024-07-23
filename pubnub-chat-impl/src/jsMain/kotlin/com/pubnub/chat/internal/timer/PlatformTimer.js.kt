@@ -34,6 +34,7 @@ external fun setTimeout(
     callback: () -> Unit,
     ms: Int = definedExternally,
 ): Int
+
 external fun setInterval(
     callback: () -> Unit,
     timeout: Int = definedExternally,
