@@ -435,6 +435,25 @@ class ChatImpl(
         }
     }
 
+    override fun createPublicConversation(
+        channelId: String?,
+        channelName: String?,
+        channelDescription: String?,
+        channelCustom: CustomObject?,
+        channelStatus: String?
+    ): PNFuture<Channel> {
+        val finalChannelId: String = channelId ?: uuid4().toString()
+
+        return createChannel(
+            id = finalChannelId,
+            name = channelName,
+            description = channelDescription,
+            custom = channelCustom,
+            type = ChannelType.PUBLIC,
+            status = channelStatus
+        )
+    }
+
     override fun createDirectConversation(
         invitedUser: User,
         channelId: String?,

@@ -1,5 +1,6 @@
 package com.pubnub.kmp
 
+import com.benasher44.uuid.uuid4
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.endpoints.FetchMessages
@@ -501,12 +502,12 @@ class ChatTest : BaseTest() {
             callback1.accept(
                 Result.success(
                     getPNChannelMetadataResult(
-                        updatedName,
-                        updatedDescription,
-                        updatedCustom,
-                        updatedUpdated,
-                        updatedType,
-                        updatedStatus
+                        updatedName = updatedName,
+                        updatedDescription = updatedDescription,
+                        updatedCustom = updatedCustom,
+                        updatedUpdated = updatedUpdated,
+                        updatedType = updatedType,
+                        updatedStatus = updatedStatus
                     )
                 )
             )
@@ -536,6 +537,7 @@ class ChatTest : BaseTest() {
             callback1.accept(
                 Result.success(
                     getPNChannelMetadataResult(
+                        id,
                         name,
                         description,
                         customData,
@@ -562,7 +564,7 @@ class ChatTest : BaseTest() {
         } returns setChannelMetadataEndpoint
         every { setChannelMetadataEndpoint.async(any()) } returns Unit
         val pnChannelMetadataResult: PNChannelMetadataResult =
-            getPNChannelMetadataResult(name, description, customData, updated, typeAsString, status)
+            getPNChannelMetadataResult(id, name, description, customData, updated, typeAsString, status)
         every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.success(pnChannelMetadataResult))
@@ -702,12 +704,12 @@ class ChatTest : BaseTest() {
             callback1.accept(
                 Result.success(
                     getPNChannelMetadataResult(
-                        name,
-                        description,
-                        customData,
-                        updated,
-                        typeAsString,
-                        status
+                        updatedName = name,
+                        updatedDescription = description,
+                        updatedCustom = customData,
+                        updatedUpdated = updated,
+                        updatedType = typeAsString,
+                        updatedStatus = status
                     )
                 )
             )
@@ -758,12 +760,12 @@ class ChatTest : BaseTest() {
             callback1.accept(
                 Result.success(
                     getPNChannelMetadataResult(
-                        name,
-                        description,
-                        customData,
-                        updated,
-                        typeAsString,
-                        status
+                        updatedName = name,
+                        updatedDescription = description,
+                        updatedCustom = customData,
+                        updatedUpdated = updated,
+                        updatedType = typeAsString,
+                        updatedStatus = status
                     )
                 )
             )
@@ -1145,6 +1147,94 @@ class ChatTest : BaseTest() {
     }
 
     @Test
+    fun whenCreatingPublicConversationWithChannelIdShouldUseIt() {
+        val channelId = id
+        //
+        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.failure(pnException404))
+        }
+        every {
+            pubnub.setChannelMetadata(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(
+                Result.success(
+                    getPNChannelMetadataResult(
+                        updatedName = name,
+                        updatedDescription = description,
+                        updatedCustom = customData,
+                        updatedUpdated = updated,
+                        updatedType = ChannelType.PUBLIC.toString().lowercase(),
+                        updatedStatus = status
+                    )
+                )
+            )
+        }
+
+        // when
+        objectUnderTest.createPublicConversation(channelId = channelId).async { result ->
+            assertTrue(result.isSuccess)
+            assertEquals(channelId, result.getOrNull()?.id)
+            assertEquals(name, result.getOrNull()?.name)
+            assertEquals(description, result.getOrNull()?.description)
+            assertEquals(ChannelType.PUBLIC, result.getOrNull()?.type)
+        }
+    }
+
+    @Test
+    fun whenCreatingPublicConversationWithoutChannelIdShouldGenerateIt() {
+        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.failure(pnException404))
+        }
+        every {
+            pubnub.setChannelMetadata(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(
+                Result.success(
+                    getPNChannelMetadataResult(
+                        uuid4().toString(),
+                        name,
+                        description,
+                        customData,
+                        updated,
+                        ChannelType.PUBLIC.toString().lowercase(),
+                        status
+                    )
+                )
+            )
+        }
+
+        // when
+        objectUnderTest.createPublicConversation().async { result ->
+            val uuidPattern = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+            assertTrue(uuidPattern.matches(result.getOrNull()?.id as CharSequence))
+            assertTrue(result.isSuccess)
+            assertEquals(name, result.getOrNull()?.name)
+            assertEquals(description, result.getOrNull()?.description)
+            assertEquals(ChannelType.PUBLIC, result.getOrNull()?.type)
+        }
+    }
+
+    @Test
     fun getUnreadMessagesCountsShouldReturnResult() {
         val numberOfMessagesUnread = 2L
         every {
@@ -1232,6 +1322,7 @@ class ChatTest : BaseTest() {
 //    }
 
     private fun getPNChannelMetadataResult(
+        updatedId: String? = null,
         updatedName: String = "",
         updatedDescription: String = "",
         updatedCustom: Map<String, Any?>? = null,
@@ -1239,8 +1330,9 @@ class ChatTest : BaseTest() {
         updatedType: String = ChannelType.GROUP.toString().lowercase(),
         updatedStatus: String = "",
     ): PNChannelMetadataResult {
+        val actualId = updatedId ?: id
         val pnChannelMetadata = PNChannelMetadata(
-            id = id,
+            id = actualId,
             name = updatedName,
             description = updatedDescription,
             custom = updatedCustom,

@@ -158,6 +158,16 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
+    override fun createPublicConversation(
+        channelId: String?,
+        channelName: String?,
+        channelDescription: String?,
+        channelCustom: CustomObject?,
+        channelStatus: String?
+    ): PNFuture<Channel> {
+        TODO("Not yet implemented")
+    }
+
     override fun createDirectConversation(
         invitedUser: User,
         channelId: String?,

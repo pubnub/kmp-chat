@@ -1,6 +1,4 @@
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
-import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
 import org.jetbrains.kotlin.gradle.targets.js.yarn.yarn
 
@@ -66,7 +64,7 @@ kotlin {
 
     listOf(
         iosArm64(),
- //        iosX64(),
+        // iosX64(),
         iosSimulatorArm64(),
     ).forEach {
         it.binaries {
@@ -181,7 +179,6 @@ kotlin {
 yarn.yarnLockMismatchReport = YarnLockMismatchReport.WARNING
 yarn.yarnLockAutoReplace = true
 
-
 kotlin.cocoapods {
     ios.deploymentTarget = "14"
 
@@ -218,5 +215,4 @@ kotlin.cocoapods {
         moduleName = "PubNub"
         extraOpts += listOf("-compiler-option", "-fmodules")
     }
-
 }
