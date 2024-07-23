@@ -1076,7 +1076,7 @@ class ChatImpl(
 
                 val remainingTime = config.storeUserActivityInterval - elapsedTimeSinceLastCheck
                 runWithDelayTimer = runWithDelay(remainingTime) {
-                    runSaveTimestampInterval()
+                    runSaveTimestampInterval().async {}
                 }
 
                 return@thenAsync Unit.asFuture()

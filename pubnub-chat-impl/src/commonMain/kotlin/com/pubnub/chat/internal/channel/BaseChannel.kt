@@ -100,10 +100,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
     private var disconnect: AutoCloseable? = null
     private var typingSent: Instant? = null
     internal var typingIndicators = mutableMapOf<String, Instant>()
-    private val sendTextRateLimiter = ExponentialRateLimiter(
+    private val sendTextRateLimiter by lazy { ExponentialRateLimiter(
         type?.let { typeNotNull -> chat.config.rateLimitPerChannel[typeNotNull] } ?: Duration.ZERO,
         chat.config.rateLimitFactor
-    )
+    ) }
     private val typingIndicatorsLock = reentrantLock()
     private val channelFilterString get() = "channel.id == '${this.id}'"
 

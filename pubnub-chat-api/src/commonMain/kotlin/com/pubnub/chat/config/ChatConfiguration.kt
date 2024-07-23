@@ -13,8 +13,8 @@ interface ChatConfiguration {
     val storeUserActivityInterval: Duration
     val storeUserActivityTimestamps: Boolean
     val pushNotifications: PushNotificationsConfig
-    val rateLimitFactor: Int // todo use this in code
-    val rateLimitPerChannel: Map<ChannelType, Duration> // todo use this in code
+    val rateLimitFactor: Int
+    val rateLimitPerChannel: Map<ChannelType, Duration>
     val errorLogger: Any? // todo use this in code
     val customPayloads: CustomPayloads?
 }

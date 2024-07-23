@@ -63,7 +63,7 @@ data class MessageImpl(
                 channelId,
                 messageItem.uuid!!,
                 messageItem.actions,
-                messageItem.meta?.decode()?.let { it as Map<String, Any>? },
+                messageItem.meta?.decode()?.let { it as? Map<String, Any>? },
                 mentionedUsers = messageItem.meta.extractMentionedUsers(),
                 referencedChannels = messageItem.meta.extractReferencedChannels(),
                 quotedMessage = messageItem.meta.extractQuotedMessage()
