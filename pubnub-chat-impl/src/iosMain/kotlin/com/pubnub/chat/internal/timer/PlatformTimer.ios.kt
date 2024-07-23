@@ -1,5 +1,4 @@
 package com.pubnub.chat.internal.timer
-import com.pubnub.kmp.PNFuture
 import platform.Foundation.NSTimer
 import kotlin.time.Duration
 
@@ -18,7 +17,7 @@ actual class PlatformTimer(
             return PlatformTimer(timer)
         }
 
-        actual fun runWithDelay(delay: Duration, action: () -> PNFuture<Unit>): PlatformTimer {
+        actual fun runWithDelay(delay: Duration, action: () -> Unit): PlatformTimer {
             val interval = delay.inWholeMilliseconds / 1000.0
             val timer = NSTimer.scheduledTimerWithTimeInterval(
                 interval = interval,

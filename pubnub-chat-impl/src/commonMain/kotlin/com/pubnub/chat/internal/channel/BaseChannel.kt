@@ -46,6 +46,7 @@ import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.util.getPhraseToLookFor
+import com.pubnub.chat.internal.utils.ExponentialRateLimiter
 import com.pubnub.chat.internal.uuidFilterString
 import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.membership.MembersResponse
@@ -78,6 +79,7 @@ import kotlinx.atomicfu.locks.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import tryLong
+import kotlin.time.Duration
 
 internal const val CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS = "You cannot quote messages from other channels"
 
@@ -98,7 +100,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
     private var disconnect: AutoCloseable? = null
     private var typingSent: Instant? = null
     internal var typingIndicators = mutableMapOf<String, Instant>()
-    private val sendTextRateLimiter: String? = null // todo should be ExponentialRateLimiter instead of String
+    private val sendTextRateLimiter = ExponentialRateLimiter(
+        type?.let { typeNotNull -> chat.config.rateLimitPerChannel[typeNotNull] } ?: Duration.ZERO,
+        chat.config.rateLimitFactor
+    )
     private val typingIndicatorsLock = reentrantLock()
     private val channelFilterString get() = "channel.id == '${this.id}'"
 
@@ -155,6 +160,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return sendTypingSignal(false)
     }
 
+    // todo we need to periodically cull the typing indicators that expire
+    // now that we have the runPeriodically function
     override fun getTyping(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable {
         if (type == ChannelType.PUBLIC) {
             throw PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS)
@@ -229,30 +236,32 @@ abstract class BaseChannel<C : Channel, M : Message>(
         if (quotedMessage != null && quotedMessage.channelId != id) {
             return PubNubException(CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS).asFuture()
         }
-        return sendFilesForPublish(files).thenAsync { filesData ->
-            val newMeta = buildMetaForPublish(meta, mentionedUsers, referencedChannels, textLinks, quotedMessage)
-            chat.pubNub.publish(
-                channel = id,
-                message = EventContent.TextMessageContent(text, filesData).encodeForSending(
-                    id,
-                    chat.config.customPayloads?.getMessagePublishBody,
-                    getPushPayload(this, text, chat.config.pushNotifications)
-                ),
-                meta = newMeta,
-                shouldStore = shouldStore,
-                usePost = usePost,
-                ttl = ttl,
-            ).then { publishResult: PNPublishResult ->
-                try {
-                    mentionedUsers?.forEach {
-                        emitUserMention(it.value.id, publishResult.timetoken, text).async {}
+        return sendTextRateLimiter.runWithinLimits(
+            sendFilesForPublish(files).thenAsync { filesData ->
+                val newMeta = buildMetaForPublish(meta, mentionedUsers, referencedChannels, textLinks, quotedMessage)
+                chat.pubNub.publish(
+                    channel = id,
+                    message = EventContent.TextMessageContent(text, filesData).encodeForSending(
+                        id,
+                        chat.config.customPayloads?.getMessagePublishBody,
+                        getPushPayload(this, text, chat.config.pushNotifications)
+                    ),
+                    meta = newMeta,
+                    shouldStore = shouldStore,
+                    usePost = usePost,
+                    ttl = ttl,
+                ).then { publishResult: PNPublishResult ->
+                    try {
+                        mentionedUsers?.forEach {
+                            emitUserMention(it.value.id, publishResult.timetoken, text).async {}
+                        }
+                    } catch (_: Exception) {
+                        // todo log
                     }
-                } catch (_: Exception) {
-                    // todo log
+                    publishResult
                 }
-                publishResult
             }
-        }
+        )
     }
 
     private fun sendFilesForPublish(files: List<InputFile>?) =

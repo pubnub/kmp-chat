@@ -4,6 +4,7 @@ import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.chat.types.ChannelType
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
 interface ChatConfiguration {
@@ -13,9 +14,9 @@ interface ChatConfiguration {
     val storeUserActivityTimestamps: Boolean
     val pushNotifications: PushNotificationsConfig
     val rateLimitFactor: Int // todo use this in code
-    val rateLimitPerChannel: Map<ChannelType, Int> // todo use this in code
+    val rateLimitPerChannel: Map<ChannelType, Duration> // todo use this in code
     val errorLogger: Any? // todo use this in code
-    val customPayloads: CustomPayloads? // todo use this in code
+    val customPayloads: CustomPayloads?
 }
 
 fun ChatConfiguration(
@@ -25,7 +26,7 @@ fun ChatConfiguration(
     storeUserActivityTimestamps: Boolean = false,
     pushNotifications: PushNotificationsConfig = PushNotificationsConfig(false, null, PNPushType.FCM, null, PNPushEnvironment.DEVELOPMENT),
     rateLimitFactor: Int = 2,
-    rateLimitPerChannel: Map<ChannelType, Int> = RateLimitPerChannel(0, 0, 0, 0),
+    rateLimitPerChannel: Map<ChannelType, Duration> = RateLimitPerChannel(),
     errorLogger: Any? = null,
     customPayloads: CustomPayloads? = null,
 ): ChatConfiguration = object : ChatConfiguration {
@@ -35,14 +36,14 @@ fun ChatConfiguration(
     override val storeUserActivityTimestamps: Boolean = storeUserActivityTimestamps
     override val pushNotifications: PushNotificationsConfig = pushNotifications
     override val rateLimitFactor: Int = rateLimitFactor
-    override val rateLimitPerChannel: Map<ChannelType, Int> = rateLimitPerChannel
+    override val rateLimitPerChannel: Map<ChannelType, Duration> = rateLimitPerChannel
     override val errorLogger: Any? = errorLogger
     override val customPayloads: CustomPayloads? = customPayloads
 }
 
-typealias RateLimitPerChannel = Map<ChannelType, Int>
+typealias RateLimitPerChannel = Map<ChannelType, Duration>
 
-fun RateLimitPerChannel(direct: Int = 0, group: Int = 0, public: Int = 0, unknown: Int = 0): RateLimitPerChannel =
+fun RateLimitPerChannel(direct: Duration = ZERO, group: Duration = ZERO, public: Duration = ZERO, unknown: Duration = ZERO): RateLimitPerChannel =
     mapOf(
         ChannelType.DIRECT to direct,
         ChannelType.GROUP to group,

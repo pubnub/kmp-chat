@@ -1,6 +1,5 @@
 package com.pubnub.chat.internal.timer
 
-import com.pubnub.kmp.PNFuture
 import kotlinx.browser.window
 import kotlin.time.Duration
 
@@ -10,14 +9,14 @@ actual class PlatformTimer(
 ) {
     actual companion object {
         actual fun runPeriodically(period: Duration, action: () -> Unit): PlatformTimer {
-            val intervalId = window.setInterval({
+            val intervalId = setInterval({
                 action()
             }, period.inWholeMilliseconds.toInt())
             return PlatformTimer(intervalId = intervalId)
         }
 
-        actual fun runWithDelay(delay: Duration, action: () -> PNFuture<Unit>): PlatformTimer {
-            val timeoutId = window.setTimeout({
+        actual fun runWithDelay(delay: Duration, action: () -> Unit): PlatformTimer {
+            val timeoutId = setTimeout({
                 action()
             }, delay.inWholeMilliseconds.toInt())
             return PlatformTimer(timeoutId = timeoutId)
@@ -29,3 +28,14 @@ actual class PlatformTimer(
         timeoutId?.let { window.clearTimeout(it) }
     }
 }
+
+// because on node js there is no window, we must use these declarations:
+external fun setTimeout(
+    callback: () -> Unit,
+    ms: Int = definedExternally,
+): Int
+external fun setInterval(
+    callback: () -> Unit,
+    timeout: Int = definedExternally,
+    vararg arguments: Any?
+): Int

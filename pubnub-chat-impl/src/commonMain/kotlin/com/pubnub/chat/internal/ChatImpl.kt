@@ -1079,7 +1079,7 @@ class ChatImpl(
                     runSaveTimestampInterval()
                 }
 
-                return@thenAsync runWithDelayTimer.asFuture().then {}
+                return@thenAsync Unit.asFuture()
             } ?: return@thenAsync runSaveTimestampInterval()
         }
     }

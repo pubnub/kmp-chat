@@ -1,6 +1,5 @@
 package com.pubnub.chat.internal.timer
 
-import com.pubnub.kmp.PNFuture
 import java.util.Timer
 import java.util.TimerTask
 import kotlin.time.Duration
@@ -24,7 +23,7 @@ actual class PlatformTimer(
             return PlatformTimer(timer)
         }
 
-        actual fun runWithDelay(delay: Duration, action: () -> PNFuture<Unit>): PlatformTimer {
+        actual fun runWithDelay(delay: Duration, action: () -> Unit): PlatformTimer {
             val timer = Timer().apply {
                 schedule(
                     object : TimerTask() {
