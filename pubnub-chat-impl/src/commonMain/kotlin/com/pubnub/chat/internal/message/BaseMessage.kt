@@ -51,7 +51,7 @@ abstract class BaseMessage<T : Message>(
             val edits = actions?.get(chat.editMessageActionName) ?: return content.text
             val flatEdits = edits.mapValues { it.value.first() }
             val lastEdit = flatEdits.entries.reduce { acc, entry ->
-                if (acc.value.actionTimetoken.toLong() > entry.value.actionTimetoken.toLong()) {
+                if (acc.value.actionTimetoken > entry.value.actionTimetoken) {
                     acc
                 } else {
                     entry

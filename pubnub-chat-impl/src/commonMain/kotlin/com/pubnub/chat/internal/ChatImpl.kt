@@ -81,6 +81,7 @@ import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
+import encodeForSending
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.reflect.KClass
@@ -89,8 +90,8 @@ import kotlin.time.Duration.Companion.seconds
 class ChatImpl(
     override val config: ChatConfiguration,
     override val pubNub: PubNub,
-    override val editMessageActionName: String = MessageActionType.EDITED.toString(),
-    override val deleteMessageActionName: String = MessageActionType.DELETED.toString(),
+    override val editMessageActionName: String = config.customPayloads?.editMessageActionName ?: MessageActionType.EDITED.toString(),
+    override val deleteMessageActionName: String = config.customPayloads?.deleteMessageActionName ?: MessageActionType.DELETED.toString(),
 ) : ChatInternal {
     override var currentUser: User =
         UserImpl(this, pubNub.configuration.userId.value, name = pubNub.configuration.userId.value)
@@ -429,9 +430,9 @@ class ChatImpl(
         mergePayloadWith: Map<String, Any>?
     ): PNFuture<PNPublishResult> {
         return if (payload::class.getEmitMethod() == EmitEventMethod.SIGNAL) {
-            signal(channelId = channelId, message = payload, mergeMessageWith = mergePayloadWith)
+            pubNub.signal(channel = channelId, message = payload.encodeForSending(mergePayloadWith))
         } else {
-            publish(channelId = channelId, message = payload, mergeMessageWith = mergePayloadWith)
+            pubNub.publish(channel = channelId, message = payload.encodeForSending(mergePayloadWith))
         }
     }
 
@@ -557,43 +558,6 @@ class ChatImpl(
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA, exception))
         }
-    }
-
-    override fun publish(
-        channelId: String,
-        message: EventContent,
-        meta: Map<String, Any>?,
-        shouldStore: Boolean,
-        usePost: Boolean,
-        replicate: Boolean,
-        ttl: Int?,
-        mergeMessageWith: Map<String, Any>?,
-    ): PNFuture<PNPublishResult> {
-        val finalMessage = merge(message, mergeMessageWith)
-        return pubNub.publish(channelId, finalMessage, meta, shouldStore, usePost, replicate, ttl)
-    }
-
-    override fun signal(
-        channelId: String,
-        message: EventContent,
-        mergeMessageWith: Map<String, Any>?,
-    ): PNFuture<PNPublishResult> {
-        val finalMessage = merge(message, mergeMessageWith)
-        return pubNub.signal(channelId, finalMessage)
-    }
-
-    private fun merge(
-        message: EventContent,
-        mergeMessageWith: Map<String, Any>?,
-    ): Map<String, Any> {
-        var finalMessage = PNDataEncoder.encode(message) as Map<String, Any>
-        if (mergeMessageWith != null) {
-            finalMessage = buildMap {
-                putAll(finalMessage)
-                putAll(mergeMessageWith)
-            }
-        }
-        return finalMessage
     }
 
     override fun <T : EventContent> listenForEvents(

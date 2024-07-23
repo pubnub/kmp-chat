@@ -145,7 +145,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         try {
             chat.deleteUser("user2", false).await()
-        } finally {
+        } catch (_: Exception) {
         }
         val user2 = chat.createUser(UserImpl(chat, "user2")).await()
 

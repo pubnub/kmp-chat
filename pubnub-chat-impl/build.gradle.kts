@@ -58,21 +58,19 @@ kotlin {
                 }
             }
         }
-//        binaries.executable()
     }
     jvm()
 
     listOf(
-        iosArm64(),
-        // iosX64(),
+//        iosArm64(),
         iosSimulatorArm64(),
     ).forEach {
-        it.binaries {
-            framework {
-                baseName = "PubNubChat"
-                isStatic = true
-            }
-        }
+//        it.binaries {
+//            framework {
+//                baseName = "PubNubChat"
+//                isStatic = true
+//            }
+//        }
     }
 
     applyDefaultHierarchyTemplate()
@@ -85,7 +83,6 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.0-RC")
                 implementation("com.benasher44:uuid:0.8.4")
-//                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0-RC")
                 implementation("org.jetbrains.kotlinx:atomicfu:0.24.0")
                 implementation(project(":pubnub-chat-api"))
             }

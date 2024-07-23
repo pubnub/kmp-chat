@@ -29,9 +29,6 @@ interface Chat {
     val pubNub: PubNub // todo change to `sdk` like in TS
     val currentUser: User
 
-    val editMessageActionName: String
-    val deleteMessageActionName: String
-
     fun createUser(
         id: String,
         name: String? = null,

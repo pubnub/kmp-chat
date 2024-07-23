@@ -1,3 +1,7 @@
+import com.pubnub.chat.internal.defaultGetMessagePublishBody
+import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.types.EventContent
+
 internal fun Any?.tryLong(): Long? {
     return when (this) {
         is Number -> toLong()
@@ -20,4 +24,32 @@ internal fun Any?.tryDouble(): Double? {
         is String -> toDoubleOrNull()
         else -> null
     }
+}
+
+internal fun EventContent.TextMessageContent.encodeForSending(
+    channelId: String,
+    getMessagePublishBody: ((m: EventContent.TextMessageContent, channelId: String) -> Map<String, Any>)? = null,
+    mergeMessageWith: Map<String, Any>? = null,
+): Map<String, Any> {
+    var finalMessage = getMessagePublishBody?.invoke(this, channelId) ?: defaultGetMessagePublishBody(this, channelId)
+    if (mergeMessageWith != null) {
+        finalMessage = buildMap {
+            putAll(finalMessage)
+            putAll(mergeMessageWith)
+        }
+    }
+    return finalMessage
+}
+
+internal fun EventContent.encodeForSending(
+    mergeMessageWith: Map<String, Any>? = null,
+): Map<String, Any> {
+    var finalMessage = PNDataEncoder.encode(this) as Map<String, Any>
+    if (mergeMessageWith != null) {
+        finalMessage = buildMap {
+            putAll(finalMessage)
+            putAll(mergeMessageWith)
+        }
+    }
+    return finalMessage
 }

@@ -21,7 +21,7 @@ import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 
 class JsonElementDecoder(
-    val jsonElement: JsonElement? = null,
+    private val jsonElement: JsonElement? = null,
     private var currentMap: Map<String, JsonElement>? = null,
     private var currentList: List<JsonElement>? = null
 ) : Decoder, CompositeDecoder {

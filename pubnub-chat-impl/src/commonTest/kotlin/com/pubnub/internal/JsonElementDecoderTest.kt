@@ -12,8 +12,8 @@ private val stringValue = "myString"
 private val intValue = 5
 private val longValue = 5L
 private val boolValue = true
-private val doubleValue = 5.0
-private val floatValue = 5.0f
+private val doubleValue = 5.5
+private val floatValue = 5.5f
 private val mapValue = mapOf("key_1" to intValue, "key_2" to null)
 private val listValue = listOf(intValue, null)
 
@@ -76,14 +76,13 @@ class JsonElementDecoderTest {
     @Test
     fun testDecodeLists() {
         // given
-        val boolJson = createJsonElement(listOf(createJsonElement(boolValue)))
-        // println(boolJson)
-        val intJson = createJsonElement(listOf(createJsonElement(intValue)))
-        val longJson = createJsonElement(listOf(createJsonElement(longValue)))
-        val stringJson = createJsonElement(listOf(createJsonElement(stringValue)))
-        val nullJson = createJsonElement(listOf(createJsonElement(null)))
-        val doubleJson = createJsonElement(listOf(createJsonElement(doubleValue)))
-        val floatJson = createJsonElement(listOf(createJsonElement(floatValue)))
+        val boolJson = createJsonElement(listOf(boolValue))
+        val intJson = createJsonElement(listOf(intValue))
+        val longJson = createJsonElement(listOf(longValue))
+        val stringJson = createJsonElement(listOf(stringValue))
+        val nullJson = createJsonElement(listOf((null)))
+        val doubleJson = createJsonElement(listOf(doubleValue))
+        val floatJson = createJsonElement(listOf(floatValue))
 
         // when
         val bool: List<Boolean> = PNDataEncoder.decode(boolJson)
@@ -109,13 +108,13 @@ class JsonElementDecoderTest {
     @Test
     fun testDecodeMaps() {
         // given
-        val boolJson = createJsonElement(mapOf("abc" to createJsonElement(boolValue)))
-        val intJson = createJsonElement(mapOf("abc" to createJsonElement(intValue)))
-        val longJson = createJsonElement(mapOf("abc" to createJsonElement(longValue)))
-        val stringJson = createJsonElement(mapOf("abc" to createJsonElement(stringValue)))
-        val nullJson = createJsonElement(mapOf("abc" to createJsonElement(null)))
-        val doubleJson = createJsonElement(mapOf("abc" to createJsonElement(doubleValue)))
-        val floatJson = createJsonElement(mapOf("abc" to createJsonElement(floatValue)))
+        val boolJson = createJsonElement(mapOf("abc" to boolValue))
+        val intJson = createJsonElement(mapOf("abc" to intValue))
+        val longJson = createJsonElement(mapOf("abc" to longValue))
+        val stringJson = createJsonElement(mapOf("abc" to stringValue))
+        val nullJson = createJsonElement(mapOf("abc" to null))
+        val doubleJson = createJsonElement(mapOf("abc" to doubleValue))
+        val floatJson = createJsonElement(mapOf("abc" to floatValue))
 
         // when
         val bool: Map<String, Boolean> = PNDataEncoder.decode(boolJson)
@@ -143,15 +142,15 @@ class JsonElementDecoderTest {
         // given
         val instance = createJsonElement(
             mapOf(
-                "nullable" to createJsonElement(null),
-                "nullablePrimitive" to createJsonElement(null),
-                "int" to createJsonElement(intValue),
-                "long" to createJsonElement(longValue),
-                "bool" to createJsonElement(boolValue),
-                "double" to createJsonElement(doubleValue),
-                "float" to createJsonElement(floatValue),
-                "map" to createJsonElement(mapValue.mapValues { createJsonElement(it.value) }),
-                "list" to createJsonElement(listValue.map { createJsonElement(it) }),
+                "nullable" to null,
+                "nullablePrimitive" to null,
+                "int" to intValue,
+                "long" to longValue,
+                "bool" to boolValue,
+                "double" to doubleValue,
+                "float" to floatValue,
+                "map" to mapValue.mapValues { it.value },
+                "list" to listValue.map { it }
             )
         )
 
@@ -175,9 +174,9 @@ class JsonElementDecoderTest {
         // given
         val instanceJson = createJsonElement(
             mapOf(
-                "type" to createJsonElement("com.pubnub.internal.SealedClass.Sealed1"),
-                "aaa" to createJsonElement(floatValue),
-                "bbb" to createJsonElement(null)
+                "type" to "com.pubnub.internal.SealedClass.Sealed1",
+                "aaa" to floatValue,
+                "bbb" to null
             )
         )
 
@@ -193,9 +192,9 @@ class JsonElementDecoderTest {
         // given
         val instanceJson = createJsonElement(
             mapOf(
-                "type" to createJsonElement("sealed2"),
-                "bbb" to createJsonElement(intValue),
-                "ccc" to createJsonElement(null)
+                "type" to "sealed2",
+                "bbb" to intValue,
+                "ccc" to null
             )
         )
 
@@ -209,13 +208,12 @@ class JsonElementDecoderTest {
     @Test
     fun testDecodeCollectionOfSealedClass() {
         // given
-        val instanceJson = createJsonElement(
+        val instanceJson =
             mapOf(
-                "type" to createJsonElement("sealed2"),
-                "bbb" to createJsonElement(intValue),
-                "ccc" to createJsonElement(null)
+                "type" to "sealed2",
+                "bbb" to intValue,
+                "ccc" to null
             )
-        )
         val list = createJsonElement(listOf(instanceJson, instanceJson))
 
         // when
@@ -228,13 +226,12 @@ class JsonElementDecoderTest {
     @Test
     fun testDecodeMapOfSealedClass() {
         // given
-        val instanceJson = createJsonElement(
+        val instanceJson =
             mapOf(
-                "type" to createJsonElement("sealed2"),
-                "bbb" to createJsonElement(intValue),
-                "ccc" to createJsonElement(null)
+                "type" to "sealed2",
+                "bbb" to intValue,
+                "ccc" to null
             )
-        )
         val map = createJsonElement(mapOf("aaa" to instanceJson))
 
         // when

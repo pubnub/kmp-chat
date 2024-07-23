@@ -1,13 +1,12 @@
 package com.pubnub.chat.internal.message
 
-import com.pubnub.api.asString
 import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.ChatInternal
-import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.internal.defaultGetMessageResponseBody
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
@@ -40,10 +39,11 @@ data class MessageImpl(
 
     companion object {
         internal fun fromDTO(chat: ChatInternal, pnMessageResult: PNMessageResult): Message {
+            val content = chat.config.customPayloads?.getMessageResponseBody?.invoke(pnMessageResult.message) ?: defaultGetMessageResponseBody(pnMessageResult.message)
             return MessageImpl(
                 chat,
                 pnMessageResult.timetoken!!,
-                PNDataEncoder.decode<EventContent>(pnMessageResult.message) as EventContent.TextMessageContent,
+                content!!, // todo handle malformed content (then this is null)
                 pnMessageResult.channel,
                 pnMessageResult.publisher!!,
                 meta = pnMessageResult.userMetadata?.decode() as? Map<String, Any>,
@@ -54,18 +54,12 @@ data class MessageImpl(
         }
 
         internal fun fromDTO(chat: ChatInternal, messageItem: PNFetchMessageItem, channelId: String): Message {
-            val eventContent = try {
-                messageItem.message.asString()?.let { text ->
-                    EventContent.TextMessageContent(text, null)
-                } ?: PNDataEncoder.decode(messageItem.message)
-            } catch (e: Exception) {
-                EventContent.UnknownMessageFormat(messageItem.message)
-            }
+            val content = chat.config.customPayloads?.getMessageResponseBody?.invoke(messageItem.message) ?: defaultGetMessageResponseBody(messageItem.message)
 
             return MessageImpl(
                 chat,
                 messageItem.timetoken!!,
-                eventContent,
+                content!!,
                 channelId,
                 messageItem.uuid!!,
                 messageItem.actions,
