@@ -18,9 +18,6 @@ class ExponentialRateLimiter(
 
     @Volatile
     private var isProcessing: Boolean = false
-
-    @Volatile
-    private var currentPenalty: Int = 0
     private val queue: ArrayDeque<Pair<PNFuture<Any>, Consumer<Result<Any>>>> = ArrayDeque()
 
     fun <T> runWithinLimits(future: PNFuture<T>): PNFuture<T> {
@@ -46,7 +43,6 @@ class ExponentialRateLimiter(
             val item = queue.removeFirstOrNull()
             if (item == null) {
                 isProcessing = false
-                currentPenalty = 0
                 return
             } else {
                 item.first.async {
