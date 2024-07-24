@@ -13,6 +13,10 @@ import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_ADMIN_CHANNEL
+import com.pubnub.chat.internal.METADATA_MENTIONED_USERS
+import com.pubnub.chat.internal.METADATA_QUOTED_MESSAGE
+import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
+import com.pubnub.chat.internal.METADATA_TEXT_LINKS
 import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
@@ -81,7 +85,7 @@ abstract class BaseMessage<T : Message>(
 
     override val textLinks: List<TextLink>? get() = (
         meta?.get(
-            "textLinks"
+            METADATA_TEXT_LINKS
         ) as? List<Any>
     )?.let { textLinksList: List<Any> ->
         textLinksList.filterIsInstance<Map<*, *>>().map { textLinkItem: Map<*, *> ->
@@ -264,18 +268,15 @@ abstract class BaseMessage<T : Message>(
         }
 
         internal fun JsonElement?.extractMentionedUsers(): MessageMentionedUsers? {
-            // todo create "mentionedUsers" constant and reuse across SDK
-            return this?.asMap()?.get("mentionedUsers")?.let { PNDataEncoder.decode(it) }
+            return this?.asMap()?.get(METADATA_MENTIONED_USERS)?.let { PNDataEncoder.decode(it) }
         }
 
         internal fun JsonElement?.extractReferencedChannels(): MessageReferencedChannels? {
-            // todo create "referencedChannels" constant and reuse across SDK
-            return this?.asMap()?.get("referencedChannels")?.let { PNDataEncoder.decode(it) }
+            return this?.asMap()?.get(METADATA_REFERENCED_CHANNELS)?.let { PNDataEncoder.decode(it) }
         }
 
         internal fun JsonElement?.extractQuotedMessage(): QuotedMessage? {
-            // todo create "quotedMessage" constant and reuse across SDK
-            return this?.asMap()?.get("quotedMessage")?.let { PNDataEncoder.decode(it) }
+            return this?.asMap()?.get(METADATA_QUOTED_MESSAGE)?.let { PNDataEncoder.decode(it) }
         }
 
         internal fun assignAction(actions: Actions?, actionResult: PNMessageAction): Actions {

@@ -33,6 +33,10 @@ import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl.Companion.pinMessageToChannel
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
+import com.pubnub.chat.internal.METADATA_MENTIONED_USERS
+import com.pubnub.chat.internal.METADATA_QUOTED_MESSAGE
+import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
+import com.pubnub.chat.internal.METADATA_TEXT_LINKS
 import com.pubnub.chat.internal.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.channel.ChannelImpl.Companion.fromDTO
@@ -283,12 +287,12 @@ abstract class BaseChannel<C : Channel, M : Message>(
         quotedMessage: Message?,
     ): Map<String, Any> = buildMap {
         meta?.let { putAll(it) }
-        mentionedUsers?.let { put("mentionedUsers", PNDataEncoder.encode(it)!!) }
-        referencedChannels?.let { put("referencedChannels", PNDataEncoder.encode(it)!!) }
-        textLinks?.let { put("textLinks", PNDataEncoder.encode(it)!!) }
+        mentionedUsers?.let { put(METADATA_MENTIONED_USERS, PNDataEncoder.encode(it)!!) }
+        referencedChannels?.let { put(METADATA_REFERENCED_CHANNELS, PNDataEncoder.encode(it)!!) }
+        textLinks?.let { put(METADATA_TEXT_LINKS, PNDataEncoder.encode(it)!!) }
         quotedMessage?.let {
             put(
-                "quotedMessage",
+                METADATA_QUOTED_MESSAGE,
                 PNDataEncoder.encode((quotedMessage as BaseMessage<*>).asQuotedMessage())!!
             )
         }
