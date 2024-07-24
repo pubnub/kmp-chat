@@ -1235,6 +1235,14 @@ class ChatTest : BaseTest() {
     }
 
     @Test
+    fun shouldThrowExceptionWhenGetCurrentUserMentionsWithCountBiggerThan100() {
+        objectUnderTest.getCurrentUserMentions(count = 200).async { result ->
+            assertTrue(result.isFailure)
+            assertEquals("Count should not exceed 100", result.exceptionOrNull()?.message)
+        }
+    }
+
+    @Test
     fun getUnreadMessagesCountsShouldReturnResult() {
         val numberOfMessagesUnread = 2L
         every {

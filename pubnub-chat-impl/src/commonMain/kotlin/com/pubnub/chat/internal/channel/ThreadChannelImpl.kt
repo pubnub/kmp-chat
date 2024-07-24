@@ -12,6 +12,7 @@ import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
 import com.pubnub.chat.internal.message.ThreadMessageImpl
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannel
@@ -116,6 +117,14 @@ data class ThreadChannelImpl(
     }
 
     override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
+
+    override fun emitUserMention(userId: String, timetoken: Long, text: String): PNFuture<PNPublishResult> {
+        return chat.emitEvent(
+            userId,
+            EventContent.Mention(timetoken, id, parentChannelId),
+            getPushPayload(this, text, chat.config.pushNotifications)
+        )
+    }
 
     companion object {
         internal fun fromDTO(chat: ChatInternal, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {

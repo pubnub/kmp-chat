@@ -633,7 +633,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
-    private fun emitUserMention(
+    open fun emitUserMention(
         userId: String,
         timetoken: Long,
         text: String,
@@ -715,7 +715,11 @@ abstract class BaseChannel<C : Channel, M : Message>(
             return subscriptionSet
         }
 
-        internal fun getPushPayload(baseChannel: BaseChannel<*, *>, text: String, pushConfig: PushNotificationsConfig): Map<String, Any> {
+        internal fun getPushPayload(
+            baseChannel: BaseChannel<*, *>,
+            text: String,
+            pushConfig: PushNotificationsConfig
+        ): Map<String, Any> {
             val apnsTopic = pushConfig.apnsTopic
             val apnsEnv = pushConfig.apnsEnvironment
             if (!pushConfig.sendPushes) {
