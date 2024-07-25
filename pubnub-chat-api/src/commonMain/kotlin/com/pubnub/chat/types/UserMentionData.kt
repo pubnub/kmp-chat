@@ -12,14 +12,16 @@ abstract class UserMentionData {
     open val threadChannelId: String? = null
 }
 
-data class UserMentionDataInChannel(
+// UserMentionDataInChannel
+class ChannelMentionData(
     override val event: Event<EventContent.Mention>,
     override val message: Message?,
     override val userId: String,
     override val channelId: String?
 ) : UserMentionData()
 
-class UserMentionDataInThreadChannel(
+// UserMentionDataInThreadChannel
+class ThreadMentionData(
     override val event: Event<EventContent.Mention>,
     override val message: Message?,
     override val userId: String,
