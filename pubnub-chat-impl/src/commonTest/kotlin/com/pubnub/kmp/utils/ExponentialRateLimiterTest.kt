@@ -19,7 +19,6 @@ import kotlin.time.Duration.Companion.seconds
 
 class ExponentialRateLimiterTest {
     private fun PNFuture<Int>.saveTimeElapsed(start: Instant, times: MutableList<Duration>) = this.then {
-        println(Clock.System.now() - start)
         times.add(Clock.System.now() - start)
     }
 
@@ -27,13 +26,13 @@ class ExponentialRateLimiterTest {
     @Test
     fun testDelays() = runTest(timeout = 10.seconds) {
         val start = Clock.System.now()
-        val times = mutableListOf<Duration>()
-        val future1 = 1.asFuture().saveTimeElapsed(start, times)
-        val future2 = 2.asFuture().saveTimeElapsed(start, times)
-        val future3 = 3.asFuture().saveTimeElapsed(start, times)
-        val future4 = 4.asFuture().saveTimeElapsed(start, times)
-        val future5 = 5.asFuture().saveTimeElapsed(start, times)
-        val future6 = 6.asFuture().saveTimeElapsed(start, times)
+        val actualTimes = mutableListOf<Duration>()
+        val future1 = 1.asFuture().saveTimeElapsed(start, actualTimes)
+        val future2 = 2.asFuture().saveTimeElapsed(start, actualTimes)
+        val future3 = 3.asFuture().saveTimeElapsed(start, actualTimes)
+        val future4 = 4.asFuture().saveTimeElapsed(start, actualTimes)
+        val future5 = 5.asFuture().saveTimeElapsed(start, actualTimes)
+        val future6 = 6.asFuture().saveTimeElapsed(start, actualTimes)
 
         val expectedTimes = listOf(0, 100, 300, 700, 2800, 2900)
 
@@ -52,7 +51,7 @@ class ExponentialRateLimiterTest {
 
         expectedTimes.forEachIndexed { index, i ->
             // within 80ms accuracy
-            assertContains(i..(i + 80), times[index].inWholeMilliseconds.toInt())
+            assertContains(i..(i + 80), actualTimes[index].inWholeMilliseconds.toInt())
         }
     }
 }
