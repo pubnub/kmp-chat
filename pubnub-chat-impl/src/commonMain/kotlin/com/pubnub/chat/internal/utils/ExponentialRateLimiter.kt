@@ -14,7 +14,7 @@ class ExponentialRateLimiter(
     private val baseInterval: Duration = Duration.ZERO,
     private val exponentialFactor: Int = 2,
 ) {
-    private var lock = reentrantLock()
+    private val lock = reentrantLock()
 
     @Volatile
     private var isProcessing: Boolean = false
