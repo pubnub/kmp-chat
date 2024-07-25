@@ -133,7 +133,7 @@ interface Chat {
         channelDescription: String? = null,
         channelCustom: CustomObject? = null,
         channelStatus: String? = null,
-        custom: CustomObject? = null,
+        membershipCustom: CustomObject? = null,
     ): PNFuture<CreateGroupConversationResult>
 
     fun <T : EventContent> listenForEvents(

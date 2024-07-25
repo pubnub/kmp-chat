@@ -32,9 +32,9 @@ data class MembershipImpl(
     override val updated: String?,
     override val eTag: String?,
 ) : Membership {
-    override val lastReadMessageTimetoken: Long? // todo shouldn't we call here getMetadata.custom.lastReadMessageTimetoken to have current data?
+    override val lastReadMessageTimetoken: Long?
         get() {
-            return custom?.get("lastReadMessageTimetoken").tryLong()
+            return custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN).tryLong()
         }
 
     override fun setLastReadMessage(message: Message): PNFuture<Membership> {
@@ -63,7 +63,7 @@ data class MembershipImpl(
     override fun setLastReadMessageTimetoken(timetoken: Long): PNFuture<Membership> {
         val newCustom = buildMap {
             custom?.let { putAll(it) }
-            put("lastReadMessageTimetoken", timetoken)
+            put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, timetoken)
         }
         return update(createCustomObject(newCustom)).alsoAsync {
             val canISendSignal = AccessManager(chat).canI(AccessManager.Permission.WRITE, AccessManager.ResourceType.CHANNELS, channel.id)

@@ -447,7 +447,7 @@ class ChatImpl(
 
         return createChannel(
             id = finalChannelId,
-            name = channelName,
+            name = channelName ?: finalChannelId,
             description = channelDescription,
             custom = channelCustom,
             type = ChannelType.PUBLIC,
@@ -471,7 +471,7 @@ class ChatImpl(
         return getChannel(finalChannelId).thenAsync { channel ->
             channel?.asFuture() ?: createChannel(
                 finalChannelId,
-                channelName,
+                channelName ?: finalChannelId,
                 channelDescription,
                 channelCustom,
                 ChannelType.DIRECT,
@@ -510,14 +510,14 @@ class ChatImpl(
         channelDescription: String?,
         channelCustom: CustomObject?,
         channelStatus: String?,
-        custom: CustomObject?
+        membershipCustom: CustomObject?
     ): PNFuture<CreateGroupConversationResult> {
         val user = this.currentUser
         val finalChannelId = channelId ?: uuid4().toString()
         return getChannel(finalChannelId).thenAsync { channel ->
             channel?.asFuture() ?: createChannel(
                 finalChannelId,
-                channelName,
+                channelName ?: finalChannelId,
                 channelDescription,
                 channelCustom,
                 ChannelType.DIRECT,
@@ -525,7 +525,7 @@ class ChatImpl(
             )
         }.thenAsync { channel: Channel ->
             val hostMembershipFuture = pubNub.setMemberships(
-                listOf(PNChannelMembership.Partial(channel.id, custom)),
+                listOf(PNChannelMembership.Partial(channel.id, membershipCustom)),
                 filter = "channel.id == '${channel.id}'",
                 includeCustom = true,
                 includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
@@ -749,7 +749,7 @@ class ChatImpl(
 
                             val customMap: Map<String, Any?> = buildMap {
                                 membership.custom?.let { putAll(it) }
-                                put("lastReadMessageTimetoken", relevantLastMessageTimeToken)
+                                put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, relevantLastMessageTimeToken)
                             }
 
                             PNChannelMembership.Partial(
@@ -866,6 +866,7 @@ class ChatImpl(
 
     private fun getTimetokenFromHistoryMessage(channelId: String, pnFetchMessagesResult: PNFetchMessagesResult): Long {
         // todo in TS there is encodeURIComponent(channelId) do we need this?
+        // created CLEN-2183 for PubNub SDK
         val relevantLastMessage: List<PNFetchMessageItem>? = pnFetchMessagesResult.channels[channelId]
         return relevantLastMessage?.firstOrNull()?.timetoken ?: 0
     }

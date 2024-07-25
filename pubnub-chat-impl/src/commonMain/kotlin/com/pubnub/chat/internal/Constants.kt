@@ -29,3 +29,9 @@ fun defaultGetMessageResponseBody(message: JsonElement): EventContent.TextMessag
             null
         } // todo log?
 }
+
+internal const val METADATA_MENTIONED_USERS = "mentionedUsers"
+internal const val METADATA_REFERENCED_CHANNELS = "referencedChannels"
+internal const val METADATA_QUOTED_MESSAGE = "quotedMessage"
+internal const val METADATA_TEXT_LINKS = "textLinks"
+internal const val METADATA_LAST_READ_MESSAGE_TIMETOKEN = "lastReadMessageTimetoken"
