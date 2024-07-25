@@ -42,8 +42,7 @@ sealed class EventContent {
 
     @Serializable
     @SerialName("invite")
-    class Invite(val channelType: ChannelType, val channel: String) : EventContent()
-    // channel should be channelId, but we can't change it not to break compatibility with existing Chat SDK
+    class Invite(val channelType: ChannelType, val channelId: String) : EventContent()
 
     @Serializable
     @SerialName("custom")

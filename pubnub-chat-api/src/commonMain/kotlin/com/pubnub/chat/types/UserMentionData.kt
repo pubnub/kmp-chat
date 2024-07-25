@@ -3,7 +3,7 @@ package com.pubnub.chat.types
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
 
-abstract class UserMentionData {
+sealed class UserMentionData {
     abstract val event: Event<EventContent.Mention>
     abstract val message: Message?
     abstract val userId: String
