@@ -53,7 +53,6 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_CHAN
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ID_IS_REQUIRED
-import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer
 import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runPeriodically
@@ -892,31 +891,26 @@ class ChatImpl(
                 .map { mentionEvent: Event<EventContent.Mention> ->
                     val mentionTimetoken = mentionEvent.payload.messageTimetoken
                     val mentionChannelId = mentionEvent.payload.channelId
-                    pubNub.fetchMessages(
-                        channels = listOf(mentionChannelId),
-                        page = PNBoundedPage(start = mentionTimetoken + 1, end = mentionTimetoken, limit = 1),
-                    ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
-                        val message: Message? = pnFetchMessagesResult.channels[mentionChannelId]?.firstOrNull()
-                            ?.let { pnFetchMessageItem: PNFetchMessageItem ->
-                                MessageImpl.fromDTO(this, pnFetchMessageItem, mentionChannelId)
+
+                    BaseChannel.getMessage(chat = this, channelId = mentionChannelId, timetoken = mentionTimetoken)
+                        .then { message: Message? ->
+                            if (mentionEvent.payload.parentChannelId == null) {
+                                UserMentionData(
+                                    event = mentionEvent,
+                                    message = message,
+                                    userId = mentionEvent.userId,
+                                    channelId = mentionChannelId
+                                )
+                            } else {
+                                UserMentionData(
+                                    event = mentionEvent,
+                                    message = message,
+                                    userId = mentionEvent.userId,
+                                    parentChannelId = mentionEvent.payload.parentChannelId,
+                                    threadChannelId = mentionEvent.payload.channelId
+                                )
                             }
-                        if (mentionEvent.payload.parentChannelId == null) {
-                            UserMentionData(
-                                event = mentionEvent,
-                                message = message,
-                                userId = mentionEvent.userId,
-                                channelId = mentionChannelId
-                            )
-                        } else {
-                            UserMentionData(
-                                event = mentionEvent,
-                                message = message,
-                                userId = mentionEvent.userId,
-                                parentChannelId = mentionEvent.payload.parentChannelId,
-                                threadChannelId = mentionEvent.payload.channelId
-                            )
                         }
-                    }
                 }.awaitAll()
         }.then { userMentionDataList: List<UserMentionData> ->
             GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList.toSet(), isMore = isMore)

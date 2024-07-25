@@ -29,8 +29,8 @@ data class ChannelImpl(
         updated = updated,
         status = status,
         type = type,
-        ::fromDTO,
-        MessageImpl::fromDTO
+        channelFactory = ::fromDTO,
+        messageFactory = MessageImpl::fromDTO
     ) {
     companion object {
         fun fromDTO(chat: ChatInternal, channel: PNChannelMetadata): Channel {
