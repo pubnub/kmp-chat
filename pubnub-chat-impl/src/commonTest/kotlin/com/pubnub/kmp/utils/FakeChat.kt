@@ -187,7 +187,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         channelDescription: String?,
         channelCustom: CustomObject?,
         channelStatus: String?,
-        custom: CustomObject?,
+        membershipCustom: CustomObject?,
     ): PNFuture<CreateGroupConversationResult> {
         TODO("Not yet implemented")
     }
