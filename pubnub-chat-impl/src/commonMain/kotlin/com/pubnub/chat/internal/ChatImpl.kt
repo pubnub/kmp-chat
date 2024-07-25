@@ -74,6 +74,8 @@ import com.pubnub.chat.types.GetCurrentUserMentionsResult
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.MessageActionType
 import com.pubnub.chat.types.UserMentionData
+import com.pubnub.chat.types.UserMentionDataInChannel
+import com.pubnub.chat.types.UserMentionDataInThreadChannel
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -890,24 +892,24 @@ class ChatImpl(
                 .filterIsInstance<Event<EventContent.Mention>>()
                 .map { mentionEvent: Event<EventContent.Mention> ->
                     val mentionTimetoken = mentionEvent.payload.messageTimetoken
-                    val mentionChannelId = mentionEvent.payload.channelId
+                    val mentionChannelId = mentionEvent.payload.channel
 
                     BaseChannel.getMessage(chat = this, channelId = mentionChannelId, timetoken = mentionTimetoken)
                         .then { message: Message? ->
-                            if (mentionEvent.payload.parentChannelId == null) {
-                                UserMentionData(
+                            if (mentionEvent.payload.parentChannel == null) {
+                                UserMentionDataInChannel(
                                     event = mentionEvent,
                                     message = message,
                                     userId = mentionEvent.userId,
                                     channelId = mentionChannelId
                                 )
                             } else {
-                                UserMentionData(
+                                UserMentionDataInThreadChannel(
                                     event = mentionEvent,
                                     message = message,
                                     userId = mentionEvent.userId,
-                                    parentChannelId = mentionEvent.payload.parentChannelId,
-                                    threadChannelId = mentionEvent.payload.channelId
+                                    parentChannelId = mentionEvent.payload.parentChannel,
+                                    threadChannelId = mentionEvent.payload.channel
                                 )
                             }
                         }

@@ -3,11 +3,26 @@ package com.pubnub.chat.types
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
 
-class UserMentionData(
-    val event: Event<EventContent.Mention>,
-    val message: Message?,
-    val userId: String,
-    val channelId: String? = null,
-    val parentChannelId: String? = null,
-    val threadChannelId: String? = null
-)
+abstract class UserMentionData {
+    abstract val event: Event<EventContent.Mention>
+    abstract val message: Message?
+    abstract val userId: String
+    open val channelId: String? = null
+    open val parentChannelId: String? = null
+    open val threadChannelId: String? = null
+}
+
+data class UserMentionDataInChannel(
+    override val event: Event<EventContent.Mention>,
+    override val message: Message?,
+    override val userId: String,
+    override val channelId: String?
+) : UserMentionData()
+
+class UserMentionDataInThreadChannel(
+    override val event: Event<EventContent.Mention>,
+    override val message: Message?,
+    override val userId: String,
+    override val parentChannelId: String?,
+    override val threadChannelId: String?
+) : UserMentionData()

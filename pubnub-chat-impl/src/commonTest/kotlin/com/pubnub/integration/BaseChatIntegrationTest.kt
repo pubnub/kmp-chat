@@ -20,7 +20,7 @@ import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
-internal const val CHANNEL_ID_OF_PARENT_MESSAGE_PREFIX = "channelId of parentMessage"
+internal const val CHANNEL_ID_OF_PARENT_MESSAGE_PREFIX = "channelIdOfParentMessage_"
 internal const val THREAD_CHANNEL_ID_PREFIX = "threadChannel_id_"
 
 abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
@@ -67,7 +67,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
                     text = "TextMessageContent",
                     files = listOf()
                 ),
-                channelId = "$CHANNEL_ID_OF_PARENT_MESSAGE_PREFIX ${randomString()}",
+                channelId = "$CHANNEL_ID_OF_PARENT_MESSAGE_PREFIX${randomString()}",
                 userId = "myUserId",
             ),
             chat = chat,

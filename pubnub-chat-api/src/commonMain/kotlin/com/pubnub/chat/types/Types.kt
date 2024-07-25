@@ -37,12 +37,13 @@ sealed class EventContent {
 
     @Serializable
     @SerialName("mention")
-    class Mention(val messageTimetoken: Long, val channelId: String, val parentChannelId: String? = null) : EventContent()
+    class Mention(val messageTimetoken: Long, val channel: String, val parentChannel: String? = null) : EventContent()
+    // channel should be channelId and parentChannel should be parentChannelId, but we can't change it not tt break compatibility with existing Chat SDK
 
     @Serializable
     @SerialName("invite")
-    class Invite(val channelType: ChannelType, val channel: String) :
-        EventContent() // channel should be channelId, but we can't change it not ot break compatibility with existing Chat SDK
+    class Invite(val channelType: ChannelType, val channel: String) : EventContent()
+    // channel should be channelId, but we can't change it not to break compatibility with existing Chat SDK
 
     @Serializable
     @SerialName("custom")
