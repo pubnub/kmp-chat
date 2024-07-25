@@ -19,12 +19,14 @@ import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
+import com.pubnub.chat.types.ChannelMentionData
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetCurrentUserMentionsResult
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageMentionedUsers
+import com.pubnub.chat.types.ThreadMentionData
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
@@ -430,14 +432,13 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val currentUserMentionsResult: GetCurrentUserMentionsResult = chat.getCurrentUserMentions().await()
 
         // then
+        val userMentionData = currentUserMentionsResult.enhancedMentionsData.first() as ChannelMentionData
         assertFalse(currentUserMentionsResult.isMore)
         assertEquals(1, currentUserMentionsResult.enhancedMentionsData.size)
-        assertEquals(userId, currentUserMentionsResult.enhancedMentionsData.first().userId)
-        assertEquals(channelId01, currentUserMentionsResult.enhancedMentionsData.first().channelId)
-        assertNull(currentUserMentionsResult.enhancedMentionsData.first().parentChannelId)
-        assertNull(currentUserMentionsResult.enhancedMentionsData.first().threadChannelId)
-        assertTrue(currentUserMentionsResult.enhancedMentionsData.first().event.payload is EventContent.Mention)
-        assertEquals(message, currentUserMentionsResult.enhancedMentionsData.first().message?.content?.text)
+        assertEquals(userId, userMentionData.userId)
+        assertEquals(channelId01, userMentionData.channelId)
+        assertTrue(userMentionData.event.payload is EventContent.Mention)
+        assertEquals(message, userMentionData.message?.content?.text)
 
         // remove messages
         chat.pubNub.deleteMessages(listOf(channelId01, userId))
@@ -460,9 +461,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         // then
         assertFalse(currentUserMentionsResult.isMore)
         assertEquals(1, currentUserMentionsResult.enhancedMentionsData.size)
-        val userMentionData = currentUserMentionsResult.enhancedMentionsData.first()
+        val userMentionData = currentUserMentionsResult.enhancedMentionsData.first() as ThreadMentionData
         assertEquals(userId, userMentionData.userId)
-        assertNull(userMentionData.channelId)
         assertEquals(true, userMentionData.parentChannelId?.contains(CHANNEL_ID_OF_PARENT_MESSAGE_PREFIX))
         assertEquals(true, userMentionData.threadChannelId?.contains(THREAD_CHANNEL_ID_PREFIX))
         assertTrue(userMentionData.event.payload is EventContent.Mention)

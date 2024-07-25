@@ -64,6 +64,7 @@ import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.restrictions.RestrictionType
+import com.pubnub.chat.types.ChannelMentionData
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.CreateDirectConversationResult
 import com.pubnub.chat.types.CreateGroupConversationResult
@@ -73,9 +74,8 @@ import com.pubnub.chat.types.GetChannelsResponse
 import com.pubnub.chat.types.GetCurrentUserMentionsResult
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.MessageActionType
+import com.pubnub.chat.types.ThreadMentionData
 import com.pubnub.chat.types.UserMentionData
-import com.pubnub.chat.types.UserMentionDataInChannel
-import com.pubnub.chat.types.UserMentionDataInThreadChannel
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -897,14 +897,14 @@ class ChatImpl(
                     BaseChannel.getMessage(chat = this, channelId = mentionChannelId, timetoken = mentionTimetoken)
                         .then { message: Message? ->
                             if (mentionEvent.payload.parentChannel == null) {
-                                UserMentionDataInChannel(
+                                ChannelMentionData(
                                     event = mentionEvent,
                                     message = message,
                                     userId = mentionEvent.userId,
                                     channelId = mentionChannelId
                                 )
                             } else {
-                                UserMentionDataInThreadChannel(
+                                ThreadMentionData(
                                     event = mentionEvent,
                                     message = message,
                                     userId = mentionEvent.userId,
