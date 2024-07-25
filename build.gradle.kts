@@ -1,3 +1,4 @@
+import com.pubnub.gradle.tasks.GenerateVersionTask
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
 import org.jetbrains.kotlin.gradle.targets.js.yarn.yarn
@@ -9,6 +10,7 @@ plugins {
     id("dev.mokkery") version "2.0.0"
     id("org.jetbrains.kotlin.plugin.atomicfu") version "2.0.0"
     id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
+    id("pubnub.dokka") apply false
 }
 
 group = "com.pubnub"
@@ -86,6 +88,13 @@ kotlin {
                 api(project(":pubnub-chat-impl"))
             }
         }
+
+        val jvmMain by getting {
+            dependencies {
+                implementation("com.pubnub:pubnub-core-impl:9.2-DEV")
+                implementation("com.pubnub:pubnub-kotlin-impl:9.2-DEV")
+            }
+        }
     }
 
     cocoapods {
@@ -131,3 +140,19 @@ kotlin {
 
 yarn.yarnLockMismatchReport = YarnLockMismatchReport.WARNING
 yarn.yarnLockAutoReplace = true
+
+
+val generateVersion =
+    tasks.register<GenerateVersionTask>("generateVersion") {
+        fileName.set("ChatVersion")
+        packageName.set("com.pubnub.chat.internal")
+        constName.set("PUBNUB_CHAT_VERSION")
+        version.set(providers.gradleProperty("VERSION_NAME"))
+        outputDirectory.set(
+            layout.buildDirectory.map {
+                it.dir("generated/sources/generateVersion")
+            },
+        )
+    }
+
+kotlin.sourceSets.getByName("commonMain").kotlin.srcDir(generateVersion)

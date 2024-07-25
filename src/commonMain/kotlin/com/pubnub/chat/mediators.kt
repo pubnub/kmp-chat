@@ -1,17 +1,9 @@
 package com.pubnub.chat
 
-import com.pubnub.chat.config.ChatConfiguration
-import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.message.BaseMessage
-import com.pubnub.kmp.PNFuture
-import com.pubnub.kmp.PubNub
-
-fun Chat.Companion.init(chatConfiguration: ChatConfiguration, pubnub: PubNub): PNFuture<Chat> {
-    return ChatImpl(chatConfiguration, pubnub).initialize()
-}
 
 fun Message.Companion.streamUpdatesOn(
     messages: Collection<Message>,
