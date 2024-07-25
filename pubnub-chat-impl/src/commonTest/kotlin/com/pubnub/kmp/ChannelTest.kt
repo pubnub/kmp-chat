@@ -311,7 +311,7 @@ class ChannelTest : BaseTest() {
         typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
         objectUnderTest.typingIndicators = typingIndicatorsForTest
 
-        objectUnderTest.removeExpiredTypingIndicators(now)
+        BaseChannel.removeExpiredTypingIndicators(objectUnderTest, now)
 
         assertFalse(objectUnderTest.typingIndicators.contains(user1))
         assertFalse(objectUnderTest.typingIndicators.contains(user2))
@@ -328,7 +328,7 @@ class ChannelTest : BaseTest() {
         typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
         objectUnderTest.typingIndicators = typingIndicatorsForTest
 
-        objectUnderTest.removeExpiredTypingIndicators(now)
+        BaseChannel.removeExpiredTypingIndicators(objectUnderTest, now)
 
         assertTrue(objectUnderTest.typingIndicators.contains(user1))
         assertTrue(objectUnderTest.typingIndicators.contains(user2))
@@ -341,7 +341,7 @@ class ChannelTest : BaseTest() {
         val isTyping = true
         objectUnderTest.typingIndicators = mutableMapOf()
 
-        objectUnderTest.updateUserTypingStatus(userId, isTyping, now)
+        BaseChannel.updateUserTypingStatus(userId, isTyping, now)
 
         assertTrue(objectUnderTest.typingIndicators.contains(userId))
     }
@@ -354,7 +354,7 @@ class ChannelTest : BaseTest() {
         val isTyping = false
         objectUnderTest.typingIndicators = mutableMapOf(userId to typingSent1)
 
-        objectUnderTest.updateUserTypingStatus(userId, isTyping, now)
+        BaseChannel.updateUserTypingStatus(userId, isTyping, now)
 
         assertFalse(objectUnderTest.typingIndicators.contains(userId))
     }
@@ -367,7 +367,7 @@ class ChannelTest : BaseTest() {
         val isTyping = true
         objectUnderTest.typingIndicators = mutableMapOf(userId to typingSent1)
 
-        objectUnderTest.updateUserTypingStatus(userId, isTyping, now)
+        BaseChannel.updateUserTypingStatus(userId, isTyping, now)
 
         assertTrue(objectUnderTest.typingIndicators.contains(userId))
         assertEquals(now, objectUnderTest.typingIndicators[userId])

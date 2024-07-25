@@ -50,6 +50,7 @@ import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runWithDelay
 import com.pubnub.chat.internal.util.getPhraseToLookFor
 import com.pubnub.chat.internal.utils.ExponentialRateLimiter
 import com.pubnub.chat.internal.uuidFilterString
@@ -85,6 +86,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import tryLong
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 internal const val CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS = "You cannot quote messages from other channels"
 
@@ -104,15 +106,14 @@ abstract class BaseChannel<C : Channel, M : Message>(
     private val suggestedMemberships = mutableMapOf<String, Set<Membership>>()
     private var disconnect: AutoCloseable? = null
     private var typingSent: Instant? = null
-    internal var typingIndicators = mutableMapOf<String, Instant>()
     private val sendTextRateLimiter by lazy {
         ExponentialRateLimiter(
             type?.let { typeNotNull -> chat.config.rateLimitPerChannel[typeNotNull] } ?: Duration.ZERO,
             chat.config.rateLimitFactor
         )
     }
-    private val typingIndicatorsLock = reentrantLock()
     private val channelFilterString get() = "channel.id == '${this.id}'"
+    private val typingTimeout get() = maxOf(chat.config.typingTimeout, MINIMAL_TYPING_INDICATOR_TIMEOUT)
 
     override fun update(
         name: String?,
@@ -142,7 +143,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         // todo currently in TypeScript there is "this.chat.config.typingTimeout - 1000". Typing timeout is actually 1sec shorter than this.chat.config.typingTimeout
         //  Writing TypeScript wrapper make sure to mimic this behaviour. In KMP the lowest possible value for this timeout is 1000(millis)
         typingSent?.let { typingSentNotNull: Instant ->
-            if (!timeoutElapsed(typingSentNotNull, now)) {
+            if (!timeoutElapsed(typingTimeout, typingSentNotNull, now)) {
                 return Unit.asFuture()
             }
         }
@@ -158,7 +159,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
         typingSent?.let { typingSentNotNull: Instant ->
             val now = clock.now()
-            if (timeoutElapsed(typingSentNotNull, now)) {
+            if (timeoutElapsed(typingTimeout, typingSentNotNull, now)) {
                 return Unit.asFuture()
             }
         } ?: return Unit.asFuture()
@@ -170,6 +171,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
     // todo we need to periodically cull the typing indicators that expire
     // now that we have the runPeriodically function
     override fun getTyping(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable {
+        val typingIndicators = mutableMapOf<String, Instant>()
+        val typingIndicatorsLock = reentrantLock()
         if (type == ChannelType.PUBLIC) {
             throw PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS)
         }
@@ -182,9 +185,17 @@ abstract class BaseChannel<C : Channel, M : Message>(
             val userId = event.userId
             val isTyping = event.payload.value
 
+            if (isTyping) {
+                runWithDelay(typingTimeout + 10.milliseconds) { // +10ms just to make sure the timeout expires
+                    typingIndicatorsLock.withLock {
+                        removeExpiredTypingIndicators(typingTimeout, typingIndicators, now)
+                    }
+                }
+            }
+
             typingIndicatorsLock.withLock {
-                updateUserTypingStatus(userId, isTyping, now)
-                removeExpiredTypingIndicators(now)
+                updateUserTypingStatus(userId, isTyping, now, typingIndicators)
+                removeExpiredTypingIndicators(typingTimeout, typingIndicators, now)
                 typingIndicators.keys.toList()
             }.also { typingIndicatorsList ->
                 callback(typingIndicatorsList)
@@ -661,10 +672,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
-    private fun timeoutElapsed(lastTypingSent: Instant, now: Instant): Boolean {
-        return lastTypingSent < now - maxOf(chat.config.typingTimeout, MINIMAL_TYPING_INDICATOR_TIMEOUT)
-    }
-
     private fun sendTypingSignal(value: Boolean): PNFuture<Unit> {
         return chat.emitEvent(
             channelId = this.id,
@@ -674,30 +681,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     internal fun setTypingSent(value: Instant) {
         typingSent = value
-    }
-
-    internal fun updateUserTypingStatus(userId: String, isTyping: Boolean, now: Instant) {
-        if (typingIndicators[userId] != null) {
-            if (isTyping) {
-                typingIndicators[userId] = now
-            } else {
-                typingIndicators.remove(userId)
-            }
-        } else {
-            if (isTyping) {
-                typingIndicators[userId] = now
-            }
-        }
-    }
-
-    internal fun removeExpiredTypingIndicators(now: Instant) {
-        val iterator = typingIndicators.entries.iterator()
-        while (iterator.hasNext()) {
-            val entry = iterator.next()
-            if (timeoutElapsed(entry.value, now)) {
-                iterator.remove()
-            }
-        }
     }
 
     internal abstract fun copyWithStatusDeleted(): C
@@ -788,6 +771,32 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     list += it.key
                 }
             }
+        }
+
+        internal fun updateUserTypingStatus(userId: String, isTyping: Boolean, now: Instant, userLastTyped: MutableMap<String, Instant>) {
+            if (isTyping) {
+                userLastTyped[userId] = now
+            } else {
+                userLastTyped.remove(userId)
+            }
+        }
+
+        internal fun removeExpiredTypingIndicators(
+            timeout: Duration,
+            userLastTyped: MutableMap<String, Instant>,
+            now: Instant
+        ) {
+            val iterator = userLastTyped.entries.iterator()
+            while (iterator.hasNext()) {
+                val entry = iterator.next()
+                if (timeoutElapsed(timeout, entry.value, now)) {
+                    iterator.remove()
+                }
+            }
+        }
+
+        private fun timeoutElapsed(timeout: Duration, lastTypingSent: Instant, now: Instant): Boolean {
+            return lastTypingSent < now - timeout
         }
     }
 }
