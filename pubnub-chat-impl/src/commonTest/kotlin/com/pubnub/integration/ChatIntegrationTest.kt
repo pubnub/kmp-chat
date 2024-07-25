@@ -19,10 +19,14 @@ import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
+import com.pubnub.chat.types.ChannelMentionData
 import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.GetCurrentUserMentionsResult
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUser
+import com.pubnub.chat.types.MessageMentionedUsers
+import com.pubnub.chat.types.ThreadMentionData
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
@@ -34,6 +38,7 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -410,6 +415,61 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // remove messages
         chat.pubNub.deleteMessages(listOf(channelId01)).await()
+    }
+
+    @Test
+    fun can_getCurrentUserMentions_userWasMentionedInChannel() = runTest {
+        val channelId01 = channel01.id
+        val userId = someUser.id
+        val message = "myMessage_${randomString()}"
+        val messageMentionedUser = MessageMentionedUser(id = userId, name = someUser.name ?: "userName")
+        val messageMentionedUsers: MessageMentionedUsers = mapOf(1 to messageMentionedUser)
+
+        // send messages with user mentions
+        channel01.sendText(text = message, mentionedUsers = messageMentionedUsers).await()
+
+        // when
+        val currentUserMentionsResult: GetCurrentUserMentionsResult = chat.getCurrentUserMentions().await()
+
+        // then
+        val userMentionData = currentUserMentionsResult.enhancedMentionsData.first() as ChannelMentionData
+        assertFalse(currentUserMentionsResult.isMore)
+        assertEquals(1, currentUserMentionsResult.enhancedMentionsData.size)
+        assertEquals(userId, userMentionData.userId)
+        assertEquals(channelId01, userMentionData.channelId)
+        assertTrue(userMentionData.event.payload is EventContent.Mention)
+        assertEquals(message, userMentionData.message?.content?.text)
+
+        // remove messages
+        chat.pubNub.deleteMessages(listOf(channelId01, userId))
+    }
+
+    @Test
+    fun can_getCurrentUserMentions_userWasMentionedInThreadChannel() = runTest {
+        val channelId01 = channel01.id
+        val userId = someUser.id
+        val message = "myMessage_${randomString()}"
+        val messageMentionedUser = MessageMentionedUser(id = userId, name = someUser.name ?: "userName")
+        val messageMentionedUsers: MessageMentionedUsers = mapOf(1 to messageMentionedUser)
+
+        // send messages with user mentions
+        threadChannel.sendText(text = message, mentionedUsers = messageMentionedUsers).await()
+        delayInMillis(1500)
+        // when
+        val currentUserMentionsResult: GetCurrentUserMentionsResult = chat.getCurrentUserMentions().await()
+
+        // then
+        assertFalse(currentUserMentionsResult.isMore)
+        assertEquals(1, currentUserMentionsResult.enhancedMentionsData.size)
+        val userMentionData = currentUserMentionsResult.enhancedMentionsData.first() as ThreadMentionData
+        assertEquals(userId, userMentionData.userId)
+        assertEquals(true, userMentionData.parentChannelId?.contains(CHANNEL_ID_OF_PARENT_MESSAGE_PREFIX))
+        assertEquals(true, userMentionData.threadChannelId?.contains(THREAD_CHANNEL_ID_PREFIX))
+        assertTrue(userMentionData.event.payload is EventContent.Mention)
+        assertEquals(message, userMentionData.message?.content?.text)
+
+        // remove messages
+        chat.pubNub.deleteMessages(listOf(channelId01, userId))
     }
 
     private suspend fun assertPushChannels(expectedNumberOfChannels: Int) {

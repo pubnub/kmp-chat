@@ -43,13 +43,16 @@ import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.channel.ThreadChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_ID_IS_REQUIRED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_META_DATA_IS_EMPTY
+import com.pubnub.chat.internal.error.PubNubErrorMessage.COUNT_SHOULD_NOT_EXCEED_100
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_CHANNEL_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_USER_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_FORWARD_MESSAGE
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_CHANNEL_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
+import com.pubnub.chat.internal.error.PubNubErrorMessage.ID_IS_REQUIRED
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer
 import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runPeriodically
@@ -61,14 +64,18 @@ import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.restrictions.RestrictionType
+import com.pubnub.chat.types.ChannelMentionData
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.CreateDirectConversationResult
 import com.pubnub.chat.types.CreateGroupConversationResult
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetChannelsResponse
+import com.pubnub.chat.types.GetCurrentUserMentionsResult
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.MessageActionType
+import com.pubnub.chat.types.ThreadMentionData
+import com.pubnub.chat.types.UserMentionData
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -864,7 +871,58 @@ class ChatImpl(
         }
     }
 
-    private fun getTimetokenFromHistoryMessage(channelId: String, pnFetchMessagesResult: PNFetchMessagesResult): Long {
+    override fun getCurrentUserMentions(
+        startTimetoken: Long?,
+        endTimetoken: Long?,
+        count: Int
+    ): PNFuture<GetCurrentUserMentionsResult> {
+        if (count > 100) {
+            return PubNubException(COUNT_SHOULD_NOT_EXCEED_100).asFuture()
+        }
+        var isMore = false
+
+        return getEventsHistory(
+            channelId = currentUser.id,
+            startTimetoken = startTimetoken,
+            endTimetoken = endTimetoken,
+            count = count
+        ).thenAsync { getEventsHistoryResult: GetEventsHistoryResult ->
+            isMore = getEventsHistoryResult.isMore
+            getEventsHistoryResult.events
+                .filterIsInstance<Event<EventContent.Mention>>()
+                .map { mentionEvent: Event<EventContent.Mention> ->
+                    val mentionTimetoken = mentionEvent.payload.messageTimetoken
+                    val mentionChannelId = mentionEvent.payload.channel
+
+                    BaseChannel.getMessage(chat = this, channelId = mentionChannelId, timetoken = mentionTimetoken)
+                        .then { message: Message? ->
+                            if (mentionEvent.payload.parentChannel == null) {
+                                ChannelMentionData(
+                                    event = mentionEvent,
+                                    message = message,
+                                    userId = mentionEvent.userId,
+                                    channelId = mentionChannelId
+                                )
+                            } else {
+                                ThreadMentionData(
+                                    event = mentionEvent,
+                                    message = message,
+                                    userId = mentionEvent.userId,
+                                    parentChannelId = mentionEvent.payload.parentChannel.orEmpty(),
+                                    threadChannelId = mentionEvent.payload.channel
+                                )
+                            }
+                        }
+                }.awaitAll()
+        }.then { userMentionDataList: List<UserMentionData> ->
+            GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList.toSet(), isMore = isMore)
+        }
+    }
+
+    private fun getTimetokenFromHistoryMessage(
+        channelId: String,
+        pnFetchMessagesResult: PNFetchMessagesResult
+    ): Long {
         // todo in TS there is encodeURIComponent(channelId) do we need this?
         // created CLEN-2183 for PubNub SDK
         val relevantLastMessage: List<PNFetchMessageItem>? = pnFetchMessagesResult.channels[channelId]
@@ -912,7 +970,8 @@ class ChatImpl(
         }
     }
 
-    private fun performUserDelete(user: User): PNFuture<User> = pubNub.removeUUIDMetadata(uuid = user.id).then { user }
+    private fun performUserDelete(user: User): PNFuture<User> =
+        pubNub.removeUUIDMetadata(uuid = user.id).then { user }
 
     private fun performSoftChannelDelete(channel: Channel): PNFuture<Channel> {
         val updatedChannel = (channel as BaseChannel<*, *>).copyWithStatusDeleted()

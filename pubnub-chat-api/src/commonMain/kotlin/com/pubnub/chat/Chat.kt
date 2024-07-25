@@ -17,6 +17,7 @@ import com.pubnub.chat.types.CreateGroupConversationResult
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetChannelsResponse
+import com.pubnub.chat.types.GetCurrentUserMentionsResult
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
@@ -181,6 +182,12 @@ interface Chat {
         endTimetoken: Long? = null,
         count: Int = 100
     ): PNFuture<GetEventsHistoryResult>
+
+    fun getCurrentUserMentions(
+        startTimetoken: Long? = null,
+        endTimetoken: Long? = null,
+        count: Int = 100
+    ): PNFuture<GetCurrentUserMentionsResult>
 
     // Companion object required for extending this class elsewhere
     companion object

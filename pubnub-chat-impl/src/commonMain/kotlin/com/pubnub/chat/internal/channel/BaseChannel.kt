@@ -222,21 +222,14 @@ abstract class BaseChannel<C : Channel, M : Message>(
         endTimetoken: Long?,
         count: Int,
     ): PNFuture<HistoryResponse<M>> {
-        return chat.pubNub.fetchMessages(
-            listOf(id),
-            PNBoundedPage(startTimetoken, endTimetoken, count),
-            includeMessageActions = true,
-            includeMeta = true
-        ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
-            HistoryResponse(
-                pnFetchMessagesResult.channels[id]?.map { messageItem: PNFetchMessageItem ->
-                    messageFactory(chat, messageItem, id)
-                } ?: error("Unable to read messages"),
-                pnFetchMessagesResult.channels[id]?.size == count
-            )
-        }.catch {
-            Result.failure(PubNubException(FAILED_TO_RETRIEVE_HISTORY_DATA, it))
-        }
+        return getHistory(
+            chat = chat,
+            channelId = id,
+            messageFactory = messageFactory,
+            startTimetoken = startTimetoken,
+            endTimetoken = endTimetoken,
+            count = count
+        )
     }
 
     override fun sendText(
@@ -477,10 +470,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun getMessage(timetoken: Long): PNFuture<Message?> {
-        val previousTimetoken = timetoken + 1
-        return getHistory(previousTimetoken, timetoken).then {
-            it.messages.firstOrNull()
-        }
+        return getMessage(chat = chat, channelId = id, timetoken = timetoken)
     }
 
     override fun registerForPush() = chat.registerPushChannels(listOf(id))
@@ -660,7 +650,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
-    private fun emitUserMention(
+    open fun emitUserMention(
         userId: String,
         timetoken: Long,
         text: String,
@@ -686,6 +676,45 @@ abstract class BaseChannel<C : Channel, M : Message>(
     internal abstract fun copyWithStatusDeleted(): C
 
     companion object {
+        fun <M : Message> getHistory(
+            chat: ChatInternal,
+            channelId: String,
+            messageFactory: (ChatInternal, PNFetchMessageItem, channelId: String) -> M,
+            startTimetoken: Long?,
+            endTimetoken: Long?,
+            count: Int,
+        ): PNFuture<HistoryResponse<M>> {
+            return chat.pubNub.fetchMessages(
+                listOf(channelId),
+                PNBoundedPage(startTimetoken, endTimetoken, count),
+                includeMessageActions = true,
+                includeMeta = true
+            ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
+                HistoryResponse(
+                    messages = pnFetchMessagesResult.channels[channelId]?.map { messageItem: PNFetchMessageItem ->
+                        messageFactory(chat, messageItem, channelId)
+                    } ?: error("Unable to read messages"),
+                    isMore = pnFetchMessagesResult.channels[channelId]?.size == count
+                )
+            }.catch {
+                Result.failure(PubNubException(FAILED_TO_RETRIEVE_HISTORY_DATA, it))
+            }
+        }
+
+        fun getMessage(chat: ChatInternal, channelId: String, timetoken: Long): PNFuture<Message?> {
+            val previousTimetoken = timetoken + 1
+            return getHistory(
+                chat = chat,
+                channelId = channelId,
+                messageFactory = MessageImpl::fromDTO,
+                startTimetoken = previousTimetoken,
+                endTimetoken = timetoken,
+                count = 1
+            ).then {
+                it.messages.firstOrNull()
+            }
+        }
+
         fun streamUpdatesOn(
             channels: Collection<Channel>,
             callback: (channels: Collection<Channel>) -> Unit
@@ -714,7 +743,11 @@ abstract class BaseChannel<C : Channel, M : Message>(
             return subscriptionSet
         }
 
-        internal fun getPushPayload(baseChannel: BaseChannel<*, *>, text: String, pushConfig: PushNotificationsConfig): Map<String, Any> {
+        internal fun getPushPayload(
+            baseChannel: BaseChannel<*, *>,
+            text: String,
+            pushConfig: PushNotificationsConfig
+        ): Map<String, Any> {
             val apnsTopic = pushConfig.apnsTopic
             val apnsEnv = pushConfig.apnsEnvironment
             if (!pushConfig.sendPushes) {
