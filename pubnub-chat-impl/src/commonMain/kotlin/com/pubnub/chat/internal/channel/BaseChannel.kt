@@ -33,6 +33,7 @@ import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl.Companion.pinMessageToChannel
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
+import com.pubnub.chat.internal.METADATA_LAST_READ_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.METADATA_MENTIONED_USERS
 import com.pubnub.chat.internal.METADATA_QUOTED_MESSAGE
 import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
@@ -542,7 +543,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         val timetokensPerUser = mutableMapOf<String, Long>()
         val future = getMembers().then { members -> // todo what about paging? maybe not needed in non-public chats...
             members.members.forEach { m ->
-                val lastTimetoken = m.custom?.get("lastReadMessageTimetoken")?.tryLong()
+                val lastTimetoken = m.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN)?.tryLong()
                 if (lastTimetoken != null) {
                     timetokensPerUser[m.user.id] = lastTimetoken
                 }

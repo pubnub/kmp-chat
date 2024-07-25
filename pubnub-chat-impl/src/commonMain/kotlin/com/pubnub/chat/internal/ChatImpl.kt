@@ -749,7 +749,7 @@ class ChatImpl(
 
                             val customMap: Map<String, Any?> = buildMap {
                                 membership.custom?.let { putAll(it) }
-                                put("lastReadMessageTimetoken", relevantLastMessageTimeToken)
+                                put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, relevantLastMessageTimeToken)
                             }
 
                             PNChannelMembership.Partial(
@@ -866,6 +866,7 @@ class ChatImpl(
 
     private fun getTimetokenFromHistoryMessage(channelId: String, pnFetchMessagesResult: PNFetchMessagesResult): Long {
         // todo in TS there is encodeURIComponent(channelId) do we need this?
+        // created CLEN-2183 for PubNub SDK
         val relevantLastMessage: List<PNFetchMessageItem>? = pnFetchMessagesResult.channels[channelId]
         return relevantLastMessage?.firstOrNull()?.timetoken ?: 0
     }

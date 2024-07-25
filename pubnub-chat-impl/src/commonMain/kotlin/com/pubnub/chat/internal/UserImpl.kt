@@ -219,8 +219,6 @@ data class UserImpl(
 
     companion object {
         internal fun fromDTO(chat: ChatInternal, user: PNUUIDMetadata): User = UserImpl(
-            // todo chat already has user (chat.config.uuid or  chat.config.pubnubConfig.userId)
-            // consider creating new chat that has "user.id" in chat.config.uuid and chat.config.pubnubConfig.userId ?
             chat,
             id = user.id,
             name = user.name,
