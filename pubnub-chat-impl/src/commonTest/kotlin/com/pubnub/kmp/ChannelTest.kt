@@ -309,12 +309,10 @@ class ChannelTest : BaseTest() {
         val user2 = "user2"
         typingIndicatorsForTest[user1] = typingSent1
         typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
-        objectUnderTest.typingIndicators = typingIndicatorsForTest
+        BaseChannel.removeExpiredTypingIndicators(objectUnderTest.chat.config.typingTimeout, typingIndicatorsForTest, now)
 
-        BaseChannel.removeExpiredTypingIndicators(objectUnderTest, now)
-
-        assertFalse(objectUnderTest.typingIndicators.contains(user1))
-        assertFalse(objectUnderTest.typingIndicators.contains(user2))
+        assertFalse(typingIndicatorsForTest.contains(user1))
+        assertFalse(typingIndicatorsForTest.contains(user2))
     }
 
     @Test
@@ -326,12 +324,11 @@ class ChannelTest : BaseTest() {
         val user2 = "user2"
         typingIndicatorsForTest[user1] = typingSent1
         typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
-        objectUnderTest.typingIndicators = typingIndicatorsForTest
 
-        BaseChannel.removeExpiredTypingIndicators(objectUnderTest, now)
+        BaseChannel.removeExpiredTypingIndicators(objectUnderTest.chat.config.typingTimeout, typingIndicatorsForTest, now)
 
-        assertTrue(objectUnderTest.typingIndicators.contains(user1))
-        assertTrue(objectUnderTest.typingIndicators.contains(user2))
+        assertTrue(typingIndicatorsForTest.contains(user1))
+        assertTrue(typingIndicatorsForTest.contains(user2))
     }
 
     @Test
@@ -339,11 +336,11 @@ class ChannelTest : BaseTest() {
         val now: Instant = Instant.fromEpochMilliseconds(1234567890000)
         val userId = "user1"
         val isTyping = true
-        objectUnderTest.typingIndicators = mutableMapOf()
+        val typingIndicators = mutableMapOf<String, Instant>()
 
-        BaseChannel.updateUserTypingStatus(userId, isTyping, now)
+        BaseChannel.updateUserTypingStatus(userId, isTyping, now, typingIndicators)
 
-        assertTrue(objectUnderTest.typingIndicators.contains(userId))
+        assertTrue(typingIndicators.contains(userId))
     }
 
     @Test
@@ -352,11 +349,11 @@ class ChannelTest : BaseTest() {
         val now = typingSent1.plus(50.milliseconds)
         val userId = "user1"
         val isTyping = false
-        objectUnderTest.typingIndicators = mutableMapOf(userId to typingSent1)
+        val typingIndicators = mutableMapOf(userId to typingSent1)
 
-        BaseChannel.updateUserTypingStatus(userId, isTyping, now)
+        BaseChannel.updateUserTypingStatus(userId, isTyping, now, typingIndicators)
 
-        assertFalse(objectUnderTest.typingIndicators.contains(userId))
+        assertFalse(typingIndicators.contains(userId))
     }
 
     @Test
@@ -365,12 +362,12 @@ class ChannelTest : BaseTest() {
         val now = typingSent1.plus(50.milliseconds)
         val userId = "user1"
         val isTyping = true
-        objectUnderTest.typingIndicators = mutableMapOf(userId to typingSent1)
+        val typingIndicators = mutableMapOf(userId to typingSent1)
 
-        BaseChannel.updateUserTypingStatus(userId, isTyping, now)
+        BaseChannel.updateUserTypingStatus(userId, isTyping, now, typingIndicators)
 
-        assertTrue(objectUnderTest.typingIndicators.contains(userId))
-        assertEquals(now, objectUnderTest.typingIndicators[userId])
+        assertTrue(typingIndicators.contains(userId))
+        assertEquals(now, typingIndicators[userId])
     }
 
     private fun createMessage(): Message {
