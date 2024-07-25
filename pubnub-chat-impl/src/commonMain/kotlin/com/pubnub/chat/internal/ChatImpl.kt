@@ -908,7 +908,7 @@ class ChatImpl(
                                     event = mentionEvent,
                                     message = message,
                                     userId = mentionEvent.userId,
-                                    parentChannelId = mentionEvent.payload.parentChannel,
+                                    parentChannelId = mentionEvent.payload.parentChannel.orEmpty(),
                                     threadChannelId = mentionEvent.payload.channel
                                 )
                             }

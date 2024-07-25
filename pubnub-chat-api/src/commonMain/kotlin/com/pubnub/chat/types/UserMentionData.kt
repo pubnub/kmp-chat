@@ -14,7 +14,7 @@ class ChannelMentionData(
     override val event: Event<EventContent.Mention>,
     override val message: Message?,
     override val userId: String,
-    val channelId: String?
+    val channelId: String
 ) : UserMentionData()
 
 // UserMentionDataInThreadChannel
@@ -22,6 +22,6 @@ class ThreadMentionData(
     override val event: Event<EventContent.Mention>,
     override val message: Message?,
     override val userId: String,
-    val parentChannelId: String?,
-    val threadChannelId: String?
+    val parentChannelId: String,
+    val threadChannelId: String
 ) : UserMentionData()
