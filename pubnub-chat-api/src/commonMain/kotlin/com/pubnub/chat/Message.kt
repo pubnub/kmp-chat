@@ -11,6 +11,7 @@ import com.pubnub.chat.types.QuotedMessage
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.PNFuture
 
+// todo do we have tests for methods in this class?
 interface Message {
     val chat: Chat
     val timetoken: Long
@@ -42,6 +43,7 @@ interface Message {
 
     fun pin(): PNFuture<Channel>
 
+    // todo do we have test for this?
     fun report(reason: String): PNFuture<PNPublishResult>
 
     fun createThread(): PNFuture<ThreadChannel>

@@ -4,15 +4,20 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.Chat
+import com.pubnub.chat.Event
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.INTERNAL_ADMIN_CHANNEL
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.chat.types.EventContent
 import com.pubnub.test.await
 import com.pubnub.test.test
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -143,7 +148,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun calling_active_should_throw_exception_when_storeUserActivityTimestamps_is_false() = runTest {
+    fun calling_active_should_throw_exception_when_storeUserActivityTimestamps_is_false() = runTest(timeout = defaultTimeout) {
         val e = assertFailsWith<PubNubException> {
             someUser.active().await()
         }
@@ -155,7 +160,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun whenUserDoesNotExist_init_should_create_it_with_lastActiveTimestamp() = runTest {
+    fun whenUserDoesNotExist_init_should_create_it_with_lastActiveTimestamp() = runTest(timeout = defaultTimeout) {
         // set up storeUserActivityTimestamps
         val chatConfig = ChatConfiguration(
             storeUserActivityTimestamps = true
@@ -171,7 +176,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun whenUserExists_init_should_update_lastActiveTimestamp() = runTest {
+    fun whenUserExists_init_should_update_lastActiveTimestamp() = runTest(timeout = defaultTimeout) {
         // set up storeUserActivityTimestamps
         val chatConfig = ChatConfiguration(
             storeUserActivityTimestamps = true
@@ -188,5 +193,35 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
 
         // then
         assertTrue(isUserActive)
+    }
+
+    @Test
+    fun adminCanSubscribeToInternalChannelAndGetReportedUserEvent() = runTest(timeout = defaultTimeout) {
+        val reason = "rude"
+        val assertionErrorInListener01 = CompletableDeferred<AssertionError?>()
+        val removeListenerAndUnsubscribe: AutoCloseable = chat.listenForEvents<EventContent.Report>(
+            channelId = INTERNAL_ADMIN_CHANNEL,
+            callback = { event: Event<EventContent.Report> ->
+                try {
+                    // we need to have try/catch here because assertion error will not cause test to fail
+                    assertEquals(reason, event.payload.reason)
+                    assertEquals(someUser.id, event.payload.reportedUserId)
+                    assertEquals(INTERNAL_ADMIN_CHANNEL, event.channelId)
+                    assertionErrorInListener01.complete(null)
+                } catch (e: AssertionError) {
+                    assertionErrorInListener01.complete(e)
+                }
+            }
+        )
+        delayInMillis(150)
+
+        // when
+        someUser.report(reason).await()
+
+        // then
+        assertionErrorInListener01.await()?.let { throw it }
+
+        // cleanup
+        removeListenerAndUnsubscribe.close()
     }
 }
