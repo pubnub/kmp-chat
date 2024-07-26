@@ -168,8 +168,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return sendTypingSignal(false)
     }
 
-    // todo we need to periodically cull the typing indicators that expire
-    // now that we have the runPeriodically function
     override fun getTyping(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable {
         val typingIndicators = mutableMapOf<String, Instant>()
         val typingIndicatorsLock = reentrantLock()
@@ -189,6 +187,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 runWithDelay(typingTimeout + 10.milliseconds) { // +10ms just to make sure the timeout expires
                     typingIndicatorsLock.withLock {
                         removeExpiredTypingIndicators(typingTimeout, typingIndicators, now)
+                        typingIndicators.keys.toList()
+                    }.also { typingIndicatorsList ->
+                        callback(typingIndicatorsList)
                     }
                 }
             }
