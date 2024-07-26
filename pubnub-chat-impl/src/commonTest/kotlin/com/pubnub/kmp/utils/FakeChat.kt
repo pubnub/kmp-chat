@@ -22,6 +22,7 @@ import com.pubnub.chat.types.CreateGroupConversationResult
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetChannelsResponse
+import com.pubnub.chat.types.GetCurrentUserMentionsResult
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
@@ -39,6 +40,14 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         endTimetoken: Long?,
         count: Int
     ): PNFuture<GetEventsHistoryResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getCurrentUserMentions(
+        startTimetoken: Long?,
+        endTimetoken: Long?,
+        count: Int
+    ): PNFuture<GetCurrentUserMentionsResult> {
         TODO("Not yet implemented")
     }
 

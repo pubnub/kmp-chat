@@ -3,6 +3,7 @@ package com.pubnub.chat
 import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.kmp.PNFuture
 
+// todo add unit and integTests
 interface ThreadChannel : Channel {
     val parentMessage: Message
     val parentChannelId: String
