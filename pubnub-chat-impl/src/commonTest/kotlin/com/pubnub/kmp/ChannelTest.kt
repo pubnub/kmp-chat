@@ -97,18 +97,17 @@ class ChannelTest : BaseTest() {
 
     @Test
     fun canUpdateChannel() {
-        every { chat.updateChannel(any(), any(), any(), any(), any(), any(), any()) } returns objectUnderTest.asFuture()
+        every { chat.updateChannel(any(), any(), any(), any(), any(), any()) } returns objectUnderTest.asFuture()
 
         objectUnderTest.update(
             name = name,
             custom = custom,
             description = description,
-            updated = updated,
             status = status,
             type = type,
         ).async {}
 
-        verify { chat.updateChannel(channelId, name, custom, description, updated, status, type) }
+        verify { chat.updateChannel(channelId, name, custom, description, status, type) }
     }
 
     @Test
@@ -747,11 +746,11 @@ class ChannelTest : BaseTest() {
 
     @Test
     fun update_calls_chat() {
-        every { chat.updateChannel(any(), any(), any(), any(), any(), any(), any()) } returns mock()
+        every { chat.updateChannel(any(), any(), any(), any(), any(), any()) } returns mock()
 
-        objectUnderTest.update(name, custom, description, updated, status, type)
+        objectUnderTest.update(name, custom, description, status, type)
 
-        verify { chat.updateChannel(channelId, name, custom, description, updated, status, type) }
+        verify { chat.updateChannel(channelId, name, custom, description, status, type) }
     }
 }
 

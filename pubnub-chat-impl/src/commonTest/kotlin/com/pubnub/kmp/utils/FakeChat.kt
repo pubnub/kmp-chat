@@ -140,7 +140,6 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         name: String?,
         custom: CustomObject?,
         description: String?,
-        updated: String?,
         status: String?,
         type: ChannelType?,
     ): PNFuture<Channel> {
