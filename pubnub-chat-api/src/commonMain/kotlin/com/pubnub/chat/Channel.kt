@@ -35,7 +35,6 @@ interface Channel {
         name: String? = null,
         custom: CustomObject? = null,
         description: String? = null,
-        updated: String? = null,
         status: String? = null,
         type: ChannelType? = null,
     ): PNFuture<Channel>

@@ -119,11 +119,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
         name: String?,
         custom: CustomObject?,
         description: String?,
-        updated: String?,
         status: String?,
         type: ChannelType?,
     ): PNFuture<Channel> {
-        return chat.updateChannel(id, name, custom, description, updated, status, type)
+        return chat.updateChannel(id, name, custom, description, status, type)
     }
 
     override fun delete(soft: Boolean): PNFuture<Channel> {

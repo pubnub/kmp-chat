@@ -379,7 +379,6 @@ class ChatImpl(
         name: String?,
         custom: CustomObject?,
         description: String?,
-        updated: String?,
         status: String?,
         type: ChannelType?
     ): PNFuture<Channel> {
