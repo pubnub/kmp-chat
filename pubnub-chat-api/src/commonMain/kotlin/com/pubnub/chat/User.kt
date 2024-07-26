@@ -1,5 +1,6 @@
 package com.pubnub.chat
 
+import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
@@ -63,6 +64,8 @@ interface User {
     fun streamUpdates(callback: (user: User?) -> Unit): AutoCloseable
 
     fun active(): PNFuture<Boolean>
+
+    fun report(reason: String): PNFuture<PNPublishResult>
 
     companion object
 }

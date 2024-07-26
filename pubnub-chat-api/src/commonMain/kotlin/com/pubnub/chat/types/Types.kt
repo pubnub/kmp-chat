@@ -24,10 +24,10 @@ sealed class EventContent {
     @Serializable
     @SerialName("report")
     class Report(
-        val text: String?,
+        val text: String? = null,
         val reason: String,
-        val reportedMessageTimetoken: Long?,
-        val reportedMessageChannelId: String?,
+        val reportedMessageTimetoken: Long? = null,
+        val reportedMessageChannelId: String? = null,
         val reportedUserId: String?,
     ) : EventContent()
 
