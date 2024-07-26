@@ -75,7 +75,7 @@ public abstract interface class com/pubnub/chat/Chat {
 	public abstract fun getCurrentUser ()Lcom/pubnub/chat/User;
 	public abstract fun getCurrentUserMentions (Ljava/lang/Long;Ljava/lang/Long;I)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getEventsHistory (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;I)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun getPubNub ()Lcom/pubnub/kmp/PubNub;
+	public abstract fun getPubNub ()Lcom/pubnub/api/PubNub;
 	public abstract fun getPushChannels ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getThreadChannel (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getUnreadMessagesCounts (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
