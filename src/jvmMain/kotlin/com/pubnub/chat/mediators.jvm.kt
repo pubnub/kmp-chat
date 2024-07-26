@@ -10,7 +10,7 @@ import com.pubnub.kmp.PNFuture
 fun Chat.Companion.init(chatConfiguration: ChatConfiguration, pubnubConfiguration: PNConfiguration): PNFuture<Chat> {
     val builder = PNConfigurationImpl.Builder(pubnubConfiguration)
     builder.pnsdkSuffixes = pubnubConfiguration.pnsdkSuffixes.toMutableMap().apply {
-        put("chat-sdk", "Chat-JVM/$PUBNUB_CHAT_VERSION")
+        put("chat-sdk", "CA-JVM/$PUBNUB_CHAT_VERSION")
     }
     return ChatImpl(chatConfiguration, com.pubnub.api.PubNub.create(builder.build())).initialize()
 }
