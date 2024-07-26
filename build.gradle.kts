@@ -11,6 +11,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.atomicfu") version "2.0.0"
     id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
     id("pubnub.dokka") apply false
+
+    id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.16.2"
 }
 
 group = "com.pubnub"
@@ -155,3 +157,7 @@ val generateVersion =
     }
 
 kotlin.sourceSets.getByName("commonMain").kotlin.srcDir(generateVersion)
+
+apiValidation {
+    ignoredProjects += "pubnub-chat-impl"
+}

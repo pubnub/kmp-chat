@@ -1,0 +1,44 @@
+name: Tests
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    name: Integration and Unit tests
+    runs-on:
+      group: Default
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Checkout actions
+        uses: actions/checkout@v4
+        with:
+          repository: pubnub/client-engineering-deployment-tools
+          ref: v1
+          token: ${{ secrets.GH_TOKEN }}
+          path: .github/.release/actions
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Build and run tests
+        run: |
+          ./gradlew check
+      - name: Cancel workflow runs for commit on error
+        if: failure()
+        uses: ./.github/.release/actions/actions/utils/fast-jobs-failure
+  all-tests:
+    name: Tests
+    needs: [tests]
+    runs-on:
+      group: Default
+    steps:
+      - name: Tests summary
+        run: echo -e "\033[38;2;95;215;0m\033[1mAll tests successfully passed"
