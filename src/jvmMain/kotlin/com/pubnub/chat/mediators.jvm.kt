@@ -16,13 +16,3 @@ fun Chat.Companion.init(chatConfiguration: ChatConfiguration, pubnubConfiguratio
     }
     return ChatImpl(chatConfiguration, com.pubnub.api.PubNub.create(builder.build())).initialize()
 }
-
-fun main() {
-    val pnConfiguration = PNConfiguration.builder(UserId("demo"), "demo").apply {
-        logVerbosity = PNLogVerbosity.BODY
-        publishKey = "demo"
-    }.build()
-    Chat.init(ChatConfiguration(),pnConfiguration).async {
-
-    }
-}
