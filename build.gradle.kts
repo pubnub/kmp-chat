@@ -141,7 +141,6 @@ kotlin {
 yarn.yarnLockMismatchReport = YarnLockMismatchReport.WARNING
 yarn.yarnLockAutoReplace = true
 
-
 val generateVersion =
     tasks.register<GenerateVersionTask>("generateVersion") {
         fileName.set("ChatVersion")

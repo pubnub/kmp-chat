@@ -1,7 +1,5 @@
 package com.pubnub.chat
 
-import com.pubnub.api.UserId
-import com.pubnub.api.enums.PNLogVerbosity
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatImpl
