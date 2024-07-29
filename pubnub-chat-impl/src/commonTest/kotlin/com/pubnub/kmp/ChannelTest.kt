@@ -1,5 +1,6 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.endpoints.FetchMessages

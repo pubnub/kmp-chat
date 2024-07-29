@@ -6,7 +6,6 @@ plugins {
     kotlin("plugin.serialization") version "2.0.0"
     id("org.jetbrains.kotlin.plugin.atomicfu") version "2.0.0"
     id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
-    id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.16.0"
 }
 
 group = "com.pubnub"

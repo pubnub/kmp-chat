@@ -1,0 +1,9 @@
+{
+  "gradle.properties": [
+    {
+      "pattern": "^VERSION_NAME=(v?(\\d+\\.?){2,}([a-zA-Z0-9-]+(\\.?\\d+)?)?)$",
+      "clearedPrefix": true,
+      "clearedSuffix": false
+    }
+  ]
+}

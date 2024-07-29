@@ -1,6 +1,7 @@
 package com.pubnub.kmp
 
 import com.benasher44.uuid.uuid4
+import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.endpoints.FetchMessages
@@ -1068,7 +1069,7 @@ class ChatTest : BaseTest() {
         val startTimetoken = 123L
         val endTimetoken = 456L
         val count = 2
-        every { pubnub.fetchMessages(any(), any(), any(), any(), any(), any()) } returns fetchMessages
+        every { pubnub.fetchMessages(any(), any<PNBoundedPage>(), any(), any(), any(), any()) } returns fetchMessages
         every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
             callback.accept(
                 Result.success(
@@ -1117,7 +1118,7 @@ class ChatTest : BaseTest() {
         val user2 = "myUser2"
         val startTimetoken = 123L
         val endTimetoken = 456L
-        every { pubnub.fetchMessages(any(), any(), any(), any(), any(), any()) } returns fetchMessages
+        every { pubnub.fetchMessages(any(), any<PNBoundedPage>(), any(), any(), any(), any()) } returns fetchMessages
         every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
             callback.accept(
                 Result.success(

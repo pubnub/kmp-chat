@@ -1,0 +1,1 @@
+./gradlew publishToSonatype closeSonatypeStagingRepository

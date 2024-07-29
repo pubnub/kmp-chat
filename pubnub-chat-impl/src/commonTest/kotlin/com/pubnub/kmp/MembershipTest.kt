@@ -1,5 +1,6 @@
 package com.pubnub.kmp
 
+import com.pubnub.api.PubNub
 import com.pubnub.api.endpoints.MessageCounts
 import com.pubnub.api.models.consumer.history.PNMessageCountResult
 import com.pubnub.api.v2.callbacks.Consumer

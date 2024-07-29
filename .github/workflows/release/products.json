@@ -1,0 +1,8 @@
+{
+  "chat": {
+    "path": "./",
+    "name": "JVM Chat SDK",
+    "main": true,
+    "overrideRelease": true
+  }
+}

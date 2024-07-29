@@ -1,6 +1,7 @@
 package com.pubnub.chat.internal
 
 import com.benasher44.uuid.uuid4
+import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNBoundedPage
@@ -79,7 +80,6 @@ import com.pubnub.chat.types.UserMentionData
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
-import com.pubnub.kmp.PubNub
 import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll

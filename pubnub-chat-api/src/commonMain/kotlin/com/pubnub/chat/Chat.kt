@@ -1,5 +1,6 @@
 package com.pubnub.chat
 
+import com.pubnub.api.PubNub
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
@@ -22,7 +23,6 @@ import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
-import com.pubnub.kmp.PubNub
 import kotlin.reflect.KClass
 
 interface Chat {
