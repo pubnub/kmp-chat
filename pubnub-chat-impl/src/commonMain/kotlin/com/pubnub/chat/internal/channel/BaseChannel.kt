@@ -51,6 +51,7 @@ import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runWithDelay
+import com.pubnub.chat.internal.util.channelsUrlDecoded
 import com.pubnub.chat.internal.util.getPhraseToLookFor
 import com.pubnub.chat.internal.utils.ExponentialRateLimiter
 import com.pubnub.chat.internal.uuidFilterString
@@ -691,10 +692,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 includeMeta = true
             ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
                 HistoryResponse(
-                    messages = pnFetchMessagesResult.channels[channelId]?.map { messageItem: PNFetchMessageItem ->
+                    messages = pnFetchMessagesResult.channelsUrlDecoded[channelId]?.map { messageItem: PNFetchMessageItem ->
                         messageFactory(chat, messageItem, channelId)
                     } ?: error("Unable to read messages"),
-                    isMore = pnFetchMessagesResult.channels[channelId]?.size == count
+                    isMore = pnFetchMessagesResult.channelsUrlDecoded[channelId]?.size == count
                 )
             }.catch {
                 Result.failure(PubNubException(FAILED_TO_RETRIEVE_HISTORY_DATA, it))
