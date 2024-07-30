@@ -1,5 +1,6 @@
 package com.pubnub.chat.internal.util
 
+import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 
 internal fun getPhraseToLookFor(text: String, separator: String): String? {
@@ -19,6 +20,6 @@ internal fun getPhraseToLookFor(text: String, separator: String): String? {
     return splitWords.joinToString(" ")
 }
 
-expect fun urlDecode(encoded: String): String
+internal expect fun urlDecode(encoded: String): String
 
-internal val PNFetchMessagesResult.channelsUrlDecoded get() = channels.mapKeys { urlDecode(it.key) }
+internal val PNFetchMessagesResult.channelsUrlDecoded: Map<String, List<PNFetchMessageItem>> get() = channels.mapKeys { urlDecode(it.key) }
