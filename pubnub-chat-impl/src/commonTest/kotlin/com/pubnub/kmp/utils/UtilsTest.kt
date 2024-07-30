@@ -43,4 +43,12 @@ class UtilsTest {
         val result = getPhraseToLookFor(phraseWithTwoWordsAfterHash, "#")
         assertEquals("$firstWord $secondWord", result)
     }
+
+    @Test
+    fun urlDecode() {
+        val input = "a_-%3D%40.%21%24%23%25%26%5E%3B"
+        val expected = "a_-=@.!\$#%&^;"
+
+        assertEquals(expected, com.pubnub.chat.internal.util.urlDecode(input))
+    }
 }

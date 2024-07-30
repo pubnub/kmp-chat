@@ -58,6 +58,7 @@ import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer
 import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runPeriodically
 import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runWithDelay
+import com.pubnub.chat.internal.util.channelsUrlDecoded
 import com.pubnub.chat.internal.util.getPhraseToLookFor
 import com.pubnub.chat.internal.utils.cyrb53a
 import com.pubnub.chat.membership.MembershipsResponse
@@ -858,7 +859,7 @@ class ChatImpl(
             includeMessageActions = false,
             includeMessageType = true
         ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
-            val pnFetchMessageItems: List<PNFetchMessageItem> = pnFetchMessagesResult.channels[channelId] ?: emptyList()
+            val pnFetchMessageItems: List<PNFetchMessageItem> = pnFetchMessagesResult.channelsUrlDecoded[channelId] ?: emptyList()
             val events: Set<Event<EventContent>> =
                 pnFetchMessageItems.map { pnFetchMessageItem: PNFetchMessageItem ->
                     EventImpl.fromDTO(chat = this, channelId = channelId, pnFetchMessageItem = pnFetchMessageItem)
@@ -922,9 +923,7 @@ class ChatImpl(
         channelId: String,
         pnFetchMessagesResult: PNFetchMessagesResult
     ): Long {
-        // todo in TS there is encodeURIComponent(channelId) do we need this?
-        // created CLEN-2183 for PubNub SDK
-        val relevantLastMessage: List<PNFetchMessageItem>? = pnFetchMessagesResult.channels[channelId]
+        val relevantLastMessage: List<PNFetchMessageItem>? = pnFetchMessagesResult.channelsUrlDecoded[channelId]
         return relevantLastMessage?.firstOrNull()?.timetoken ?: 0
     }
 

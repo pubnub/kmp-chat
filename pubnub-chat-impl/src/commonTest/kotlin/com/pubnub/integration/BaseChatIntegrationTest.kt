@@ -41,7 +41,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
         chatPam = ChatImpl(ChatConfiguration(), pubnubPam)
         channel01 = ChannelImpl(
             chat = chat,
-            id = randomString(),
+            id = randomString() + "!_=-@",
             name = randomString(),
             custom = mapOf(randomString() to randomString()),
             description = randomString(),
@@ -51,7 +51,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
         )
         channel02 = ChannelImpl(
             chat = chat,
-            id = randomString(),
+            id = randomString() + "!_=-@",
             name = randomString(),
             custom = mapOf(randomString() to randomString()),
             description = randomString(),
@@ -81,7 +81,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
         )
         channelPam = ChannelImpl(
             chat = chatPam,
-            id = randomString(),
+            id = randomString() + "!_=-@",
             name = randomString(),
             custom = mapOf(randomString() to randomString()),
             description = randomString(),
