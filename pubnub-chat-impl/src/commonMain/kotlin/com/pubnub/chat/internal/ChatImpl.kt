@@ -574,7 +574,9 @@ class ChatImpl(
         callback: (event: Event<T>) -> Unit
     ): AutoCloseable {
         val handler = fun(_: PubNub, pnEvent: PNEvent) {
-            if (pnEvent.channel != channelId) return
+            if (pnEvent.channel != channelId) {
+                return
+            }
             val message = (pnEvent as? MessageResult)?.message ?: return
             val eventContent: EventContent = PNDataEncoder.decode<EventContent>(message)
 
@@ -593,8 +595,16 @@ class ChatImpl(
         val method = type.getEmitMethod() ?: customMethod
         val listener = createEventListener(
             pubNub,
-            onMessage = if (method == EmitEventMethod.PUBLISH) handler else { _, _ -> },
-            onSignal = if (method == EmitEventMethod.SIGNAL) handler else { _, _ -> },
+            onMessage = if (method == EmitEventMethod.PUBLISH) {
+                handler
+            } else {
+                { _, _ -> }
+            },
+            onSignal = if (method == EmitEventMethod.SIGNAL) {
+                handler
+            } else {
+                { _, _ -> }
+            },
         )
         val channelEntity = pubNub.channel(channelId)
         val subscription = channelEntity.subscription()
@@ -637,7 +647,11 @@ class ChatImpl(
                             channelId = userId,
                             payload = EventContent.Moderation(
                                 channelId = channel,
-                                restriction = if (restriction.ban) RestrictionType.BAN else RestrictionType.MUTE,
+                                restriction = if (restriction.ban) {
+                                    RestrictionType.BAN
+                                } else {
+                                    RestrictionType.MUTE
+                                },
                                 reason = restriction.reason
                             ),
                         )

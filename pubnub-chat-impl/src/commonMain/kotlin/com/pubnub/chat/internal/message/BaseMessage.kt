@@ -236,7 +236,9 @@ abstract class BaseMessage<T : Message>(
             val listener = createEventListener(chat.pubNub, onMessageAction = { _, event ->
                 val message =
                     latestMessages.find { it.timetoken == event.messageAction.messageTimetoken } ?: return@createEventListener
-                if (message.channelId != event.channel) return@createEventListener
+                if (message.channelId != event.channel) {
+                    return@createEventListener
+                }
                 val actions = if (event.event == "added") {
                     assignAction(
                         message.actions,

@@ -1,7 +1,3 @@
-import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
-import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
-import org.jetbrains.kotlin.gradle.targets.js.yarn.yarn
-
 plugins {
     kotlin("multiplatform") version "2.0.0"
     kotlin("plugin.serialization") version "2.0.0"
