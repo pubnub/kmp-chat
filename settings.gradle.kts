@@ -22,5 +22,7 @@ includeBuild("pubnub-kotlin") {
     name = "pubnub"
 }
 
+includeBuild("pubnub-kotlin/build-logic/ktlint-custom-rules")
+
 include(":pubnub-chat-api")
 include(":pubnub-chat-impl")

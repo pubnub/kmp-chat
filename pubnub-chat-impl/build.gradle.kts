@@ -9,12 +9,11 @@ plugins {
     id("dev.mokkery") version "2.0.0"
     id("org.jetbrains.kotlin.plugin.atomicfu") version "2.0.0"
     id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
-
     id("pubnub.ios-simulator-test")
+    id("pubnub.shared")
+    id("pubnub.dokka")
+    id("pubnub.multiplatform")
 }
-
-group = "com.pubnub"
-version = "1.0-SNAPSHOT"
 
 ktlint {
     outputToConsole.set(true)
@@ -38,43 +37,6 @@ ktlint {
 }
 
 kotlin {
-    jvmToolchain(8)
-    js {
-        useEsModules()
-//        browser {
-//            testTask {
-// //                useMocha {
-// //                    timeout = "30s"
-// //                }
-//                useKarma {
-//                    useChrome()
-//                }
-//            }
-//        }
-        nodejs {
-            testTask {
-                useMocha {
-                    timeout = "20s"
-                }
-            }
-        }
-    }
-    jvm()
-
-    listOf(
-//        iosArm64(),
-        iosSimulatorArm64(),
-    ).forEach {
-//        it.binaries {
-//            framework {
-//                baseName = "PubNubChat"
-//                isStatic = true
-//            }
-//        }
-    }
-
-    applyDefaultHierarchyTemplate()
-
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -102,14 +64,6 @@ kotlin {
             }
         }
 
-        val nonJvm by creating {
-            dependsOn(commonMain)
-        }
-
-        val jsMain by getting {
-            dependsOn(nonJvm)
-        }
-
         val jsTest by getting {
             dependencies {
                 implementation(kotlin("test-js"))
@@ -117,99 +71,8 @@ kotlin {
         }
     }
 
-//    cocoapods {
-//        ios.deploymentTarget = "14"
-//
-//        // Required properties
-//        // Specify the required Pod version here. Otherwise, the Gradle project version is used.
-//        version = "1.0"
-//        summary = "Some description for a Kotlin/Native module"
-//        homepage = "Link to a Kotlin/Native module homepage"
-//
-//        // Optional properties
-//        // Configure the Pod name here instead of changing the Gradle project name
-//        name = "PubNubChat"
-//
-//        // Maps custom Xcode configuration to NativeBuildType
-//        xcodeConfigurationToNativeBuildType["CUSTOM_DEBUG"] = NativeBuildType.DEBUG
-//        xcodeConfigurationToNativeBuildType["CUSTOM_RELEASE"] = NativeBuildType.RELEASE
-//
-//        podfile = project.file(project.file("Sample Chat app/Podfile"))
-//
-//        framework {
-//            // Required properties
-//            // Framework name configuration. Use this property instead of deprecated 'frameworkName'
-//            baseName = "PubNubChat"
-//
-//            // Optional properties
-//            // Specify the framework linking type. It's dynamic by default.
-//            isStatic = true
-//        }
-//
-//        pod("PubNubSwift") {
-//            source = git("https://github.com/pubnub/swift") {
-//                branch = "feat/kmp"
-//            }
-// //            headers = "PubNub/PubNub.h"
-// //            source = path(project.file("swift"))
-// //            version = "7.1.0"
-//
-//            moduleName = "PubNub"
-//            extraOpts += listOf("-compiler-option", "-fmodules")
-//        }
-//
-// //        pod("PubNubSwift") {
-// ////            headers = "PubNub/PubNub.h"
-// //            source = git("https://github.com/pubnub/objective-c") {
-// //                branch = "feat/kmp"
-// //            }
-// ////            source = path(project.file("swift"))
-// //
-// ////            version = "7.1.0"
-// ////            version = "5.3.0"
-// //            moduleName = "PubNub"
-// //            extraOpts += listOf("-compiler-option", "-fmodules")
-// //        }
-//    }
-}
-
-yarn.yarnLockMismatchReport = YarnLockMismatchReport.WARNING
-yarn.yarnLockAutoReplace = true
-
-kotlin.cocoapods {
-    ios.deploymentTarget = "14"
-
-    // Required properties
-    // Specify the required Pod version here. Otherwise, the Gradle project version is used.
-    version = "1.0"
-    summary = "Some description for a Kotlin/Native module"
-    homepage = "Link to a Kotlin/Native module homepage"
-
-    // Maps custom Xcode configuration to NativeBuildType
-    xcodeConfigurationToNativeBuildType["CUSTOM_DEBUG"] = NativeBuildType.DEBUG
-    xcodeConfigurationToNativeBuildType["CUSTOM_RELEASE"] = NativeBuildType.RELEASE
-
-//        podfile = project.file(project.file("Sample Chat app/Podfile"))
-
-    framework {
-        // Required properties
-        // Framework name configuration. Use this property instead of deprecated 'frameworkName'
-
-        // Optional properties
-        // Specify the framework linking type. It's dynamic by default.
-        isStatic = true
-        transitiveExport = true
-    }
-
-    pod("PubNubSwift") {
-//                        source = git("https://github.com/pubnub/swift") {
-//                            branch = "feat/kmp"
-//                        }
-//            headers = "PubNub/PubNub.h"
-        source = path(rootProject.file("pubnub-kotlin/swift"))
-//            version = "7.1.0"
-
-        moduleName = "PubNub"
-        extraOpts += listOf("-compiler-option", "-fmodules")
+    cocoapods {
+        summary = "Some description for a Kotlin/Native module"
+        homepage = "Link to a Kotlin/Native module homepage"
     }
 }
