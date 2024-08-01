@@ -19,6 +19,7 @@ import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
 import com.pubnub.chat.internal.METADATA_TEXT_LINKS
 import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
@@ -34,6 +35,7 @@ import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import kotlinx.serialization.ExperimentalSerializationApi
+import org.lighthousegames.logging.logging
 import tryInt
 
 typealias Actions = Map<String, Map<String, List<PNFetchMessageItem.Action>>>
@@ -224,12 +226,15 @@ abstract class BaseMessage<T : Message>(
     }
 
     companion object {
+        private val log = logging()
+
         fun <T : Message> streamUpdatesOn(
             messages: Collection<T>,
             callback: (messages: Collection<T>) -> Unit,
         ): AutoCloseable {
             if (messages.isEmpty()) {
-                throw PubNubException("Cannot stream message updates on an empty list")
+                log.error { "Error in stopTyping: $CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST" }
+                throw PubNubException(CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST)
             }
             var latestMessages = messages
             val chat = messages.first().chat

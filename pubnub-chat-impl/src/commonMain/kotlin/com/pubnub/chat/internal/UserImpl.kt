@@ -16,7 +16,12 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.Membership
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.error.PubNubErrorMessage
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_USER_UPDATES_ON_EMPTY_LIST
+import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
+import com.pubnub.chat.internal.error.PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_IS_FALSE
+import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_ID_MUST_BE_DEFINED
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
+import com.pubnub.chat.internal.restrictions.RestrictionImpl.Companion
 import com.pubnub.chat.membership.IncludeParameters
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
@@ -30,6 +35,7 @@ import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import org.lighthousegames.logging.logging
 import tryLong
 
 data class UserImpl(
@@ -110,7 +116,8 @@ data class UserImpl(
 
     override fun setRestrictions(channel: Channel, ban: Boolean, mute: Boolean, reason: String?): PNFuture<Unit> {
         if (chat.pubNub.configuration.secretKey.isEmpty()) {
-            throw PubNubException(PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY)
+            log.error { "Error in setRestrictions: $MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY" }
+            throw PubNubException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY)
         }
         return chat.setRestrictions(
             Restriction(
@@ -165,7 +172,8 @@ data class UserImpl(
 
     override fun active(): PNFuture<Boolean> {
         if (!chat.config.storeUserActivityTimestamps) {
-            throw PubNubException(PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_IS_FALSE)
+            log.error { "Error in active: $STORE_USER_ACTIVITY_INTERVAL_IS_FALSE" }
+            throw PubNubException(STORE_USER_ACTIVITY_INTERVAL_IS_FALSE)
         }
         return (
             lastActiveTimestamp?.let { lastActiveTimestampNonNull ->
@@ -229,6 +237,8 @@ data class UserImpl(
     }
 
     companion object {
+        private val log = logging()
+
         internal fun fromDTO(chat: ChatInternal, user: PNUUIDMetadata): User = UserImpl(
             chat,
             id = user.id,
@@ -245,7 +255,8 @@ data class UserImpl(
 
         fun streamUpdatesOn(users: Collection<User>, callback: (users: Collection<User>) -> Unit): AutoCloseable {
             if (users.isEmpty()) {
-                throw PubNubException("Cannot stream user updates on an empty list")
+                log.error { "Error in user streamUpdatesOn: $CAN_NOT_STREAM_USER_UPDATES_ON_EMPTY_LIST" }
+                throw PubNubException(CAN_NOT_STREAM_USER_UPDATES_ON_EMPTY_LIST)
             }
             var latestUsers = users
             val chat = users.first().chat as ChatInternal

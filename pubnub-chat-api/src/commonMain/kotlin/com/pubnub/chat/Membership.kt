@@ -12,14 +12,17 @@ interface Membership {
     val eTag: String?
     val lastReadMessageTimetoken: Long?
 
+    // todo do we want to have test for this?
     fun setLastReadMessage(message: Message): PNFuture<Membership>
 
     fun update(custom: CustomObject): PNFuture<Membership>
 
+    // todo do we have test for this?
     fun setLastReadMessageTimetoken(timetoken: Long): PNFuture<Membership>
 
     fun getUnreadMessagesCount(): PNFuture<Long?>
 
+    // todo do we have test for this?
     fun streamUpdates(callback: (membership: Membership?) -> Unit): AutoCloseable
 
     companion object

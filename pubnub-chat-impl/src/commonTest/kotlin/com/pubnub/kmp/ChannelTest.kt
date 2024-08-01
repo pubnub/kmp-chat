@@ -138,11 +138,12 @@ class ChannelTest : BaseTest() {
     @Test
     fun whenChannelIsPublicStartTypingShouldResultFailure() {
         objectUnderTest = createChannel(ChannelType.PUBLIC)
-        objectUnderTest.startTyping().async { result ->
-            // then
-            assertTrue(result.isFailure)
-            assertEquals("Typing indicators are not supported in Public chats.", result.exceptionOrNull()?.message)
+
+        val e = assertFailsWith<PubNubException> {
+            objectUnderTest.startTyping()
         }
+
+        assertEquals("Typing indicators are not supported in Public chats.", e.message)
     }
 
     @Test
@@ -309,7 +310,11 @@ class ChannelTest : BaseTest() {
         val user2 = "user2"
         typingIndicatorsForTest[user1] = typingSent1
         typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
-        BaseChannel.removeExpiredTypingIndicators(objectUnderTest.chat.config.typingTimeout, typingIndicatorsForTest, now)
+        BaseChannel.removeExpiredTypingIndicators(
+            objectUnderTest.chat.config.typingTimeout,
+            typingIndicatorsForTest,
+            now
+        )
 
         assertFalse(typingIndicatorsForTest.contains(user1))
         assertFalse(typingIndicatorsForTest.contains(user2))
@@ -325,7 +330,11 @@ class ChannelTest : BaseTest() {
         typingIndicatorsForTest[user1] = typingSent1
         typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
 
-        BaseChannel.removeExpiredTypingIndicators(objectUnderTest.chat.config.typingTimeout, typingIndicatorsForTest, now)
+        BaseChannel.removeExpiredTypingIndicators(
+            objectUnderTest.chat.config.typingTimeout,
+            typingIndicatorsForTest,
+            now
+        )
 
         assertTrue(typingIndicatorsForTest.contains(user1))
         assertTrue(typingIndicatorsForTest.contains(user2))

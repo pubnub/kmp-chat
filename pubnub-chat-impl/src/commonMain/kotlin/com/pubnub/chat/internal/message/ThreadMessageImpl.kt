@@ -10,6 +10,7 @@ import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageMentionedUsers
@@ -94,7 +95,7 @@ data class ThreadMessageImpl(
     private fun pinOrUnpinFromParentChannel(message: ThreadMessage?): PNFuture<Channel> {
         return chat.getChannel(parentChannelId).thenAsync { parentChannel ->
             if (parentChannel == null) {
-                error("Parent channel doesn't exist")
+                error(PARENT_CHANNEL_DOES_NOT_EXISTS)
             }
             ChatImpl.pinMessageToChannel(chat.pubNub, message, parentChannel).then {
                 ChannelImpl.fromDTO(chat, it.data!!)
