@@ -463,8 +463,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(1, currentUserMentionsResult.enhancedMentionsData.size)
         val userMentionData = currentUserMentionsResult.enhancedMentionsData.first() as ThreadMentionData
         assertEquals(userId, userMentionData.userId)
-        assertEquals(true, userMentionData.parentChannelId?.contains(CHANNEL_ID_OF_PARENT_MESSAGE_PREFIX))
-        assertEquals(true, userMentionData.threadChannelId?.contains(THREAD_CHANNEL_ID_PREFIX))
+        assertEquals(true, userMentionData.parentChannelId.contains(CHANNEL_ID_OF_PARENT_MESSAGE_PREFIX))
+        assertEquals(true, userMentionData.threadChannelId.contains(THREAD_CHANNEL_ID_PREFIX))
         assertTrue(userMentionData.event.payload is EventContent.Mention)
         assertEquals(message, userMentionData.message?.content?.text)
 

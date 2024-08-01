@@ -1,13 +1,16 @@
+import com.pubnub.gradle.enableAnyIosTarget
 import com.pubnub.gradle.tasks.GenerateVersionTask
+import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension
 
 plugins {
-    kotlin("multiplatform") version "2.0.0"
-    kotlin("plugin.serialization") version "2.0.0"
-    kotlin("native.cocoapods") version "2.0.0"
+    kotlin("multiplatform") version "2.0.0" apply false
+    kotlin("plugin.serialization") version "2.0.0" apply false
+    kotlin("native.cocoapods") version "2.0.0" apply false
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.0" apply false
     id("org.jetbrains.kotlin.plugin.atomicfu") version "2.0.0"
-    id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
-    id("com.vanniktech.maven.publish") version "0.29.0"
-    id("org.jetbrains.dokka") version "1.9.20"
+    id("com.vanniktech.maven.publish") version "0.29.0" apply false
+    id("org.jetbrains.dokka") version "1.9.20" apply false
+
     id("pubnub.shared")
     id("pubnub.dokka")
     id("pubnub.multiplatform")
@@ -23,9 +26,11 @@ kotlin {
             }
         }
 
-        val iosMain by getting {
-            dependencies {
-                api(project(":pubnub-chat-impl"))
+        if (enableAnyIosTarget) {
+            val iosMain by getting {
+                dependencies {
+                    api(project(":pubnub-chat-impl"))
+                }
             }
         }
 
@@ -37,15 +42,16 @@ kotlin {
         }
     }
 
-    cocoapods {
+    if (enableAnyIosTarget) {
+        (this as ExtensionAware).extensions.configure<CocoapodsExtension> {
+            summary = "Some description for a Kotlin/Native module"
+            homepage = "Link to a Kotlin/Native module homepage"
 
-        summary = "Some description for a Kotlin/Native module"
-        homepage = "Link to a Kotlin/Native module homepage"
-
-        framework {
-            baseName = "PubNubChat"
-            export(project(":pubnub-chat-api"))
-            export(project(":pubnub-chat-impl"))
+            framework {
+                baseName = "PubNubChat"
+                export(project(":pubnub-chat-api"))
+                export(project(":pubnub-chat-impl"))
+            }
         }
     }
 }
