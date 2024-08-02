@@ -2,6 +2,8 @@ package com.pubnub.integration
 
 import com.pubnub.chat.Membership
 import com.pubnub.chat.internal.MembershipImpl
+import com.pubnub.chat.internal.message.MessageImpl
+import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.test
@@ -64,6 +66,50 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
             dispose?.close()
         }
         assertEquals(expectedUpdates, actualUpdates)
+    }
+
+    @Test
+    fun setLastReadMessageTimetoken() = runTest {
+        val timetoken = 1000L
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let {
+                createCustomObject(it)
+            },
+            channel01.type,
+            channel01.status
+        ).await()
+        delayInMillis(1000)
+        val membership1 = channel01.join().await().membership
+
+        val membershipUpdated = membership1.setLastReadMessageTimetoken(timetoken).await()
+
+        assertEquals(timetoken, membershipUpdated.lastReadMessageTimetoken)
+    }
+
+    @Test
+    fun setLastReadMessage() = runTest {
+        val timetoken = 1000L
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let {
+                createCustomObject(it)
+            },
+            channel01.type,
+            channel01.status
+        ).await()
+        delayInMillis(1000)
+        val membership1 = channel01.join().await().membership
+
+        val membershipUpdated = membership1.setLastReadMessage(
+            MessageImpl(chat, timetoken, EventContent.TextMessageContent("abc"), channelId = channel01.id, userId = someUser.id)
+        ).await()
+
+        assertEquals(timetoken, membershipUpdated.lastReadMessageTimetoken)
     }
 }
 
