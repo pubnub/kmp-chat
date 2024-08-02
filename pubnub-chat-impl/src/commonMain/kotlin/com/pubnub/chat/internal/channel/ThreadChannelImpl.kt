@@ -12,6 +12,7 @@ import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.message.ThreadMessageImpl
+import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.InputFile
@@ -65,8 +66,7 @@ data class ThreadChannelImpl(
     private fun pinOrUnpinMessageFromParentChannel(message: ThreadMessage?): PNFuture<Channel> {
         return chat.getChannel(parentChannelId).thenAsync { parentChannel ->
             if (parentChannel == null) {
-                log.error { "Error in pinOrUnpinMessageFromParentChannel: $PARENT_CHANNEL_DOES_NOT_EXISTS" }
-                error(PARENT_CHANNEL_DOES_NOT_EXISTS)
+                log.pnError(PARENT_CHANNEL_DOES_NOT_EXISTS)
             }
             ChatImpl.pinMessageToChannel(chat.pubNub, message, parentChannel).then {
                 ChannelImpl.fromDTO(chat, it.data!!)

@@ -89,7 +89,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             chat.updateUser(someUser.id, name = randomString()).await()
         }
 
-        assertEquals(PubNubErrorMessage.USER_NOT_EXIST, e.cause?.message)
+        assertEquals(PubNubErrorMessage.USER_NOT_EXIST, e.message)
     }
 
     @Test

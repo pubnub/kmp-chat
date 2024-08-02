@@ -21,6 +21,7 @@ import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.chat.types.MessageMentionedUsers
@@ -233,8 +234,7 @@ abstract class BaseMessage<T : Message>(
             callback: (messages: Collection<T>) -> Unit,
         ): AutoCloseable {
             if (messages.isEmpty()) {
-                log.error { "Error in stopTyping: $CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST" }
-                throw PubNubException(CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST)
+                log.pnError(CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST)
             }
             var latestMessages = messages
             val chat = messages.first().chat

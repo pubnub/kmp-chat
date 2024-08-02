@@ -14,6 +14,7 @@ import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.NO_SUCH_MEMBERSHIP_EXISTS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.RECEIPT_EVENT_WAS_NOT_SENT_TO_CHANNEL
+import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.AccessManager
 import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.CustomObject
@@ -47,8 +48,7 @@ data class MembershipImpl(
     override fun update(custom: CustomObject): PNFuture<Membership> {
         return exists().thenAsync { exists ->
             if (!exists) {
-                log.error { "Error in membership update: $NO_SUCH_MEMBERSHIP_EXISTS" }
-                throw PubNubException(NO_SUCH_MEMBERSHIP_EXISTS)
+                log.pnError(NO_SUCH_MEMBERSHIP_EXISTS)
             }
             chat.pubNub.setMemberships(
                 uuid = user.id,
@@ -116,8 +116,7 @@ data class MembershipImpl(
             callback: (memberships: Collection<Membership>) -> Unit,
         ): AutoCloseable {
             if (memberships.isEmpty()) {
-                log.error { "Error in membership streamUpdatesOn: $CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST" }
-                throw PubNubException(CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST)
+                log.pnError(CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST)
             }
             var latestMemberships = memberships
             val chat = memberships.first().chat as ChatInternal

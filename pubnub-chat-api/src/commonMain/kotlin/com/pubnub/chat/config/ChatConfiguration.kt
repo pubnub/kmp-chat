@@ -3,7 +3,6 @@ package com.pubnub.chat.config
 import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.chat.types.ChannelType
-import org.lighthousegames.logging.LogLevel
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
@@ -20,7 +19,7 @@ interface ChatConfiguration {
 }
 
 fun ChatConfiguration(
-    logLevel: LogLevel = LogLevel.Off, // todo document all levels including "Off"
+    logLevel: LogLevel = LogLevel.OFF, // todo document all levels including "Off"
     typingTimeout: Duration = 5.seconds,
     storeUserActivityInterval: Duration = 60.seconds,
     storeUserActivityTimestamps: Boolean = false,

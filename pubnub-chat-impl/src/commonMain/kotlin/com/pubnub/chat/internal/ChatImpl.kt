@@ -38,6 +38,7 @@ import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.config.LogLevel
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
@@ -73,14 +74,14 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.THREAD_FOR_THIS_MESSAGE
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES
-import com.pubnub.chat.internal.message.BaseMessage
-import com.pubnub.chat.internal.message.BaseMessage.Companion
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer
 import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runPeriodically
 import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runWithDelay
 import com.pubnub.chat.internal.util.channelsUrlDecoded
 import com.pubnub.chat.internal.util.getPhraseToLookFor
+import com.pubnub.chat.internal.util.logErrorAndReturnException
+import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.cyrb53a
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.message.GetUnreadMessagesCounts
@@ -136,16 +137,15 @@ class ChatImpl(
     private var runWithDelayTimer: PlatformTimer? = null
 
     init {
-        KmLogging.setLogLevel(config.logLevel)
+        KmLogging.setLogLevel(mapLogLevelFromConfigToKmLogging())
+
         // todo move this to config initialization or setters?
         if (config.storeUserActivityInterval < 60.seconds) {
-            log.error { "Error in chat init: $STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN" }
-            throw PubNubException(STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN)
+            log.pnError(STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN)
         }
 
         if (config.pushNotifications.deviceGateway == PNPushType.APNS2 && config.pushNotifications.apnsTopic == null) {
-            log.error { "Error in chat init: $APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2" }
-            throw PubNubException(APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2)
+            log.pnError(APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2)
         }
 
         // TODO from TS, but config is immutable at this point: pubnub._config._addPnsdkSuffix("chat-sdk", `__PLATFORM__/__VERSION__`)
@@ -189,14 +189,12 @@ class ChatImpl(
         type: String?,
     ): PNFuture<User> {
         if (!isValidId(id)) {
-            log.error { "Error in createUser: $ID_IS_REQUIRED" }
-            throw PubNubException(ID_IS_REQUIRED)
+            log.pnError(ID_IS_REQUIRED)
         }
 
         return getUser(id).thenAsync { user: User? ->
             if (user != null) {
-                log.error { "Error in createUser: $USER_ID_ALREADY_EXIST" }
-                throw PubNubException(USER_ID_ALREADY_EXIST)
+                log.pnError(USER_ID_ALREADY_EXIST)
             } else {
                 setUserMetadata(id, name, externalId, profileUrl, email, custom, type, status)
             }
@@ -205,18 +203,14 @@ class ChatImpl(
 
     override fun getUser(userId: String): PNFuture<User?> {
         if (!isValidId(userId)) {
-            log.error { "Error in getUser: $ID_IS_REQUIRED" }
-            throw PubNubException(ID_IS_REQUIRED)
+            log.pnError(ID_IS_REQUIRED)
         }
 
         return pubNub.getUUIDMetadata(uuid = userId, includeCustom = true)
             .then<PNUUIDMetadataResult, User?> { pnUUIDMetadataResult: PNUUIDMetadataResult ->
                 pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
                     UserImpl.fromDTO(this, pnUUIDMetadata)
-                } ?: run {
-                    log.error { "Error in getUser: $PNUUID_METADATA_RESULT_IS_NULL" }
-                    throw PubNubException(PNUUID_METADATA_RESULT_IS_NULL)
-                }
+                } ?:  log.pnError(PNUUID_METADATA_RESULT_IS_NULL)
             }.catch {
                 if (it is PubNubException && it.statusCode == HTTP_ERROR_404) {
                     Result.success(null)
@@ -265,24 +259,21 @@ class ChatImpl(
         type: String?
     ): PNFuture<User> {
         if (!isValidId(id)) {
-            log.error { "Error in updateUser: $ID_IS_REQUIRED" }
-            throw PubNubException(ID_IS_REQUIRED)
+            log.pnError(ID_IS_REQUIRED)
         }
 
         return getUser(id).thenAsync { user ->
             if (user != null) {
                 setUserMetadata(id, name, externalId, profileUrl, email, custom, type, status)
             } else {
-                log.error { "Error in updateUser: $USER_NOT_EXIST" }
-                error(USER_NOT_EXIST)
+                log.pnError(USER_NOT_EXIST)
             }
         }
     }
 
     override fun deleteUser(id: String, soft: Boolean): PNFuture<User> {
         if (!isValidId(id)) {
-            log.error { "Error in deleteUser: $PNUUID_METADATA_IS_NULL" }
-            return PubNubException(ID_IS_REQUIRED).asFuture()
+            return PubNubException(ID_IS_REQUIRED).logErrorAndReturnException(log).asFuture()
         }
 
         return getUser(id).thenAsync { user: User? ->
@@ -293,16 +284,14 @@ class ChatImpl(
                     performUserDelete(notNullUser)
                 }
             } ?: run {
-                log.error { "Error in deleteUser: $USER_NOT_EXIST" }
-                error(USER_NOT_EXIST)
+                log.pnError(USER_NOT_EXIST)
             }
         }
     }
 
     override fun wherePresent(userId: String): PNFuture<List<String>> {
         if (!isValidId(userId)) {
-            log.error { "Error in wherePresent: $ID_IS_REQUIRED" }
-            throw PubNubException(ID_IS_REQUIRED)
+            log.pnError(ID_IS_REQUIRED)
         }
 
         return pubNub.whereNow(uuid = userId).then { pnWhereNowResult ->
@@ -319,12 +308,10 @@ class ChatImpl(
 
     override fun isPresent(userId: String, channelId: String): PNFuture<Boolean> {
         if (!isValidId(userId)) {
-            log.error { "Error in isPresent: $ID_IS_REQUIRED" }
-            throw PubNubException(ID_IS_REQUIRED)
+            log.pnError("$ID_IS_REQUIRED$channelId")
         }
         if (!isValidId(channelId)) {
-            log.error { "Error in isPresent: $CHANNEL_ID_IS_REQUIRED" }
-            throw PubNubException(CHANNEL_ID_IS_REQUIRED)
+            log.pnError("$CHANNEL_ID_IS_REQUIRED$channelId")
         }
 
         return pubNub.whereNow(uuid = userId).then { pnWhereNowResult ->
@@ -343,13 +330,11 @@ class ChatImpl(
         status: String?
     ): PNFuture<Channel> {
         if (!isValidId(id)) {
-            log.error { "Error in createChannel: $CHANNEL_ID_IS_REQUIRED" }
-            throw PubNubException(CHANNEL_ID_IS_REQUIRED)
+            log.pnError(CHANNEL_ID_IS_REQUIRED)
         }
         return getChannel(id).thenAsync { channel: Channel? ->
             if (channel != null) {
-                log.error { "Error in createChannel: $CHANNEL_ID_ALREADY_EXIST" }
-                error(CHANNEL_ID_ALREADY_EXIST)
+                log.pnError(CHANNEL_ID_ALREADY_EXIST)
             } else {
                 setChannelMetadata(id, name, description, custom, type, status)
             }
@@ -386,16 +371,14 @@ class ChatImpl(
 
     override fun getChannel(channelId: String): PNFuture<Channel?> {
         if (!isValidId(channelId)) {
-            log.error { "Error in getChannel: $CHANNEL_ID_IS_REQUIRED" }
-            throw PubNubException(CHANNEL_ID_IS_REQUIRED)
+            log.pnError(CHANNEL_ID_IS_REQUIRED)
         }
         return pubNub.getChannelMetadata(channel = channelId)
             .then<PNChannelMetadataResult, Channel?> { pnChannelMetadataResult: PNChannelMetadataResult ->
                 pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
                     ChannelImpl.fromDTO(this, pnChannelMetadata)
                 } ?: run {
-                    log.error { "Error in getChannel: $PNCHANNEL_METADATA_IS_NULL" }
-                    error(PNCHANNEL_METADATA_IS_NULL)
+                    log.pnError(PNCHANNEL_METADATA_IS_NULL)
                 }
             }.catch { exception ->
                 if (exception is PubNubException && exception.statusCode == HTTP_ERROR_404) {
@@ -415,24 +398,21 @@ class ChatImpl(
         type: ChannelType?
     ): PNFuture<Channel> {
         if (!isValidId(id)) {
-            log.error { "Error in updateChannel: $CHANNEL_ID_IS_REQUIRED" }
-            throw PubNubException(CHANNEL_ID_IS_REQUIRED)
+            log.pnError(CHANNEL_ID_IS_REQUIRED)
         }
 
         return getChannel(id).thenAsync { channel: Channel? ->
             if (channel != null) {
                 setChannelMetadata(id, name, description, custom, type, status)
             } else {
-                log.error { "Error in updateChannel: $CHANNEL_NOT_FOUND" }
-                error(CHANNEL_NOT_FOUND)
+                log.pnError(CHANNEL_NOT_FOUND)
             }
         }
     }
 
     override fun deleteChannel(id: String, soft: Boolean): PNFuture<Channel> {
         if (!isValidId(id)) {
-            log.error { "Error in deleteChannel: $CHANNEL_ID_IS_REQUIRED" }
-            throw PubNubException(CHANNEL_ID_IS_REQUIRED)
+            log.pnError(CHANNEL_ID_IS_REQUIRED)
         }
 
         return getChannelData(id).thenAsync { channel: Channel ->
@@ -446,12 +426,10 @@ class ChatImpl(
 
     override fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult> {
         if (!isValidId(channelId)) {
-            log.error { "Error in forwardMessage: $CHANNEL_ID_IS_REQUIRED" }
-            throw PubNubException(CHANNEL_ID_IS_REQUIRED)
+            log.pnError(CHANNEL_ID_IS_REQUIRED)
         }
         if (message.channelId == channelId) {
-            log.error { "Error in forwardMessage: $CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL" }
-            throw PubNubException(CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL)
+            log.pnError(CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL)
         }
 
         val meta = message.meta?.toMutableMap() ?: mutableMapOf()
@@ -594,8 +572,7 @@ class ChatImpl(
 
     override fun whoIsPresent(channelId: String): PNFuture<Collection<String>> {
         if (!isValidId(channelId)) {
-            log.error { "Error in whoIsPresent: $CHANNEL_ID_IS_REQUIRED" }
-            throw PubNubException(CHANNEL_ID_IS_REQUIRED)
+            log.pnError(CHANNEL_ID_IS_REQUIRED)
         }
         return pubNub.hereNow(listOf(channelId)).then {
             (it.channels[channelId]?.occupants?.map(PNHereNowOccupantData::uuid) ?: emptyList())
@@ -752,9 +729,8 @@ class ChatImpl(
                             pnMessageCountResult.channels.map { (channelId, messageCount) ->
                                 val membershipMatchingChannel =
                                     memberships.find { membership: Membership -> membership.channel.id == channelId }
-                                        ?: run{
-                                            log.error { "Error in getUnreadMessagesCounts: $CAN_NOT_FIND_CHANNEL_WITH_ID$channelId" }
-                                            throw PubNubException("$CAN_NOT_FIND_CHANNEL_WITH_ID$channelId")
+                                        ?: run {
+                                            log.pnError("$CAN_NOT_FIND_CHANNEL_WITH_ID$channelId")
                                         }
                                 GetUnreadMessagesCounts(
                                     channel = membershipMatchingChannel.channel,
@@ -899,7 +875,8 @@ class ChatImpl(
             includeMessageActions = false,
             includeMessageType = true
         ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
-            val pnFetchMessageItems: List<PNFetchMessageItem> = pnFetchMessagesResult.channelsUrlDecoded[channelId] ?: emptyList()
+            val pnFetchMessageItems: List<PNFetchMessageItem> =
+                pnFetchMessagesResult.channelsUrlDecoded[channelId] ?: emptyList()
             val events: Set<Event<EventContent>> =
                 pnFetchMessageItems.map { pnFetchMessageItem: PNFetchMessageItem ->
                     EventImpl.fromDTO(chat = this, channelId = channelId, pnFetchMessageItem = pnFetchMessageItem)
@@ -917,8 +894,7 @@ class ChatImpl(
         count: Int
     ): PNFuture<GetCurrentUserMentionsResult> {
         if (count > 100) {
-            log.error { "Error in getCurrentUserMentions: $COUNT_SHOULD_NOT_EXCEED_100" }
-            throw PubNubException(COUNT_SHOULD_NOT_EXCEED_100)
+            log.pnError(COUNT_SHOULD_NOT_EXCEED_100)
         }
         var isMore = false
 
@@ -970,8 +946,7 @@ class ChatImpl(
 
     private fun getCommonPushOptions(): PushNotificationsConfig {
         if (config.pushNotifications.deviceToken == null) {
-            log.error { "Error in getCommonPushOptions: $DEVICE_TOKEN_HAS_TO_BE_DEFINED_IN_CHAT_PUSHNOTIFICATIONS_CONFIG" }
-            throw PubNubException(DEVICE_TOKEN_HAS_TO_BE_DEFINED_IN_CHAT_PUSHNOTIFICATIONS_CONFIG)
+            log.pnError(DEVICE_TOKEN_HAS_TO_BE_DEFINED_IN_CHAT_PUSHNOTIFICATIONS_CONFIG)
         }
         return config.pushNotifications
     }
@@ -986,8 +961,7 @@ class ChatImpl(
                 pnChannelMetadataResult.data?.let { pnChannelMetadata ->
                     ChannelImpl.fromDTO(this, pnChannelMetadata)
                 } ?: run {
-                    log.error { "Error in deleteChannel: $CHANNEL_META_DATA_IS_EMPTY" }
-                    error(CHANNEL_META_DATA_IS_EMPTY)
+                    log.pnError(CHANNEL_META_DATA_IS_EMPTY)
                 }
             }.catch { exception ->
                 Result.failure(PubNubException(FAILED_TO_RETRIEVE_CHANNEL_DATA, exception))
@@ -1009,9 +983,8 @@ class ChatImpl(
         ).then { pnUUIDMetadataResult ->
             pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
                 UserImpl.fromDTO(this, pnUUIDMetadata)
-            } ?: run{
-                log.error { "Error in deleteUser: $PNUUID_METADATA_IS_NULL" }
-                error(PNUUID_METADATA_IS_NULL)
+            } ?: run {
+                log.pnError(PNUUID_METADATA_IS_NULL)
             }
         }
     }
@@ -1032,9 +1005,8 @@ class ChatImpl(
         ).then { pnChannelMetadataResult ->
             pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
                 ChannelImpl.fromDTO(this, pnChannelMetadata)
-            } ?: run{
-                log.error { "Error in deleteUser: $PNCHANNEL_METADATA_IS_NULL" }
-                error(PNCHANNEL_METADATA_IS_NULL)
+            } ?: run {
+                log.pnError(PNCHANNEL_METADATA_IS_NULL)
             }
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_SOFT_DELETE_CHANNEL, exception))
@@ -1064,8 +1036,7 @@ class ChatImpl(
             pnChannelMetadataResult.data?.let { pnChannelMetadata ->
                 ChannelImpl.fromDTO(this, pnChannelMetadata)
             } ?: run {
-                log.error { "Error in deleteUser: $NO_DATA_AVAILABLE_TO_CREATE_OR_UPDATE_CHANNEL" }
-                error(NO_DATA_AVAILABLE_TO_CREATE_OR_UPDATE_CHANNEL)
+                log.pnError(NO_DATA_AVAILABLE_TO_CREATE_OR_UPDATE_CHANNEL)
             }
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA, exception))
@@ -1095,10 +1066,7 @@ class ChatImpl(
         ).then { pnUUIDMetadataResult ->
             pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
                 UserImpl.fromDTO(this, pnUUIDMetadata)
-            } ?: run{
-                log.error { "Error in deleteUser: $NO_DATA_AVAILABLE_TO_CREATE_OR_UPDATE_CHANNEL" }
-                error(NO_DATA_AVAILABLE_TO_CREATE_OR_UPDATE_CHANNEL)
-            }
+            } ?: log.pnError(NO_DATA_AVAILABLE_TO_CREATE_OR_UPDATE_CHANNEL)
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_USER_DATA, exception))
         }
@@ -1129,12 +1097,10 @@ class ChatImpl(
 
         internal fun createThreadChannel(chat: ChatInternal, message: Message): PNFuture<ThreadChannel> {
             if (message.channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
-                log.error { "Error in createThreadChannel: $ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED" }
-                throw PubNubException(ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED)
+                log.pnError(ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED)
             }
             if (message.deleted) {
-                log.error { "Error in createThreadChannel: $YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES" }
-                throw PubNubException(YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES)
+                log.pnError(YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES)
             }
 
             val threadChannelId =
@@ -1160,8 +1126,7 @@ class ChatImpl(
             soft: Boolean = false
         ): PNFuture<Pair<PNRemoveMessageActionResult, Channel>> {
             if (!message.hasThread) {
-                log.error { "Error in removeThreadChannel: $THERE_IS_NO_THREAD_TO_BE_DELETED" }
-                return PubNubException(THERE_IS_NO_THREAD_TO_BE_DELETED).asFuture()
+                return PubNubException(THERE_IS_NO_THREAD_TO_BE_DELETED).logErrorAndReturnException(log).asFuture()
             }
 
             val threadId = getThreadId(message.channelId, message.timetoken)
@@ -1169,14 +1134,12 @@ class ChatImpl(
             val actionTimetoken =
                 message.actions?.get("threadRootId")?.get(threadId)?.get(0)?.actionTimetoken
                     ?: run {
-                        log.error { "Error in removeThreadChannel: $THERE_IS_NO_ACTION_TIMETOKEN_CORRESPONDING_TO_THE_THREAD" }
-                        return PubNubException(THERE_IS_NO_ACTION_TIMETOKEN_CORRESPONDING_TO_THE_THREAD).asFuture()
+                        return PubNubException(THERE_IS_NO_ACTION_TIMETOKEN_CORRESPONDING_TO_THE_THREAD).logErrorAndReturnException(log).asFuture()
                     }
 
             return chat.getChannel(threadId).thenAsync { threadChannel ->
                 if (threadChannel == null) {
-                    log.error { "Error in removeThreadChannel: $THERE_IS_NO_THREAD_WITH_ID" }
-                    throw PubNubException("$THERE_IS_NO_THREAD_WITH_ID$threadId")
+                    log.pnError(THERE_IS_NO_THREAD_WITH_ID)
                 }
                 awaitAll(
                     chat.pubNub.removeMessageAction(message.channelId, message.timetoken, actionTimetoken),
@@ -1216,7 +1179,7 @@ class ChatImpl(
                 runPeriodically(config.storeUserActivityInterval) {
                     saveTimeStampFunc().async { result: Result<Unit> ->
                         result.onFailure { e ->
-                            log.error { "Error in storeUserActivityTimestamp: ${e.message}" }
+                            log.e(err = e, msg = {e.message})
                         }
                     }
                 }
@@ -1236,8 +1199,7 @@ class ChatImpl(
             if (pnUUIDMetadataResult.data != null) {
                 currentUser = UserImpl.fromDTO(this, pnUUIDMetadataResult.data!!)
             } else {
-                log.error { "Error in saveTimeStampFunc: $PNUUID_METADATA_IS_NULL" }
-                error(PNUUID_METADATA_IS_NULL)
+                log.pnError(PNUUID_METADATA_IS_NULL)
             }
         }
     }
@@ -1247,6 +1209,17 @@ class ChatImpl(
             EventContent.Custom::class -> null
             EventContent.Receipt::class, EventContent.Typing::class -> EmitEventMethod.SIGNAL
             else -> EmitEventMethod.PUBLISH
+        }
+    }
+
+    private fun mapLogLevelFromConfigToKmLogging(): org.lighthousegames.logging.LogLevel {
+        return when (config.logLevel) {
+            LogLevel.OFF -> org.lighthousegames.logging.LogLevel.Off
+            LogLevel.ERROR -> org.lighthousegames.logging.LogLevel.Error
+            LogLevel.WARN -> org.lighthousegames.logging.LogLevel.Warn
+            LogLevel.INFO -> org.lighthousegames.logging.LogLevel.Info
+            LogLevel.DEBUG -> org.lighthousegames.logging.LogLevel.Debug
+            LogLevel.VERBOSE -> org.lighthousegames.logging.LogLevel.Verbose
         }
     }
 }

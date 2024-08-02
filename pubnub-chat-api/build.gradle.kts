@@ -76,7 +76,6 @@ kotlin {
                 api("com.pubnub:pubnub-core-api:9.2-DEV")
                 api("com.pubnub:pubnub-kotlin-api:9.2-DEV")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.0-RC")
-                implementation("org.lighthousegames:logging:1.5.0")
             }
         }
 

@@ -69,4 +69,5 @@ internal object PubNubErrorMessage {
     internal const val YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES = "You cannot create threads on deleted messages."
     internal const val THREAD_FOR_THIS_MESSAGE_ALREADY_EXISTS = "Thread for this message already exists."
     internal const val RECEIPT_EVENT_WAS_NOT_SENT_TO_CHANNEL = "Because PAM did not allow it 'receipt' event was not sent to channel: "
+    internal const val ERROR_HANDLING_ONMESSAGE_EVENT = "Error handling onMessage event"
 }
