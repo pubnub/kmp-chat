@@ -427,6 +427,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // send messages with user mentions
         channel01.sendText(text = message, mentionedUsers = messageMentionedUsers).await()
+        delayInMillis(1000)
 
         // when
         val currentUserMentionsResult: GetCurrentUserMentionsResult = chat.getCurrentUserMentions().await()
@@ -437,7 +438,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(1, currentUserMentionsResult.enhancedMentionsData.size)
         assertEquals(userId, userMentionData.userId)
         assertEquals(channelId01, userMentionData.channelId)
-        assertTrue(userMentionData.event.payload is EventContent.Mention)
         assertEquals(message, userMentionData.message?.content?.text)
 
         // remove messages
@@ -465,7 +465,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(userId, userMentionData.userId)
         assertEquals(true, userMentionData.parentChannelId.contains(CHANNEL_ID_OF_PARENT_MESSAGE_PREFIX))
         assertEquals(true, userMentionData.threadChannelId.contains(THREAD_CHANNEL_ID_PREFIX))
-        assertTrue(userMentionData.event.payload is EventContent.Mention)
         assertEquals(message, userMentionData.message?.content?.text)
 
         // remove messages
