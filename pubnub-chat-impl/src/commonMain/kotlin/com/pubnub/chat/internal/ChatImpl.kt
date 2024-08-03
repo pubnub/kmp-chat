@@ -189,7 +189,7 @@ class ChatImpl(
         type: String?,
     ): PNFuture<User> {
         if (!isValidId(id)) {
-            log.pnError(ID_IS_REQUIRED)
+            return log.logErrorAndReturnException(ID_IS_REQUIRED).asFuture()
         }
 
         return getUser(id).thenAsync { user: User? ->
@@ -203,14 +203,14 @@ class ChatImpl(
 
     override fun getUser(userId: String): PNFuture<User?> {
         if (!isValidId(userId)) {
-            log.pnError(ID_IS_REQUIRED)
+            return log.logErrorAndReturnException(ID_IS_REQUIRED).asFuture()
         }
 
         return pubNub.getUUIDMetadata(uuid = userId, includeCustom = true)
             .then<PNUUIDMetadataResult, User?> { pnUUIDMetadataResult: PNUUIDMetadataResult ->
                 pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
                     UserImpl.fromDTO(this, pnUUIDMetadata)
-                } ?:  log.pnError(PNUUID_METADATA_RESULT_IS_NULL)
+                } ?: log.pnError(PNUUID_METADATA_RESULT_IS_NULL)
             }.catch {
                 if (it is PubNubException && it.statusCode == HTTP_ERROR_404) {
                     Result.success(null)
@@ -259,7 +259,7 @@ class ChatImpl(
         type: String?
     ): PNFuture<User> {
         if (!isValidId(id)) {
-            log.pnError(ID_IS_REQUIRED)
+            return log.logErrorAndReturnException(ID_IS_REQUIRED).asFuture()
         }
 
         return getUser(id).thenAsync { user ->
@@ -283,15 +283,13 @@ class ChatImpl(
                 } else {
                     performUserDelete(notNullUser)
                 }
-            } ?: run {
-                log.pnError(USER_NOT_EXIST)
-            }
+            } ?: log.pnError(USER_NOT_EXIST)
         }
     }
 
     override fun wherePresent(userId: String): PNFuture<List<String>> {
         if (!isValidId(userId)) {
-            log.pnError(ID_IS_REQUIRED)
+            return log.logErrorAndReturnException(ID_IS_REQUIRED).asFuture()
         }
 
         return pubNub.whereNow(uuid = userId).then { pnWhereNowResult ->
@@ -308,10 +306,10 @@ class ChatImpl(
 
     override fun isPresent(userId: String, channelId: String): PNFuture<Boolean> {
         if (!isValidId(userId)) {
-            log.pnError("$ID_IS_REQUIRED$channelId")
+            return log.logErrorAndReturnException(ID_IS_REQUIRED).asFuture()
         }
         if (!isValidId(channelId)) {
-            log.pnError("$CHANNEL_ID_IS_REQUIRED$channelId")
+            return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
 
         return pubNub.whereNow(uuid = userId).then { pnWhereNowResult ->
@@ -330,7 +328,7 @@ class ChatImpl(
         status: String?
     ): PNFuture<Channel> {
         if (!isValidId(id)) {
-            log.pnError(CHANNEL_ID_IS_REQUIRED)
+            return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
         return getChannel(id).thenAsync { channel: Channel? ->
             if (channel != null) {
@@ -371,15 +369,13 @@ class ChatImpl(
 
     override fun getChannel(channelId: String): PNFuture<Channel?> {
         if (!isValidId(channelId)) {
-            log.pnError(CHANNEL_ID_IS_REQUIRED)
+            return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
         return pubNub.getChannelMetadata(channel = channelId)
             .then<PNChannelMetadataResult, Channel?> { pnChannelMetadataResult: PNChannelMetadataResult ->
                 pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
                     ChannelImpl.fromDTO(this, pnChannelMetadata)
-                } ?: run {
-                    log.pnError(PNCHANNEL_METADATA_IS_NULL)
-                }
+                } ?: log.pnError(PNCHANNEL_METADATA_IS_NULL)
             }.catch { exception ->
                 if (exception is PubNubException && exception.statusCode == HTTP_ERROR_404) {
                     Result.success(null)
@@ -398,7 +394,7 @@ class ChatImpl(
         type: ChannelType?
     ): PNFuture<Channel> {
         if (!isValidId(id)) {
-            log.pnError(CHANNEL_ID_IS_REQUIRED)
+            return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
 
         return getChannel(id).thenAsync { channel: Channel? ->
@@ -412,7 +408,7 @@ class ChatImpl(
 
     override fun deleteChannel(id: String, soft: Boolean): PNFuture<Channel> {
         if (!isValidId(id)) {
-            log.pnError(CHANNEL_ID_IS_REQUIRED)
+            return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
 
         return getChannelData(id).thenAsync { channel: Channel ->
@@ -426,10 +422,10 @@ class ChatImpl(
 
     override fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult> {
         if (!isValidId(channelId)) {
-            log.pnError(CHANNEL_ID_IS_REQUIRED)
+            return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
         if (message.channelId == channelId) {
-            log.pnError(CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL)
+            return log.logErrorAndReturnException(CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL).asFuture()
         }
 
         val meta = message.meta?.toMutableMap() ?: mutableMapOf()
@@ -572,7 +568,7 @@ class ChatImpl(
 
     override fun whoIsPresent(channelId: String): PNFuture<Collection<String>> {
         if (!isValidId(channelId)) {
-            log.pnError(CHANNEL_ID_IS_REQUIRED)
+            return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
         return pubNub.hereNow(listOf(channelId)).then {
             (it.channels[channelId]?.occupants?.map(PNHereNowOccupantData::uuid) ?: emptyList())
@@ -729,9 +725,7 @@ class ChatImpl(
                             pnMessageCountResult.channels.map { (channelId, messageCount) ->
                                 val membershipMatchingChannel =
                                     memberships.find { membership: Membership -> membership.channel.id == channelId }
-                                        ?: run {
-                                            log.pnError("$CAN_NOT_FIND_CHANNEL_WITH_ID$channelId")
-                                        }
+                                        ?: log.pnError("$CAN_NOT_FIND_CHANNEL_WITH_ID$channelId")
                                 GetUnreadMessagesCounts(
                                     channel = membershipMatchingChannel.channel,
                                     membership = membershipMatchingChannel,
@@ -894,7 +888,7 @@ class ChatImpl(
         count: Int
     ): PNFuture<GetCurrentUserMentionsResult> {
         if (count > 100) {
-            log.pnError(COUNT_SHOULD_NOT_EXCEED_100)
+            return log.logErrorAndReturnException(COUNT_SHOULD_NOT_EXCEED_100).asFuture()
         }
         var isMore = false
 
@@ -960,9 +954,7 @@ class ChatImpl(
             .then { pnChannelMetadataResult: PNChannelMetadataResult ->
                 pnChannelMetadataResult.data?.let { pnChannelMetadata ->
                     ChannelImpl.fromDTO(this, pnChannelMetadata)
-                } ?: run {
-                    log.pnError(CHANNEL_META_DATA_IS_EMPTY)
-                }
+                } ?: log.pnError(CHANNEL_META_DATA_IS_EMPTY)
             }.catch { exception ->
                 Result.failure(PubNubException(FAILED_TO_RETRIEVE_CHANNEL_DATA, exception))
             }
@@ -983,9 +975,7 @@ class ChatImpl(
         ).then { pnUUIDMetadataResult ->
             pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
                 UserImpl.fromDTO(this, pnUUIDMetadata)
-            } ?: run {
-                log.pnError(PNUUID_METADATA_IS_NULL)
-            }
+            } ?: log.pnError(PNUUID_METADATA_IS_NULL)
         }
     }
 
@@ -1005,9 +995,7 @@ class ChatImpl(
         ).then { pnChannelMetadataResult ->
             pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
                 ChannelImpl.fromDTO(this, pnChannelMetadata)
-            } ?: run {
-                log.pnError(PNCHANNEL_METADATA_IS_NULL)
-            }
+            } ?: log.pnError(PNCHANNEL_METADATA_IS_NULL)
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_SOFT_DELETE_CHANNEL, exception))
         }
@@ -1035,9 +1023,7 @@ class ChatImpl(
         ).then { pnChannelMetadataResult ->
             pnChannelMetadataResult.data?.let { pnChannelMetadata ->
                 ChannelImpl.fromDTO(this, pnChannelMetadata)
-            } ?: run {
-                log.pnError(NO_DATA_AVAILABLE_TO_CREATE_OR_UPDATE_CHANNEL)
-            }
+            } ?: log.pnError(NO_DATA_AVAILABLE_TO_CREATE_OR_UPDATE_CHANNEL)
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA, exception))
         }
@@ -1097,18 +1083,17 @@ class ChatImpl(
 
         internal fun createThreadChannel(chat: ChatInternal, message: Message): PNFuture<ThreadChannel> {
             if (message.channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
-                log.pnError(ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED)
+                return log.logErrorAndReturnException(ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED).asFuture()
             }
             if (message.deleted) {
-                log.pnError(YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES)
+                return log.logErrorAndReturnException(YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES).asFuture()
             }
 
             val threadChannelId =
                 getThreadId(message.channelId, message.timetoken)
             return chat.getChannel(threadChannelId).thenAsync { it: Channel? ->
                 if (it != null) {
-                    log.info { "Error in createThreadChannel: $THREAD_FOR_THIS_MESSAGE_ALREADY_EXISTS" }
-                    return@thenAsync PubNubException(THREAD_FOR_THIS_MESSAGE_ALREADY_EXISTS).asFuture()
+                    return@thenAsync log.logErrorAndReturnException(THREAD_FOR_THIS_MESSAGE_ALREADY_EXISTS).asFuture()
                 }
                 ThreadChannelImpl(
                     message,
@@ -1133,13 +1118,13 @@ class ChatImpl(
 
             val actionTimetoken =
                 message.actions?.get("threadRootId")?.get(threadId)?.get(0)?.actionTimetoken
-                    ?: run {
-                        return PubNubException(THERE_IS_NO_ACTION_TIMETOKEN_CORRESPONDING_TO_THE_THREAD).logErrorAndReturnException(log).asFuture()
-                    }
+                    ?: return PubNubException(THERE_IS_NO_ACTION_TIMETOKEN_CORRESPONDING_TO_THE_THREAD).logErrorAndReturnException(
+                        log
+                    ).asFuture()
 
             return chat.getChannel(threadId).thenAsync { threadChannel ->
                 if (threadChannel == null) {
-                    log.pnError(THERE_IS_NO_THREAD_WITH_ID)
+                    log.pnError("$THERE_IS_NO_THREAD_WITH_ID$threadId")
                 }
                 awaitAll(
                     chat.pubNub.removeMessageAction(message.channelId, message.timetoken, actionTimetoken),
@@ -1179,7 +1164,7 @@ class ChatImpl(
                 runPeriodically(config.storeUserActivityInterval) {
                     saveTimeStampFunc().async { result: Result<Unit> ->
                         result.onFailure { e ->
-                            log.e(err = e, msg = {e.message})
+                            log.error(err = e, msg = { e.message })
                         }
                     }
                 }

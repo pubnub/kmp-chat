@@ -58,6 +58,7 @@ import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runWithDelay
 import com.pubnub.chat.internal.util.channelsUrlDecoded
 import com.pubnub.chat.internal.util.getPhraseToLookFor
+import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.ExponentialRateLimiter
 import com.pubnub.chat.internal.uuidFilterString
@@ -143,7 +144,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun startTyping(): PNFuture<Unit> {
         if (type == ChannelType.PUBLIC) {
-            log.pnError(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS)
+            return log.logErrorAndReturnException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
 
         val now = clock.now()
@@ -253,7 +254,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         files: List<InputFile>?,
     ): PNFuture<PNPublishResult> {
         if (quotedMessage != null && quotedMessage.channelId != id) {
-            log.pnError(CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS)
+            return log.logErrorAndReturnException(CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS).asFuture()
         }
         return sendTextRateLimiter.runWithinLimits(
             sendFilesForPublish(files).thenAsync { filesData ->
@@ -313,7 +314,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun invite(user: User): PNFuture<Membership> {
         if (this.type == ChannelType.PUBLIC) {
-            log.pnError(CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS)
+            return log.logErrorAndReturnException(CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
         return getMembers(filter = user.uuidFilterString).thenAsync { channelMembers: MembersResponse ->
             if (channelMembers.members.isNotEmpty()) {
@@ -342,7 +343,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun inviteMultiple(users: Collection<User>): PNFuture<List<Membership>> {
         if (this.type == ChannelType.PUBLIC) {
-            log.pnError(CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS)
+            return log.logErrorAndReturnException(CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
         return chat.pubNub.setChannelMembers(
             this.id,
@@ -412,7 +413,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     }
                     callback(MessageImpl.fromDTO(chat, pnMessageResult))
                 } catch (e: Exception) {
-                    log.error(err = e, msg= {ERROR_HANDLING_ONMESSAGE_EVENT})
+                    log.error(err = e, msg = { ERROR_HANDLING_ONMESSAGE_EVENT })
                 }
             },
         )
@@ -532,7 +533,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         reason: String?,
     ): PNFuture<Unit> {
         if (chat.pubNub.configuration.secretKey.isEmpty()) {
-            log.pnError(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY)
+            return log.logErrorAndReturnException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY).asFuture()
         }
         return chat.setRestrictions(
             Restriction(
@@ -703,9 +704,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 HistoryResponse(
                     messages = pnFetchMessagesResult.channelsUrlDecoded[channelId]?.map { messageItem: PNFetchMessageItem ->
                         messageFactory(chat, messageItem, channelId)
-                    } ?: run {
-                        log.pnError(UNABLE_TO_READ_MESSAGES)
-                    },
+                    } ?: log.pnError(UNABLE_TO_READ_MESSAGES),
                     isMore = pnFetchMessagesResult.channelsUrlDecoded[channelId]?.size == count
                 )
             }.catch {
@@ -818,7 +817,12 @@ abstract class BaseChannel<C : Channel, M : Message>(
             }
         }
 
-        internal fun updateUserTypingStatus(userId: String, isTyping: Boolean, now: Instant, userLastTyped: MutableMap<String, Instant>) {
+        internal fun updateUserTypingStatus(
+            userId: String,
+            isTyping: Boolean,
+            now: Instant,
+            userLastTyped: MutableMap<String, Instant>
+        ) {
             if (isTyping) {
                 userLastTyped[userId] = now
             } else {

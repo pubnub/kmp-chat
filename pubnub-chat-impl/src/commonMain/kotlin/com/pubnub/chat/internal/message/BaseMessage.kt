@@ -1,7 +1,6 @@
 package com.pubnub.chat.internal.message
 
 import com.pubnub.api.JsonElement
-import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem

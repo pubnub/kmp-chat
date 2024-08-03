@@ -351,11 +351,11 @@ class ChatTest : BaseTest() {
         val emptyChannelId = ""
 
         // when
-        val e = assertFailsWith<PubNubException> {
-            objectUnderTest.isPresent(id, emptyChannelId)
+        objectUnderTest.isPresent(id, emptyChannelId).async { result: Result<Boolean> ->
+            // then
+            assertTrue(result.isFailure)
+            assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
-
-        assertEquals("Channel Id is required", e.message)
     }
 
     @Test
@@ -397,11 +397,11 @@ class ChatTest : BaseTest() {
         val emptyChannelId = ""
 
         // when
-        val e = assertFailsWith<PubNubException> {
-            objectUnderTest.whoIsPresent(emptyChannelId)
+        objectUnderTest.whoIsPresent(emptyChannelId).async { result: Result<Collection<String>> ->
+            // then
+            assertTrue(result.isFailure)
+            assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
-
-        assertEquals("Channel Id is required", e.message)
     }
 
     @Test
@@ -410,11 +410,11 @@ class ChatTest : BaseTest() {
         val channelId = ""
 
         // when
-        val e = assertFailsWith<PubNubException> {
-            objectUnderTest.updateChannel(id = channelId)
+        objectUnderTest.updateChannel(id = channelId).async { result: Result<Channel> ->
+            // then
+            assertTrue(result.isFailure)
+            assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
-
-        assertEquals("Channel Id is required", e.message)
     }
 
     @Test
@@ -597,11 +597,11 @@ class ChatTest : BaseTest() {
         val message = createMessage()
 
         // when
-        val e = assertFailsWith<PubNubException> {
-            objectUnderTest.forwardMessage(message, channelId)
+        objectUnderTest.forwardMessage(message, channelId).async { result: Result<PNPublishResult> ->
+            // then
+            assertTrue(result.isFailure)
+            assertEquals("You cannot forward the message to the same channel.", result.exceptionOrNull()!!.message)
         }
-
-        assertEquals("You cannot forward the message to the same channel.", e.message)
     }
 
     @Test
@@ -679,12 +679,10 @@ class ChatTest : BaseTest() {
     @Test
     fun whenChannelIdIsEmptyThenGetChannelShouldResultFailure() {
         val emptyChannelId = ""
-
-        val e = assertFailsWith<PubNubException> {
-            objectUnderTest.getChannel(emptyChannelId)
+        objectUnderTest.getChannel(emptyChannelId).async { result ->
+            assertTrue(result.isFailure)
+            assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
         }
-
-        assertEquals("Channel Id is required", e.message)
     }
 
     @Test
@@ -791,11 +789,10 @@ class ChatTest : BaseTest() {
     fun whenUserIdIsEmptyThenGetChannelShouldResultFailure() {
         val emptyUserId = ""
 
-        val e = assertFailsWith<PubNubException> {
-            objectUnderTest.getUser(emptyUserId)
+        objectUnderTest.getUser(emptyUserId).async { result: Result<User?> ->
+            assertTrue(result.isFailure)
+            assertEquals("Id is required", result.exceptionOrNull()?.message)
         }
-
-        assertEquals("Id is required", e.message)
     }
 
     @Test
@@ -1240,12 +1237,10 @@ class ChatTest : BaseTest() {
 
     @Test
     fun shouldThrowExceptionWhenGetCurrentUserMentionsWithCountBiggerThan100() {
-
-        val e = assertFailsWith<PubNubException> {
-            objectUnderTest.getCurrentUserMentions(count = 200)
+        objectUnderTest.getCurrentUserMentions(count = 200).async { result ->
+            assertTrue(result.isFailure)
+            assertEquals("Count should not exceed 100", result.exceptionOrNull()?.message)
         }
-
-        assertEquals("Count should not exceed 100", e.message)
     }
 
     @Test

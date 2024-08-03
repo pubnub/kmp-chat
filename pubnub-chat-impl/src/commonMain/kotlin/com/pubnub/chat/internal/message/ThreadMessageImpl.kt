@@ -51,6 +51,7 @@ data class ThreadMessageImpl(
 
     companion object {
         private val log = logging()
+
         internal fun fromDTO(chat: ChatImpl, pnMessageResult: PNMessageResult, parentChannelId: String): ThreadMessage {
             return ThreadMessageImpl(
                 chat,

@@ -1,6 +1,5 @@
 package com.pubnub.chat.internal
 
-import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership

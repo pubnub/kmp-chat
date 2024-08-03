@@ -139,11 +139,10 @@ class ChannelTest : BaseTest() {
     fun whenChannelIsPublicStartTypingShouldResultFailure() {
         objectUnderTest = createChannel(ChannelType.PUBLIC)
 
-        val e = assertFailsWith<PubNubException> {
-            objectUnderTest.startTyping()
+        objectUnderTest.startTyping().async { resutl ->
+            assertTrue(resutl.isFailure)
+            assertEquals("Typing indicators are not supported in Public chats.", resutl.exceptionOrNull()?.message)
         }
-
-        assertEquals("Typing indicators are not supported in Public chats.", e.message)
     }
 
     @Test
@@ -639,10 +638,14 @@ class ChannelTest : BaseTest() {
     @Test
     fun shouldThrowExceptionWhenSecretKeyIsNotSet() {
         val user = UserImpl(chat = chat, id = "userId")
-        val e = assertFailsWith<PubNubException> {
-            objectUnderTest.setRestrictions(user)
+
+        objectUnderTest.setRestrictions(user).async { result: Result<Unit> ->
+            assertTrue(result.isFailure)
+            assertEquals(
+                "Moderation restrictions can only be set by clients initialized with a Secret Key.",
+                result.exceptionOrNull()?.message
+            )
         }
-        assertEquals("Moderation restrictions can only be set by clients initialized with a Secret Key.", e.message)
     }
 
     @Test

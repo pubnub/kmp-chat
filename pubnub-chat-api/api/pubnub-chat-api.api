@@ -253,19 +253,18 @@ public final class com/pubnub/chat/User$DefaultImpls {
 
 public abstract interface class com/pubnub/chat/config/ChatConfiguration {
 	public abstract fun getCustomPayloads ()Lcom/pubnub/chat/config/CustomPayloads;
-	public abstract fun getErrorLogger ()Ljava/lang/Object;
+	public abstract fun getLogLevel ()Lcom/pubnub/chat/config/LogLevel;
 	public abstract fun getPushNotifications ()Lcom/pubnub/chat/config/PushNotificationsConfig;
 	public abstract fun getRateLimitFactor ()I
 	public abstract fun getRateLimitPerChannel ()Ljava/util/Map;
-	public abstract fun getSaveDebugLog ()Z
 	public abstract fun getStoreUserActivityInterval-UwyO8pc ()J
 	public abstract fun getStoreUserActivityTimestamps ()Z
 	public abstract fun getTypingTimeout-UwyO8pc ()J
 }
 
 public final class com/pubnub/chat/config/ChatConfigurationKt {
-	public static final fun ChatConfiguration-ZH2SSTU (ZJJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Ljava/lang/Object;Lcom/pubnub/chat/config/CustomPayloads;)Lcom/pubnub/chat/config/ChatConfiguration;
-	public static synthetic fun ChatConfiguration-ZH2SSTU$default (ZJJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Ljava/lang/Object;Lcom/pubnub/chat/config/CustomPayloads;ILjava/lang/Object;)Lcom/pubnub/chat/config/ChatConfiguration;
+	public static final fun ChatConfiguration-QkTvx9o (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;)Lcom/pubnub/chat/config/ChatConfiguration;
+	public static synthetic fun ChatConfiguration-QkTvx9o$default (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;ILjava/lang/Object;)Lcom/pubnub/chat/config/ChatConfiguration;
 	public static final fun RateLimitPerChannel-InTURus (JJJJ)Ljava/util/Map;
 	public static synthetic fun RateLimitPerChannel-InTURus$default (JJJJILjava/lang/Object;)Ljava/util/Map;
 }
@@ -278,6 +277,18 @@ public final class com/pubnub/chat/config/CustomPayloads {
 	public final fun getEditMessageActionName ()Ljava/lang/String;
 	public final fun getGetMessagePublishBody ()Lkotlin/jvm/functions/Function2;
 	public final fun getGetMessageResponseBody ()Lkotlin/jvm/functions/Function1;
+}
+
+public final class com/pubnub/chat/config/LogLevel : java/lang/Enum {
+	public static final field DEBUG Lcom/pubnub/chat/config/LogLevel;
+	public static final field ERROR Lcom/pubnub/chat/config/LogLevel;
+	public static final field INFO Lcom/pubnub/chat/config/LogLevel;
+	public static final field OFF Lcom/pubnub/chat/config/LogLevel;
+	public static final field VERBOSE Lcom/pubnub/chat/config/LogLevel;
+	public static final field WARN Lcom/pubnub/chat/config/LogLevel;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/pubnub/chat/config/LogLevel;
+	public static fun values ()[Lcom/pubnub/chat/config/LogLevel;
 }
 
 public final class com/pubnub/chat/config/PushNotificationsConfig {

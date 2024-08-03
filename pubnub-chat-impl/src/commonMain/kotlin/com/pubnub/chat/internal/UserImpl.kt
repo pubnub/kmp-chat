@@ -20,6 +20,7 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_USER_UPD
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
 import com.pubnub.chat.internal.error.PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_IS_FALSE
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
+import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.membership.IncludeParameters
 import com.pubnub.chat.membership.MembershipsResponse
@@ -115,7 +116,7 @@ data class UserImpl(
 
     override fun setRestrictions(channel: Channel, ban: Boolean, mute: Boolean, reason: String?): PNFuture<Unit> {
         if (chat.pubNub.configuration.secretKey.isEmpty()) {
-            log.pnError(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY)
+            return log.logErrorAndReturnException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY).asFuture()
         }
         return chat.setRestrictions(
             Restriction(
@@ -170,13 +171,13 @@ data class UserImpl(
 
     override fun active(): PNFuture<Boolean> {
         if (!chat.config.storeUserActivityTimestamps) {
-            log.pnError(STORE_USER_ACTIVITY_INTERVAL_IS_FALSE)
+            return log.logErrorAndReturnException(STORE_USER_ACTIVITY_INTERVAL_IS_FALSE).asFuture()
         }
         return (
-                lastActiveTimestamp?.let { lastActiveTimestampNonNull ->
-                    Clock.System.now() - Instant.fromEpochMilliseconds(lastActiveTimestampNonNull) <= chat.config.storeUserActivityInterval
-                } ?: false
-                ).asFuture()
+            lastActiveTimestamp?.let { lastActiveTimestampNonNull ->
+                Clock.System.now() - Instant.fromEpochMilliseconds(lastActiveTimestampNonNull) <= chat.config.storeUserActivityInterval
+            } ?: false
+        ).asFuture()
     }
 
     override fun report(reason: String): PNFuture<PNPublishResult> {

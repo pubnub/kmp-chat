@@ -24,12 +24,19 @@ internal fun getPhraseToLookFor(text: String, separator: String): String? {
 
 internal expect fun urlDecode(encoded: String): String
 
-internal val PNFetchMessagesResult.channelsUrlDecoded: Map<String, List<PNFetchMessageItem>> get() = channels.mapKeys { urlDecode(it.key) }
+internal val PNFetchMessagesResult.channelsUrlDecoded: Map<String, List<PNFetchMessageItem>>
+    get() = channels.mapKeys {
+        urlDecode(
+            it.key
+        )
+    }
 
-inline fun <T : Exception> T.logErrorAndReturnException(log: KmLog) = apply {
+inline fun PubNubException.logErrorAndReturnException(log: KmLog): PubNubException = apply {
     log.error(err = this, msg = { this.message.orEmpty() })
 }
 
-inline fun pnError(message: String, log: KmLog): Nothing =  throw PubNubException(message).logErrorAndReturnException(log) // todo remove
-
 inline fun KmLog.pnError(message: String): Nothing = throw PubNubException(message).logErrorAndReturnException(this)
+
+inline fun KmLog.logErrorAndReturnException(message: String): PubNubException {
+    return PubNubException(message).logErrorAndReturnException(this)
+}
