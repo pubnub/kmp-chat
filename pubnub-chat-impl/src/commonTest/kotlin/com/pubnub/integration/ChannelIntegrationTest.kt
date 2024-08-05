@@ -22,7 +22,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
-    fun join() = runTest(timeout = defaultTimeout) {
+    fun join() = runTest {
         val channel = chat.createChannel(randomString()).await()
 
         val result = channel.join {}.await()
@@ -32,31 +32,31 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun join_receivesMessages() = runTest(timeout = defaultTimeout) {
+    fun join_receivesMessages() = runTest {
     }
 
     @Test
-    fun join_close_disconnects() = runTest(timeout = defaultTimeout) {
+    fun join_close_disconnects() = runTest {
     }
 
     @Test
-    fun join_updates_lastReadMessageTimetoken() = runTest(timeout = defaultTimeout) {
+    fun join_updates_lastReadMessageTimetoken() = runTest {
     }
 
     @Test
-    fun connect() = runTest(timeout = defaultTimeout) {
+    fun connect() = runTest {
     }
 
     @Test
-    fun connect_receivesMessages() = runTest(timeout = defaultTimeout) {
+    fun connect_receivesMessages() = runTest {
     }
 
     @Test
-    fun connect_close_disconnects() = runTest(timeout = defaultTimeout) {
+    fun connect_close_disconnects() = runTest {
     }
 
     @Test
-    fun getUserRestrictions() = runTest(timeout = defaultTimeout) {
+    fun getUserRestrictions() = runTest {
         val userId = "userId"
         val user = UserImpl(chat = chatPam, id = userId)
         val ban = true
@@ -74,7 +74,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun getUsersRestrictions() = runTest(timeout = defaultTimeout) {
+    fun getUsersRestrictions() = runTest {
         val userId01 = "userId01"
         val userId02 = "userId02"
         val ban = true
@@ -108,13 +108,13 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest(timeout = defaultTimeout) {
+    fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest {
         val userSuggestions = channel01.getUserSuggestions("sas@las").await()
         assertEquals(0, userSuggestions.size)
     }
 
     @Test
-    fun shouldReturnUserSuggestions_whenNoDataInCacheButUserAvailableInChat() = runTest(timeout = defaultTimeout) {
+    fun shouldReturnUserSuggestions_whenNoDataInCacheButUserAvailableInChat() = runTest {
         // given
         val userName = "userName_${someUser.id}"
         val user: User = chat.createUser(id = someUser.id, name = userName).await()
@@ -173,7 +173,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun streamUpdatesOn() = runTest(timeout = defaultTimeout) {
+    fun streamUpdatesOn() = runTest {
         val newName = "newName"
         chat.createChannel(
             channel01.id,

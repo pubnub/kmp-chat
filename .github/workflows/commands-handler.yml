@@ -27,6 +27,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_TOKEN }}
+          submodules: recursive
       - name: Checkout release actions
         if: steps.user-check.outputs.expected-user == 'true'
         uses: actions/checkout@v4

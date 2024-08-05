@@ -38,6 +38,7 @@ jobs:
         with:
           # This should be the same as the one specified for on.pull_request.branches
           ref: master
+          submodules: recursive
       - name: Checkout actions
         uses: actions/checkout@v4
         with:
