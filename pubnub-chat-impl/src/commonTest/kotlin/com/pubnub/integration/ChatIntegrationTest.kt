@@ -89,8 +89,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             chat.updateUser(someUser.id, name = randomString()).await()
         }
 
-        assertEquals(PubNubErrorMessage.FAILED_TO_UPDATE_USER_METADATA, e.message)
-        assertEquals(PubNubErrorMessage.USER_NOT_EXIST, e.cause?.message)
+        assertEquals(PubNubErrorMessage.USER_NOT_EXIST, e.message)
     }
 
     @Test

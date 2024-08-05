@@ -23,6 +23,7 @@ kotlin {
                 implementation("com.benasher44:uuid:0.8.4")
                 implementation("org.jetbrains.kotlinx:atomicfu:0.24.0")
                 implementation(project(":pubnub-chat-api"))
+                implementation("org.lighthousegames:logging:1.5.0")
             }
         }
 

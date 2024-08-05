@@ -138,10 +138,10 @@ class ChannelTest : BaseTest() {
     @Test
     fun whenChannelIsPublicStartTypingShouldResultFailure() {
         objectUnderTest = createChannel(ChannelType.PUBLIC)
-        objectUnderTest.startTyping().async { result ->
-            // then
-            assertTrue(result.isFailure)
-            assertEquals("Typing indicators are not supported in Public chats.", result.exceptionOrNull()?.message)
+
+        objectUnderTest.startTyping().async { resutl ->
+            assertTrue(resutl.isFailure)
+            assertEquals("Typing indicators are not supported in Public chats.", resutl.exceptionOrNull()?.message)
         }
     }
 
@@ -309,7 +309,11 @@ class ChannelTest : BaseTest() {
         val user2 = "user2"
         typingIndicatorsForTest[user1] = typingSent1
         typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
-        BaseChannel.removeExpiredTypingIndicators(objectUnderTest.chat.config.typingTimeout, typingIndicatorsForTest, now)
+        BaseChannel.removeExpiredTypingIndicators(
+            objectUnderTest.chat.config.typingTimeout,
+            typingIndicatorsForTest,
+            now
+        )
 
         assertFalse(typingIndicatorsForTest.contains(user1))
         assertFalse(typingIndicatorsForTest.contains(user2))
@@ -325,7 +329,11 @@ class ChannelTest : BaseTest() {
         typingIndicatorsForTest[user1] = typingSent1
         typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
 
-        BaseChannel.removeExpiredTypingIndicators(objectUnderTest.chat.config.typingTimeout, typingIndicatorsForTest, now)
+        BaseChannel.removeExpiredTypingIndicators(
+            objectUnderTest.chat.config.typingTimeout,
+            typingIndicatorsForTest,
+            now
+        )
 
         assertTrue(typingIndicatorsForTest.contains(user1))
         assertTrue(typingIndicatorsForTest.contains(user2))
@@ -630,10 +638,14 @@ class ChannelTest : BaseTest() {
     @Test
     fun shouldThrowExceptionWhenSecretKeyIsNotSet() {
         val user = UserImpl(chat = chat, id = "userId")
-        val e = assertFailsWith<PubNubException> {
-            objectUnderTest.setRestrictions(user)
+
+        objectUnderTest.setRestrictions(user).async { result: Result<Unit> ->
+            assertTrue(result.isFailure)
+            assertEquals(
+                "Moderation restrictions can only be set by clients initialized with a Secret Key.",
+                result.exceptionOrNull()?.message
+            )
         }
-        assertEquals("Moderation restrictions can only be set by clients initialized with a Secret Key.", e.message)
     }
 
     @Test

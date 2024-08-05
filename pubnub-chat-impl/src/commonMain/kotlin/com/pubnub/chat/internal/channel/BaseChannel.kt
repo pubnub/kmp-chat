@@ -42,10 +42,15 @@ import com.pubnub.chat.internal.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.channel.ChannelImpl.Companion.fromDTO
 import com.pubnub.chat.internal.defaultGetMessageResponseBody
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_CHANNEL_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
+import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_HANDLING_ONMESSAGE_EVENT
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
+import com.pubnub.chat.internal.error.PubNubErrorMessage.READ_RECEIPTS_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
+import com.pubnub.chat.internal.error.PubNubErrorMessage.THREAD_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
+import com.pubnub.chat.internal.error.PubNubErrorMessage.UNABLE_TO_READ_MESSAGES
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
@@ -53,6 +58,8 @@ import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runWithDelay
 import com.pubnub.chat.internal.util.channelsUrlDecoded
 import com.pubnub.chat.internal.util.getPhraseToLookFor
+import com.pubnub.chat.internal.util.logErrorAndReturnException
+import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.ExponentialRateLimiter
 import com.pubnub.chat.internal.uuidFilterString
 import com.pubnub.chat.listenForEvents
@@ -85,6 +92,7 @@ import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import org.lighthousegames.logging.logging
 import tryLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -136,7 +144,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun startTyping(): PNFuture<Unit> {
         if (type == ChannelType.PUBLIC) {
-            return PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
+            return log.logErrorAndReturnException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
 
         val now = clock.now()
@@ -172,7 +180,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         val typingIndicators = mutableMapOf<String, Instant>()
         val typingIndicatorsLock = reentrantLock()
         if (type == ChannelType.PUBLIC) {
-            throw PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS)
+            log.pnError(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS)
         }
 
         return chat.listenForEvents(this.id) { event: Event<EventContent.Typing> ->
@@ -246,7 +254,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         files: List<InputFile>?,
     ): PNFuture<PNPublishResult> {
         if (quotedMessage != null && quotedMessage.channelId != id) {
-            return PubNubException(CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS).asFuture()
+            return log.logErrorAndReturnException(CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS).asFuture()
         }
         return sendTextRateLimiter.runWithinLimits(
             sendFilesForPublish(files).thenAsync { filesData ->
@@ -267,8 +275,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
                         mentionedUsers?.forEach {
                             emitUserMention(it.value.id, publishResult.timetoken, text).async {}
                         }
-                    } catch (_: Exception) {
-                        // todo log
+                    } catch (e: Exception) {
+                        log.error(err = e, msg = {})
                     }
                     publishResult
                 }
@@ -306,7 +314,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun invite(user: User): PNFuture<Membership> {
         if (this.type == ChannelType.PUBLIC) {
-            return PubNubException(CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
+            return log.logErrorAndReturnException(CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
         return getMembers(filter = user.uuidFilterString).thenAsync { channelMembers: MembersResponse ->
             if (channelMembers.members.isNotEmpty()) {
@@ -335,7 +343,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun inviteMultiple(users: Collection<User>): PNFuture<List<Membership>> {
         if (this.type == ChannelType.PUBLIC) {
-            return PubNubException("Channel invites are not supported in Public chats.").asFuture()
+            return log.logErrorAndReturnException(CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
         return chat.pubNub.setChannelMembers(
             this.id,
@@ -405,7 +413,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     }
                     callback(MessageImpl.fromDTO(chat, pnMessageResult))
                 } catch (e: Exception) {
-                    e.printStackTrace() // todo add logging
+                    log.error(err = e, msg = { ERROR_HANDLING_ONMESSAGE_EVENT })
                 }
             },
         )
@@ -464,7 +472,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
         return this.chat.getChannel(pinnedMessageChannelID).thenAsync { threadChannel: Channel? ->
             if (threadChannel == null) {
-                error("The thread channel does not exist")
+                log.pnError(THREAD_CHANNEL_DOES_NOT_EXISTS)
             }
             threadChannel.getMessage(pinnedMessageTimetoken)
         }
@@ -525,7 +533,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         reason: String?,
     ): PNFuture<Unit> {
         if (chat.pubNub.configuration.secretKey.isEmpty()) {
-            throw PubNubException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY)
+            return log.logErrorAndReturnException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY).asFuture()
         }
         return chat.setRestrictions(
             Restriction(
@@ -540,7 +548,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable {
         if (type == ChannelType.PUBLIC) {
-            throw PubNubException("Read receipts are not supported in Public chats.")
+            log.pnError(READ_RECEIPTS_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS)
         }
         val timetokensPerUser = mutableMapOf<String, Long>()
         val future = getMembers().then { members -> // todo what about paging? maybe not needed in non-public chats...
@@ -677,6 +685,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
     internal abstract fun copyWithStatusDeleted(): C
 
     companion object {
+        private val log = logging()
+
         fun <M : Message> getHistory(
             chat: ChatInternal,
             channelId: String,
@@ -694,7 +704,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 HistoryResponse(
                     messages = pnFetchMessagesResult.channelsUrlDecoded[channelId]?.map { messageItem: PNFetchMessageItem ->
                         messageFactory(chat, messageItem, channelId)
-                    } ?: error("Unable to read messages"),
+                    } ?: log.pnError(UNABLE_TO_READ_MESSAGES),
                     isMore = pnFetchMessagesResult.channelsUrlDecoded[channelId]?.size == count
                 )
             }.catch {
@@ -721,7 +731,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             callback: (channels: Collection<Channel>) -> Unit
         ): AutoCloseable {
             if (channels.isEmpty()) {
-                throw PubNubException("Cannot stream channel updates on an empty list")
+                log.pnError(CAN_NOT_STREAM_CHANNEL_UPDATES_ON_EMPTY_LIST)
             }
             var latestChannels = channels
             val chat = channels.first().chat as ChatInternal
@@ -807,7 +817,12 @@ abstract class BaseChannel<C : Channel, M : Message>(
             }
         }
 
-        internal fun updateUserTypingStatus(userId: String, isTyping: Boolean, now: Instant, userLastTyped: MutableMap<String, Instant>) {
+        internal fun updateUserTypingStatus(
+            userId: String,
+            isTyping: Boolean,
+            now: Instant,
+            userLastTyped: MutableMap<String, Instant>
+        ) {
             if (isTyping) {
                 userLastTyped[userId] = now
             } else {

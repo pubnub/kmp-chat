@@ -1,7 +1,6 @@
 package com.pubnub.kmp
 
 import com.pubnub.api.PubNub
-import com.pubnub.api.PubNubException
 import com.pubnub.api.endpoints.objects.membership.GetMemberships
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
@@ -29,7 +28,6 @@ import dev.mokkery.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -266,9 +264,26 @@ class UserTest {
         val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
         val getMemberships: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub
-        every { pubNub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMemberships
+        every {
+            pubNub.getMemberships(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns getMemberships
 
-        (objectUnderTest as UserImpl).getRestrictions(channel = noChannelProvided, limit = limit, page = page, sort = sort)
+        (objectUnderTest as UserImpl).getRestrictions(
+            channel = noChannelProvided,
+            limit = limit,
+            page = page,
+            sort = sort
+        )
 
         val expectedFilter = "channel.id LIKE 'PUBNUB_INTERNAL_MODERATION_*'"
         verify {
@@ -295,7 +310,19 @@ class UserTest {
         val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
         val getMemberships: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub
-        every { pubNub.getMemberships(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns getMemberships
+        every {
+            pubNub.getMemberships(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns getMemberships
 
         (objectUnderTest as UserImpl).getRestrictions(channel = channel, limit = limit, page = page, sort = sort)
 
@@ -318,10 +345,13 @@ class UserTest {
     @Test
     fun shouldThrowExceptionWhenSecretKeyIsNotSet() {
         val channel = ChannelImpl(chat = chat, id = "channelId")
-        val e = assertFailsWith<PubNubException> {
-            objectUnderTest.setRestrictions(channel)
+        objectUnderTest.setRestrictions(channel).async { result ->
+            assertTrue(result.isFailure)
+            assertEquals(
+                "Moderation restrictions can only be set by clients initialized with a Secret Key.",
+                result.exceptionOrNull()?.message
+            )
         }
-        assertEquals("Moderation restrictions can only be set by clients initialized with a Secret Key.", e.message)
     }
 
     private fun getPNChannelMembershipArrayResult(): PNChannelMembershipArrayResult {

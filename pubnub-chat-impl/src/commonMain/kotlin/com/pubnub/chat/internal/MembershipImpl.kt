@@ -1,6 +1,5 @@
 package com.pubnub.chat.internal
 
-import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
@@ -11,7 +10,10 @@ import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.channel.ChannelImpl
-import com.pubnub.chat.internal.error.PubNubErrorMessage
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST
+import com.pubnub.chat.internal.error.PubNubErrorMessage.NO_SUCH_MEMBERSHIP_EXISTS
+import com.pubnub.chat.internal.error.PubNubErrorMessage.RECEIPT_EVENT_WAS_NOT_SENT_TO_CHANNEL
+import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.AccessManager
 import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.CustomObject
@@ -22,6 +24,7 @@ import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
+import org.lighthousegames.logging.logging
 import tryLong
 
 data class MembershipImpl(
@@ -44,7 +47,7 @@ data class MembershipImpl(
     override fun update(custom: CustomObject): PNFuture<Membership> {
         return exists().thenAsync { exists ->
             if (!exists) {
-                throw PubNubException(PubNubErrorMessage.NO_SUCH_MEMBERSHIP_EXISTS)
+                log.pnError(NO_SUCH_MEMBERSHIP_EXISTS)
             }
             chat.pubNub.setMemberships(
                 uuid = user.id,
@@ -66,15 +69,15 @@ data class MembershipImpl(
             put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, timetoken)
         }
         return update(createCustomObject(newCustom)).alsoAsync {
-            val canISendSignal = AccessManager(chat).canI(AccessManager.Permission.WRITE, AccessManager.ResourceType.CHANNELS, channel.id)
+            val canISendSignal = AccessManager(chat).canI(
+                AccessManager.Permission.WRITE,
+                AccessManager.ResourceType.CHANNELS,
+                channel.id
+            )
             if (canISendSignal) {
                 chat.emitEvent(channel.id, EventContent.Receipt(timetoken))
             } else {
-                if (chat.config.saveDebugLog) {
-                    println(
-                        "'receipt' event was not sent to channel '${this.channel.id}' because PAM did not allow it."
-                    ) // todo change to logging
-                }
+                log.warn { "$RECEIPT_EVENT_WAS_NOT_SENT_TO_CHANNEL${this.channel.id}" }
                 Unit.asFuture()
             }
         }
@@ -105,12 +108,14 @@ data class MembershipImpl(
     private fun filterThisChannel() = "channel.id == '${this.channel.id}'"
 
     companion object {
+        private val log = logging()
+
         fun streamUpdatesOn(
             memberships: Collection<Membership>,
             callback: (memberships: Collection<Membership>) -> Unit,
         ): AutoCloseable {
             if (memberships.isEmpty()) {
-                throw PubNubException("Cannot stream membership updates on an empty list")
+                log.pnError(CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST)
             }
             var latestMemberships = memberships
             val chat = memberships.first().chat as ChatInternal
@@ -146,22 +151,24 @@ data class MembershipImpl(
             return subscriptionSet
         }
 
-        internal fun fromMembershipDTO(chat: ChatInternal, channelMembership: PNChannelMembership, user: User) = MembershipImpl(
-            chat,
-            ChannelImpl.fromDTO(chat, channelMembership.channel!!),
-            user,
-            channelMembership.custom,
-            channelMembership.updated,
-            channelMembership.eTag
-        )
+        internal fun fromMembershipDTO(chat: ChatInternal, channelMembership: PNChannelMembership, user: User) =
+            MembershipImpl(
+                chat,
+                ChannelImpl.fromDTO(chat, channelMembership.channel!!),
+                user,
+                channelMembership.custom,
+                channelMembership.updated,
+                channelMembership.eTag
+            )
 
-        internal fun fromChannelMemberDTO(chat: ChatInternal, userMembership: PNMember, channel: Channel) = MembershipImpl(
-            chat,
-            channel,
-            UserImpl.fromDTO(chat, userMembership.uuid!!),
-            userMembership.custom,
-            userMembership.updated,
-            userMembership.eTag,
-        )
+        internal fun fromChannelMemberDTO(chat: ChatInternal, userMembership: PNMember, channel: Channel) =
+            MembershipImpl(
+                chat,
+                channel,
+                UserImpl.fromDTO(chat, userMembership.uuid!!),
+                userMembership.custom,
+                userMembership.updated,
+                userMembership.eTag,
+            )
     }
 }

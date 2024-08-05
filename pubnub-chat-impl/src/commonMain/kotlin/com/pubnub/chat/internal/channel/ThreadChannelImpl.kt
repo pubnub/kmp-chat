@@ -10,7 +10,9 @@ import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
+import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.message.ThreadMessageImpl
+import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.InputFile
@@ -22,6 +24,7 @@ import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import kotlinx.datetime.Clock
+import org.lighthousegames.logging.logging
 
 data class ThreadChannelImpl(
     override val parentMessage: Message,
@@ -63,7 +66,7 @@ data class ThreadChannelImpl(
     private fun pinOrUnpinMessageFromParentChannel(message: ThreadMessage?): PNFuture<Channel> {
         return chat.getChannel(parentChannelId).thenAsync { parentChannel ->
             if (parentChannel == null) {
-                error("Parent channel doesn't exist")
+                log.pnError(PARENT_CHANNEL_DOES_NOT_EXISTS)
             }
             ChatImpl.pinMessageToChannel(chat.pubNub, message, parentChannel).then {
                 ChannelImpl.fromDTO(chat, it.data!!)
@@ -127,6 +130,8 @@ data class ThreadChannelImpl(
     }
 
     companion object {
+        private val log = logging()
+
         internal fun fromDTO(chat: ChatInternal, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {
             return ThreadChannelImpl(
                 parentMessage,

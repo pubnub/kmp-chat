@@ -23,12 +23,15 @@ import kotlin.time.Duration.Companion.seconds
 class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun join() = runTest {
-        val channel = chat.createChannel(randomString()).await()
+        val channelId = randomString()
+        val channel = chat.createChannel(channelId).await()
 
         val result = channel.join {}.await()
 
         assertEquals(config.userId.value, result.membership.user.id)
         assertEquals(channel.id, result.membership.channel.id)
+
+        chat.deleteChannel(channelId).await()
     }
 
     @Test
@@ -275,7 +278,8 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun getMessage() = runTest(timeout = 10.seconds) {
         val messageText = "some text"
-        val channel = chat.createChannel(randomString()).await()
+        val channelId = randomString()
+        val channel = chat.createChannel(channelId).await()
         val tt = channel.sendText(messageText, ttl = 60).await().timetoken
 
         delayInMillis(150)
@@ -283,11 +287,14 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val message = channel.getMessage(tt).await()
         assertEquals(messageText, message?.text)
         assertEquals(tt, message?.timetoken)
+
+        chat.deleteChannel(channelId).await()
     }
 
     @Test
     fun getTyping() = runTest(timeout = 10.seconds) {
-        val channel = chat.createChannel(randomString()).await()
+        val channelId = randomString()
+        val channel = chat.createChannel(channelId).await()
         val typingStarted = CompletableDeferred<Unit>()
         val typingStopped = CompletableDeferred<Unit>()
         pubnub.test(backgroundScope, checkAllEvents = false) {
@@ -313,6 +320,8 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
             dispose?.close()
         }
+
+        chat.deleteChannel(channelId).await()
     }
 }
 

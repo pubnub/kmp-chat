@@ -43,7 +43,7 @@ interface Message {
 
     fun pin(): PNFuture<Channel>
 
-    // todo do we have test for this?
+    // todo do we want to have test for this?
     fun report(reason: String): PNFuture<PNPublishResult>
 
     fun createThread(): PNFuture<ThreadChannel>
@@ -52,6 +52,7 @@ interface Message {
 
     fun toggleReaction(reaction: String): PNFuture<Message>
 
+    // todo do we want to have test for this?
     fun <T : Message> streamUpdates(callback: (message: T) -> Unit): AutoCloseable
 
     companion object

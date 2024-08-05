@@ -8,42 +8,50 @@ import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
 interface ChatConfiguration {
-    val saveDebugLog: Boolean
+    val logLevel: LogLevel
     val typingTimeout: Duration
     val storeUserActivityInterval: Duration
     val storeUserActivityTimestamps: Boolean
     val pushNotifications: PushNotificationsConfig
     val rateLimitFactor: Int
     val rateLimitPerChannel: Map<ChannelType, Duration>
-    val errorLogger: Any? // todo use this in code
     val customPayloads: CustomPayloads?
 }
 
 fun ChatConfiguration(
-    saveDebugLog: Boolean = false,
+    logLevel: LogLevel = LogLevel.OFF, // todo document all levels including "Off"
     typingTimeout: Duration = 5.seconds,
     storeUserActivityInterval: Duration = 60.seconds,
     storeUserActivityTimestamps: Boolean = false,
-    pushNotifications: PushNotificationsConfig = PushNotificationsConfig(false, null, PNPushType.FCM, null, PNPushEnvironment.DEVELOPMENT),
+    pushNotifications: PushNotificationsConfig = PushNotificationsConfig(
+        false,
+        null,
+        PNPushType.FCM,
+        null,
+        PNPushEnvironment.DEVELOPMENT
+    ),
     rateLimitFactor: Int = 2,
     rateLimitPerChannel: Map<ChannelType, Duration> = RateLimitPerChannel(),
-    errorLogger: Any? = null,
     customPayloads: CustomPayloads? = null,
 ): ChatConfiguration = object : ChatConfiguration {
-    override val saveDebugLog: Boolean = saveDebugLog
+    override val logLevel: LogLevel = logLevel
     override val typingTimeout: Duration = typingTimeout
     override val storeUserActivityInterval: Duration = storeUserActivityInterval
     override val storeUserActivityTimestamps: Boolean = storeUserActivityTimestamps
     override val pushNotifications: PushNotificationsConfig = pushNotifications
     override val rateLimitFactor: Int = rateLimitFactor
     override val rateLimitPerChannel: Map<ChannelType, Duration> = rateLimitPerChannel
-    override val errorLogger: Any? = errorLogger
     override val customPayloads: CustomPayloads? = customPayloads
 }
 
 typealias RateLimitPerChannel = Map<ChannelType, Duration>
 
-fun RateLimitPerChannel(direct: Duration = ZERO, group: Duration = ZERO, public: Duration = ZERO, unknown: Duration = ZERO): RateLimitPerChannel =
+fun RateLimitPerChannel(
+    direct: Duration = ZERO,
+    group: Duration = ZERO,
+    public: Duration = ZERO,
+    unknown: Duration = ZERO
+): RateLimitPerChannel =
     mapOf(
         ChannelType.DIRECT to direct,
         ChannelType.GROUP to group,

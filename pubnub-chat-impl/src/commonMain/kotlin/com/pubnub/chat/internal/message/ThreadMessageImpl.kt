@@ -10,7 +10,9 @@ import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
@@ -18,6 +20,7 @@ import com.pubnub.chat.types.QuotedMessage
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
+import org.lighthousegames.logging.logging
 
 data class ThreadMessageImpl(
     override val chat: ChatInternal,
@@ -47,6 +50,8 @@ data class ThreadMessageImpl(
     override fun copyWithActions(actions: Actions): ThreadMessage = copy(actions = actions)
 
     companion object {
+        private val log = logging()
+
         internal fun fromDTO(chat: ChatImpl, pnMessageResult: PNMessageResult, parentChannelId: String): ThreadMessage {
             return ThreadMessageImpl(
                 chat,
@@ -94,7 +99,7 @@ data class ThreadMessageImpl(
     private fun pinOrUnpinFromParentChannel(message: ThreadMessage?): PNFuture<Channel> {
         return chat.getChannel(parentChannelId).thenAsync { parentChannel ->
             if (parentChannel == null) {
-                error("Parent channel doesn't exist")
+                log.pnError(PARENT_CHANNEL_DOES_NOT_EXISTS)
             }
             ChatImpl.pinMessageToChannel(chat.pubNub, message, parentChannel).then {
                 ChannelImpl.fromDTO(chat, it.data!!)
