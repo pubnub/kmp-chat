@@ -90,9 +90,11 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun join_updates_lastReadMessageTimetoken() = runTest {
+        val then = Instant.fromEpochSeconds(chat.pubNub.time().await().timetoken / 10000000)
         val channel = chat.createChannel(randomString()).await()
-        val then = Clock.System.now()
+
         val lastReadMessage = channel.join().await().membership.lastReadMessageTimetoken
+
         assertNotNull(lastReadMessage)
         assertContains(then..Clock.System.now(), Instant.fromEpochSeconds(lastReadMessage / 10000000))
     }
