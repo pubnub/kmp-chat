@@ -23,6 +23,7 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.time.Duration.Companion.seconds
 
@@ -46,8 +47,8 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             val joinResult = CompletableDeferred<JoinResult>()
             pubnub.awaitSubscribe {
-                channel.join {
-                    message.complete(it)
+                channel.join { receivedMessage ->
+                    message.complete(receivedMessage)
                 }.async {
                     it.onSuccess {
                         joinResult.complete(it)
@@ -67,7 +68,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun join_close_disconnects() = runTest {
+    fun join_close_unsubscribes() = runTest {
         val channel = chat.createChannel(randomString()).await()
 
         pubnub.test(backgroundScope, checkAllEvents = false) {
@@ -122,12 +123,13 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             }
             channel.sendText(messageText).await()
             assertEquals(messageText, message.await().text)
+            assertFalse(channel.getMembers().await().members.any { it.user.id == chat.currentUser.id })
             unsubscribe?.close()
         }
     }
 
     @Test
-    fun connect_close_disconnects() = runTest {
+    fun connect_close_unsubscribes() = runTest {
         val channel = chat.createChannel(randomString()).await()
 
         pubnub.test(backgroundScope, checkAllEvents = false) {
