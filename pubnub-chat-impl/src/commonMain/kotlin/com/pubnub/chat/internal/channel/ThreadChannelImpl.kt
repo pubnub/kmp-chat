@@ -137,12 +137,12 @@ data class ThreadChannelImpl(
                 parentMessage,
                 chat,
                 id = channel.id,
-                name = channel.name,
-                custom = channel.custom,
-                description = channel.description,
-                updated = channel.updated,
-                status = channel.status,
-                type = ChannelType.from(channel.type)
+                name = channel.name?.value,
+                custom = channel.custom?.value,
+                description = channel.description?.value,
+                updated = channel.updated?.value,
+                status = channel.status?.value,
+                type = ChannelType.from(channel.type?.value)
             )
         }
     }

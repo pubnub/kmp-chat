@@ -42,6 +42,7 @@ import com.pubnub.api.models.consumer.presence.PNHereNowResult
 import com.pubnub.api.models.consumer.presence.PNWhereNowResult
 import com.pubnub.api.models.consumer.push.PNPushListProvisionsResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveAllChannelsResult
+import com.pubnub.api.utils.PatchValue
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
@@ -1342,13 +1343,13 @@ class ChatTest : BaseTest() {
         val actualId = updatedId ?: id
         val pnChannelMetadata = PNChannelMetadata(
             id = actualId,
-            name = updatedName,
-            description = updatedDescription,
-            custom = updatedCustom,
-            updated = updatedUpdated,
-            eTag = "updatedETag",
-            type = updatedType,
-            status = updatedStatus
+            name = PatchValue.of(updatedName),
+            description = PatchValue.of(updatedDescription),
+            custom = PatchValue.of(updatedCustom),
+            updated = PatchValue.of(updatedUpdated),
+            eTag = PatchValue.of("updatedETag"),
+            type = PatchValue.of(updatedType),
+            status = PatchValue.of(updatedStatus)
         )
         return PNChannelMetadataResult(status = 200, data = pnChannelMetadata)
     }
@@ -1383,13 +1384,13 @@ class ChatTest : BaseTest() {
 
     private fun getPNChannelMetadata() = PNChannelMetadata(
         id = id,
-        name = name,
-        description = description,
-        custom = customData,
-        updated = updated,
-        eTag = "updatedETag",
-        type = typeAsString,
-        status = status
+        name = PatchValue.of(name),
+        description = PatchValue.of(description),
+        custom = PatchValue.of(customData),
+        updated = PatchValue.of(updated),
+        eTag = PatchValue.of("updatedETag"),
+        type = PatchValue.of(typeAsString),
+        status = PatchValue.of(status)
     )
 
     private fun getPNUuidMetadataResult(): PNUUIDMetadataResult {

@@ -22,6 +22,7 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArra
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteChannelMetadataEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetChannelMetadataEventMessage
 import com.pubnub.api.models.consumer.push.payload.PushPayloadHelper
+import com.pubnub.api.utils.PatchValue
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.subscriptions.SubscriptionOptions
 import com.pubnub.chat.Channel
@@ -40,7 +41,6 @@ import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
 import com.pubnub.chat.internal.METADATA_TEXT_LINKS
 import com.pubnub.chat.internal.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.chat.internal.MembershipImpl
-import com.pubnub.chat.internal.channel.ChannelImpl.Companion.fromDTO
 import com.pubnub.chat.internal.defaultGetMessageResponseBody
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_CHANNEL_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
@@ -671,6 +671,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
+    override fun plus(update: PNChannelMetadata): Channel {
+        return channelFactory(chat, toPNChannelMetadata() + update)
+    }
+
     private fun sendTypingSignal(value: Boolean): PNFuture<Unit> {
         return chat.emitEvent(
             channelId = this.id,
@@ -737,14 +741,19 @@ abstract class BaseChannel<C : Channel, M : Message>(
             val chat = channels.first().chat as ChatInternal
             val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
                 val (newChannel, newChannelId) = when (val message = event.extractedMessage) {
-                    is PNSetChannelMetadataEventMessage -> fromDTO(chat, message.data) to message.data.id
+                    is PNSetChannelMetadataEventMessage -> {
+                        val newChannelId = message.data.id
+                        val previousChannel = latestChannels.firstOrNull { it.id == newChannelId }
+                        val newChannel = previousChannel?.plus(message.data) ?: ChannelImpl.fromDTO(chat, message.data)
+                        newChannel to newChannelId
+                    }
                     is PNDeleteChannelMetadataEventMessage -> null to message.channel
                     else -> return@createEventListener
                 }
 
                 latestChannels = latestChannels.asSequence().filter {
                     it.id != newChannelId
-                }.run { newChannel?.let { plus(it) } ?: this }.toList()
+                }.run { if (newChannel != null) { this.plus(newChannel) } else this }.toList()
                 callback(latestChannels)
             })
 
@@ -848,4 +857,17 @@ abstract class BaseChannel<C : Channel, M : Message>(
             return lastTypingSent < now - timeout
         }
     }
+}
+
+private fun BaseChannel<*,*>.toPNChannelMetadata(): PNChannelMetadata {
+    return PNChannelMetadata(
+        id = id,
+        name = PatchValue.of(name),
+        description = PatchValue.of(description),
+        custom = PatchValue.of(custom),
+        updated = updated?.let { PatchValue.of(it) },
+        eTag = null,
+        type = type?.let { PatchValue.of(it.stringValue) },
+        status = PatchValue.of(status)
+    )
 }

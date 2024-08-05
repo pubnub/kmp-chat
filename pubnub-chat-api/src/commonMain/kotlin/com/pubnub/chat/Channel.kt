@@ -5,6 +5,7 @@ import com.pubnub.api.models.consumer.files.PNDeleteFileResult
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.chat.membership.MembersResponse
@@ -128,7 +129,8 @@ interface Channel {
 
     fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<Set<Membership>>
 
+    fun plus(update: PNChannelMetadata): Channel
+
     // Companion object required for extending this class elsewhere
-    // toDo Is this needed? Where do we extend this?
     companion object
 }
