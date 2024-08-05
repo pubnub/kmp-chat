@@ -46,7 +46,7 @@ import kotlin.test.assertTrue
 
 class ChatIntegrationTest : BaseChatIntegrationTest() {
     @Test
-    fun createUser() = runTest(timeout = defaultTimeout) {
+    fun createUser() = runTest {
         val user = chat.createUser(someUser).await()
 
         assertEquals(someUser, user.asImpl().copy(updated = null, lastActiveTimestamp = null))
@@ -54,7 +54,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun updateUser() = runTest(timeout = defaultTimeout) {
+    fun updateUser() = runTest {
         val user = chat.createUser(someUser).await()
         val expectedUser = user.asImpl().copy(
             name = randomString(),
@@ -84,7 +84,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun updateUser_doesntExist() = runTest(timeout = defaultTimeout) {
+    fun updateUser_doesntExist() = runTest {
         val e = assertFailsWith<PubNubException> {
             chat.updateUser(someUser.id, name = randomString()).await()
         }
@@ -93,7 +93,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun createDirectConversation() = runTest(timeout = defaultTimeout) {
+    fun createDirectConversation() = runTest {
         chat.initialize().await()
         // when
         val result = chat.createDirectConversation(someUser).await()
@@ -113,7 +113,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun createGroupConversation() = runTest(timeout = defaultTimeout) {
+    fun createGroupConversation() = runTest {
         val otherUsers = listOf(UserImpl(chat, randomString()), UserImpl(chat, randomString()))
 
         // when
@@ -137,7 +137,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun can_markAllMessagesAsRead() = runTest(timeout = defaultTimeout) {
+    fun can_markAllMessagesAsRead() = runTest {
         // create two membership for user one with "lastReadMessageTimetoken" and second without.
         val lastReadMessageTimetokenValue: Long = 17195737006492403
         val custom: CustomObject =
@@ -218,7 +218,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Ignore // fails from time to time
     @Test
-    fun can_getUnreadMessagesCount_onMembership() = runTest(timeout = defaultTimeout) {
+    fun can_getUnreadMessagesCount_onMembership() = runTest {
         val channelId01 = channel01.id
 
         // send message
@@ -252,7 +252,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Ignore // fails from time to time
     @Test
-    fun can_getUnreadMessageCounts_global() = runTest(timeout = defaultTimeout) {
+    fun can_getUnreadMessageCounts_global() = runTest {
         val channelId01 = channel01.id
         val channelId02 = channel02.id
 
@@ -301,14 +301,14 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun shouldReturnNoChannelSuggestions_whenNoDataInCacheAndNoChannelsInChat() = runTest(timeout = defaultTimeout) {
+    fun shouldReturnNoChannelSuggestions_whenNoDataInCacheAndNoChannelsInChat() = runTest {
         val channelSuggestions: Set<Channel> = chat.getChannelSuggestions("sas#las").await()
         assertEquals(0, channelSuggestions.size)
     }
 
     @Test
     fun shouldReturnChannelSuggestions_whenNoDataInCacheButChannelAvailableInChat() =
-        runTest(timeout = defaultTimeout) {
+        runTest {
             val channelName = "channelName_${channel01.id}"
             chat.createChannel(id = channel01.id, name = channelName).await()
 
@@ -320,13 +320,13 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         }
 
     @Test
-    fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest(timeout = defaultTimeout) {
+    fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest {
         val userSuggestions = chat.getUserSuggestions("sas@las").await()
         assertEquals(0, userSuggestions.size)
     }
 
     @Test
-    fun shouldReturnUserSuggestions_whenNoDataInCacheButUserAvailableInChat() = runTest(timeout = defaultTimeout) {
+    fun shouldReturnUserSuggestions_whenNoDataInCacheButUserAvailableInChat() = runTest {
         val userName = "userName_${someUser.id}"
         chat.createUser(id = someUser.id, name = userName).await()
 
@@ -338,7 +338,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun register_unregister_list_pushNotificationOnChannel() = runTest(timeout = defaultTimeout) {
+    fun register_unregister_list_pushNotificationOnChannel() = runTest {
         // set up push config
         val chatConfig = ChatConfiguration(
             pushNotifications = PushNotificationsConfig(
@@ -384,7 +384,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun can_getEventsHistory() = runTest(timeout = defaultTimeout) {
+    fun can_getEventsHistory() = runTest {
         // given
         val channelId01 = channel01.id
         val userId = someUser.id
@@ -426,6 +426,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // send messages with user mentions
         channel01.sendText(text = message, mentionedUsers = messageMentionedUsers).await()
+        delayInMillis(1000)
 
         // when
         val currentUserMentionsResult: GetCurrentUserMentionsResult = chat.getCurrentUserMentions().await()
@@ -436,7 +437,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(1, currentUserMentionsResult.enhancedMentionsData.size)
         assertEquals(userId, userMentionData.userId)
         assertEquals(channelId01, userMentionData.channelId)
-        assertTrue(userMentionData.event.payload is EventContent.Mention)
         assertEquals(message, userMentionData.message?.content?.text)
 
         // remove messages
@@ -462,9 +462,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(1, currentUserMentionsResult.enhancedMentionsData.size)
         val userMentionData = currentUserMentionsResult.enhancedMentionsData.first() as ThreadMentionData
         assertEquals(userId, userMentionData.userId)
-        assertEquals(true, userMentionData.parentChannelId?.contains(CHANNEL_ID_OF_PARENT_MESSAGE_PREFIX))
-        assertEquals(true, userMentionData.threadChannelId?.contains(THREAD_CHANNEL_ID_PREFIX))
-        assertTrue(userMentionData.event.payload is EventContent.Mention)
+        assertEquals(true, userMentionData.parentChannelId.contains(CHANNEL_ID_OF_PARENT_MESSAGE_PREFIX))
+        assertEquals(true, userMentionData.threadChannelId.contains(THREAD_CHANNEL_ID_PREFIX))
         assertEquals(message, userMentionData.message?.content?.text)
 
         // remove messages

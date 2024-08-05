@@ -1,1 +1,1 @@
-./gradlew :dokkaGfmMultiModule --no-configuration-cache
+./gradlew :dokkaGfmMultiModule

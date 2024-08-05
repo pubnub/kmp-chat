@@ -15,7 +15,7 @@ import kotlin.test.assertEquals
 
 class MessageIntegrationTest : BaseChatIntegrationTest() {
     @Test
-    fun streamUpdatesOn() = runTest(timeout = defaultTimeout) {
+    fun streamUpdatesOn() = runTest {
         chat.createChannel(
             channel01.id,
             channel01.name,

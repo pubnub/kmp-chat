@@ -95,7 +95,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     }
 
     @AfterTest
-    fun afterTest() = runTest(timeout = defaultTimeout) {
+    fun afterTest() = runTest {
         pubnub.removeUUIDMetadata(someUser.id).await()
         pubnub.removeUUIDMetadata(userPam.id).await()
         pubnub.removeChannelMetadata(channel01.id).await()
