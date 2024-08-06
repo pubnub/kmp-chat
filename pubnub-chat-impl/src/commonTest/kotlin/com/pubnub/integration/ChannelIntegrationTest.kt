@@ -20,7 +20,7 @@ import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
-import junit.framework.TestCase.assertNotNull
+import junit.framework.TestCase.assertTrue
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
@@ -29,7 +29,6 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.time.Duration.Companion.seconds
@@ -184,19 +183,9 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val sort: Collection<PNSortKey<PNMemberKey>> = listOf(PNSortKey.PNAsc(PNMemberKey.UUID_ID))
         val channelId = channelPam.id
 
-        channelPam.setRestrictions(
-            user = UserImpl(chat = chatPam, id = userId01),
-            ban = ban,
-            mute = mute,
-            reason = reason
-        )
+        channelPam.setRestrictions(user = UserImpl(chat = chatPam, id = userId01), ban = ban, mute = mute, reason = reason)
             .await()
-        channelPam.setRestrictions(
-            user = UserImpl(chat = chatPam, id = userId02),
-            ban = ban,
-            mute = mute,
-            reason = reason
-        )
+        channelPam.setRestrictions(user = UserImpl(chat = chatPam, id = userId02), ban = ban, mute = mute, reason = reason)
             .await()
 
         val getRestrictionsResponse: GetRestrictionsResponse =
