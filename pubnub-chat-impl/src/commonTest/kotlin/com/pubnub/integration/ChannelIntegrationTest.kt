@@ -5,6 +5,7 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
+import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.UserImpl
@@ -14,6 +15,7 @@ import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
+import com.pubnub.chat.types.JoinResult
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
@@ -22,9 +24,14 @@ import junit.framework.TestCase.assertNotNull
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.time.Duration.Companion.seconds
 
 class ChannelIntegrationTest : BaseChatIntegrationTest() {
@@ -33,7 +40,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val channelId = randomString()
         val channel = chat.createChannel(channelId).await()
 
-        val result = channel.join {}.await()
+        val result = channel.join().await()
 
         assertEquals(config.userId.value, result.membership.user.id)
         assertEquals(channel.id, result.membership.channel.id)
@@ -43,26 +50,108 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun join_receivesMessages() = runTest {
+        val channel = chat.createChannel(randomString()).await()
+        val messageText = randomString()
+        val message = CompletableDeferred<Message>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            val joinResult = CompletableDeferred<JoinResult>()
+            pubnub.awaitSubscribe {
+                channel.join { receivedMessage ->
+                    message.complete(receivedMessage)
+                }.async {
+                    it.onSuccess {
+                        joinResult.complete(it)
+                    }.onFailure {
+                        joinResult.completeExceptionally(it)
+                    }
+                }
+            }
+            val result = joinResult.await()
+            channel.sendText(messageText).await()
+
+            assertEquals(config.userId.value, result.membership.user.id)
+            assertEquals(channel.id, result.membership.channel.id)
+            assertEquals(messageText, message.await().text)
+            result.disconnect?.close()
+        }
     }
 
     @Test
-    fun join_close_disconnects() = runTest {
+    fun join_close_unsubscribes() = runTest {
+        val channel = chat.createChannel(randomString()).await()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            val joinResult = CompletableDeferred<JoinResult>()
+            pubnub.awaitSubscribe(channels = listOf(channel.id)) {
+                channel.join { }.async {
+                    it.onSuccess {
+                        joinResult.complete(it)
+                    }.onFailure {
+                        joinResult.completeExceptionally(it)
+                    }
+                }
+            }
+            val result = joinResult.await()
+            pubnub.awaitUnsubscribe(channels = listOf(channel.id)) {
+                result.disconnect?.close()
+            }
+        }
     }
 
     @Test
     fun join_updates_lastReadMessageTimetoken() = runTest {
+        val then = Instant.fromEpochSeconds(chat.pubNub.time().await().timetoken / 10000000)
+        val channel = chat.createChannel(randomString()).await()
+
+        val lastReadMessage = channel.join().await().membership.lastReadMessageTimetoken
+
+        assertNotNull(lastReadMessage)
+        assertContains(then..Clock.System.now(), Instant.fromEpochSeconds(lastReadMessage / 10000000))
     }
 
     @Test
     fun connect() = runTest {
+        val channel = chat.createChannel(randomString()).await()
+
+        val result = channel.connect {}
+        result.close()
     }
 
     @Test
     fun connect_receivesMessages() = runTest {
+        val channel = chat.createChannel(randomString()).await()
+        val messageText = randomString()
+        val message = CompletableDeferred<Message>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var unsubscribe: AutoCloseable? = null
+            pubnub.awaitSubscribe {
+                unsubscribe = channel.connect {
+                    message.complete(it)
+                }
+            }
+            channel.sendText(messageText).await()
+            assertEquals(messageText, message.await().text)
+            assertFalse(channel.getMembers().await().members.any { it.user.id == chat.currentUser.id })
+            unsubscribe?.close()
+        }
     }
 
     @Test
-    fun connect_close_disconnects() = runTest {
+    fun connect_close_unsubscribes() = runTest {
+        val channel = chat.createChannel(randomString()).await()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            val disconnect = CompletableDeferred<AutoCloseable>()
+            pubnub.awaitSubscribe(channels = listOf(channel.id)) {
+                disconnect.complete(channel.connect { })
+            }
+            val closeable = disconnect.await()
+            pubnub.awaitUnsubscribe(channels = listOf(channel.id)) {
+                closeable.close()
+            }
+        }
     }
 
     @Test
