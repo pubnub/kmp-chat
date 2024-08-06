@@ -1,6 +1,7 @@
 package com.pubnub.chat.internal
 
 import com.pubnub.api.PubNubException
+import com.pubnub.api.UserId
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
@@ -11,6 +12,7 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArra
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteUUIDMetadataEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetUUIDMetadataEventMessage
+import com.pubnub.api.utils.PatchValue
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Membership
@@ -189,6 +191,10 @@ data class UserImpl(
         return chat.emitEvent(channelId = INTERNAL_ADMIN_CHANNEL, payload = payload)
     }
 
+    override fun plus(update: PNUUIDMetadata): User {
+        return fromDTO(chat, toUUIDMetadata() + update)
+    }
+
     internal fun getRestrictions(
         channel: Channel?,
         limit: Int? = null,
@@ -240,15 +246,15 @@ data class UserImpl(
         internal fun fromDTO(chat: ChatInternal, user: PNUUIDMetadata): User = UserImpl(
             chat,
             id = user.id,
-            name = user.name,
-            externalId = user.externalId,
-            profileUrl = user.profileUrl,
-            email = user.email,
-            custom = user.custom,
-            updated = user.updated,
-            status = user.status,
-            type = user.type,
-            lastActiveTimestamp = user.custom?.get("lastActiveTimestamp")?.tryLong()
+            name = user.name?.value,
+            externalId = user.externalId?.value,
+            profileUrl = user.profileUrl?.value,
+            email = user.email?.value,
+            custom = user.custom?.value,
+            updated = user.updated?.value,
+            status = user.status?.value,
+            type = user.type?.value,
+            lastActiveTimestamp = user.custom?.value?.get("lastActiveTimestamp")?.tryLong()
         )
 
         fun streamUpdatesOn(users: Collection<User>, callback: (users: Collection<User>) -> Unit): AutoCloseable {
@@ -259,7 +265,12 @@ data class UserImpl(
             val chat = users.first().chat as ChatInternal
             val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
                 val (newUser, newUserId) = when (val message = event.extractedMessage) {
-                    is PNSetUUIDMetadataEventMessage -> fromDTO(chat, message.data) to message.data.id
+                    is PNSetUUIDMetadataEventMessage -> {
+                        val newUserId = message.data.id
+                        val previousUser = latestUsers.firstOrNull { it.id == newUserId }
+                        val newUser = previousUser?.plus(message.data) ?: fromDTO(chat, message.data)
+                        newUser to newUserId
+                    }
                     is PNDeleteUUIDMetadataEventMessage -> null to message.uuid
                     else -> return@createEventListener
                 }
@@ -279,3 +290,18 @@ data class UserImpl(
 }
 
 internal val User.uuidFilterString get() = "uuid.id == '${this.id}'"
+
+private fun UserImpl.toUUIDMetadata(): PNUUIDMetadata {
+    return PNUUIDMetadata(
+        id = id,
+        name = name?.let { PatchValue.of(it) },
+        externalId = externalId?.let { PatchValue.of(it) },
+        profileUrl = profileUrl?.let { PatchValue.of(it) },
+        email = email?.let { PatchValue.of(it) },
+        custom = custom?.let { PatchValue.of(it) },
+        updated = updated?.let { PatchValue.of(it) },
+        eTag = null,
+        type = type?.let { PatchValue.of(it) },
+        status = status?.let { PatchValue.of(it) },
+    )
+}

@@ -1371,15 +1371,15 @@ class ChatTest : BaseTest() {
 
     private fun getPNUuidMetadata() = PNUUIDMetadata(
         id = id,
-        name = name,
-        externalId = externalId,
-        profileUrl = profileUrl,
-        email = email,
-        custom = customData,
-        updated = updated,
-        eTag = "eTag",
-        type = typeAsString,
-        status = status
+        name = PatchValue.of(name),
+        externalId = PatchValue.of(externalId),
+        profileUrl = PatchValue.of(profileUrl),
+        email = PatchValue.of(email),
+        custom = PatchValue.of(customData),
+        updated = PatchValue.of(updated),
+        eTag = PatchValue.of("eTag"),
+        type = PatchValue.of(typeAsString),
+        status = PatchValue.of(status),
     )
 
     private fun getPNChannelMetadata() = PNChannelMetadata(

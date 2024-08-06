@@ -4,6 +4,7 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
@@ -66,6 +67,8 @@ interface User {
     fun active(): PNFuture<Boolean>
 
     fun report(reason: String): PNFuture<PNPublishResult>
+
+    fun plus(update: PNUUIDMetadata): User
 
     companion object
 }

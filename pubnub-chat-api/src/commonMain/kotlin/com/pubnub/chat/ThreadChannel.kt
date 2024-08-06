@@ -8,6 +8,7 @@ interface ThreadChannel : Channel {
     val parentMessage: Message
     val parentChannelId: String
 
+    // TODO change parameter to ThreadMessage
     override fun pinMessage(message: Message): PNFuture<ThreadChannel>
 
     override fun unpinMessage(): PNFuture<ThreadChannel>

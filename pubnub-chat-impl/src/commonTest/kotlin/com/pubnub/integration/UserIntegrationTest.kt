@@ -122,6 +122,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         val expectedUpdates = listOf(
             listOf(someUser),
             listOf(someUser.asImpl().copy(name = newName)),
+            listOf(someUser.asImpl().copy(name = newName, externalId = newName)),
             emptyList()
         )
         val actualUpdates = mutableListOf<List<User>>()
@@ -137,6 +138,8 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
             chat.createUser(someUser).await()
 
             someUser.update(name = newName).await()
+
+            someUser.update(externalId = newName).await()
 
             someUser.delete().await()
 

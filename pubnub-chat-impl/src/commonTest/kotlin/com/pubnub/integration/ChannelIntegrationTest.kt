@@ -10,7 +10,6 @@ import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
-import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await

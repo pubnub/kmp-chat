@@ -753,7 +753,13 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
                 latestChannels = latestChannels.asSequence().filter {
                     it.id != newChannelId
-                }.run { if (newChannel != null) { this.plus(newChannel) } else this }.toList()
+                }.run {
+                    if (newChannel != null) {
+                        this.plus(newChannel)
+                    } else {
+                        this
+                    }
+                }.toList()
                 callback(latestChannels)
             })
 
@@ -859,15 +865,15 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 }
 
-private fun BaseChannel<*,*>.toPNChannelMetadata(): PNChannelMetadata {
+private fun BaseChannel<*, *>.toPNChannelMetadata(): PNChannelMetadata {
     return PNChannelMetadata(
         id = id,
-        name = PatchValue.of(name),
-        description = PatchValue.of(description),
-        custom = PatchValue.of(custom),
+        name = name?.let { PatchValue.of(it) },
+        description = description?.let { PatchValue.of(it) },
+        custom = custom?.let { PatchValue.of(custom) },
         updated = updated?.let { PatchValue.of(it) },
         eTag = null,
         type = type?.let { PatchValue.of(it.stringValue) },
-        status = PatchValue.of(status)
+        status = status?.let { PatchValue.of(it) }
     )
 }
