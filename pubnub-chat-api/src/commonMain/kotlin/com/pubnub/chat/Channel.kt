@@ -12,6 +12,8 @@ import com.pubnub.chat.membership.MembersResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.GetFilesResult
 import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
@@ -128,6 +130,14 @@ interface Channel {
     fun streamPresence(callback: (userIds: Collection<String>) -> Unit): AutoCloseable
 
     fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<Set<Membership>>
+
+    fun getMessageReportsHistory(
+        startTimetoken: Long? = null,
+        endTimetoken: Long? = null,
+        count: Int = 25,
+    ): PNFuture<GetEventsHistoryResult>
+
+    fun streamMessageReports(callback: (event: EventContent.Report) -> Unit): AutoCloseable
 
     /**
      * Get a new `Channel` instance that is a copy of this `Channel` with its properties updated with information coming from `update`.
