@@ -12,6 +12,7 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun getId ()Ljava/lang/String;
 	public abstract fun getMembers (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getMessage (J)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun getMessageReportsHistory (Ljava/lang/Long;Ljava/lang/Long;I)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getName ()Ljava/lang/String;
 	public abstract fun getPinnedMessage ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getStatus ()Ljava/lang/String;
@@ -32,6 +33,7 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun setRestrictions (Lcom/pubnub/chat/User;ZZLjava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun startTyping ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun stopTyping ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun streamMessageReports (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun streamPresence (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun streamReadReceipts (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun streamUpdates (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
@@ -49,6 +51,7 @@ public final class com/pubnub/chat/Channel$DefaultImpls {
 	public static synthetic fun getFiles$default (Lcom/pubnub/chat/Channel;ILjava/lang/String;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getHistory$default (Lcom/pubnub/chat/Channel;Ljava/lang/Long;Ljava/lang/Long;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getMembers$default (Lcom/pubnub/chat/Channel;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun getMessageReportsHistory$default (Lcom/pubnub/chat/Channel;Ljava/lang/Long;Ljava/lang/Long;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getUserSuggestions$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getUsersRestrictions$default (Lcom/pubnub/chat/Channel;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun join$default (Lcom/pubnub/chat/Channel;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
@@ -233,7 +236,6 @@ public abstract interface class com/pubnub/chat/User {
 	public abstract fun getType ()Ljava/lang/String;
 	public abstract fun getUpdated ()Ljava/lang/String;
 	public abstract fun isPresentOn (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun report (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun setRestrictions (Lcom/pubnub/chat/Channel;ZZLjava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun streamUpdates (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun update (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;

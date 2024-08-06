@@ -23,6 +23,7 @@ import com.pubnub.chat.Message
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatInternal
+import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
@@ -40,6 +41,10 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.capture.Capture
+import dev.mokkery.matcher.capture.SlotCapture
+import dev.mokkery.matcher.capture.capture
+import dev.mokkery.matcher.capture.get
 import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify
@@ -764,6 +769,17 @@ class ChannelTest : BaseTest() {
         objectUnderTest.update(name, custom, description, status, type)
 
         verify { chat.updateChannel(channelId, name, custom, description, status, type) }
+    }
+
+    @Test
+    fun getMessageReportsHistory_should_pass_channelId_with_proper_prefix() {
+        val channelIdSlot: SlotCapture<Any> = Capture.slot()
+        every { chat.getEventsHistory(capture(channelIdSlot), any(), any(), any()) } returns mock()
+
+        objectUnderTest.getMessageReportsHistory()
+
+        val actualChannelId: String = channelIdSlot.get().toString()
+        assertTrue(actualChannelId.contains(INTERNAL_MODERATION_PREFIX))
     }
 }
 

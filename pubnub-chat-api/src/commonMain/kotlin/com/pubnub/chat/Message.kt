@@ -43,11 +43,12 @@ interface Message {
 
     fun pin(): PNFuture<Channel>
 
-    // todo do we want to have test for this?
+    // todo do we have test for this?
     fun report(reason: String): PNFuture<PNPublishResult>
 
     fun createThread(): PNFuture<ThreadChannel>
 
+    // todo do we have test for this?
     fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel>>
 
     fun toggleReaction(reaction: String): PNFuture<Message>

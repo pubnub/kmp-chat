@@ -1,7 +1,6 @@
 package com.pubnub.chat.internal
 
 import com.pubnub.api.PubNubException
-import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
@@ -26,7 +25,6 @@ import com.pubnub.chat.membership.IncludeParameters
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
-import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
@@ -178,15 +176,6 @@ data class UserImpl(
                 Clock.System.now() - Instant.fromEpochMilliseconds(lastActiveTimestampNonNull) <= chat.config.storeUserActivityInterval
             } ?: false
         ).asFuture()
-    }
-
-    override fun report(reason: String): PNFuture<PNPublishResult> {
-        val payload = EventContent.Report(
-            reason = reason,
-            reportedUserId = id
-        )
-
-        return chat.emitEvent(channelId = INTERNAL_ADMIN_CHANNEL, payload = payload)
     }
 
     internal fun getRestrictions(

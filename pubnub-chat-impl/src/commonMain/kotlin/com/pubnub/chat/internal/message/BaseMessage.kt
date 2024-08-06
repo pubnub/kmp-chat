@@ -11,7 +11,7 @@ import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
-import com.pubnub.chat.internal.INTERNAL_ADMIN_CHANNEL
+import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.METADATA_MENTIONED_USERS
 import com.pubnub.chat.internal.METADATA_QUOTED_MESSAGE
 import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
@@ -169,8 +169,9 @@ abstract class BaseMessage<T : Message>(
     }
 
     override fun report(reason: String): PNFuture<PNPublishResult> {
+        val channelId = "$INTERNAL_MODERATION_PREFIX$channelId"
         return chat.emitEvent(
-            INTERNAL_ADMIN_CHANNEL,
+            channelId,
             EventContent.Report(
                 text,
                 reason,
