@@ -115,7 +115,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
     val messageFactory: (ChatInternal, PNFetchMessageItem, channelId: String) -> M,
 ) : Channel {
     private val suggestedMemberships = mutableMapOf<String, Set<Membership>>()
-    private var disconnect: AutoCloseable? = null
     private var typingSent: Instant? = null
     private val sendTextRateLimiter by lazy {
         ExponentialRateLimiter(
@@ -439,13 +438,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             includeType = true,
             filter = channelFilterString,
         ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
-            val resultDisconnect = if (callback != null) {
-                connect(callback).also {
-                    disconnect = it // todo the whole disconnect handling is not safe! state can be made inconsistent
-                }
-            } else {
-                null
-            }
+            val resultDisconnect = callback?.let { connect(it) }
 
             chat.pubNub.time().thenAsync { time: PNTimeResult ->
                 MembershipImpl.fromMembershipDTO(chat, membershipArray.data.first(), user)
@@ -459,11 +452,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
-    override fun leave(): PNFuture<Unit> = PNFuture { callback ->
-        disconnect?.close()
-        disconnect = null
-        callback.accept(Result.success(Unit))
-    }.alsoAsync { chat.pubNub.removeMemberships(channels = listOf(id)) }
+    override fun leave(): PNFuture<Unit> = chat.pubNub.removeMemberships(channels = listOf(id)).then { Unit }
 
     override fun getPinnedMessage(): PNFuture<Message?> {
         val pinnedMessageTimetoken = this.custom?.get("pinnedMessageTimetoken").tryLong() ?: return null.asFuture()
@@ -489,11 +478,11 @@ abstract class BaseChannel<C : Channel, M : Message>(
     override fun unregisterFromPush() = chat.unregisterPushChannels(listOf(id))
 
     override fun pinMessage(message: Message): PNFuture<C> {
-        return pinMessageToChannel(chat.pubNub, message, this).then { channelFactory(chat, it.data!!) }
+        return pinMessageToChannel(chat.pubNub, message, this).then { channelFactory(chat, it.data) }
     }
 
     override fun unpinMessage(): PNFuture<C> {
-        return pinMessageToChannel(chat.pubNub, null, this).then { channelFactory(chat, it.data!!) }
+        return pinMessageToChannel(chat.pubNub, null, this).then { channelFactory(chat, it.data) }
     }
 
     override fun getUsersRestrictions(
@@ -657,7 +646,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun streamMessageReports(callback: (event: Event<EventContent.Report>) -> Unit): AutoCloseable {
-        val channelId = "${INTERNAL_MODERATION_PREFIX}${id}"
+        val channelId = "${INTERNAL_MODERATION_PREFIX}$id"
         return chat.listenForEvents<EventContent.Report>(channelId = channelId, callback = callback)
     }
 
