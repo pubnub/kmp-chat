@@ -20,6 +20,7 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteChannelMetadataEventMessage
+import com.pubnub.api.models.consumer.pubsub.objects.PNObjectEventResult
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetChannelMetadataEventMessage
 import com.pubnub.api.models.consumer.push.payload.PushPayloadHelper
 import com.pubnub.api.utils.PatchValue
@@ -69,6 +70,7 @@ import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
+import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.GetFileItem
 import com.pubnub.chat.types.GetFilesResult
 import com.pubnub.chat.types.HistoryResponse
@@ -640,6 +642,25 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
+    override fun getMessageReportsHistory(
+        startTimetoken: Long?,
+        endTimetoken: Long?,
+        count: Int
+    ): PNFuture<GetEventsHistoryResult> {
+        val channelId = "${INTERNAL_MODERATION_PREFIX}${this.id}"
+        return chat.getEventsHistory(
+            channelId = channelId,
+            startTimetoken = startTimetoken,
+            endTimetoken = endTimetoken,
+            count = count
+        )
+    }
+
+    override fun streamMessageReports(callback: (event: Event<EventContent.Report>) -> Unit): AutoCloseable {
+        val channelId = "${INTERNAL_MODERATION_PREFIX}${id}"
+        return chat.listenForEvents<EventContent.Report>(channelId = channelId, callback = callback)
+    }
+
     internal fun getRestrictions(
         user: User?,
         limit: Int? = null,
@@ -752,7 +773,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             }
             var latestChannels = channels
             val chat = channels.first().chat as ChatInternal
-            val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
+            val listener = createEventListener(chat.pubNub, onObjects = { _, event: PNObjectEventResult ->
                 val (newChannel, newChannelId) = when (val message = event.extractedMessage) {
                     is PNSetChannelMetadataEventMessage -> {
                         val newChannelId = message.data.id

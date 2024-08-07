@@ -3,18 +3,24 @@ package com.pubnub.integration
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.Channel
+import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
+import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
+import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
+import junit.framework.TestCase.assertNotNull
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
@@ -24,6 +30,7 @@ import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 class ChannelIntegrationTest : BaseChatIntegrationTest() {
@@ -96,9 +103,9 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val then = Instant.fromEpochSeconds(chat.pubNub.time().await().timetoken / 10000000)
         val channel = chat.createChannel(randomString()).await()
 
-        val lastReadMessage = channel.join().await().membership.lastReadMessageTimetoken
+        val lastReadMessage: Long = channel.join().await().membership.lastReadMessageTimetoken ?: 0
 
-        assertNotNull(lastReadMessage)
+        assertTrue(lastReadMessage > 0)
         assertContains(then..Clock.System.now(), Instant.fromEpochSeconds(lastReadMessage / 10000000))
     }
 
@@ -176,9 +183,19 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val sort: Collection<PNSortKey<PNMemberKey>> = listOf(PNSortKey.PNAsc(PNMemberKey.UUID_ID))
         val channelId = channelPam.id
 
-        channelPam.setRestrictions(user = UserImpl(chat = chatPam, id = userId01), ban = ban, mute = mute, reason = reason)
+        channelPam.setRestrictions(
+            user = UserImpl(chat = chatPam, id = userId01),
+            ban = ban,
+            mute = mute,
+            reason = reason
+        )
             .await()
-        channelPam.setRestrictions(user = UserImpl(chat = chatPam, id = userId02), ban = ban, mute = mute, reason = reason)
+        channelPam.setRestrictions(
+            user = UserImpl(chat = chatPam, id = userId02),
+            ban = ban,
+            mute = mute,
+            reason = reason
+        )
             .await()
 
         val getRestrictionsResponse: GetRestrictionsResponse =
@@ -380,6 +397,76 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         }
 
         chat.deleteChannel(channelId).await()
+    }
+
+    @Test
+    fun can_getMessageReportsHistory() = runTest {
+        val pnPublishResult = channel01.sendText(text = "message1").await()
+        val timetoken = pnPublishResult.timetoken
+        val message = channel01.getMessage(timetoken).await()!!
+
+        // report messages
+        val reason01 = "rude"
+        val reason02 = "too verbose"
+        message.report(reason01).await()
+        message.report(reason02).await()
+
+        // getMessageReport
+        val eventsHistoryResult: GetEventsHistoryResult = channel01.getMessageReportsHistory().await()
+        assertEquals(2, eventsHistoryResult.events.size)
+
+        // then
+        assertNotNull(
+            eventsHistoryResult.events.find { event: Event<EventContent> ->
+                val payload = event.payload as EventContent.Report
+                payload.reason == reason01
+            }
+        )
+        assertNotNull(
+            eventsHistoryResult.events.find { event: Event<EventContent> ->
+                val payload = event.payload as EventContent.Report
+                payload.reason == reason02
+            }
+        )
+    }
+
+    @Test
+    fun can_streamMessageReports() = runTest {
+        val numberOfReports = atomic(0)
+        val reason01 = "rude"
+        val reason02 = "too verbose"
+        val messageText = "message1"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val timetoken = pnPublishResult.timetoken
+        val message = channel01.getMessage(timetoken).await()!!
+        val assertionErrorInCallback = CompletableDeferred<AssertionError?>()
+
+        val streamMessageReports = channel01.streamMessageReports { reportEvent: Event<EventContent.Report> ->
+            try {
+                // we need to have try/catch here because assertion error will not cause test to fail
+                numberOfReports.incrementAndGet()
+                val reportReason = reportEvent.payload.reason
+                assertTrue(reportReason == reason01 || reportReason == reason02)
+                assertEquals(messageText, reportEvent.payload.text)
+                assertTrue(reportEvent.payload.reportedMessageChannelId?.contains(INTERNAL_MODERATION_PREFIX)!!)
+                assertTrue(reportEvent.channelId.contains(INTERNAL_MODERATION_PREFIX))
+                if (numberOfReports.value == 2) {
+                    assertionErrorInCallback.complete(null)
+                }
+            } catch (e: AssertionError) {
+                assertionErrorInCallback.complete(e)
+            }
+        }
+        delayInMillis(550)
+
+        // report messages
+        message.report(reason01).await()
+        message.report(reason02).await()
+
+        assertionErrorInCallback.await()?.let { assertionError -> throw (assertionError) }
+        assertEquals(2, numberOfReports.value)
+
+        streamMessageReports.close()
     }
 }
 
