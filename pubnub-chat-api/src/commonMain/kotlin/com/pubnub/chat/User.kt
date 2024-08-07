@@ -68,6 +68,9 @@ interface User {
 
     fun report(reason: String): PNFuture<PNPublishResult>
 
+    /**
+     * Get a new `User` instance that is a copy of this `User` with its properties updated with information coming from `update`.
+     */
     fun plus(update: PNUUIDMetadata): User
 
     companion object

@@ -129,6 +129,9 @@ interface Channel {
 
     fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<Set<Membership>>
 
+    /**
+     * Get a new `Channel` instance that is a copy of this `Channel` with its properties updated with information coming from `update`.
+     */
     fun plus(update: PNChannelMetadata): Channel
 
     // Companion object required for extending this class elsewhere

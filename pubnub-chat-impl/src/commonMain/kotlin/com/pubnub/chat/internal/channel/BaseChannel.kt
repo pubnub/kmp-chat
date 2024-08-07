@@ -688,6 +688,19 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     internal abstract fun copyWithStatusDeleted(): C
 
+    private fun toPNChannelMetadata(): PNChannelMetadata {
+        return PNChannelMetadata(
+            id = id,
+            name = name?.let { PatchValue.of(it) },
+            description = description?.let { PatchValue.of(it) },
+            custom = custom?.let { PatchValue.of(custom) },
+            updated = updated?.let { PatchValue.of(it) },
+            eTag = null,
+            type = type?.let { PatchValue.of(it.stringValue) },
+            status = status?.let { PatchValue.of(it) }
+        )
+    }
+
     companion object {
         private val log = logging()
 
@@ -751,13 +764,13 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     else -> return@createEventListener
                 }
 
-                latestChannels = latestChannels.asSequence().filter {
-                    it.id != newChannelId
-                }.run {
+                latestChannels = latestChannels.asSequence().filter { channel ->
+                    channel.id != newChannelId
+                }.let { sequence ->
                     if (newChannel != null) {
-                        this.plus(newChannel)
+                        sequence + newChannel
                     } else {
-                        this
+                        sequence
                     }
                 }.toList()
                 callback(latestChannels)
@@ -863,17 +876,4 @@ abstract class BaseChannel<C : Channel, M : Message>(
             return lastTypingSent < now - timeout
         }
     }
-}
-
-private fun BaseChannel<*, *>.toPNChannelMetadata(): PNChannelMetadata {
-    return PNChannelMetadata(
-        id = id,
-        name = name?.let { PatchValue.of(it) },
-        description = description?.let { PatchValue.of(it) },
-        custom = custom?.let { PatchValue.of(custom) },
-        updated = updated?.let { PatchValue.of(it) },
-        eTag = null,
-        type = type?.let { PatchValue.of(it.stringValue) },
-        status = status?.let { PatchValue.of(it) }
-    )
 }

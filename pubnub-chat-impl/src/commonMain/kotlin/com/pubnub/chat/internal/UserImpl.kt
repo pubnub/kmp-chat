@@ -1,7 +1,6 @@
 package com.pubnub.chat.internal
 
 import com.pubnub.api.PubNubException
-import com.pubnub.api.UserId
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
@@ -240,6 +239,21 @@ data class UserImpl(
         return memberships
     }
 
+    private fun toUUIDMetadata(): PNUUIDMetadata {
+        return PNUUIDMetadata(
+            id = id,
+            name = name?.let { PatchValue.of(it) },
+            externalId = externalId?.let { PatchValue.of(it) },
+            profileUrl = profileUrl?.let { PatchValue.of(it) },
+            email = email?.let { PatchValue.of(it) },
+            custom = custom?.let { PatchValue.of(it) },
+            updated = updated?.let { PatchValue.of(it) },
+            eTag = null,
+            type = type?.let { PatchValue.of(it) },
+            status = status?.let { PatchValue.of(it) },
+        )
+    }
+
     companion object {
         private val log = logging()
 
@@ -275,9 +289,15 @@ data class UserImpl(
                     else -> return@createEventListener
                 }
 
-                latestUsers = latestUsers.asSequence().filter {
-                    it.id != newUserId
-                }.run { newUser?.let { plus(it) } ?: this }.toList()
+                latestUsers = latestUsers.asSequence().filter { user ->
+                    user.id != newUserId
+                }.let { sequence ->
+                    if (newUser != null) {
+                        sequence + newUser
+                    } else {
+                        sequence
+                    }
+                }.toList()
                 callback(latestUsers)
             })
 
@@ -290,18 +310,3 @@ data class UserImpl(
 }
 
 internal val User.uuidFilterString get() = "uuid.id == '${this.id}'"
-
-private fun UserImpl.toUUIDMetadata(): PNUUIDMetadata {
-    return PNUUIDMetadata(
-        id = id,
-        name = name?.let { PatchValue.of(it) },
-        externalId = externalId?.let { PatchValue.of(it) },
-        profileUrl = profileUrl?.let { PatchValue.of(it) },
-        email = email?.let { PatchValue.of(it) },
-        custom = custom?.let { PatchValue.of(it) },
-        updated = updated?.let { PatchValue.of(it) },
-        eTag = null,
-        type = type?.let { PatchValue.of(it) },
-        status = status?.let { PatchValue.of(it) },
-    )
-}
