@@ -14,7 +14,9 @@ import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
+import com.pubnub.api.utils.PatchValue
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
@@ -35,6 +37,7 @@ import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.kmp.utils.BaseTest
 import com.pubnub.test.await
+import com.pubnub.test.randomString
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -764,6 +767,16 @@ class ChannelTest : BaseTest() {
         objectUnderTest.update(name, custom, description, status, type)
 
         verify { chat.updateChannel(channelId, name, custom, description, status, type) }
+    }
+
+    @Test
+    fun plus() {
+        val channel = createChannel(ChannelType.PUBLIC)
+        val expectedChannel = channel.copy(name = randomString(), description = randomString())
+
+        val newChannel = channel + PNChannelMetadata(expectedChannel.id, name = PatchValue.of(expectedChannel.name), description = PatchValue.of(expectedChannel.description))
+
+        assertEquals(expectedChannel, newChannel)
     }
 }
 

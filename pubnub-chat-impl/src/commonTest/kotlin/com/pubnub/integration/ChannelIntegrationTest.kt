@@ -10,7 +10,6 @@ import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
-import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
@@ -289,51 +288,21 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         ).await()
         delayInMillis(1000)
 
-        // todo there are big problems with update handling in PN SDK that prevent this for working in a sane way
-        // e.g. getting an update to one property (e.g. description) will return an object with all other properties set to null
         val expectedUpdates = listOf<List<Channel>>(
             listOf(
-                channel01.asImpl().copy(
-                    name = newName,
-                    custom = null,
-                    description = null,
-                    type = ChannelType.UNKNOWN,
-                    status = null,
-                    updated = null
-                ),
-                channel02.asImpl().copy(updated = null)
+                channel01.asImpl().copy(name = newName),
+                channel02.asImpl()
             ).sortedBy {
                 it.id
             },
             listOf(
-                channel01.asImpl().copy(
-                    name = newName,
-                    custom = null,
-                    description = null,
-                    type = ChannelType.UNKNOWN,
-                    status = null,
-                    updated = null
-                ),
-                channel02.asImpl().copy(
-                    custom = null,
-                    name = null,
-                    description = newName,
-                    type = ChannelType.UNKNOWN,
-                    status = null,
-                    updated = null
-                )
+                channel01.asImpl().copy(name = newName),
+                channel02.asImpl().copy(description = newName)
             ).sortedBy {
                 it.id
             },
             listOf(
-                channel02.asImpl().copy(
-                    custom = null,
-                    name = null,
-                    description = newName,
-                    type = ChannelType.UNKNOWN,
-                    status = null,
-                    updated = null
-                )
+                channel02.asImpl().copy(description = newName)
             ).sortedBy {
                 it.id
             },
@@ -361,7 +330,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             dispose?.close()
         }
 
-        assertEquals(expectedUpdates, actualUpdates)
+        assertEquals(expectedUpdates.map { it.map { it.asImpl().copy(updated = null) as Channel } }, actualUpdates)
     }
 
     @Test
