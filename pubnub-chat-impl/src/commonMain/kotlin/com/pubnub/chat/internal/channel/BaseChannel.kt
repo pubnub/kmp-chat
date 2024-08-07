@@ -671,7 +671,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
-    override fun plus(update: PNChannelMetadata): Channel {
+    override operator fun plus(update: PNChannelMetadata): Channel {
         return channelFactory(chat, toPNChannelMetadata() + update)
     }
 

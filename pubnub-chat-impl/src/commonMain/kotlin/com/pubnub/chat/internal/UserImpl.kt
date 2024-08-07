@@ -190,7 +190,7 @@ data class UserImpl(
         return chat.emitEvent(channelId = INTERNAL_ADMIN_CHANNEL, payload = payload)
     }
 
-    override fun plus(update: PNUUIDMetadata): User {
+    override operator fun plus(update: PNUUIDMetadata): User {
         return fromDTO(chat, toUUIDMetadata() + update)
     }
 

@@ -132,7 +132,7 @@ interface Channel {
     /**
      * Get a new `Channel` instance that is a copy of this `Channel` with its properties updated with information coming from `update`.
      */
-    fun plus(update: PNChannelMetadata): Channel
+    operator fun plus(update: PNChannelMetadata): Channel
 
     // Companion object required for extending this class elsewhere
     companion object

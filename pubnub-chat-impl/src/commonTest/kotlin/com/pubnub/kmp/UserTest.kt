@@ -9,6 +9,8 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
+import com.pubnub.api.utils.PatchValue
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
@@ -18,6 +20,7 @@ import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.kmp.utils.FakeChat
+import com.pubnub.test.randomString
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -352,6 +355,16 @@ class UserTest {
                 result.exceptionOrNull()?.message
             )
         }
+    }
+
+    @Test
+    fun plus() {
+        val user = createUser(chat)
+        val expectedUser = user.copy(name = randomString(), email = randomString())
+
+        val newUser = user + PNUUIDMetadata(expectedUser.id, name = PatchValue.of(expectedUser.name), email = PatchValue.of(expectedUser.email))
+
+        assertEquals(expectedUser, newUser)
     }
 
     private fun getPNChannelMembershipArrayResult(): PNChannelMembershipArrayResult {
