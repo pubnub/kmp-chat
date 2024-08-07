@@ -656,11 +656,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
-    override fun streamMessageReports(callback: (event: EventContent.Report) -> Unit): AutoCloseable {
-        val channelId = "${INTERNAL_MODERATION_PREFIX}${this.id}"
-        return chat.listenForEvents<EventContent.Report>(channelId = channelId, callback = { event: Event<EventContent.Report> ->
-            callback(event.payload)
-        })
+    override fun streamMessageReports(callback: (event: Event<EventContent.Report>) -> Unit): AutoCloseable {
+        val channelId = "${INTERNAL_MODERATION_PREFIX}${id}"
+        return chat.listenForEvents<EventContent.Report>(channelId = channelId, callback = callback)
     }
 
     internal fun getRestrictions(

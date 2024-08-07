@@ -137,7 +137,7 @@ interface Channel {
         count: Int = 25,
     ): PNFuture<GetEventsHistoryResult>
 
-    fun streamMessageReports(callback: (event: EventContent.Report) -> Unit): AutoCloseable
+    fun streamMessageReports(callback: (event: Event<EventContent.Report>) -> Unit): AutoCloseable
 
     /**
      * Get a new `Channel` instance that is a copy of this `Channel` with its properties updated with information coming from `update`.

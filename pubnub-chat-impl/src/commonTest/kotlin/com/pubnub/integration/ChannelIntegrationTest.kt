@@ -103,9 +103,9 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val then = Instant.fromEpochSeconds(chat.pubNub.time().await().timetoken / 10000000)
         val channel = chat.createChannel(randomString()).await()
 
-        val lastReadMessage = channel.join().await().membership.lastReadMessageTimetoken
+        val lastReadMessage: Long = channel.join().await().membership.lastReadMessageTimetoken ?: 0
 
-        assertNotNull(lastReadMessage)
+        assertTrue(lastReadMessage > 0)
         assertContains(then..Clock.System.now(), Instant.fromEpochSeconds(lastReadMessage / 10000000))
     }
 
@@ -441,14 +441,15 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val message = channel01.getMessage(timetoken).await()!!
         val assertionErrorInCallback = CompletableDeferred<AssertionError?>()
 
-        val streamMessageReports = channel01.streamMessageReports { reportEvent: EventContent.Report ->
+        val streamMessageReports = channel01.streamMessageReports { reportEvent: Event<EventContent.Report> ->
             try {
                 // we need to have try/catch here because assertion error will not cause test to fail
                 numberOfReports.incrementAndGet()
-                println("-= reason: ${reportEvent.reason}")
-                assertTrue(reportEvent.reason == reason01 || reportEvent.reason == reason02)
-                assertEquals(messageText, reportEvent.text)
-                assertTrue(reportEvent.reportedMessageChannelId?.contains(INTERNAL_MODERATION_PREFIX)!!)
+                val reportReason = reportEvent.payload.reason
+                assertTrue(reportReason == reason01 || reportReason == reason02)
+                assertEquals(messageText, reportEvent.payload.text)
+                assertTrue(reportEvent.payload.reportedMessageChannelId?.contains(INTERNAL_MODERATION_PREFIX)!!)
+                assertTrue(reportEvent.channelId.contains(INTERNAL_MODERATION_PREFIX))
                 if (numberOfReports.value == 2) {
                     assertionErrorInCallback.complete(null)
                 }
