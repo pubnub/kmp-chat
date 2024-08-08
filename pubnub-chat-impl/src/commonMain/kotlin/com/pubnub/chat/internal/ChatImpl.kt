@@ -708,7 +708,7 @@ class ChatImpl(
     override fun getThreadChannel(message: Message): PNFuture<ThreadChannel> {
         val threadChannelId = getThreadId(message.channelId, message.timetoken)
         return pubNub.getChannelMetadata(threadChannelId).then {
-            ThreadChannelImpl.fromDTO(this, message, it.data!!)
+            ThreadChannelImpl.fromDTO(this, message, it.data)
         }.catch {
             if (it is PubNubException && it.statusCode == HTTP_ERROR_404) {
                 Result.failure(PubNubException(THIS_MESSAGE_IS_NOT_A_THREAD, it))
@@ -1195,11 +1195,7 @@ class ChatImpl(
             custom = createCustomObject(customWithUpdatedLastActiveTimestamp),
             includeCustom = true,
         ).then { pnUUIDMetadataResult: PNUUIDMetadataResult ->
-            if (pnUUIDMetadataResult.data != null) {
-                currentUser = UserImpl.fromDTO(this, pnUUIDMetadataResult.data!!)
-            } else {
-                log.pnError(PNUUID_METADATA_IS_NULL)
-            }
+            currentUser = UserImpl.fromDTO(this, pnUUIDMetadataResult.data)
         }
     }
 
