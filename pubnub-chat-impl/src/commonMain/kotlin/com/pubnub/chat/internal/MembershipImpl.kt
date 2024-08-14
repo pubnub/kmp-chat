@@ -155,15 +155,17 @@ data class MembershipImpl(
                     is PNDeleteMembershipEventMessage -> null
                     else -> return@createEventListener
                 }
-                latestMemberships = latestMemberships.asSequence().filter { membership ->
-                    membership.channel.id != event.channel || membership.user.id != eventUuid
-                }.let { sequence ->
-                    if (newMembership != null) {
-                        sequence + newMembership
-                    } else {
-                        sequence
-                    }
-                }.toList()
+                latestMemberships = latestMemberships
+                    .asSequence()
+                    .filter { membership ->
+                        membership.channel.id != event.channel || membership.user.id != eventUuid
+                    }.let { sequence ->
+                        if (newMembership != null) {
+                            sequence + newMembership
+                        } else {
+                            sequence
+                        }
+                    }.toList()
                 callback(latestMemberships)
             })
 
