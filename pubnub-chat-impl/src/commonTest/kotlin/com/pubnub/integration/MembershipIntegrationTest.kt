@@ -35,18 +35,16 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
             channel02.status
         ).await()
         delayInMillis(1000)
-        val membership1 = channel01.join { }.await().also { it.disconnect?.close() }.membership
-        val membership2 = channel02.join { }.await().also { it.disconnect?.close() }.membership
+        val membership1 = channel01.join().await().membership
+        val membership2 = channel02.join().await().membership
         delayInMillis(1000)
 
         val expectedUpdates = listOf<List<Membership>>(
             listOf(
-                membership1.asImpl().copy(custom = mapOf("a" to "b"), updated = null, eTag = null),
-                membership2.asImpl().copy(updated = null, eTag = null)
-            ).sortedBy {
-                it.channel.id
-            },
-            listOf(membership1.asImpl().copy(custom = mapOf("a" to "b"), updated = null, eTag = null)).sortedBy { it.channel.id },
+                membership1.asImpl().copy(custom = mapOf("a" to "b")),
+                membership2.asImpl().copy()
+            ),
+            listOf(membership1.asImpl().copy(custom = mapOf("a" to "b"))),
             emptyList()
         )
         val actualUpdates = mutableListOf<List<Membership>>()
@@ -65,7 +63,14 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
             delayInMillis(1000)
             dispose?.close()
         }
-        assertEquals(expectedUpdates, actualUpdates)
+        assertEquals(
+            expectedUpdates.map { membershipList ->
+                membershipList.map { membership ->
+                    membership.asImpl().copy(updated = null, eTag = null) as Membership
+                }.sortedBy { it.channel.id }
+            },
+            actualUpdates
+        )
     }
 
     @Test

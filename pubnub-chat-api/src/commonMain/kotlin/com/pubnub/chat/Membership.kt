@@ -1,5 +1,6 @@
 package com.pubnub.chat
 
+import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEvent
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 
@@ -24,6 +25,8 @@ interface Membership {
 
     // todo do we have test for this?
     fun streamUpdates(callback: (membership: Membership?) -> Unit): AutoCloseable
+
+    operator fun plus(update: PNSetMembershipEvent): Membership
 
     companion object
 }

@@ -4,6 +4,7 @@ import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteMembershipEventMessage
+import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEvent
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEventMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Membership
@@ -100,6 +101,17 @@ data class MembershipImpl(
         }
     }
 
+    override fun plus(update: PNSetMembershipEvent): Membership {
+        return MembershipImpl(
+            chat,
+            channel,
+            user,
+            update.custom?.value ?: custom,
+            update.updated,
+            update.eTag
+        )
+    }
+
     private fun exists(): PNFuture<Boolean> =
         chat.pubNub.getMemberships(uuid = user.id, filter = filterThisChannel()).then {
             it.data.isNotEmpty()
@@ -128,20 +140,32 @@ data class MembershipImpl(
                 val membership = memberships.find { it.channel.id == event.channel && it.user.id == eventUuid }
                     ?: return@createEventListener
                 val newMembership = when (val message = event.extractedMessage) {
-                    is PNSetMembershipEventMessage -> MembershipImpl(
-                        chat,
-                        user = membership.user,
-                        channel = membership.channel,
-                        custom = message.data.custom,
-                        updated = message.data.updated,
-                        eTag = message.data.eTag
-                    )
+                    is PNSetMembershipEventMessage -> {
+                        val previousMembership = latestMemberships.find { it.channel.id == event.channel && it.user.id == eventUuid }
+                        previousMembership?.let { it + message.data }
+                            ?: MembershipImpl(
+                                chat,
+                                user = membership.user,
+                                channel = membership.channel,
+                                custom = message.data.custom?.value,
+                                updated = message.data.updated,
+                                eTag = message.data.eTag
+                            )
+                    }
                     is PNDeleteMembershipEventMessage -> null
                     else -> return@createEventListener
                 }
-                latestMemberships = latestMemberships.asSequence().filter {
-                    it.channel.id != event.channel || it.user.id != eventUuid
-                }.run { newMembership?.let { plus(it) } ?: this }.toList()
+                latestMemberships = latestMemberships
+                    .asSequence()
+                    .filter { membership ->
+                        membership.channel.id != event.channel || membership.user.id != eventUuid
+                    }.let { sequence ->
+                        if (newMembership != null) {
+                            sequence + newMembership
+                        } else {
+                            sequence
+                        }
+                    }.toList()
                 callback(latestMemberships)
             })
 
@@ -154,9 +178,9 @@ data class MembershipImpl(
         internal fun fromMembershipDTO(chat: ChatInternal, channelMembership: PNChannelMembership, user: User) =
             MembershipImpl(
                 chat,
-                ChannelImpl.fromDTO(chat, channelMembership.channel!!),
+                ChannelImpl.fromDTO(chat, channelMembership.channel),
                 user,
-                channelMembership.custom,
+                channelMembership.custom?.value,
                 channelMembership.updated,
                 channelMembership.eTag
             )
@@ -165,8 +189,8 @@ data class MembershipImpl(
             MembershipImpl(
                 chat,
                 channel,
-                UserImpl.fromDTO(chat, userMembership.uuid!!),
-                userMembership.custom,
+                UserImpl.fromDTO(chat, userMembership.uuid),
+                userMembership.custom?.value,
                 userMembership.updated,
                 userMembership.eTag,
             )

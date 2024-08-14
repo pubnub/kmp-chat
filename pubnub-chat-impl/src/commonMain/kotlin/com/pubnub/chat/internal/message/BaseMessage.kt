@@ -18,6 +18,7 @@ import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
 import com.pubnub.chat.internal.METADATA_TEXT_LINKS
 import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.util.pnError
@@ -162,8 +163,11 @@ abstract class BaseMessage<T : Message>(
 
     override fun pin(): PNFuture<Channel> {
         return chat.getChannel(channelId).thenAsync { channel ->
-            ChatImpl.pinMessageToChannel(chat.pubNub, this, channel!!).then {
-                ChannelImpl.fromDTO(chat, it.data!!)
+            if (channel == null) {
+                log.pnError(PubNubErrorMessage.CHANNEL_NOT_EXIST)
+            }
+            ChatImpl.pinMessageToChannel(chat.pubNub, this, channel).then {
+                ChannelImpl.fromDTO(chat, it.data)
             }
         }
     }
