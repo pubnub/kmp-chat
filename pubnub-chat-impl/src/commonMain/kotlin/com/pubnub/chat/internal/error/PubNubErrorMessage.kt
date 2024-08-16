@@ -70,4 +70,6 @@ internal object PubNubErrorMessage {
     internal const val THREAD_FOR_THIS_MESSAGE_ALREADY_EXISTS = "Thread for this message already exists."
     internal const val RECEIPT_EVENT_WAS_NOT_SENT_TO_CHANNEL = "Because PAM did not allow it 'receipt' event was not sent to channel: "
     internal const val ERROR_HANDLING_ONMESSAGE_EVENT = "Error handling onMessage event"
+    internal const val THIS_MESSAGE_HAS_NOT_BEEN_DELETED = "This message has not been deleted"
+    internal const val THIS_THREAD_ID_ALREADY_RESTORED = "This thread is already restored"
 }

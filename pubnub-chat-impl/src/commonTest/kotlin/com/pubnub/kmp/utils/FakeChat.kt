@@ -2,6 +2,8 @@ package com.pubnub.kmp.utils
 
 import com.pubnub.api.PubNub
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.message_actions.PNMessageAction
+import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
@@ -9,6 +11,7 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.chat.Channel
+import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
@@ -40,6 +43,14 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         endTimetoken: Long?,
         count: Int
     ): PNFuture<GetEventsHistoryResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun removeThreadChannel(
+        chat: Chat,
+        message: Message,
+        soft: Boolean
+    ): PNFuture<Pair<PNRemoveMessageActionResult, Channel>> {
         TODO("Not yet implemented")
     }
 
@@ -256,6 +267,10 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     }
 
     override fun unregisterAllPushChannels(): PNFuture<Unit> {
+        TODO("Not yet implemented")
+    }
+
+    override fun restoreThreadChannel(message: Message): PNFuture<PNMessageAction?> {
         TODO("Not yet implemented")
     }
 }

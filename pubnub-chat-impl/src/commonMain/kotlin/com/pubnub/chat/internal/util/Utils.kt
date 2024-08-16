@@ -31,8 +31,12 @@ internal val PNFetchMessagesResult.channelsUrlDecoded: Map<String, List<PNFetchM
         )
     }
 
-inline fun PubNubException.logErrorAndReturnException(log: KmLog): PubNubException = apply {
+inline fun PubNubException.logErrorAndReturnException(log: KmLog): PubNubException = this.apply {
     log.error(err = this, msg = { this.message.orEmpty() })
+}
+
+inline fun PubNubException.logWarnAndReturnException(log: KmLog): PubNubException = this.apply {
+    log.warn(err = this, msg = { this.message.orEmpty() })
 }
 
 inline fun KmLog.pnError(message: String): Nothing = throw PubNubException(message).logErrorAndReturnException(this)

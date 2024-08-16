@@ -56,5 +56,7 @@ interface Message {
     // todo do we want to have test for this?
     fun <T : Message> streamUpdates(callback: (message: T) -> Unit): AutoCloseable
 
+    fun restore(): PNFuture<Message>
+
     companion object
 }

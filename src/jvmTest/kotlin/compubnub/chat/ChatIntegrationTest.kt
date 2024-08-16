@@ -11,10 +11,9 @@ import com.pubnub.chat.init
 import kotlin.test.Test
 
 class ChatIntegrationTest {
-
     @Test
     fun canInitializeChatWithLogLevel() {
-        val chatConfig = ChatConfiguration(logLevel = LogLevel.INFO)
+        val chatConfig = ChatConfiguration(logLevel = LogLevel.OFF)
         val pnConfiguration = PNConfiguration.builder(userId = UserId("myUserId"), subscribeKey = "mySubscribeKey").build()
 
         Chat.init(chatConfig, pnConfiguration).async { result: Result<Chat> ->
@@ -24,6 +23,5 @@ class ChatIntegrationTest {
                 println("Exception initialising chat: ${exception.message}")
             }
         }
-
     }
 }

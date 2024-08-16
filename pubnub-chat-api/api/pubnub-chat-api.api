@@ -180,6 +180,7 @@ public abstract interface class com/pubnub/chat/Message {
 	public abstract fun pin ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun removeThread ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun report (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun restore ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun streamUpdates (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun toggleReaction (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 }

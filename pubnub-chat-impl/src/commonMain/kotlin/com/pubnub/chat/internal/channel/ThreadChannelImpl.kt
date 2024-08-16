@@ -2,7 +2,10 @@ package com.pubnub.chat.internal.channel
 
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
+import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.api.v2.callbacks.map
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
@@ -10,6 +13,7 @@ import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
+import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.message.ThreadMessageImpl
 import com.pubnub.chat.internal.util.pnError
@@ -74,6 +78,19 @@ data class ThreadChannelImpl(
         }
     }
 
+    override fun delete(soft: Boolean): PNFuture<Channel> {
+        val removeThreadChannel = chat.removeThreadChannel(chat, parentMessage, soft)
+        return PNFuture { callback ->
+            removeThreadChannel.async { result: Result<Pair<PNRemoveMessageActionResult, Channel>> ->
+                result.map { pair: Pair<PNRemoveMessageActionResult, Channel> ->
+                    pair.second
+                }.let { channelResult: Result<Channel> ->
+                    callback.accept(channelResult)
+                }
+            }
+        }
+    }
+
     override fun sendText(
         text: String,
         meta: Map<String, Any>?,
@@ -93,7 +110,7 @@ data class ThreadChannelImpl(
                     chat.pubNub.addMessageAction(
                         parentMessage.channelId,
                         PNMessageAction(
-                            "threadRootId",
+                            THREAD_ROOT_ID,
                             id,
                             parentMessage.timetoken
                         )
