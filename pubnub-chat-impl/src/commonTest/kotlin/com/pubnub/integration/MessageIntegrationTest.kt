@@ -35,12 +35,9 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val messageWithThread = channel01.getMessage(publishTimetoken).await()
         val messageWithReaction = messageWithThread!!.toggleReaction(reactionValue).await()
         val deletedMessage: Message = messageWithReaction.delete(soft = true).await()!!
-        // todo returned message provide invalid state because in actions map there is THREAD_ROOT_ID.
-        // To workaround this we need to call channel01.getMessage(publishTimetoken) to get message in proper state.
-        val messageAfterDeletedMessage: Message = channel01.getMessage(publishTimetoken).await()!!
 
-        val restoredMessage: Message = messageAfterDeletedMessage.restore().await()
-//        val messageAfterRestore: Message = channel01.getMessage(publishTimetoken).await()!!
+        delayInMillis(500)
+        val restoredMessage: Message = deletedMessage.restore().await()
 
         assertEquals(messageText, restoredMessage.text)
         assertEquals(reactionValue, restoredMessage.actions!!["reactions"]?.keys?.first())
