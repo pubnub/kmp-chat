@@ -197,7 +197,7 @@ class ChatTest : BaseTest() {
     }
 
     @Test
-    fun whenCreatingUseriWithcanCreateUser() { //todo
+    fun whenCreatingUseriWithcanCreateUser() { // todo
     }
 
     @Test
