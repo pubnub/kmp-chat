@@ -2,10 +2,7 @@ package com.pubnub.chat.internal.channel
 
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
-import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
-import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.api.v2.callbacks.map
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
@@ -79,16 +76,7 @@ data class ThreadChannelImpl(
     }
 
     override fun delete(soft: Boolean): PNFuture<Channel> {
-        val removeThreadChannel = chat.removeThreadChannel(chat, parentMessage, soft)
-        return PNFuture { callback ->
-            removeThreadChannel.async { result: Result<Pair<PNRemoveMessageActionResult, Channel>> ->
-                result.map { pair: Pair<PNRemoveMessageActionResult, Channel> ->
-                    pair.second
-                }.let { channelResult: Result<Channel> ->
-                    callback.accept(channelResult)
-                }
-            }
-        }
+        return chat.removeThreadChannel(chat, parentMessage, soft).then { it.second }
     }
 
     override fun sendText(

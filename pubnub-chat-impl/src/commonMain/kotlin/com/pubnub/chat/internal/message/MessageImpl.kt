@@ -35,7 +35,7 @@ data class MessageImpl(
         referencedChannels = referencedChannels,
         quotedMessage = quotedMessage
     ) {
-    override fun copyWithActions(actions: Actions): Message = copy(actions = actions)
+    override fun copyWithActions(actions: Actions?): Message = copy(actions = actions)
 
     companion object {
         internal fun fromDTO(chat: ChatInternal, pnMessageResult: PNMessageResult): Message {
