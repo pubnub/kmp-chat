@@ -6,6 +6,7 @@ import com.pubnub.chat.types.ChannelType
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 
 interface ChatConfiguration {
     val logLevel: LogLevel
@@ -21,14 +22,14 @@ interface ChatConfiguration {
 fun ChatConfiguration(
     logLevel: LogLevel = LogLevel.OFF, // todo document all levels including "Off"
     typingTimeout: Duration = 5.seconds,
-    storeUserActivityInterval: Duration = 60.seconds,
+    storeUserActivityInterval: Duration = 600.seconds,
     storeUserActivityTimestamps: Boolean = false,
     pushNotifications: PushNotificationsConfig = PushNotificationsConfig(
-        false,
-        null,
-        PNPushType.FCM,
-        null,
-        PNPushEnvironment.DEVELOPMENT
+        sendPushes = false,
+        deviceToken = null,
+        deviceGateway = PNPushType.FCM,
+        apnsTopic = null,
+        apnsEnvironment = PNPushEnvironment.DEVELOPMENT
     ),
     rateLimitFactor: Int = 2,
     rateLimitPerChannel: Map<ChannelType, Duration> = RateLimitPerChannel(),
@@ -36,7 +37,7 @@ fun ChatConfiguration(
 ): ChatConfiguration = object : ChatConfiguration {
     override val logLevel: LogLevel = logLevel
     override val typingTimeout: Duration = typingTimeout
-    override val storeUserActivityInterval: Duration = storeUserActivityInterval
+    override val storeUserActivityInterval: Duration = maxOf(storeUserActivityInterval, 60.seconds)
     override val storeUserActivityTimestamps: Boolean = storeUserActivityTimestamps
     override val pushNotifications: PushNotificationsConfig = pushNotifications
     override val rateLimitFactor: Int = rateLimitFactor
@@ -58,3 +59,7 @@ fun RateLimitPerChannel(
         ChannelType.PUBLIC to public,
         ChannelType.UNKNOWN to unknown,
     )
+
+fun main() {
+    ChatConfiguration(rateLimitPerChannel = RateLimitPerChannel(direct = 1.seconds, group = 2.seconds))
+}

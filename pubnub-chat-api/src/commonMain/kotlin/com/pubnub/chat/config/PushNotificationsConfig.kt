@@ -7,6 +7,6 @@ class PushNotificationsConfig(
     val sendPushes: Boolean,
     val deviceToken: String?,
     val deviceGateway: PNPushType,
-    val apnsTopic: String?,
-    val apnsEnvironment: PNPushEnvironment
+    val apnsTopic: String? = null,
+    val apnsEnvironment: PNPushEnvironment = PNPushEnvironment.DEVELOPMENT
 )
