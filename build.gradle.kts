@@ -3,18 +3,24 @@ import com.pubnub.gradle.tasks.GenerateVersionTask
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension
 
 plugins {
-    kotlin("multiplatform") version "2.0.0" apply false
-    kotlin("plugin.serialization") version "2.0.0" apply false
-    kotlin("native.cocoapods") version "2.0.0" apply false
-    id("org.jlleitschuh.gradle.ktlint") version "12.1.0" apply false
-    id("org.jetbrains.kotlin.plugin.atomicfu") version "2.0.0"
-    id("com.vanniktech.maven.publish") version "0.29.0" apply false
-    id("org.jetbrains.dokka") version "1.9.20" apply false
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.ktlint) apply false
+    alias(libs.plugins.benmanes.versions) apply false
+    alias(libs.plugins.vanniktech.maven.publish) apply false
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.gradle.nexus.publish)
+    alias(libs.plugins.kotlinx.atomicfu)
 
     id("pubnub.shared")
     id("pubnub.dokka")
     id("pubnub.multiplatform")
-    id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.16.2"
+    alias(libs.plugins.kotlinx.compatibility.validator)
+}
+
+nexusPublishing {
+    repositories {
+        sonatype()
+    }
 }
 
 kotlin {
