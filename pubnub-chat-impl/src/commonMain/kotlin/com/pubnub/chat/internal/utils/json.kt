@@ -28,9 +28,9 @@ internal fun Any?.tryDouble(): Double? {
 
 internal fun EventContent.TextMessageContent.encodeForSending(
     channelId: String,
-    getMessagePublishBody: ((m: EventContent.TextMessageContent, channelId: String) -> Map<String, Any>)? = null,
+    getMessagePublishBody: ((m: EventContent.TextMessageContent, channelId: String) -> Map<String, Any?>)? = null,
     mergeMessageWith: Map<String, Any>? = null,
-): Map<String, Any> {
+): Map<String, Any?> {
     var finalMessage = getMessagePublishBody?.invoke(this, channelId) ?: defaultGetMessagePublishBody(this, channelId)
     if (mergeMessageWith != null) {
         finalMessage = buildMap {
