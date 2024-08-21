@@ -21,35 +21,37 @@ import kotlin.test.assertFalse
 class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun custom_payloads_send_receive_msgs() = runTest {
-        val chat = ChatImpl(ChatConfiguration(
-            customPayloads = CustomPayloads(
-                getMessagePublishBody = { content, channelId ->
-                    mapOf(
+        val chat = ChatImpl(
+            ChatConfiguration(
+                customPayloads = CustomPayloads(
+                    getMessagePublishBody = { content, channelId ->
+                        mapOf(
                             "custom" to mapOf(
                                 "payload" to mapOf(
-                                        "text" to content.text
-                                    )
+                                    "text" to content.text
                                 )
-                        ,
-                        "files" to content.files,
+                            ),
+                            "files" to content.files,
 //                        "type" to "text"
-                    )
-                },
-                getMessageResponseBody = { json: JsonElement ->
-                    EventContent.TextMessageContent(
-                        json.asMap()?.get("custom")?.asMap()?.get("payload")?.asMap()?.get("text")?.asString()!!,
-                        json.asList()?.map {
-                            File(
-                                it.asMap()?.get("name")?.asString()!!,
-                                it.asMap()?.get("id")?.asString()!!,
-                                it.asMap()?.get("url")?.asString()!!,
-                                it.asMap()?.get("type")?.asString(),
+                        )
+                    },
+                    getMessageResponseBody = { json: JsonElement ->
+                        EventContent.TextMessageContent(
+                            json.asMap()?.get("custom")?.asMap()?.get("payload")?.asMap()?.get("text")?.asString()!!,
+                            json.asList()?.map {
+                                File(
+                                    it.asMap()?.get("name")?.asString()!!,
+                                    it.asMap()?.get("id")?.asString()!!,
+                                    it.asMap()?.get("url")?.asString()!!,
+                                    it.asMap()?.get("type")?.asString(),
                                 )
-                        }
-                    )
-                }
-            )
-        ), pubnub).initialize().await()
+                            }
+                        )
+                    }
+                )
+            ),
+            pubnub
+        ).initialize().await()
         val channel = chat.createChannel(randomString()).await()
         val messageText = randomString()
         val message = CompletableDeferred<Message>()

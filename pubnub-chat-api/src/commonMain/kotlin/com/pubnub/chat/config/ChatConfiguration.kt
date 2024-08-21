@@ -6,7 +6,6 @@ import com.pubnub.chat.types.ChannelType
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.Duration.Companion.milliseconds
 
 interface ChatConfiguration {
     val logLevel: LogLevel
@@ -59,7 +58,3 @@ fun RateLimitPerChannel(
         ChannelType.PUBLIC to public,
         ChannelType.UNKNOWN to unknown,
     )
-
-fun main() {
-    ChatConfiguration(rateLimitPerChannel = RateLimitPerChannel(direct = 1.seconds, group = 2.seconds))
-}

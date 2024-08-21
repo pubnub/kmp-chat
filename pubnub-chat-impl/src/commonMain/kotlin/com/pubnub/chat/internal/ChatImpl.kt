@@ -3,6 +3,9 @@ package com.pubnub.chat.internal
 import com.benasher44.uuid.uuid4
 import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
+import com.pubnub.api.asMap
+import com.pubnub.api.asString
+import com.pubnub.api.decode
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
@@ -580,7 +583,7 @@ class ChatImpl(
     override fun <T : EventContent> listenForEvents(
         type: KClass<T>,
         channelId: String,
-        customMethod: EmitEventMethod?,
+        customMethod: EmitEventMethod,
         callback: (event: Event<T>) -> Unit
     ): AutoCloseable {
         val handler = fun(_: PubNub, pnEvent: PNEvent) {
@@ -588,7 +591,15 @@ class ChatImpl(
                 return
             }
             val message = (pnEvent as? MessageResult)?.message ?: return
-            val eventContent: EventContent = PNDataEncoder.decode<EventContent>(message)
+            val eventContent: EventContent = try {
+                PNDataEncoder.decode<EventContent>(message)
+            } catch (e: Exception) {
+                if (message.asMap()?.get("type")?.asString() == "custom") {
+                    EventContent.Custom((message.decode() as Map<String, Any?>) - "type")
+                } else {
+                    throw e
+                }
+            }
 
             @Suppress("UNCHECKED_CAST")
             val payload = eventContent as? T ?: return

@@ -20,6 +20,7 @@ import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
 import com.pubnub.chat.types.ChannelMentionData
+import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetCurrentUserMentionsResult
 import com.pubnub.chat.types.GetEventsHistoryResult
@@ -31,6 +32,7 @@ import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
+import com.pubnub.test.test
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import tryLong
@@ -468,6 +470,29 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // remove messages
         chat.pubNub.deleteMessages(listOf(channelId01, userId))
+    }
+
+    @Test
+    fun emitEvent_with_custom() = runTest {
+        val channel = chat.createChannel(randomString()).await()
+        val event = CompletableDeferred<Event<EventContent.Custom>>()
+        var tt: Long = 0
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var unsubscribe: AutoCloseable? = null
+            pubnub.awaitSubscribe {
+                unsubscribe = chat.listenForEvents<EventContent.Custom>(channel.id) {
+                    event.complete(it)
+                }
+            }
+            tt = chat.emitEvent(channel.id, EventContent.Custom(mapOf("abc" to "def"), EmitEventMethod.PUBLISH)).await().timetoken
+            assertEquals(mapOf("abc" to "def"), event.await().payload.data)
+            assertFalse(channel.getMembers().await().members.any { it.user.id == chat.currentUser.id })
+            unsubscribe?.close()
+        }
+        delayInMillis(1000)
+        val eventFromHistory = chat.getEventsHistory(channel.id, tt + 1, tt).await().events.first()
+        require(eventFromHistory.payload is EventContent.Custom)
+        assertEquals(mapOf("abc" to "def"), (eventFromHistory.payload as EventContent.Custom).data)
     }
 
     private suspend fun assertPushChannels(expectedNumberOfChannels: Int) {

@@ -2,7 +2,6 @@ package com.pubnub.chat.types
 
 import com.pubnub.api.JsonElement
 import com.pubnub.chat.restrictions.RestrictionType
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -44,10 +43,8 @@ sealed class EventContent {
     @SerialName("invite")
     class Invite(val channelType: ChannelType, val channelId: String) : EventContent()
 
-    @Serializable
-    @SerialName("custom")
     class Custom(
-        @Contextual val data: Any,
+        val data: Map<String, Any?>,
         @Transient val method: EmitEventMethod = EmitEventMethod.PUBLISH
     ) : EventContent()
 

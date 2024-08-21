@@ -139,7 +139,7 @@ interface Chat {
     fun <T : EventContent> listenForEvents(
         type: KClass<T>,
         channelId: String,
-        customMethod: EmitEventMethod? = null,
+        customMethod: EmitEventMethod = EmitEventMethod.PUBLISH,
         callback: (event: Event<T>) -> Unit
     ): AutoCloseable
 
@@ -194,7 +194,7 @@ interface Chat {
 
 inline fun <reified T : EventContent> Chat.listenForEvents(
     channelId: String,
-    customMethod: EmitEventMethod? = null,
+    customMethod: EmitEventMethod = EmitEventMethod.PUBLISH,
     noinline callback: (event: Event<T>) -> Unit
 ): AutoCloseable {
     return listenForEvents(T::class, channelId, customMethod, callback)

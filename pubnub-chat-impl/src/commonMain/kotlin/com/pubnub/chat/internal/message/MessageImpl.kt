@@ -39,11 +39,14 @@ data class MessageImpl(
 
     companion object {
         internal fun fromDTO(chat: ChatInternal, pnMessageResult: PNMessageResult): Message {
-            val content = chat.config.customPayloads?.getMessageResponseBody?.invoke(pnMessageResult.message) ?: defaultGetMessageResponseBody(pnMessageResult.message)
+            val content =
+                chat.config.customPayloads?.getMessageResponseBody?.invoke(pnMessageResult.message)
+                    ?: defaultGetMessageResponseBody(pnMessageResult.message)
+                    ?: EventContent.UnknownMessageFormat(pnMessageResult.message)
             return MessageImpl(
                 chat,
                 pnMessageResult.timetoken!!,
-                content!!, // todo handle malformed content (then this is null)
+                content,
                 pnMessageResult.channel,
                 pnMessageResult.publisher!!,
                 meta = pnMessageResult.userMetadata?.decode() as? Map<String, Any>,
@@ -54,12 +57,15 @@ data class MessageImpl(
         }
 
         internal fun fromDTO(chat: ChatInternal, messageItem: PNFetchMessageItem, channelId: String): Message {
-            val content = chat.config.customPayloads?.getMessageResponseBody?.invoke(messageItem.message) ?: defaultGetMessageResponseBody(messageItem.message)
+            val content =
+                chat.config.customPayloads?.getMessageResponseBody?.invoke(messageItem.message)
+                    ?: defaultGetMessageResponseBody(messageItem.message)
+                    ?: EventContent.UnknownMessageFormat(messageItem.message)
 
             return MessageImpl(
                 chat,
                 messageItem.timetoken!!,
-                content!!,
+                content,
                 channelId,
                 messageItem.uuid!!,
                 messageItem.actions,
