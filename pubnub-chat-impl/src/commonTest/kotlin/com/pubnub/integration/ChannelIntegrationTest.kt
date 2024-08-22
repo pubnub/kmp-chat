@@ -244,7 +244,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(userName, userSuggestionsMembershipsFromCache.first().user.name)
     }
 
-    // todo fix
+    // todo flaky
     @Test
     fun streamReadReceipts() = runTest(timeout = 10.seconds) {
         val completableBeforeMark = CompletableDeferred<Unit>()
@@ -261,22 +261,27 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         chat.markAllMessagesAsRead().await()
 
         val tt = channel.sendText("text2").await().timetoken
-        val dispose = channel.streamReadReceipts { receipts ->
-            val lastRead = receipts.entries.find { it.value.contains(chat.currentUser.id) }?.key
-            if (lastRead != null) {
-                if (tt > lastRead) {
-                    completableBeforeMark.complete(Unit) // before calling markAllMessagesRead
-                } else {
-                    completableAfterMark.complete(Unit) // after calling markAllMessagesRead
+        var dispose: AutoCloseable? = null
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            pubnub.awaitSubscribe(listOf(channel.id)) {
+                dispose = channel.streamReadReceipts { receipts ->
+                    val lastRead = receipts.entries.find { it.value.contains(chat.currentUser.id) }?.key
+                    if (lastRead != null) {
+                        if (tt > lastRead) {
+                            completableBeforeMark.complete(Unit) // before calling markAllMessagesRead
+                        } else {
+                            completableAfterMark.complete(Unit) // after calling markAllMessagesRead
+                        }
+                    }
                 }
             }
+
+            completableBeforeMark.await()
+            chat.markAllMessagesAsRead().await()
+            completableAfterMark.await()
+
+            dispose?.close()
         }
-
-        completableBeforeMark.await()
-        chat.markAllMessagesAsRead().await()
-        completableAfterMark.await()
-
-        dispose.close()
     }
 
     @Test
@@ -440,32 +445,37 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val message = channel01.getMessage(timetoken).await()!!
         val assertionErrorInCallback = CompletableDeferred<AssertionError?>()
 
-        val streamMessageReports = channel01.streamMessageReports { reportEvent: Event<EventContent.Report> ->
-            try {
-                // we need to have try/catch here because assertion error will not cause test to fail
-                numberOfReports.incrementAndGet()
-                val reportReason = reportEvent.payload.reason
-                assertTrue(reportReason == reason01 || reportReason == reason02)
-                assertEquals(messageText, reportEvent.payload.text)
-                assertTrue(reportEvent.payload.reportedMessageChannelId?.contains(INTERNAL_MODERATION_PREFIX)!!)
-                assertTrue(reportEvent.channelId.contains(INTERNAL_MODERATION_PREFIX))
-                if (numberOfReports.value == 2) {
-                    assertionErrorInCallback.complete(null)
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var streamMessageReportsCloseable: AutoCloseable? = null
+
+            pubnub.awaitSubscribe(listOf("PUBNUB_INTERNAL_MODERATION_${channel01.id}")) {
+                streamMessageReportsCloseable = channel01.streamMessageReports { reportEvent: Event<EventContent.Report> ->
+                    try {
+                        // we need to have try/catch here because assertion error will not cause test to fail
+                        numberOfReports.incrementAndGet()
+                        val reportReason = reportEvent.payload.reason
+                        assertTrue(reportReason == reason01 || reportReason == reason02)
+                        assertEquals(messageText, reportEvent.payload.text)
+                        assertTrue(reportEvent.payload.reportedMessageChannelId?.contains(INTERNAL_MODERATION_PREFIX)!!)
+                        assertTrue(reportEvent.channelId.contains(INTERNAL_MODERATION_PREFIX))
+                        if (numberOfReports.value == 2) {
+                            assertionErrorInCallback.complete(null)
+                        }
+                    } catch (e: AssertionError) {
+                        assertionErrorInCallback.complete(e)
+                    }
                 }
-            } catch (e: AssertionError) {
-                assertionErrorInCallback.complete(e)
             }
+
+            // report messages
+            message.report(reason01).await()
+            message.report(reason02).await()
+
+            assertionErrorInCallback.await()?.let { assertionError -> throw (assertionError) }
+            assertEquals(2, numberOfReports.value)
+
+            streamMessageReportsCloseable?.close()
         }
-        delayInMillis(550)
-
-        // report messages
-        message.report(reason01).await()
-        message.report(reason02).await()
-
-        assertionErrorInCallback.await()?.let { assertionError -> throw (assertionError) }
-        assertEquals(2, numberOfReports.value)
-
-        streamMessageReports.close()
     }
 }
 

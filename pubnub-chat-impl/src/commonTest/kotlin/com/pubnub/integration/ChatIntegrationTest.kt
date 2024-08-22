@@ -158,64 +158,78 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // register lister of "Receipt" event
         val assertionErrorInListener01 = CompletableDeferred<AssertionError?>()
-        val removeListenerAndUnsubscribe01: AutoCloseable = chat.listenForEvents<EventContent.Receipt>(
-            channelId = channelId01
-        ) { event: Event<EventContent.Receipt> ->
-            try {
-                // we need to have try/catch here because assertion error will not cause test to fail
-                assertEquals(channelId01, event.channelId)
-                assertEquals(chat.currentUser.id, event.userId)
-                assertNotEquals(lastReadMessageTimetokenValue, event.payload.messageTimetoken)
-                assertEquals(lastPublishToChannel01.timetoken, event.payload.messageTimetoken)
-                assertionErrorInListener01.complete(null)
-            } catch (e: AssertionError) {
-                assertionErrorInListener01.complete(e)
-            }
-        }
         val assertionErrorInListener02 = CompletableDeferred<AssertionError?>()
-        val removeListenerAndUnsubscribe02 = chat.listenForEvents(
-            type = EventContent.Receipt::class,
-            channelId = channelId02
-        ) { event: Event<EventContent.Receipt> ->
-            try {
-                // we need to have try/catch here because assertion error will not cause test to fail
-                assertEquals(channelId02, event.channelId)
-                assertEquals(chat.currentUser.id, event.userId)
-                assertNotEquals(lastReadMessageTimetokenValue, event.payload.messageTimetoken)
-                assertEquals(lastPublishToChannel02.timetoken, event.payload.messageTimetoken)
-                assertionErrorInListener02.complete(null)
-            } catch (e: AssertionError) {
-                assertionErrorInListener02.complete(e)
+
+        var removeListenerAndUnsubscribe01: AutoCloseable? = null
+        var removeListenerAndUnsubscribe02: AutoCloseable? = null
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            pubnub.awaitSubscribe(listOf(channel01.id, channel02.id)) {
+                removeListenerAndUnsubscribe01 = chat.listenForEvents<EventContent.Receipt>(
+                    channelId = channelId01
+                ) { event: Event<EventContent.Receipt> ->
+                    try {
+                        // we need to have try/catch here because assertion error will not cause test to fail
+                        assertEquals(channelId01, event.channelId)
+                        assertEquals(chat.currentUser.id, event.userId)
+                        assertNotEquals(lastReadMessageTimetokenValue, event.payload.messageTimetoken)
+                        assertEquals(lastPublishToChannel01.timetoken, event.payload.messageTimetoken)
+                        assertionErrorInListener01.complete(null)
+                    } catch (e: AssertionError) {
+                        assertionErrorInListener01.complete(e)
+                    }
+                }
+
+                removeListenerAndUnsubscribe02 = chat.listenForEvents(
+                    type = EventContent.Receipt::class,
+                    channelId = channelId02
+                ) { event: Event<EventContent.Receipt> ->
+                    try {
+                        // we need to have try/catch here because assertion error will not cause test to fail
+                        assertEquals(channelId02, event.channelId)
+                        assertEquals(chat.currentUser.id, event.userId)
+                        assertNotEquals(lastReadMessageTimetokenValue, event.payload.messageTimetoken)
+                        assertEquals(lastPublishToChannel02.timetoken, event.payload.messageTimetoken)
+                        assertionErrorInListener02.complete(null)
+                    } catch (e: AssertionError) {
+                        assertionErrorInListener02.complete(e)
+                    }
+                }
             }
+
+            // then
+            val markAllMessageAsReadResponse: MarkAllMessageAsReadResponse = chat.markAllMessagesAsRead().await()
+
+            // verify response contains updated "lastReadMessageTimetoken"
+            markAllMessageAsReadResponse.memberships.forEach { membership: Membership ->
+                // why membership.custom!!["lastReadMessageTimetoken"] returns double? <--this is default behaviour of GSON
+                assertNotEquals(
+                    lastReadMessageTimetokenValue,
+                    membership.custom!!["lastReadMessageTimetoken"].tryLong()
+                )
+            }
+
+            // verify each Membership has updated custom value for "lastReadMessageTimetoken"
+            val userMembership: MembershipsResponse = chat.currentUser.getMemberships().await()
+            userMembership.memberships.forEach { membership: Membership ->
+                assertNotEquals(
+                    lastReadMessageTimetokenValue,
+                    membership.custom!!["lastReadMessageTimetoken"].tryLong()
+                )
+            }
+
+            // verify assertion inside listeners
+            assertionErrorInListener01.await()?.let { throw it }
+            assertionErrorInListener02.await()?.let { throw it }
+
+            // remove messages
+            chat.pubNub.deleteMessages(listOf(channelId01, channelId02))
+
+            // remove listeners and unsubscribe
+            removeListenerAndUnsubscribe01?.close()
+            removeListenerAndUnsubscribe02?.close()
+
+            // remove memberships (user). This will be done in tearDown method
         }
-
-        // then
-        val markAllMessageAsReadResponse: MarkAllMessageAsReadResponse = chat.markAllMessagesAsRead().await()
-
-        // verify response contains updated "lastReadMessageTimetoken"
-        markAllMessageAsReadResponse.memberships.forEach { membership: Membership ->
-            // why membership.custom!!["lastReadMessageTimetoken"] returns double? <--this is default behaviour of GSON
-            assertNotEquals(lastReadMessageTimetokenValue, membership.custom!!["lastReadMessageTimetoken"].tryLong())
-        }
-
-        // verify each Membership has updated custom value for "lastReadMessageTimetoken"
-        val userMembership: MembershipsResponse = chat.currentUser.getMemberships().await()
-        userMembership.memberships.forEach { membership: Membership ->
-            assertNotEquals(lastReadMessageTimetokenValue, membership.custom!!["lastReadMessageTimetoken"].tryLong())
-        }
-
-        // verify assertion inside listeners
-        assertionErrorInListener01.await()?.let { throw it }
-        assertionErrorInListener02.await()?.let { throw it }
-
-        // remove messages
-        chat.pubNub.deleteMessages(listOf(channelId01, channelId02))
-
-        // remove listeners and unsubscribe
-        removeListenerAndUnsubscribe01.close()
-        removeListenerAndUnsubscribe02.close()
-
-        // remove memberships (user). This will be done in tearDown method
     }
 
     @Ignore // fails from time to time
