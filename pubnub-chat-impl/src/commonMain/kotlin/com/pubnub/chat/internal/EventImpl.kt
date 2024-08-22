@@ -1,5 +1,8 @@
 package com.pubnub.chat.internal
 
+import com.pubnub.api.asMap
+import com.pubnub.api.asString
+import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
@@ -19,10 +22,19 @@ class EventImpl<T : EventContent>(
             channelId: String,
             pnFetchMessageItem: PNFetchMessageItem
         ): Event<EventContent> {
+            val eventContent: EventContent = try {
+                PNDataEncoder.decode<EventContent>(pnFetchMessageItem.message)
+            } catch (e: Exception) {
+                if (pnFetchMessageItem.message.asMap()?.get("type")?.asString() == "custom") {
+                    EventContent.Custom((pnFetchMessageItem.message.decode() as Map<String, Any?>) - "type")
+                } else {
+                    throw e
+                }
+            }
             return EventImpl(
                 chat = chat,
                 timetoken = pnFetchMessageItem.timetoken ?: 0,
-                payload = PNDataEncoder.decode<EventContent>(pnFetchMessageItem.message),
+                payload = eventContent,
                 channelId = channelId,
                 userId = pnFetchMessageItem.uuid ?: "unknown-user"
             )

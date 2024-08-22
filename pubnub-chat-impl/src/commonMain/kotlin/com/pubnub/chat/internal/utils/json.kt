@@ -1,6 +1,7 @@
 import com.pubnub.chat.internal.defaultGetMessagePublishBody
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
+import kotlinx.serialization.InternalSerializationApi
 
 internal fun Any?.tryLong(): Long? {
     return when (this) {
@@ -28,9 +29,9 @@ internal fun Any?.tryDouble(): Double? {
 
 internal fun EventContent.TextMessageContent.encodeForSending(
     channelId: String,
-    getMessagePublishBody: ((m: EventContent.TextMessageContent, channelId: String) -> Map<String, Any>)? = null,
+    getMessagePublishBody: ((m: EventContent.TextMessageContent, channelId: String) -> Map<String, Any?>)? = null,
     mergeMessageWith: Map<String, Any>? = null,
-): Map<String, Any> {
+): Map<String, Any?> {
     var finalMessage = getMessagePublishBody?.invoke(this, channelId) ?: defaultGetMessagePublishBody(this, channelId)
     if (mergeMessageWith != null) {
         finalMessage = buildMap {
@@ -41,10 +42,19 @@ internal fun EventContent.TextMessageContent.encodeForSending(
     return finalMessage
 }
 
+@OptIn(InternalSerializationApi::class)
 internal fun EventContent.encodeForSending(
     mergeMessageWith: Map<String, Any>? = null,
-): Map<String, Any> {
-    var finalMessage = PNDataEncoder.encode(this) as Map<String, Any>
+): Map<String, Any?> {
+    var finalMessage = if (this is EventContent.Custom) {
+        buildMap<String, Any?> {
+            putAll(data)
+            put("type", "custom")
+        }
+    } else {
+        PNDataEncoder.encode(this) as Map<String, Any?>
+    }
+
     if (mergeMessageWith != null) {
         finalMessage = buildMap {
             putAll(finalMessage)

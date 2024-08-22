@@ -1,0 +1,43 @@
+[versions]
+nexus = "2.0.0"
+kotlin = "2.0.10"
+vanniktech = "0.29.0"
+ktlint = "12.1.0"
+dokka = "1.9.20"
+kotlinx_datetime = "0.6.0"
+kotlinx_coroutines = "1.8.1"
+kotlinx_serialization = "1.7.1"
+pubnub = "9.2.0-DEV"
+
+[libraries]
+pubnub-core-api = { module = "com.pubnub:pubnub-core-api", version.ref = "pubnub" }
+pubnub-kotlin-api = { module = "com.pubnub:pubnub-kotlin-api", version.ref = "pubnub" }
+pubnub-kotlin-impl = { module = "com.pubnub:pubnub-kotlin-impl", version.ref = "pubnub" }
+pubnub-kotlin = { module = "com.pubnub:pubnub-kotlin", version.ref = "pubnub" }
+pubnub-kotlin-test = { module = "com.pubnub:pubnub-kotlin-test", version.ref = "pubnub" }
+#slf4j = { module = "org.slf4j:slf4j-api", version = "1.7.36" }
+#cbor = { module = "co.nstant.in:cbor", version = "0.9" }
+#jetbrains-annotations = { module = "org.jetbrains:annotations", version = "24.1.0" }
+kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version = "0.25.0" }
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx_serialization" }
+benasher44-uuid = { module = "com.benasher44:uuid", version = "0.8.4" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx_datetime"}
+lighthousegames-logging = { module = "org.lighthousegames:logging", version = "1.5.0"}
+
+## tests
+#logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+#logback-core = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
+#junit4 = { module = "junit:junit", version = "4.13.2" }
+#coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx_coroutines"}
+#
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlinx-atomicfu = { id = "org.jetbrains.kotlin.plugin.atomicfu", version.ref = "kotlin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint"  }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+benmanes-versions = { id = "com.github.ben-manes.versions", version = "0.42.0" }
+vanniktech-maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech" }
+gradle-nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus" }
+kotlinx-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version = "0.16.2" }
+mokkery = { id = "dev.mokkery", version = "2.0.0" }

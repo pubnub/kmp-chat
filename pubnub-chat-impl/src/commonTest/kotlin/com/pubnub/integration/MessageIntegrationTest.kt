@@ -99,34 +99,37 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val reason = "rude"
         val assertionErrorInListener01 = CompletableDeferred<AssertionError?>()
         val channelId = "$INTERNAL_MODERATION_PREFIX${channel01.id}"
-        val removeListenerAndUnsubscribe: AutoCloseable = chat.listenForEvents<EventContent.Report>(
-            channelId = channelId,
-            callback = { event: Event<EventContent.Report> ->
-                println("-= in listenForEvents")
-                try {
-                    // we need to have try/catch here because assertion error will not cause test to fail
-                    assertEquals(reason, event.payload.reason)
-                    assertEquals(channelId, event.payload.reportedMessageChannelId)
-                    assertEquals(channelId, event.channelId)
-                    assertEquals(someUser.id, event.payload.reportedUserId)
-                    assertEquals(timetoken, event.payload.reportedMessageTimetoken)
-                    assertionErrorInListener01.complete(null)
-                } catch (e: AssertionError) {
-                    assertionErrorInListener01.complete(e)
-                }
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var removeListenerAndUnsubscribe: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channelId)) {
+                removeListenerAndUnsubscribe = chat.listenForEvents<EventContent.Report>(
+                    channelId = channelId,
+                    callback = { event: Event<EventContent.Report> ->
+                        println("-= in listenForEvents")
+                        try {
+                            // we need to have try/catch here because assertion error will not cause test to fail
+                            assertEquals(reason, event.payload.reason)
+                            assertEquals(channelId, event.payload.reportedMessageChannelId)
+                            assertEquals(channelId, event.channelId)
+                            assertEquals(someUser.id, event.payload.reportedUserId)
+                            assertEquals(timetoken, event.payload.reportedMessageTimetoken)
+                            assertionErrorInListener01.complete(null)
+                        } catch (e: AssertionError) {
+                            assertionErrorInListener01.complete(e)
+                        }
+                    }
+                )
             }
-        )
-        delayInMillis(150)
+            // when
+            val message: Message = channel01.getMessage(timetoken).await()!!
+            message.report(reason).await()
 
-        // when
-        val message: Message = channel01.getMessage(timetoken).await()!!
-        message.report(reason).await()
+            // then
+            assertionErrorInListener01.await()?.let { throw it }
 
-        // then
-        assertionErrorInListener01.await()?.let { throw it }
-
-        // cleanup
-        removeListenerAndUnsubscribe.close()
+            // cleanup
+            removeListenerAndUnsubscribe?.close()
+        }
     }
 
     private fun getDeletedActionMap() = mapOf(

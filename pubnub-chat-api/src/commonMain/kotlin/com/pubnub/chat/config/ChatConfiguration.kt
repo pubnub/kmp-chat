@@ -21,14 +21,14 @@ interface ChatConfiguration {
 fun ChatConfiguration(
     logLevel: LogLevel = LogLevel.OFF, // todo document all levels including "Off"
     typingTimeout: Duration = 5.seconds,
-    storeUserActivityInterval: Duration = 60.seconds,
+    storeUserActivityInterval: Duration = 600.seconds,
     storeUserActivityTimestamps: Boolean = false,
     pushNotifications: PushNotificationsConfig = PushNotificationsConfig(
-        false,
-        null,
-        PNPushType.FCM,
-        null,
-        PNPushEnvironment.DEVELOPMENT
+        sendPushes = false,
+        deviceToken = null,
+        deviceGateway = PNPushType.FCM,
+        apnsTopic = null,
+        apnsEnvironment = PNPushEnvironment.DEVELOPMENT
     ),
     rateLimitFactor: Int = 2,
     rateLimitPerChannel: Map<ChannelType, Duration> = RateLimitPerChannel(),
@@ -36,7 +36,7 @@ fun ChatConfiguration(
 ): ChatConfiguration = object : ChatConfiguration {
     override val logLevel: LogLevel = logLevel
     override val typingTimeout: Duration = typingTimeout
-    override val storeUserActivityInterval: Duration = storeUserActivityInterval
+    override val storeUserActivityInterval: Duration = maxOf(storeUserActivityInterval, 60.seconds)
     override val storeUserActivityTimestamps: Boolean = storeUserActivityTimestamps
     override val pushNotifications: PushNotificationsConfig = pushNotifications
     override val rateLimitFactor: Int = rateLimitFactor

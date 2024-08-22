@@ -203,7 +203,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     override fun <T : EventContent> listenForEvents(
         type: KClass<T>,
         channelId: String,
-        customMethod: EmitEventMethod?,
+        customMethod: EmitEventMethod,
         callback: (event: Event<T>) -> Unit,
     ): AutoCloseable {
         TODO("Not yet implemented")

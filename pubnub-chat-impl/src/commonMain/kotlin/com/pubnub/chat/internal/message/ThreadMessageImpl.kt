@@ -1,6 +1,5 @@
 package com.pubnub.chat.internal.message
 
-import com.pubnub.api.asString
 import com.pubnub.api.decode
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
@@ -10,6 +9,7 @@ import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.defaultGetMessageResponseBody
 import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.util.pnError
@@ -53,11 +53,15 @@ data class ThreadMessageImpl(
         private val log = logging()
 
         internal fun fromDTO(chat: ChatImpl, pnMessageResult: PNMessageResult, parentChannelId: String): ThreadMessage {
+            val content =
+                chat.config.customPayloads?.getMessageResponseBody?.invoke(pnMessageResult.message)
+                    ?: defaultGetMessageResponseBody(pnMessageResult.message)
+                    ?: EventContent.UnknownMessageFormat(pnMessageResult.message)
             return ThreadMessageImpl(
                 chat,
                 parentChannelId,
                 pnMessageResult.timetoken!!,
-                PNDataEncoder.decode<EventContent>(pnMessageResult.message) as EventContent.TextMessageContent,
+                content,
                 pnMessageResult.channel,
                 pnMessageResult.publisher!!,
                 meta = pnMessageResult.userMetadata?.decode() as? Map<String, Any>,
@@ -68,19 +72,16 @@ data class ThreadMessageImpl(
         }
 
         internal fun fromDTO(chat: ChatInternal, messageItem: PNFetchMessageItem, channelId: String, parentChannelId: String): ThreadMessage {
-            val eventContent = try {
-                messageItem.message.asString()?.let { text ->
-                    EventContent.TextMessageContent(text, null)
-                } ?: PNDataEncoder.decode(messageItem.message)
-            } catch (e: Exception) {
-                EventContent.UnknownMessageFormat(messageItem.message)
-            }
+            val content =
+                chat.config.customPayloads?.getMessageResponseBody?.invoke(messageItem.message)
+                    ?: defaultGetMessageResponseBody(messageItem.message)
+                    ?: EventContent.UnknownMessageFormat(messageItem.message)
 
             return ThreadMessageImpl(
                 chat = chat,
                 parentChannelId = parentChannelId,
                 timetoken = messageItem.timetoken!!,
-                content = eventContent,
+                content = content,
                 channelId = channelId,
                 userId = messageItem.uuid!!,
                 actions = messageItem.actions,
