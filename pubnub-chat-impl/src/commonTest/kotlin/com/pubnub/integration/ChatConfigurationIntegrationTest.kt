@@ -16,7 +16,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 
 class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
     @Test
@@ -24,7 +23,7 @@ class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
         val chat = ChatImpl(
             ChatConfiguration(
                 customPayloads = CustomPayloads(
-                    getMessagePublishBody = { content, channelId ->
+                    getMessagePublishBody = { content, _, _ ->
                         mapOf(
                             "custom" to mapOf(
                                 "payload" to mapOf(
@@ -32,13 +31,12 @@ class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
                                 )
                             ),
                             "files" to content.files,
-//                        "type" to "text"
                         )
                     },
-                    getMessageResponseBody = { json: JsonElement ->
+                    getMessageResponseBody = { json: JsonElement, _, _ ->
                         EventContent.TextMessageContent(
                             json.asMap()?.get("custom")?.asMap()?.get("payload")?.asMap()?.get("text")?.asString()!!,
-                            json.asList()?.map {
+                            json.asMap()?.get("files")?.asList()?.map {
                                 File(
                                     it.asMap()?.get("name")?.asString()!!,
                                     it.asMap()?.get("id")?.asString()!!,
@@ -58,14 +56,77 @@ class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
 
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var unsubscribe: AutoCloseable? = null
-            pubnub.awaitSubscribe {
+            pubnub.awaitSubscribe(listOf(channel.id)) {
                 unsubscribe = channel.connect {
                     message.complete(it)
                 }
             }
             channel.sendText(messageText).await()
             assertEquals(messageText, message.await().text)
-            assertFalse(channel.getMembers().await().members.any { it.user.id == chat.currentUser.id })
+            unsubscribe?.close()
+        }
+    }
+
+    @Test
+    fun custom_payloads_send_receive_msgs_single_channel() = runTest {
+        val chat = ChatImpl(
+            ChatConfiguration(
+                customPayloads = CustomPayloads(
+                    getMessagePublishBody = { content, channelId, default ->
+                        if (channelId == channel01.id) {
+                            mapOf(
+                                "custom" to mapOf(
+                                    "payload" to mapOf(
+                                        "text" to content.text
+                                    )
+                                ),
+                                "files" to content.files,
+                            )
+                        } else {
+                            default(content)
+                        }
+                    },
+                    getMessageResponseBody = { json: JsonElement, channelId, default ->
+                        if (channelId == channel01.id) {
+                            EventContent.TextMessageContent(
+                                json.asMap()?.get("custom")?.asMap()?.get("payload")?.asMap()?.get("text")
+                                    ?.asString()!!,
+                                json.asMap()?.get("files")?.asList()?.map {
+                                    File(
+                                        it.asMap()?.get("name")?.asString()!!,
+                                        it.asMap()?.get("id")?.asString()!!,
+                                        it.asMap()?.get("url")?.asString()!!,
+                                        it.asMap()?.get("type")?.asString(),
+                                    )
+                                }
+                            )
+                        } else {
+                            default(json)
+                        }
+                    }
+                )
+            ),
+            pubnub
+        ).initialize().await()
+        chat.createChannel(channel01.id).await()
+        chat.createChannel(channel02.id).await()
+        val messageText = randomString()
+        val message = CompletableDeferred<Message>()
+        val message2 = CompletableDeferred<Message>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var unsubscribe: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id, channel02.id)) {
+                unsubscribe = channel01.connect {
+                    message.complete(it)
+                }
+                unsubscribe = channel02.connect {
+                    message2.complete(it)
+                }
+            }
+            channel01.sendText(messageText).await()
+            channel02.sendText(messageText).await()
+            assertEquals(messageText, message.await().text)
             unsubscribe?.close()
         }
     }

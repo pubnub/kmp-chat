@@ -19,7 +19,7 @@ internal val MINIMAL_TYPING_INDICATOR_TIMEOUT: Duration = 1.seconds
 internal const val THREAD_ROOT_ID = "threadRootId"
 internal const val INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL"
 
-fun defaultGetMessagePublishBody(m: EventContent.TextMessageContent, channelId: String): Map<String, Any> =
+fun defaultGetMessagePublishBody(m: EventContent.TextMessageContent): Map<String, Any> =
     PNDataEncoder.encode(m as EventContent) as Map<String, Any>
 
 fun defaultGetMessageResponseBody(message: JsonElement): EventContent.TextMessageContent? {

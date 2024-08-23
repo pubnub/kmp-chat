@@ -493,7 +493,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         var tt: Long = 0
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var unsubscribe: AutoCloseable? = null
-            pubnub.awaitSubscribe {
+            pubnub.awaitSubscribe(listOf(channel.id)) {
                 unsubscribe = chat.listenForEvents<EventContent.Custom>(channel.id) {
                     event.complete(it)
                 }

@@ -4,10 +4,20 @@ import com.pubnub.api.JsonElement
 import com.pubnub.chat.types.EventContent
 
 class CustomPayloads(
-    val getMessagePublishBody: ((m: EventContent.TextMessageContent, channelId: String) -> Map<String, Any?>)? = null,
+    val getMessagePublishBody: (
+        (
+            m: EventContent.TextMessageContent,
+            channelId: String,
+            defaultMessagePublishBody: (m: EventContent.TextMessageContent) -> Map<String, Any?>
+        ) -> Map<String, Any?>
+    )? = null,
     val getMessageResponseBody: (
-        (m: JsonElement) -> EventContent.TextMessageContent
-    )? = null, // todo do we have tests that checks this functionality
+        (
+            m: JsonElement,
+            channelId: String,
+            defaultMessageResponseBody: (m: JsonElement) -> EventContent.TextMessageContent?
+        ) -> EventContent.TextMessageContent?
+    )? = null,
     val editMessageActionName: String? = null,
     val deleteMessageActionName: String? = null,
 )

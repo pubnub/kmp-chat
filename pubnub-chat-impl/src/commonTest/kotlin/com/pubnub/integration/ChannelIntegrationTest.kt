@@ -54,7 +54,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         pubnub.test(backgroundScope, checkAllEvents = false) {
             val joinResult = CompletableDeferred<JoinResult>()
-            pubnub.awaitSubscribe {
+            pubnub.awaitSubscribe(listOf(channel.id)) {
                 channel.join { receivedMessage ->
                     message.complete(receivedMessage)
                 }.async {
@@ -124,7 +124,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var unsubscribe: AutoCloseable? = null
-            pubnub.awaitSubscribe {
+            pubnub.awaitSubscribe(listOf(channel.id)) {
                 unsubscribe = channel.connect {
                     message.complete(it)
                 }
