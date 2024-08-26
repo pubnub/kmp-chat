@@ -272,12 +272,12 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     usePost = usePost,
                     ttl = ttl,
                 ).then { publishResult: PNPublishResult ->
-                    try {
-                        mentionedUsers?.forEach {
-                            emitUserMention(it.value.id, publishResult.timetoken, text).async {}
+                    mentionedUsers?.forEach {
+                        emitUserMention(it.value.id, publishResult.timetoken, text).async {
+                            it.onFailure { ex ->
+                                log.warn(err = ex, msg = { ex.message })
+                            }
                         }
-                    } catch (e: Exception) {
-                        log.error(err = e, msg = {})
                     }
                     publishResult
                 }
@@ -406,7 +406,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 try {
                     if (
                         (
-                            chat.config.customPayloads?.getMessageResponseBody?.invoke(pnMessageResult.message)
+                            chat.config.customPayloads?.getMessageResponseBody?.invoke(pnMessageResult.message, pnMessageResult.channel, ::defaultGetMessageResponseBody)
                                 ?: defaultGetMessageResponseBody(pnMessageResult.message)
                         ) == null
                     ) {

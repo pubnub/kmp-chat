@@ -40,7 +40,7 @@ data class MessageImpl(
     companion object {
         internal fun fromDTO(chat: ChatInternal, pnMessageResult: PNMessageResult): Message {
             val content =
-                chat.config.customPayloads?.getMessageResponseBody?.invoke(pnMessageResult.message)
+                chat.config.customPayloads?.getMessageResponseBody?.invoke(pnMessageResult.message, pnMessageResult.channel, ::defaultGetMessageResponseBody)
                     ?: defaultGetMessageResponseBody(pnMessageResult.message)
                     ?: EventContent.UnknownMessageFormat(pnMessageResult.message)
             return MessageImpl(
@@ -58,7 +58,7 @@ data class MessageImpl(
 
         internal fun fromDTO(chat: ChatInternal, messageItem: PNFetchMessageItem, channelId: String): Message {
             val content =
-                chat.config.customPayloads?.getMessageResponseBody?.invoke(messageItem.message)
+                chat.config.customPayloads?.getMessageResponseBody?.invoke(messageItem.message, channelId, ::defaultGetMessageResponseBody)
                     ?: defaultGetMessageResponseBody(messageItem.message)
                     ?: EventContent.UnknownMessageFormat(messageItem.message)
 

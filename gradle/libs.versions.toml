@@ -40,4 +40,4 @@ benmanes-versions = { id = "com.github.ben-manes.versions", version = "0.42.0" }
 vanniktech-maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech" }
 gradle-nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus" }
 kotlinx-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version = "0.16.2" }
-mokkery = { id = "dev.mokkery", version = "2.0.0" }
+mokkery = { id = "dev.mokkery", version = "2.2.0" }
