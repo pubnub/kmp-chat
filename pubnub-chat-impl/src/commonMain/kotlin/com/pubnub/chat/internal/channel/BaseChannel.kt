@@ -194,7 +194,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             if (isTyping) {
                 runWithDelay(typingTimeout + 10.milliseconds) { // +10ms just to make sure the timeout expires
                     typingIndicatorsLock.withLock {
-                        removeExpiredTypingIndicators(typingTimeout, typingIndicators, now)
+                        removeExpiredTypingIndicators(typingTimeout, typingIndicators, clock.now())
                         typingIndicators.keys.toList()
                     }.also { typingIndicatorsList ->
                         callback(typingIndicatorsList)

@@ -590,31 +590,38 @@ class ChatImpl(
         callback: (event: Event<T>) -> Unit
     ): AutoCloseable {
         val handler = fun(_: PubNub, pnEvent: PNEvent) {
-            if (pnEvent.channel != channelId) {
-                return
-            }
-            val message = (pnEvent as? MessageResult)?.message ?: return
-            val eventContent: EventContent = try {
-                PNDataEncoder.decode<EventContent>(message)
-            } catch (e: Exception) {
-                if (message.asMap()?.get("type")?.asString() == "custom") {
-                    EventContent.Custom((message.decode() as Map<String, Any?>) - "type")
-                } else {
-                    throw e
+            try {
+                if (pnEvent.channel != channelId) {
+                    return
                 }
+                val message = (pnEvent as? MessageResult)?.message ?: return
+                val eventContent: EventContent = try {
+                    PNDataEncoder.decode<EventContent>(message)
+                } catch (e: Exception) {
+                    if (message.asMap()?.get("type")?.asString() == "custom") {
+                        EventContent.Custom((message.decode() as Map<String, Any?>) - "type")
+                    } else {
+                        throw e
+                    }
+                }
+
+                val payload: T = if (type.isInstance(eventContent)) {
+                    eventContent as T
+                } else {
+                    return
+                }
+
+                val event = EventImpl(
+                    chat = this,
+                    timetoken = pnEvent.timetoken!!, // todo can this even be null?
+                    payload = payload,
+                    channelId = pnEvent.channel,
+                    userId = pnEvent.publisher!! // todo can this even be null?
+                )
+                callback(event)
+            } catch (e: Exception) {
+                log.e(e, msg = { e.message })
             }
-
-            @Suppress("UNCHECKED_CAST")
-            val payload = eventContent as? T ?: return
-
-            val event = EventImpl(
-                chat = this,
-                timetoken = pnEvent.timetoken!!, // todo can this even be null?
-                payload = payload,
-                channelId = pnEvent.channel,
-                userId = pnEvent.publisher!! // todo can this even be null?
-            )
-            callback(event)
         }
         val method = type.getEmitMethod() ?: customMethod
         val listener = createEventListener(
