@@ -85,7 +85,7 @@ data class ThreadMessageImpl(
                 channelId = channelId,
                 userId = messageItem.uuid!!,
                 actions = messageItem.actions,
-                meta = messageItem.meta?.decode()?.let { it as Map<String, Any>? },
+                meta = messageItem.meta?.decode()?.let { it as? Map<String, Any>? },
                 mentionedUsers = messageItem.meta.extractMentionedUsers(),
                 referencedChannels = messageItem.meta.extractReferencedChannels(),
                 quotedMessage = messageItem.meta?.let { PNDataEncoder.decode(it) },
