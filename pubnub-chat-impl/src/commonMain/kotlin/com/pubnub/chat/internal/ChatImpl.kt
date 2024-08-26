@@ -1,6 +1,5 @@
 package com.pubnub.chat.internal
 
-import com.benasher44.uuid.uuid4
 import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
@@ -121,6 +120,8 @@ import org.lighthousegames.logging.KmLogging
 import org.lighthousegames.logging.logging
 import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class ChatImpl(
     override val config: ChatConfiguration,
@@ -456,6 +457,7 @@ class ChatImpl(
         }
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     override fun createPublicConversation(
         channelId: String?,
         channelName: String?,
@@ -463,7 +465,7 @@ class ChatImpl(
         channelCustom: CustomObject?,
         channelStatus: String?
     ): PNFuture<Channel> {
-        val finalChannelId: String = channelId ?: uuid4().toString()
+        val finalChannelId: String = channelId ?: Uuid.random().toString()
 
         return createChannel(
             id = finalChannelId,
@@ -523,6 +525,7 @@ class ChatImpl(
         }
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     override fun createGroupConversation(
         invitedUsers: Collection<User>,
         channelId: String?,
@@ -533,7 +536,7 @@ class ChatImpl(
         membershipCustom: CustomObject?
     ): PNFuture<CreateGroupConversationResult> {
         val user = this.currentUser
-        val finalChannelId = channelId ?: uuid4().toString()
+        val finalChannelId = channelId ?: Uuid.random().toString()
         return getChannel(finalChannelId).thenAsync { channel ->
             channel?.asFuture() ?: createChannel(
                 finalChannelId,
@@ -587,31 +590,38 @@ class ChatImpl(
         callback: (event: Event<T>) -> Unit
     ): AutoCloseable {
         val handler = fun(_: PubNub, pnEvent: PNEvent) {
-            if (pnEvent.channel != channelId) {
-                return
-            }
-            val message = (pnEvent as? MessageResult)?.message ?: return
-            val eventContent: EventContent = try {
-                PNDataEncoder.decode<EventContent>(message)
-            } catch (e: Exception) {
-                if (message.asMap()?.get("type")?.asString() == "custom") {
-                    EventContent.Custom((message.decode() as Map<String, Any?>) - "type")
-                } else {
-                    throw e
+            try {
+                if (pnEvent.channel != channelId) {
+                    return
                 }
+                val message = (pnEvent as? MessageResult)?.message ?: return
+                val eventContent: EventContent = try {
+                    PNDataEncoder.decode<EventContent>(message)
+                } catch (e: Exception) {
+                    if (message.asMap()?.get("type")?.asString() == "custom") {
+                        EventContent.Custom((message.decode() as Map<String, Any?>) - "type")
+                    } else {
+                        throw e
+                    }
+                }
+
+                val payload: T = if (type.isInstance(eventContent)) {
+                    eventContent as T
+                } else {
+                    return
+                }
+
+                val event = EventImpl(
+                    chat = this,
+                    timetoken = pnEvent.timetoken!!, // todo can this even be null?
+                    payload = payload,
+                    channelId = pnEvent.channel,
+                    userId = pnEvent.publisher!! // todo can this even be null?
+                )
+                callback(event)
+            } catch (e: Exception) {
+                log.e(e, msg = { e.message })
             }
-
-            @Suppress("UNCHECKED_CAST")
-            val payload = eventContent as? T ?: return
-
-            val event = EventImpl(
-                chat = this,
-                timetoken = pnEvent.timetoken!!, // todo can this even be null?
-                payload = payload,
-                channelId = pnEvent.channel,
-                userId = pnEvent.publisher!! // todo can this even be null?
-            )
-            callback(event)
         }
         val method = type.getEmitMethod() ?: customMethod
         val listener = createEventListener(

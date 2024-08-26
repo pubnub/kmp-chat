@@ -1,6 +1,5 @@
 package com.pubnub.kmp
 
-import com.benasher44.uuid.uuid4
 import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
@@ -80,6 +79,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class ChatTest : BaseTest() {
     private lateinit var objectUnderTest: ChatImpl
@@ -1192,6 +1193,7 @@ class ChatTest : BaseTest() {
         }
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     @Test
     fun whenCreatingPublicConversationWithoutChannelIdShouldGenerateIt() {
         every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
@@ -1213,7 +1215,7 @@ class ChatTest : BaseTest() {
             callback1.accept(
                 Result.success(
                     getPNChannelMetadataResult(
-                        uuid4().toString(),
+                        Uuid.random().toString(),
                         name,
                         description,
                         customData,

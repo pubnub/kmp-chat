@@ -51,7 +51,6 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_O
 import com.pubnub.chat.internal.error.PubNubErrorMessage.READ_RECEIPTS_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THREAD_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
-import com.pubnub.chat.internal.error.PubNubErrorMessage.UNABLE_TO_READ_MESSAGES
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
@@ -99,7 +98,7 @@ import tryLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-internal const val CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS = "You cannot quote messages from other channels"
+private const val CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS = "You cannot quote messages from other channels"
 
 abstract class BaseChannel<C : Channel, M : Message>(
     override val chat: ChatInternal,
@@ -195,7 +194,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             if (isTyping) {
                 runWithDelay(typingTimeout + 10.milliseconds) { // +10ms just to make sure the timeout expires
                     typingIndicatorsLock.withLock {
-                        removeExpiredTypingIndicators(typingTimeout, typingIndicators, now)
+                        removeExpiredTypingIndicators(typingTimeout, typingIndicators, clock.now())
                         typingIndicators.keys.toList()
                     }.also { typingIndicatorsList ->
                         callback(typingIndicatorsList)
@@ -731,7 +730,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 HistoryResponse(
                     messages = pnFetchMessagesResult.channelsUrlDecoded[channelId]?.map { messageItem: PNFetchMessageItem ->
                         messageFactory(chat, messageItem, channelId)
-                    } ?: log.pnError(UNABLE_TO_READ_MESSAGES),
+                    } ?: emptyList(),
                     isMore = pnFetchMessagesResult.channelsUrlDecoded[channelId]?.size == count
                 )
             }.catch {
