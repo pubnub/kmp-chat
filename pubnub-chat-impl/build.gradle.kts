@@ -22,7 +22,6 @@ kotlin {
                 implementation(libs.kotlinx.datetime)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.atomicfu)
-                implementation(libs.benasher44.uuid)
                 implementation(libs.lighthousegames.logging)
             }
         }
