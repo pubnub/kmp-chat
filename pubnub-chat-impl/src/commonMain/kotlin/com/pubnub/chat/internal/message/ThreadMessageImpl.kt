@@ -34,17 +34,17 @@ data class ThreadMessageImpl(
     override val referencedChannels: MessageReferencedChannels? = null,
     override val quotedMessage: QuotedMessage? = null,
 ) : BaseMessage<ThreadMessage>(
-    chat = chat,
-    timetoken = timetoken,
-    content = content,
-    channelId = channelId,
-    userId = userId,
-    actions = actions,
-    meta = meta,
-    mentionedUsers = mentionedUsers,
-    referencedChannels = referencedChannels,
-    quotedMessage = quotedMessage
-),
+        chat = chat,
+        timetoken = timetoken,
+        content = content,
+        channelId = channelId,
+        userId = userId,
+        actions = actions,
+        meta = meta,
+        mentionedUsers = mentionedUsers,
+        referencedChannels = referencedChannels,
+        quotedMessage = quotedMessage
+    ),
     ThreadMessage {
     override fun copyWithActions(actions: Actions): ThreadMessage = copy(actions = actions)
 
