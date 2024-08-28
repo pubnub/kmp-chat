@@ -11,7 +11,6 @@ import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.defaultGetMessageResponseBody
 import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
-import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageMentionedUsers
@@ -67,7 +66,7 @@ data class ThreadMessageImpl(
                 meta = pnMessageResult.userMetadata?.decode() as? Map<String, Any>,
                 mentionedUsers = pnMessageResult.userMetadata.extractMentionedUsers(),
                 referencedChannels = pnMessageResult.userMetadata.extractReferencedChannels(),
-                quotedMessage = pnMessageResult.userMetadata?.let { PNDataEncoder.decode(it) },
+                quotedMessage = pnMessageResult.userMetadata?.extractQuotedMessage(),
             )
         }
 
@@ -85,10 +84,10 @@ data class ThreadMessageImpl(
                 channelId = channelId,
                 userId = messageItem.uuid!!,
                 actions = messageItem.actions,
-                meta = messageItem.meta?.decode()?.let { it as Map<String, Any>? },
+                meta = messageItem.meta?.decode()?.let { it as? Map<String, Any>? },
                 mentionedUsers = messageItem.meta.extractMentionedUsers(),
                 referencedChannels = messageItem.meta.extractReferencedChannels(),
-                quotedMessage = messageItem.meta?.let { PNDataEncoder.decode(it) },
+                quotedMessage = messageItem.meta?.extractQuotedMessage(),
             )
         }
     }
