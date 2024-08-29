@@ -58,7 +58,6 @@ import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.util.channelsUrlDecoded
-import com.pubnub.chat.internal.util.getPhraseToLookFor
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.ExponentialRateLimiter
@@ -656,7 +655,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     // todo rename to getMembershipSuggestions?
     override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<Membership>> {
-        val cacheKey: String = getPhraseToLookFor(text, "@") ?: return emptySet<Membership>().asFuture()
+//        val cacheKey: String = getPhraseToLookFor(text, "@") ?: return emptySet<Membership>().asFuture()
+
+        val cacheKey = text
 
         suggestedMemberships[cacheKey]?.let { nonNullMemberships ->
             return nonNullMemberships.asFuture()
