@@ -5,11 +5,14 @@ import com.pubnub.chat.types.QuotedMessage
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.then
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import org.bitbucket.cowwoc.diffmatchpatch.DiffMatchPatch
 import kotlin.math.min
 
-private val userMentionRegex = Regex("""(?U)(?:^|\p{Space})(@[\p{L}-]+)""")
-private val channelReferenceRegex = Regex("""(?U)(?:^|\p{Space})(#[\p{LD}-]+)""")
+private val userMentionRegex = Regex("""(?U)(?<=^|\p{Space})(@[\p{L}-]+)""")
+private val channelReferenceRegex = Regex("""(?U)(?<=^|\p{Space})(#[\p{LD}-]+)""")
 
 /**
  * This class is not thread safe. All methods on an instance of `MessageDraft` should only be called
@@ -31,51 +34,48 @@ class MessageDraft(
 
     private fun revalidateMentions(): PNFuture<Map<Int, List<SuggestedMention>>> {
         val allUserMentions = userMentionRegex.findAll(messageText).toList()
-        val allUserMentionStarts = allUserMentions.map { it.markerStart() }
+        val allUserMentionStarts = allUserMentions.map { it.matchStart }.toSet()
 
         val allChannelMentions = channelReferenceRegex.findAll(messageText).toList()
-        val allChannelMentionStarts = allUserMentions.map { it.markerStart() }
+        val allChannelMentionStarts = allUserMentions.map { it.matchStart }.toSet()
 
-        mentions.removeIf {
-            (it is Mention.UserMention && it.start !in allUserMentionStarts) ||
-                (it is Mention.ChannelReference && it.start !in allChannelMentionStarts)
-        }
-        if (isTypingIndicatorTriggered) {
-            if (messageText.isNotEmpty()) {
-                channel.startTyping()
-            } else {
-                channel.stopTyping()
+        mentions.removeIf { mention ->
+            when (mention) {
+                is Mention.ChannelReference -> mention.start !in allChannelMentionStarts
+                is Mention.UserMention -> mention.start !in allUserMentionStarts
+                is Mention.TextLink -> false
             }
         }
+
         val userSuggestionsNeededFor = allUserMentions
             .filter { matchResult ->
-                matchResult.markerStart() !in mentions.filterIsInstance<Mention.UserMention>()
+                matchResult.matchStart !in mentions.filterIsInstance<Mention.UserMention>()
                     .map(Mention.UserMention::start)
             }
 
         val channelSuggestionsNeededFor = allChannelMentions
             .filter { matchResult ->
-                matchResult.markerStart() !in mentions.filterIsInstance<Mention.ChannelReference>()
+                matchResult.matchStart !in mentions.filterIsInstance<Mention.ChannelReference>()
                     .map(Mention.ChannelReference::start)
             }
 
         val getUsers = userSuggestionsNeededFor
-            .filter { matchResult -> matchResult.matchString().length >= 3 }
+            .filter { matchResult -> matchResult.matchString.length >= 3 }
             .map { matchResult ->
-                getSuggestedUsers(matchResult.matchString().substring(1)).then {
-                    matchResult.markerStart() to it.map { user ->
-                        SuggestedMention.SuggestedUserMention(matchResult.markerStart(), matchResult.matchString(), user)
+                getSuggestedUsers(matchResult.matchString.substring(1)).then {
+                    matchResult.matchStart to it.map { user ->
+                        SuggestedMention.SuggestedUserMention(matchResult.matchStart, matchResult.matchString, user)
                     }
                 }
             }.awaitAll().then { listOfPairs ->
                 listOfPairs.associate { it }
             }
         val getChannels = channelSuggestionsNeededFor
-            .filter { matchResult -> matchResult.matchString().length >= 3 }
+            .filter { matchResult -> matchResult.matchString.length >= 3 }
             .map { matchResult ->
-                getSuggestedChannels(matchResult.matchString().substring(1)).then {
-                    matchResult.markerStart() to it.map { channel ->
-                        SuggestedMention.SuggestedChannelMention(matchResult.markerStart(), matchResult.matchString(), channel)
+                getSuggestedChannels(matchResult.matchString.substring(1)).then {
+                    matchResult.matchStart to it.map { channel ->
+                        SuggestedMention.SuggestedChannelMention(matchResult.matchStart, matchResult.matchString, channel)
                     }
                 }
             }.awaitAll().then { listOfPairs ->
@@ -89,12 +89,23 @@ class MessageDraft(
         }
     }
 
-    private fun MatchResult.markerStart() = groups[1]!!.range.first
+    private fun triggerTypingIndicator() {
+        if (isTypingIndicatorTriggered) {
+            if (messageText.isNotEmpty()) {
+                channel.startTyping()
+            } else {
+                channel.stopTyping()
+            }
+        }
+    }
 
-    private fun MatchResult.matchString() = groups[1]!!.value
+    private val MatchResult.matchStart get() = groups[1]!!.range.first
+
+    private val MatchResult.matchString get() = groups[1]!!.value
 
     fun insertText(offset: Int, text: String): PNFuture<Map<Int, List<SuggestedMention>>> {
         insertTextInternal(offset, text)
+        triggerTypingIndicator()
         return revalidateMentions()
     }
 
@@ -114,6 +125,7 @@ class MessageDraft(
 
     fun removeText(offset: Int, length: Int): PNFuture<Map<Int, List<SuggestedMention>>> {
         removeTextInternal(offset, length)
+        triggerTypingIndicator()
         return revalidateMentions()
     }
 
@@ -145,12 +157,13 @@ class MessageDraft(
         insertTextInternal(mention.start + 1, text)
         when (mention) {
             is SuggestedMention.SuggestedChannelMention -> {
-                insertMention(Mention.ChannelReference(mention.start, text.length + 1, mention.channel))
+                insertMention(Mention.ChannelReference(mention.start, text.length + 1, mention.channel.id))
             }
             is SuggestedMention.SuggestedUserMention -> {
-                insertMention(Mention.UserMention(mention.start, text.length + 1, mention.user))
+                insertMention(Mention.UserMention(mention.start, text.length + 1, mention.user.id))
             }
         }
+        triggerTypingIndicator()
         return revalidateMentions()
     }
 
@@ -189,6 +202,7 @@ class MessageDraft(
                 }
             }
         }
+        triggerTypingIndicator()
         return revalidateMentions()
     }
 
@@ -199,10 +213,10 @@ class MessageDraft(
             print(messageText.substring(0, mention.start))
             when (mention) {
                 is Mention.UserMention -> {
-                    print("<user ${mention.user.id}>")
+                    print("<user ${mention.userId}>")
                 }
                 is Mention.ChannelReference -> {
-                    print("<channel ${mention.channel.id}>")
+                    print("<channel ${mention.channelId}>")
                 }
 
                 is Mention.TextLink -> TODO()
@@ -243,22 +257,48 @@ class MessageDraft(
     }
 }
 
-
+@Serializable
 sealed class Mention : Comparable<Mention> {
+    @SerialName("s")
     abstract var start: Int
+
+    @SerialName("l")
     abstract var length: Int
+
     val endExclusive get() = start + length
+
     abstract val startChar: Char?
 
-    class UserMention(override var start: Int, override var length: Int, var user: User) : Mention() {
+    @Serializable
+    @SerialName("usr")
+    class UserMention(
+        override var start: Int,
+        override var length: Int,
+        @SerialName("v") var userId: String
+    ) : Mention() {
+        @Transient
         override val startChar: Char = '@'
     }
 
-    class ChannelReference(override var start: Int, override var length: Int, var channel: Channel) : Mention() {
+    @Serializable
+    @SerialName("cha")
+    class ChannelReference(
+        override var start: Int,
+        override var length: Int,
+        @SerialName("v") var channelId: String
+    ) : Mention() {
+        @Transient
         override val startChar: Char = '#'
     }
 
-    class TextLink(override var start: Int, override var length: Int, var url: String) : Mention() {
+    @Serializable
+    @SerialName("url")
+    class TextLink(
+        override var start: Int,
+        override var length: Int,
+        @SerialName("v") var url: String
+    ) : Mention() {
+        @Transient
         override val startChar: Char? = null
     }
 
@@ -268,6 +308,7 @@ sealed class Mention : Comparable<Mention> {
 }
 
 sealed class SuggestedMention(val start: Int, val replaceFrom: String) {
-    class SuggestedUserMention(start: Int, replaceFrom: String, val user: User): SuggestedMention(start, replaceFrom)
-    class SuggestedChannelMention(start: Int, replaceFrom: String, val channel: Channel): SuggestedMention(start, replaceFrom)
+    class SuggestedUserMention(start: Int, replaceFrom: String, val user: User) : SuggestedMention(start, replaceFrom)
+
+    class SuggestedChannelMention(start: Int, replaceFrom: String, val channel: Channel) : SuggestedMention(start, replaceFrom)
 }

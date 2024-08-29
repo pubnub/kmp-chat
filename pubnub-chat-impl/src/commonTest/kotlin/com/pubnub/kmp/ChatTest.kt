@@ -1369,7 +1369,7 @@ class ChatTest : BaseTest() {
             channelId = channelId,
             userId = userId,
             actions = mapOf(),
-            meta = null
+            metaInternal = null
         )
     }
 

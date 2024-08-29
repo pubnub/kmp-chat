@@ -47,17 +47,6 @@ interface Message {
      * Extra information added to the message giving additional context.
      */
     val meta: Map<String, Any>?
-
-    /**
-     * List of mentioned users with IDs and names.
-     */
-    val mentionedUsers: MessageMentionedUsers?
-
-    /**
-     * List of referenced channels with IDs and names.
-     */
-    val referencedChannels: MessageReferencedChannels?
-
     /**
      * Access the original quoted message.
      *
@@ -96,18 +85,26 @@ interface Message {
      * List of reactions attached to the message.
      */
     val reactions: Map<String, List<Action>>
+    val mentions: Collection<Mention>
 
     /**
      * List of included text links and their position.
      */
+    @Deprecated("Use `mentions` instead.")
     val textLinks: List<TextLink>?
 
     /**
-     * Checks if the current user added a given emoji to the message.
-     *
-     * @param reaction Specific emoji added to the message.
-     * @return Specifies if the current user added a given emoji to the message or not.
+     * List of mentioned users with IDs and names.
      */
+    @Deprecated("Use `mentions` instead.")
+    val mentionedUsers: MessageMentionedUsers?
+
+    /**
+     * List of referenced channels with IDs and names.
+     */
+    @Deprecated("Use `mentions` instead.")
+    val referencedChannels: MessageReferencedChannels?
+
     fun hasUserReaction(reaction: String): Boolean
 
     /**

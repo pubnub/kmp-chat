@@ -1,7 +1,6 @@
 package com.pubnub.internal
 
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Chat
 import com.pubnub.chat.Mention
 import com.pubnub.chat.MessageDraft
 import com.pubnub.chat.SuggestedMention
@@ -9,6 +8,7 @@ import com.pubnub.chat.User
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.kmp.asFuture
 import com.pubnub.test.await
 import dev.mokkery.MockMode
@@ -22,12 +22,20 @@ import org.junit.Test
 class MessageDraftTest {
     val chat = mock<ChatInternal>(MockMode.strict)
     val channels: List<Channel> = Array<Channel>(10) { index ->
-        val name = if (index < 5) "example" else "sample"
+        val name = if (index < 5) {
+            "example"
+        } else {
+            "sample"
+        }
         ChannelImpl(chat, id = "$name.channel.$index", name = "$name Channel $index")
     }.toList()
 
     val users: List<User> = Array<User>(10) { index ->
-        val name = if (index < 5) "example" else "sample"
+        val name = if (index < 5) {
+            "example"
+        } else {
+            "sample"
+        }
         UserImpl(chat, id = "$name.user.$index", name = "$name User $index")
     }.toList()
 
@@ -53,7 +61,9 @@ class MessageDraftTest {
         val suggestions = draft.update("abc @exa def 123").await()
         println(suggestions[4]!!.map { (it as SuggestedMention.SuggestedUserMention).user.name })
         val suggestedUserMention = suggestions[4]!![1] as SuggestedMention.SuggestedUserMention
-        draft.insertMention(suggestedUserMention, suggestedUserMention.user.name!! )
+        draft.insertMention(suggestedUserMention, suggestedUserMention.user.name!!)
         draft.render()
+
+        println(PNDataEncoder.encode(Mention.UserMention(4, 10, "myUser") as Mention))
     }
 }

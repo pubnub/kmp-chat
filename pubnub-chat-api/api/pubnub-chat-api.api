@@ -141,6 +141,105 @@ public abstract interface class com/pubnub/chat/Membership {
 public final class com/pubnub/chat/Membership$Companion {
 }
 
+public abstract class com/pubnub/chat/Mention : java/lang/Comparable {
+	public static final field Companion Lcom/pubnub/chat/Mention$Companion;
+	public synthetic fun <init> (ILkotlinx/serialization/internal/SerializationConstructorMarker;)V
+	public fun compareTo (Lcom/pubnub/chat/Mention;)I
+	public synthetic fun compareTo (Ljava/lang/Object;)I
+	public final fun getEndExclusive ()I
+	public abstract fun getLength ()I
+	public abstract fun getStart ()I
+	public abstract fun getStartChar ()Ljava/lang/Character;
+	public abstract fun setLength (I)V
+	public abstract fun setStart (I)V
+	public static final synthetic fun write$Self (Lcom/pubnub/chat/Mention;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+}
+
+public final class com/pubnub/chat/Mention$ChannelReference : com/pubnub/chat/Mention {
+	public static final field Companion Lcom/pubnub/chat/Mention$ChannelReference$Companion;
+	public fun <init> (IILjava/lang/String;)V
+	public final fun getChannelId ()Ljava/lang/String;
+	public fun getLength ()I
+	public fun getStart ()I
+	public fun getStartChar ()Ljava/lang/Character;
+	public final fun setChannelId (Ljava/lang/String;)V
+	public fun setLength (I)V
+	public fun setStart (I)V
+}
+
+public synthetic class com/pubnub/chat/Mention$ChannelReference$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lcom/pubnub/chat/Mention$ChannelReference$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/Mention$ChannelReference;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/Mention$ChannelReference;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/pubnub/chat/Mention$ChannelReference$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/pubnub/chat/Mention$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/pubnub/chat/Mention$TextLink : com/pubnub/chat/Mention {
+	public static final field Companion Lcom/pubnub/chat/Mention$TextLink$Companion;
+	public fun <init> (IILjava/lang/String;)V
+	public fun getLength ()I
+	public fun getStart ()I
+	public fun getStartChar ()Ljava/lang/Character;
+	public final fun getUrl ()Ljava/lang/String;
+	public fun setLength (I)V
+	public fun setStart (I)V
+	public final fun setUrl (Ljava/lang/String;)V
+}
+
+public synthetic class com/pubnub/chat/Mention$TextLink$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lcom/pubnub/chat/Mention$TextLink$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/Mention$TextLink;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/Mention$TextLink;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/pubnub/chat/Mention$TextLink$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/pubnub/chat/Mention$UserMention : com/pubnub/chat/Mention {
+	public static final field Companion Lcom/pubnub/chat/Mention$UserMention$Companion;
+	public fun <init> (IILjava/lang/String;)V
+	public fun getLength ()I
+	public fun getStart ()I
+	public fun getStartChar ()Ljava/lang/Character;
+	public final fun getUserId ()Ljava/lang/String;
+	public fun setLength (I)V
+	public fun setStart (I)V
+	public final fun setUserId (Ljava/lang/String;)V
+}
+
+public synthetic class com/pubnub/chat/Mention$UserMention$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lcom/pubnub/chat/Mention$UserMention$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/Mention$UserMention;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/Mention$UserMention;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/pubnub/chat/Mention$UserMention$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public abstract interface class com/pubnub/chat/Message {
 	public static final field Companion Lcom/pubnub/chat/Message$Companion;
 	public abstract fun createThread ()Lcom/pubnub/kmp/PNFuture;
@@ -156,6 +255,7 @@ public abstract interface class com/pubnub/chat/Message {
 	public abstract fun getFiles ()Ljava/util/List;
 	public abstract fun getHasThread ()Z
 	public abstract fun getMentionedUsers ()Ljava/util/Map;
+	public abstract fun getMentions ()Ljava/util/Collection;
 	public abstract fun getMeta ()Ljava/util/Map;
 	public abstract fun getQuotedMessage ()Lcom/pubnub/chat/types/QuotedMessage;
 	public abstract fun getReactions ()Ljava/util/Map;
@@ -179,7 +279,48 @@ public final class com/pubnub/chat/Message$Companion {
 }
 
 public final class com/pubnub/chat/MessageDraft {
-	public fun <init> ()V
+	public fun <init> (Lcom/pubnub/chat/Channel;Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;ZII)V
+	public synthetic fun <init> (Lcom/pubnub/chat/Channel;Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;ZIIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getChannel ()Lcom/pubnub/chat/Channel;
+	public final fun getChannelLimit ()I
+	public final fun getFiles ()Ljava/util/List;
+	public final fun getQuotedMessage ()Lcom/pubnub/chat/types/QuotedMessage;
+	public final fun getUserLimit ()I
+	public final fun getUserSuggestionSource ()Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
+	public final fun insertMention (Lcom/pubnub/chat/Mention;)V
+	public final fun insertMention (Lcom/pubnub/chat/SuggestedMention;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public final fun insertText (ILjava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public final fun isTypingIndicatorTriggered ()Z
+	public final fun removeMention (I)V
+	public final fun removeMention (Lcom/pubnub/chat/Mention;)V
+	public final fun removeText (II)Lcom/pubnub/kmp/PNFuture;
+	public final fun render ()V
+	public final fun setQuotedMessage (Lcom/pubnub/chat/types/QuotedMessage;)V
+	public final fun update (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+}
+
+public final class com/pubnub/chat/MessageDraft$UserSuggestionSource : java/lang/Enum {
+	public static final field CHANNEL Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
+	public static final field GLOBAL Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
+	public static fun values ()[Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
+}
+
+public abstract class com/pubnub/chat/SuggestedMention {
+	public synthetic fun <init> (ILjava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getReplaceFrom ()Ljava/lang/String;
+	public final fun getStart ()I
+}
+
+public final class com/pubnub/chat/SuggestedMention$SuggestedChannelMention : com/pubnub/chat/SuggestedMention {
+	public fun <init> (ILjava/lang/String;Lcom/pubnub/chat/Channel;)V
+	public final fun getChannel ()Lcom/pubnub/chat/Channel;
+}
+
+public final class com/pubnub/chat/SuggestedMention$SuggestedUserMention : com/pubnub/chat/SuggestedMention {
+	public fun <init> (ILjava/lang/String;Lcom/pubnub/chat/User;)V
+	public final fun getUser ()Lcom/pubnub/chat/User;
 }
 
 public abstract interface class com/pubnub/chat/ThreadChannel : com/pubnub/chat/Channel {
