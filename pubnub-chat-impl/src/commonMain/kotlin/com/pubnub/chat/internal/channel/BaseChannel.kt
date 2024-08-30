@@ -29,6 +29,7 @@ import com.pubnub.api.v2.subscriptions.SubscriptionOptions
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
+import com.pubnub.chat.Mention
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.config.PushNotificationsConfig
@@ -37,6 +38,7 @@ import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.METADATA_LAST_READ_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.METADATA_MENTIONED_USERS
+import com.pubnub.chat.internal.METADATA_MENTIONS_V2
 import com.pubnub.chat.internal.METADATA_QUOTED_MESSAGE
 import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
 import com.pubnub.chat.internal.METADATA_TEXT_LINKS
@@ -243,15 +245,12 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
-    override fun sendText(
+    private fun sendTextInternal(
         text: String,
         meta: Map<String, Any>?,
         shouldStore: Boolean,
         usePost: Boolean,
         ttl: Int?,
-        mentionedUsers: MessageMentionedUsers?,
-        referencedChannels: MessageReferencedChannels?,
-        textLinks: List<TextLink>?,
         quotedMessage: Message?,
         files: List<InputFile>?,
     ): PNFuture<PNPublishResult> {
@@ -260,7 +259,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
         return sendTextRateLimiter.runWithinLimits(
             sendFilesForPublish(files).thenAsync { filesData ->
-                val newMeta = buildMetaForPublish(meta, quotedMessage, mentionedUsers, referencedChannels, textLinks)
                 chat.pubNub.publish(
                     channel = id,
                     message = EventContent.TextMessageContent(text, filesData).encodeForSending(
@@ -268,22 +266,56 @@ abstract class BaseChannel<C : Channel, M : Message>(
                         chat.config.customPayloads?.getMessagePublishBody,
                         getPushPayload(this, text, chat.config.pushNotifications)
                     ),
-                    meta = newMeta,
+                    meta = meta,
                     shouldStore = shouldStore,
                     usePost = usePost,
                     ttl = ttl,
-                ).then { publishResult: PNPublishResult ->
-                    mentionedUsers?.forEach {
-                        emitUserMention(it.value.id, publishResult.timetoken, text).async {
-                            it.onFailure { ex ->
-                                log.warn(err = ex, msg = { ex.message })
-                            }
-                        }
-                    }
-                    publishResult
-                }
+                )
             }
         )
+    }
+
+    override fun sendText(
+        text: String,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean,
+        usePost: Boolean,
+        ttl: Int?,
+        quotedMessage: Message?,
+        mentions: List<Mention>?,
+        files: List<InputFile>?
+    ): PNFuture<PNPublishResult> {
+        val newMeta = buildMap {
+            meta?.let { putAll(it) }
+            mentions?.let { put(METADATA_MENTIONS_V2, PNDataEncoder.encode(it)!!) }
+        }
+        return sendTextInternal(text, newMeta, shouldStore, usePost, ttl, quotedMessage, files)
+    }
+
+    override fun sendText(
+        text: String,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean,
+        usePost: Boolean,
+        ttl: Int?,
+        mentionedUsers: MessageMentionedUsers?,
+        referencedChannels: Map<Int, MessageReferencedChannel>?,
+        textLinks: List<TextLink>?,
+        quotedMessage: Message?,
+        files: List<InputFile>?,
+    ): PNFuture<PNPublishResult> {
+        val newMeta = buildMetaForPublish(meta, mentionedUsers, referencedChannels, textLinks, quotedMessage)
+        return sendTextInternal(text, newMeta, shouldStore, usePost, ttl, quotedMessage, files)
+            .then { publishResult: PNPublishResult ->
+                mentionedUsers?.forEach { mentionedUser ->
+                    emitUserMention(mentionedUser.value.id, publishResult.timetoken, text).async {
+                        it.onFailure { ex ->
+                            log.warn(err = ex, msg = { ex.message })
+                        }
+                    }
+                }
+                publishResult
+            }
     }
 
     override fun sendText(
