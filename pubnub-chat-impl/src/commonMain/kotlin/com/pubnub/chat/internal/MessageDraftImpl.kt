@@ -45,7 +45,7 @@ class MessageDraftImpl(
 
         // clean up mentions that no longer start with a @ or #, or are empty strings
         mentions.removeIf { mention ->
-            if (mention.length == 0) {
+            if (mention.length == 0 + (mention.startChar?.let { 1 } ?: 0)) {
                 true
             } else {
                 when (mention) {
@@ -141,7 +141,7 @@ class MessageDraftImpl(
         messageText.delete(offset, offset + length)
         mentions.forEach { mention ->
             val removalEnd = offset + length
-            if (!(offset > mention.endExclusive || removalEnd < mention.start)) {
+            if (offset <= mention.endExclusive && removalEnd >= mention.start) {
                 val intersectStart = max(offset, mention.start)
                 val intersectEnd = min(removalEnd, mention.endExclusive)
                 val intersectLen = intersectEnd - intersectStart
