@@ -289,9 +289,19 @@ abstract class BaseChannel<C : Channel, M : Message>(
             meta?.let { putAll(it) }
             mentions?.let { put(METADATA_MENTIONS_V2, PNDataEncoder.encode(it)!!) }
         }
-        return sendTextInternal(text, newMeta, shouldStore, usePost, ttl, quotedMessage, files)
+        return sendTextInternal(text, newMeta, shouldStore, usePost, ttl, quotedMessage, files).then { publishResult: PNPublishResult ->
+            mentions?.filterIsInstance<Mention.UserMention>()?.forEach { mentionedUser ->
+                emitUserMention(mentionedUser.userId, publishResult.timetoken, text).async {
+                    it.onFailure { ex ->
+                        log.warn(err = ex, msg = { ex.message })
+                    }
+                }
+            }
+            publishResult
+        }
     }
 
+    @Deprecated("Use `sendText` that accepts `mentions: List<Mention>` instead.")
     override fun sendText(
         text: String,
         meta: Map<String, Any>?,

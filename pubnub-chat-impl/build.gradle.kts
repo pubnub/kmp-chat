@@ -35,6 +35,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(libs.pubnub.kotlin)
+                implementation(libs.diff.match.patch)
                 implementation(kotlin("test-junit"))
             }
         }

@@ -62,10 +62,11 @@ abstract class BaseMessage<T : Message>(
     private val metaInternal: JsonElement? = null,
 ) : Message {
     override val meta: Map<String, Any>? get() = metaInternal?.decode() as? Map<String, Any>
-    override val mentionedUsers: MessageMentionedUsers? get() = metaInternal.extractMentionedUsers()
-    override val referencedChannels: MessageReferencedChannels? get() = metaInternal.extractReferencedChannels()
     override val quotedMessage: QuotedMessage? get() = metaInternal.extractQuotedMessage()
     override val mentions: Collection<Mention> get() = metaInternal.extractMentions() ?: emptyList()
+
+    override val mentionedUsers: MessageMentionedUsers? get() = metaInternal.extractMentionedUsers()
+    override val referencedChannels: MessageReferencedChannels? get() = metaInternal.extractReferencedChannels()
 
     override val text: String
         get() {

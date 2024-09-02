@@ -12,7 +12,6 @@ kotlin {
             dependencies {
                 api(libs.pubnub.kotlin.api)
                 implementation(libs.kotlinx.serialization.core)
-                implementation("org.bitbucket.cowwoc:diff-match-patch:1.2")
             }
         }
     }
