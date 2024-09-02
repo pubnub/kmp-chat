@@ -10,7 +10,7 @@ import kotlin.time.Duration.Companion.seconds
 
 private val log = logging(tag = "DefaultGetMessage")
 
-internal const val DELETED = "Deleted"
+internal const val DELETED = "deleted"
 internal const val ORIGINAL_PUBLISHER = "originalPublisher"
 internal const val HTTP_ERROR_404 = 404
 internal const val INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_"
