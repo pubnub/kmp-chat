@@ -268,7 +268,7 @@ class ChatTest : BaseTest() {
             callback1.accept(Result.success(pnUuidMetadataResult))
         }
         val softDelete = true
-        val status = "Deleted"
+        val status = "deleted"
         val includeCustomFalse = false
 
         // when
@@ -573,7 +573,7 @@ class ChatTest : BaseTest() {
             callback1.accept(Result.success(pnChannelMetadataResult))
         }
         val softDelete = true
-        val status = "Deleted"
+        val status = "deleted"
         val includeCustomFalse = false
 
         // when
