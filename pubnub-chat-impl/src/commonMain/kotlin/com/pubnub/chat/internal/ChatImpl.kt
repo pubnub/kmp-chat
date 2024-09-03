@@ -16,14 +16,12 @@ import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
-import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
-import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.presence.PNHereNowOccupantData
@@ -52,7 +50,6 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_FIND_CHANNEL_WITH_ID
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_ID_ALREADY_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_ID_IS_REQUIRED
-import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_META_DATA_IS_EMPTY
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_NOT_FOUND
 import com.pubnub.chat.internal.error.PubNubErrorMessage.COUNT_SHOULD_NOT_EXCEED_100
 import com.pubnub.chat.internal.error.PubNubErrorMessage.DEVICE_TOKEN_HAS_TO_BE_DEFINED_IN_CHAT_PUSHNOTIFICATIONS_CONFIG
@@ -63,11 +60,7 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_CHAN
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ID_IS_REQUIRED
-import com.pubnub.chat.internal.error.PubNubErrorMessage.NO_DATA_AVAILABLE_TO_CREATE_OR_UPDATE_CHANNEL
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED
-import com.pubnub.chat.internal.error.PubNubErrorMessage.PNCHANNEL_METADATA_IS_NULL
-import com.pubnub.chat.internal.error.PubNubErrorMessage.PNUUID_METADATA_IS_NULL
-import com.pubnub.chat.internal.error.PubNubErrorMessage.PNUUID_METADATA_RESULT_IS_NULL
 import com.pubnub.chat.internal.error.PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THERE_IS_NO_ACTION_TIMETOKEN_CORRESPONDING_TO_THE_THREAD
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THERE_IS_NO_THREAD_TO_BE_DELETED
@@ -266,10 +259,8 @@ class ChatImpl(
         }
 
         return pubNub.getUUIDMetadata(uuid = userId, includeCustom = true)
-            .then<PNUUIDMetadataResult, User?> { pnUUIDMetadataResult: PNUUIDMetadataResult ->
-                pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
-                    UserImpl.fromDTO(this, pnUUIDMetadata)
-                } ?: log.pnError(PNUUID_METADATA_RESULT_IS_NULL)
+            .then { pnUUIDMetadataResult: PNUUIDMetadataResult ->
+                UserImpl.fromDTO(this, pnUUIDMetadataResult.data)
             }.catch {
                 if (it is PubNubException && it.statusCode == HTTP_ERROR_404) {
                     Result.success(null)
@@ -431,10 +422,8 @@ class ChatImpl(
             return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
         return pubNub.getChannelMetadata(channel = channelId)
-            .then<PNChannelMetadataResult, Channel?> { pnChannelMetadataResult: PNChannelMetadataResult ->
-                pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
-                    ChannelImpl.fromDTO(this, pnChannelMetadata)
-                } ?: log.pnError(PNCHANNEL_METADATA_IS_NULL)
+            .then { pnChannelMetadataResult: PNChannelMetadataResult ->
+                ChannelImpl.fromDTO(this, pnChannelMetadataResult.data)
             }.catch { exception ->
                 if (exception is PubNubException && exception.statusCode == HTTP_ERROR_404) {
                     Result.success(null)
@@ -1042,9 +1031,7 @@ class ChatImpl(
     private fun getChannelData(id: String): PNFuture<Channel> {
         return pubNub.getChannelMetadata(channel = id, includeCustom = false)
             .then { pnChannelMetadataResult: PNChannelMetadataResult ->
-                pnChannelMetadataResult.data?.let { pnChannelMetadata ->
-                    ChannelImpl.fromDTO(this, pnChannelMetadata)
-                } ?: log.pnError(CHANNEL_META_DATA_IS_EMPTY)
+                ChannelImpl.fromDTO(this, pnChannelMetadataResult.data)
             }.catch { exception ->
                 Result.failure(PubNubException(FAILED_TO_RETRIEVE_CHANNEL_DATA, exception))
             }
@@ -1063,9 +1050,7 @@ class ChatImpl(
             type = updatedUser.type,
             status = updatedUser.status,
         ).then { pnUUIDMetadataResult ->
-            pnUUIDMetadataResult.data?.let { pnUUIDMetadata: PNUUIDMetadata ->
-                UserImpl.fromDTO(this, pnUUIDMetadata)
-            } ?: log.pnError(PNUUID_METADATA_IS_NULL)
+            UserImpl.fromDTO(this, pnUUIDMetadataResult.data)
         }
     }
 
@@ -1083,9 +1068,7 @@ class ChatImpl(
             type = updatedChannel.type?.stringValue,
             status = updatedChannel.status
         ).then { pnChannelMetadataResult ->
-            pnChannelMetadataResult.data?.let { pnChannelMetadata: PNChannelMetadata ->
-                ChannelImpl.fromDTO(this, pnChannelMetadata)
-            } ?: log.pnError(PNCHANNEL_METADATA_IS_NULL)
+            ChannelImpl.fromDTO(this, pnChannelMetadataResult.data)
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_SOFT_DELETE_CHANNEL, exception))
         }
@@ -1111,9 +1094,7 @@ class ChatImpl(
             type = type?.stringValue,
             status = status
         ).then { pnChannelMetadataResult ->
-            pnChannelMetadataResult.data?.let { pnChannelMetadata ->
-                ChannelImpl.fromDTO(this, pnChannelMetadata)
-            } ?: log.pnError(NO_DATA_AVAILABLE_TO_CREATE_OR_UPDATE_CHANNEL)
+            ChannelImpl.fromDTO(this, pnChannelMetadataResult.data)
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA, exception))
         }
@@ -1140,9 +1121,7 @@ class ChatImpl(
             type = type,
             status = status
         ).then { pnUUIDMetadataResult ->
-            pnUUIDMetadataResult.data?.let { pnUUIDMetadata ->
-                UserImpl.fromDTO(this, pnUUIDMetadata)
-            } ?: log.pnError(NO_DATA_AVAILABLE_TO_CREATE_OR_UPDATE_CHANNEL)
+            UserImpl.fromDTO(this, pnUUIDMetadataResult.data)
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_USER_DATA, exception))
         }

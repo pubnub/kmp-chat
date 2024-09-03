@@ -77,10 +77,7 @@ abstract class BaseMessage<T : Message>(
 
     override val hasThread: Boolean
         get() {
-            if (actions?.containsKey(THREAD_ROOT_ID) != true) {
-                return false
-            }
-            return actions?.get(THREAD_ROOT_ID)?.entries?.firstOrNull()?.value?.isNotEmpty() ?: false
+            return actions?.get(THREAD_ROOT_ID)?.values?.firstOrNull()?.isNotEmpty() ?: false
         }
 
     @OptIn(ExperimentalSerializationApi::class)
