@@ -487,7 +487,7 @@ class ChatImpl(
         meta[ORIGINAL_PUBLISHER] = message.userId
 
         return pubNub.publish(
-            message = message.content,
+            message = message.content.encodeForSending(message.channelId),
             channel = channelId,
             meta = meta,
             ttl = message.timetoken.toInt()
@@ -1160,7 +1160,7 @@ class ChatImpl(
                 customMetadataToSet["pinnedMessageTimetoken"] = message.timetoken
                 customMetadataToSet["pinnedMessageChannelID"] = message.channelId
             }
-            return pubNub.setChannelMetadata(channel.id, custom = createCustomObject(customMetadataToSet))
+            return pubNub.setChannelMetadata(channel.id, includeCustom = true, custom = createCustomObject(customMetadataToSet))
         }
 
         internal fun getThreadId(channelId: String, messageTimetoken: Long): String {
