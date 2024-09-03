@@ -10,6 +10,7 @@ import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
+import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
@@ -72,6 +73,7 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.THERE_IS_NO_ACTION_TIME
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THERE_IS_NO_THREAD_TO_BE_DELETED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THERE_IS_NO_THREAD_WITH_ID
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_MESSAGE_IS_NOT_A_THREAD
+import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_THREAD_ID_ALREADY_RESTORED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THREAD_FOR_THIS_MESSAGE_ALREADY_EXISTS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_NOT_EXIST
@@ -182,6 +184,27 @@ class ChatImpl(
         type = user.type
     )
 
+    override fun restoreThreadChannel(message: Message): PNFuture<PNMessageAction?> {
+        val threadChannelId = getThreadId(message.channelId, message.timetoken)
+        return getChannel(threadChannelId).thenAsync { channel: Channel? ->
+            if (channel == null) {
+                null.asFuture()
+            } else {
+                if (message.actions?.get(THREAD_ROOT_ID)?.get(threadChannelId)?.isNotEmpty() == true) {
+                    log.pnError(THIS_THREAD_ID_ALREADY_RESTORED)
+                }
+
+                val messageAction = PNMessageAction(
+                    type = THREAD_ROOT_ID,
+                    value = threadChannelId,
+                    messageTimetoken = message.timetoken
+                )
+                pubNub.addMessageAction(channel = message.channelId, messageAction = messageAction)
+                // we don't update action map here but we do this in message#restore()
+            }
+        }
+    }
+
     override fun createUser(
         id: String,
         name: String?,
@@ -202,6 +225,34 @@ class ChatImpl(
             } else {
                 setUserMetadata(id, name, externalId, profileUrl, email, custom, type, status)
             }
+        }
+    }
+
+    override fun removeThreadChannel(
+        chat: Chat,
+        message: Message,
+        soft: Boolean
+    ): PNFuture<Pair<PNRemoveMessageActionResult, Channel>> {
+        if (!message.hasThread) {
+            return PubNubException(THERE_IS_NO_THREAD_TO_BE_DELETED).logErrorAndReturnException(log).asFuture()
+        }
+
+        val threadId = getThreadId(message.channelId, message.timetoken)
+
+        val actionTimetoken =
+            message.actions?.get(THREAD_ROOT_ID)?.get(threadId)?.get(0)?.actionTimetoken
+                ?: return PubNubException(THERE_IS_NO_ACTION_TIMETOKEN_CORRESPONDING_TO_THE_THREAD).logErrorAndReturnException(
+                    log
+                ).asFuture()
+
+        return chat.getChannel(threadId).thenAsync { threadChannel ->
+            if (threadChannel == null) {
+                log.pnError("$THERE_IS_NO_THREAD_WITH_ID$threadId")
+            }
+            awaitAll(
+                chat.pubNub.removeMessageAction(message.channelId, message.timetoken, actionTimetoken),
+                threadChannel.delete(soft)
+            )
         }
     }
 
@@ -1137,34 +1188,6 @@ class ChatImpl(
                     id = threadChannelId,
                     threadCreated = false
                 ).asFuture()
-            }
-        }
-
-        internal fun removeThreadChannel(
-            chat: Chat,
-            message: Message,
-            soft: Boolean = false
-        ): PNFuture<Pair<PNRemoveMessageActionResult, Channel>> {
-            if (!message.hasThread) {
-                return PubNubException(THERE_IS_NO_THREAD_TO_BE_DELETED).logErrorAndReturnException(log).asFuture()
-            }
-
-            val threadId = getThreadId(message.channelId, message.timetoken)
-
-            val actionTimetoken =
-                message.actions?.get("threadRootId")?.get(threadId)?.get(0)?.actionTimetoken
-                    ?: return PubNubException(THERE_IS_NO_ACTION_TIMETOKEN_CORRESPONDING_TO_THE_THREAD).logErrorAndReturnException(
-                        log
-                    ).asFuture()
-
-            return chat.getChannel(threadId).thenAsync { threadChannel ->
-                if (threadChannel == null) {
-                    log.pnError("$THERE_IS_NO_THREAD_WITH_ID$threadId")
-                }
-                awaitAll(
-                    chat.pubNub.removeMessageAction(message.channelId, message.timetoken, actionTimetoken),
-                    threadChannel.delete(soft)
-                )
             }
         }
     }

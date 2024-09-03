@@ -769,6 +769,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                         val newChannel = previousChannel?.plus(message.data) ?: ChannelImpl.fromDTO(chat, message.data)
                         newChannel to newChannelId
                     }
+
                     is PNDeleteChannelMetadataEventMessage -> null to message.channel
                     else -> return@createEventListener
                 }

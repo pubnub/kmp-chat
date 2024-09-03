@@ -1,10 +1,14 @@
 package com.pubnub.chat.internal.message
 
 import com.pubnub.api.JsonElement
+import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
+import com.pubnub.api.endpoints.message_actions.RemoveMessageAction
+import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
+import com.pubnub.api.models.consumer.message_actions.PNGetMessageActionsResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
@@ -20,10 +24,13 @@ import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST
+import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_MESSAGE_HAS_NOT_BEEN_DELETED
 import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.internal.util.logWarnAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
+import com.pubnub.chat.types.MessageActionType
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
@@ -56,7 +63,7 @@ abstract class BaseMessage<T : Message>(
     override val text: String
         get() {
             val edits = actions?.get(chat.editMessageActionName) ?: return content.text
-            val flatEdits = edits.mapValues { it.value.first() }
+            val flatEdits = edits.filterValues { it.isNotEmpty() }.mapValues { it.value.first() }
             val lastEdit = flatEdits.entries.reduce { acc, entry ->
                 if (acc.value.actionTimetoken > entry.value.actionTimetoken) {
                     acc
@@ -68,7 +75,7 @@ abstract class BaseMessage<T : Message>(
         }
 
     override val deleted: Boolean
-        get() = actions?.get(chat.deleteMessageActionName)?.get(chat.deleteMessageActionName)?.isNotEmpty() ?: false
+        get() = getDeleteActions() != null
 
     override val hasThread: Boolean
         get() {
@@ -84,7 +91,8 @@ abstract class BaseMessage<T : Message>(
     override val files: List<File>
         get() = content.files ?: emptyList()
 
-    override val reactions get() = actions?.get(com.pubnub.chat.types.MessageActionType.REACTIONS.toString()) ?: emptyMap()
+    override val reactions: Map<String, List<PNFetchMessageItem.Action>>
+        get() = actions?.get(MessageActionType.REACTIONS.toString()) ?: emptyMap()
 
     override val textLinks: List<TextLink>? get() = (
         meta?.get(
@@ -188,13 +196,14 @@ abstract class BaseMessage<T : Message>(
 
     override fun createThread(): PNFuture<ThreadChannel> = ChatImpl.createThreadChannel(chat, this)
 
-    override fun removeThread() = ChatImpl.removeThreadChannel(chat, this)
+    override fun removeThread() = chat.removeThreadChannel(chat, this)
 
     override fun toggleReaction(reaction: String): PNFuture<Message> {
         val existingReaction = reactions[reaction]?.find {
             it.uuid == chat.currentUser.id
         }
-        val messageAction = PNMessageAction(com.pubnub.chat.types.MessageActionType.REACTIONS.toString(), reaction, timetoken)
+        val messageAction =
+            PNMessageAction(MessageActionType.REACTIONS.toString(), reaction, timetoken)
         val newActions = if (existingReaction != null) {
             chat.pubNub.removeMessageAction(channelId, timetoken, existingReaction.actionTimetoken.toLong())
                 .then { filterAction(actions, messageAction) }
@@ -205,7 +214,57 @@ abstract class BaseMessage<T : Message>(
         return newActions.then { copyWithActions(it) }
     }
 
+    override fun <M : Message> streamUpdates(callback: (message: M) -> Unit): AutoCloseable {
+        return streamUpdatesOn(listOf(this as M)) {
+            callback(it.first())
+        }
+    }
+
+    override fun restore(): PNFuture<Message> {
+        val deleteActions: List<PNFetchMessageItem.Action> = getDeleteActions()
+            ?: return PubNubException(THIS_MESSAGE_HAS_NOT_BEEN_DELETED).logWarnAndReturnException(log).asFuture()
+
+        var updatedActions: Actions? = actions?.filterNot {
+            it.key == chat.deleteMessageActionName
+        }
+
+        return deleteActions
+            .map { removeMessageAction(it.actionTimetoken) }
+            .awaitAll()
+            .thenAsync {
+                // get messageAction for all messages in channel
+                chat.pubNub.getMessageActions(channel = channelId, page = PNBoundedPage(end = timetoken))
+            }.then { pnGetMessageActionsResult: PNGetMessageActionsResult ->
+                // getMessageAction assigned to this message
+                val messageActionsForMessage = pnGetMessageActionsResult.actions.filter { it.messageTimetoken == timetoken }
+
+                // update actions map
+                messageActionsForMessage.forEach { pnMessageAction ->
+                    updatedActions = assignAction(updatedActions, pnMessageAction)
+                }
+            }.thenAsync {
+                chat.restoreThreadChannel(this)
+            }.then { pnMessageAction: PNMessageAction? ->
+                // update actions map
+                pnMessageAction?.let { updatedActions = assignAction(updatedActions, it) }
+                copyWithActions(updatedActions)
+            }
+    }
+
+    private fun removeMessageAction(deleteActionTimetoken: Long): RemoveMessageAction {
+        return chat.pubNub.removeMessageAction(
+            channel = channelId,
+            messageTimetoken = timetoken,
+            actionTimetoken = deleteActionTimetoken
+        )
+    }
+
+    private fun getDeleteActions(): List<PNFetchMessageItem.Action>? {
+        return actions?.get(chat.deleteMessageActionName)?.get(chat.deleteMessageActionName)
+    }
+
     private fun deleteThread(soft: Boolean): PNFuture<Unit> {
+        // todo check on server, discuss with Team
         if (hasThread) {
             return getThread().thenAsync {
                 it.delete(soft)
@@ -222,13 +281,7 @@ abstract class BaseMessage<T : Message>(
         )
     }
 
-    internal abstract fun copyWithActions(actions: Actions): T
-
-    override fun <M : Message> streamUpdates(callback: (message: M) -> Unit): AutoCloseable {
-        return streamUpdatesOn(listOf(this as M)) {
-            callback(it.first())
-        }
-    }
+    internal abstract fun copyWithActions(actions: Actions?): T
 
     companion object {
         private val log = logging()
@@ -244,7 +297,8 @@ abstract class BaseMessage<T : Message>(
             val chat = messages.first().chat
             val listener = createEventListener(chat.pubNub, onMessageAction = { _, event ->
                 val message =
-                    latestMessages.find { it.timetoken == event.messageAction.messageTimetoken } ?: return@createEventListener
+                    latestMessages.find { it.timetoken == event.messageAction.messageTimetoken }
+                        ?: return@createEventListener
                 if (message.channelId != event.channel) {
                     return@createEventListener
                 }

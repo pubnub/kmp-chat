@@ -46,7 +46,7 @@ data class ThreadMessageImpl(
         quotedMessage = quotedMessage
     ),
     ThreadMessage {
-    override fun copyWithActions(actions: Actions): ThreadMessage = copy(actions = actions)
+    override fun copyWithActions(actions: Actions?): ThreadMessage = copy(actions = actions)
 
     companion object {
         private val log = logging()

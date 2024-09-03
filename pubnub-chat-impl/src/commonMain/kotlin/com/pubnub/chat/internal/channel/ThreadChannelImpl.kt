@@ -10,6 +10,7 @@ import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
+import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.message.ThreadMessageImpl
 import com.pubnub.chat.internal.util.pnError
@@ -74,6 +75,10 @@ data class ThreadChannelImpl(
         }
     }
 
+    override fun delete(soft: Boolean): PNFuture<Channel> {
+        return chat.removeThreadChannel(chat, parentMessage, soft).then { it.second }
+    }
+
     override fun sendText(
         text: String,
         meta: Map<String, Any>?,
@@ -93,7 +98,7 @@ data class ThreadChannelImpl(
                     chat.pubNub.addMessageAction(
                         parentMessage.channelId,
                         PNMessageAction(
-                            "threadRootId",
+                            THREAD_ROOT_ID,
                             id,
                             parentMessage.timetoken
                         )

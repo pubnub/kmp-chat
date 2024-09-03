@@ -3,7 +3,9 @@ package com.pubnub.integration
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
+import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
+import com.pubnub.chat.internal.MESSAGE_THREAD_ID_PREFIX
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.listenForEvents
@@ -11,13 +13,44 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageActionType
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
+import com.pubnub.test.randomString
 import com.pubnub.test.test
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class MessageIntegrationTest : BaseChatIntegrationTest() {
+    @Test
+    fun createMessageThenSoftDeleteThenRestore() = runTest {
+        val messageText = "messageText_${randomString()}"
+        val reactionValue = "wow"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = pnPublishResult.timetoken
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
+        val threadChannel: ThreadChannel = message.createThread().await()
+        // we need to call sendText because addMessageAction is called in sendText that stores details about thread
+        threadChannel.sendText("message in thread_${randomString()}").await()
+        val messageWithThread = channel01.getMessage(publishTimetoken).await()
+        val messageWithReaction = messageWithThread!!.toggleReaction(reactionValue).await()
+        val deletedMessage: Message = messageWithReaction.delete(soft = true).await()!!
+        // todo returned message provide invalid state because in actions map there is THREAD_ROOT_ID.
+        // To workaround this we need to call channel01.getMessage(publishTimetoken) to get message in proper state.
+        val messageAfterDeletedMessage: Message = channel01.getMessage(publishTimetoken).await()!!
+
+        val restoredMessage: Message = messageAfterDeletedMessage.restore().await()
+//        val messageAfterRestore: Message = channel01.getMessage(publishTimetoken).await()!!
+
+        assertEquals(messageText, restoredMessage.text)
+        assertEquals(reactionValue, restoredMessage.actions!!["reactions"]?.keys?.first())
+        assertTrue(
+            restoredMessage.actions!!["threadRootId"]!!.keys.first()
+                .contains("${MESSAGE_THREAD_ID_PREFIX}_${channel01.id}")
+        )
+        assertEquals(2, restoredMessage.actions!!.size)
+    }
+
     @Test
     fun streamUpdatesOn() = runTest {
         chat.createChannel(
