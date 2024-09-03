@@ -186,18 +186,17 @@ class ChatImpl(
             if (channel == null) {
                 null.asFuture()
             } else {
-                message.actions?.get(THREAD_ROOT_ID)?.get(threadChannelId)
-                    ?.get(0)?.actionTimetoken?.let { nonNullActionTimetoken ->
-                        log.pnError(THIS_THREAD_ID_ALREADY_RESTORED)
-                    } ?: run {
-                    val messageAction = PNMessageAction(
-                        type = THREAD_ROOT_ID,
-                        value = threadChannelId,
-                        messageTimetoken = message.timetoken
-                    )
-                    pubNub.addMessageAction(channel = message.channelId, messageAction = messageAction)
-                    // we don't update action map here but we do this in message#restore()
+                if (message.actions?.get(THREAD_ROOT_ID)?.get(threadChannelId)?.isNotEmpty() == true) {
+                    log.pnError(THIS_THREAD_ID_ALREADY_RESTORED)
                 }
+
+                val messageAction = PNMessageAction(
+                    type = THREAD_ROOT_ID,
+                    value = threadChannelId,
+                    messageTimetoken = message.timetoken
+                )
+                pubNub.addMessageAction(channel = message.channelId, messageAction = messageAction)
+                // we don't update action map here but we do this in message#restore()
             }
         }
     }
