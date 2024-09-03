@@ -194,7 +194,7 @@ class ChatImpl(
                 // on the other hand when you call channel01.getMessage() after message was deleted(soft=true)
                 // then returned message has "actions" that doesn't contain THREAD_ROOT_ID so we can't rely on
                 // THREAD_ROOT_ID to decide whether thread has been already restored or not. To do this we use DELETED.
-                if (message.actions?.get(DELETED)?.get(DELETED)?.isEmpty() == true) {
+                if (!message.deleted) {
                     log.pnError(THIS_THREAD_ID_ALREADY_RESTORED)
                 }
 

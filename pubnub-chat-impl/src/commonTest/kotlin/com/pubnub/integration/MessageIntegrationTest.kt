@@ -32,9 +32,6 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
         val deletedMessage = message.delete(soft = true).await()!!
         val restoredMessage = deletedMessage.restore().await()
-        println(message)
-        println(deletedMessage)
-        println(restoredMessage)
         assertEquals(message.content.text, restoredMessage.content.text)
     }
 
@@ -50,7 +47,6 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         threadChannel.sendText("message in thread_${randomString()}").await()
 
         val history: HistoryResponse<ThreadMessage> = threadChannel.getHistory().await()
-        println(history)
 
         val messageWithThread = channel01.getMessage(publishTimetoken).await()
         val messageWithReaction = messageWithThread!!.toggleReaction(reactionValue).await()
@@ -59,8 +55,6 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val restoredMessage: Message = deletedMessage.restore().await()
         val restoredThread: ThreadChannel = restoredMessage.getThread().await()
         val historyAfterRestore: HistoryResponse<ThreadMessage> = restoredThread.getHistory().await()
-        println(historyAfterRestore)
-        println(history)
 
         assertEquals(history.messages.first().content.text, historyAfterRestore.messages.first().content.text)
         assertEquals(history.messages.size, historyAfterRestore.messages.size)

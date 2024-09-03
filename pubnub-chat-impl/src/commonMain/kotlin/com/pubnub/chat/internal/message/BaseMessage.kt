@@ -130,6 +130,7 @@ abstract class BaseMessage<T : Message>(
     override fun delete(soft: Boolean, preserveFiles: Boolean): PNFuture<Message?> {
         val type = chat.deleteMessageActionName
         if (soft) {
+            var updatedActions: Map<String, Map<String, List<PNFetchMessageItem.Action>>> = mapOf()
             return chat.pubNub.addMessageAction(
                 channelId,
                 PNMessageAction(
@@ -137,11 +138,20 @@ abstract class BaseMessage<T : Message>(
                     type,
                     timetoken
                 )
-            ).then { it: PNAddMessageActionResult ->
-                val actions = assignAction(actions, it)
-                copyWithActions(actions)
-            }.alsoAsync {
+            ).thenAsync {
                 deleteThread(soft)
+            }.thenAsync {
+                // get current state of actions pass it to object returned by this method
+                chat.pubNub.getMessageActions(channel = channelId, page = PNBoundedPage(end = timetoken))
+            }.then { pnGetMessageActionsResult: PNGetMessageActionsResult ->
+                val messageActionsForMessage: List<PNMessageAction> =
+                    pnGetMessageActionsResult.actions.filter { it.messageTimetoken == timetoken }
+                // update actions map
+                messageActionsForMessage.forEach { pnMessageAction ->
+                    updatedActions = assignAction(updatedActions, pnMessageAction)
+                }
+            }.then {
+                copyWithActions(updatedActions)
             }
         } else {
             val previousTimetoken = timetoken - 1
