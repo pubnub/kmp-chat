@@ -98,7 +98,7 @@ interface Chat {
 
     fun deleteChannel(id: String, soft: Boolean = false): PNFuture<Channel>
 
-    fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult>
+    fun  forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult>
 
     fun whoIsPresent(channelId: String): PNFuture<Collection<String>>
 
@@ -187,6 +187,8 @@ interface Chat {
         endTimetoken: Long? = null,
         count: Int = 100
     ): PNFuture<GetCurrentUserMentionsResult>
+
+    fun destroy()
 
     // Companion object required for extending this class elsewhere
     companion object

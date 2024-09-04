@@ -73,8 +73,8 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer
-import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runPeriodically
-import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runWithDelay
+import com.pubnub.chat.internal.timer.TimerManager
+import com.pubnub.chat.internal.timer.createTimerManager
 import com.pubnub.chat.internal.util.channelsUrlDecoded
 import com.pubnub.chat.internal.util.getPhraseToLookFor
 import com.pubnub.chat.internal.util.logErrorAndReturnException
@@ -117,7 +117,6 @@ import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
-
 class ChatImpl(
     override val config: ChatConfiguration,
     override val pubNub: PubNub,
@@ -132,6 +131,7 @@ class ChatImpl(
 
     private val suggestedChannelsCache: MutableMap<String, Set<Channel>> = mutableMapOf()
     private val suggestedUsersCache: MutableMap<String, Set<User>> = mutableMapOf()
+    override val timerManager: TimerManager = createTimerManager()
     private var lastSavedActivityInterval: PlatformTimer? = null
     private var runWithDelayTimer: PlatformTimer? = null
 
@@ -1009,6 +1009,11 @@ class ChatImpl(
         }
     }
 
+    override fun destroy() {
+        timerManager.destroy()
+        pubNub.destroy()
+    }
+
     private fun getTimetokenFromHistoryMessage(
         channelId: String,
         pnFetchMessagesResult: PNFetchMessagesResult
@@ -1189,7 +1194,7 @@ class ChatImpl(
                 }
 
                 val remainingTime = config.storeUserActivityInterval - elapsedTimeSinceLastCheck
-                runWithDelayTimer = runWithDelay(remainingTime) {
+                runWithDelayTimer = timerManager.runWithDelay(remainingTime) {
                     runSaveTimestampInterval().async {}
                 }
 
@@ -1202,7 +1207,7 @@ class ChatImpl(
         return saveTimeStampFunc().then {
             lastSavedActivityInterval?.cancel()
             lastSavedActivityInterval =
-                runPeriodically(config.storeUserActivityInterval) {
+                timerManager.runPeriodically(config.storeUserActivityInterval) {
                     saveTimeStampFunc().async { result: Result<Unit> ->
                         result.onFailure { e ->
                             log.error(err = e, msg = { e.message })
@@ -1245,3 +1250,4 @@ class ChatImpl(
         }
     }
 }
+

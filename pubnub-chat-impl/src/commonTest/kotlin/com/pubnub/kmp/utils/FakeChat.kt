@@ -18,6 +18,8 @@ import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatInternal
+import com.pubnub.chat.internal.timer.TimerManager
+import com.pubnub.chat.internal.timer.createTimerManager
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
 import com.pubnub.chat.restrictions.Restriction
@@ -34,6 +36,11 @@ import com.pubnub.kmp.PNFuture
 import kotlin.reflect.KClass
 
 abstract class FakeChat(override val config: ChatConfiguration, override val pubNub: PubNub) : ChatInternal {
+    override val timerManager: TimerManager = createTimerManager()
+
+    override fun destroy() {
+        TODO("Not yet implemented")
+    }
     override val currentUser: User
         get() = TODO("Not yet implemented")
 

@@ -6,11 +6,13 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
+import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.kmp.PNFuture
 
 interface ChatInternal : Chat {
     val editMessageActionName: String
     val deleteMessageActionName: String
+    val timerManager: TimerManager
 
     fun createUser(user: User): PNFuture<User>
 
