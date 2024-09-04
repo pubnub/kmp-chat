@@ -4,11 +4,9 @@ import com.pubnub.api.JsonElement
 import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
 import com.pubnub.api.endpoints.message_actions.RemoveMessageAction
-import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
-import com.pubnub.api.models.consumer.message_actions.PNGetMessageActionsResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
@@ -130,7 +128,7 @@ abstract class BaseMessage<T : Message>(
     override fun delete(soft: Boolean, preserveFiles: Boolean): PNFuture<Message?> {
         val type = chat.deleteMessageActionName
         if (soft) {
-            var updatedActions: Map<String, Map<String, List<PNFetchMessageItem.Action>>> = mapOf()
+            var updatedActions: Actions = actions ?: mapOf()
             return chat.pubNub.addMessageAction(
                 channelId,
                 PNMessageAction(
@@ -138,19 +136,14 @@ abstract class BaseMessage<T : Message>(
                     type,
                     timetoken
                 )
-            ).thenAsync {
+            ).then { addMessageActionResult: PNAddMessageActionResult ->
+                // add action related to delete
+                updatedActions = assignAction(updatedActions, addMessageActionResult)
+            }.alsoAsync {
                 deleteThread(soft)
-            }.thenAsync {
-                // get current state of actions pass it to object returned by this method
-                chat.pubNub.getMessageActions(channel = channelId, page = PNBoundedPage(end = timetoken))
-            }.then { pnGetMessageActionsResult: PNGetMessageActionsResult ->
-                val messageActionsForMessage: List<PNMessageAction> =
-                    pnGetMessageActionsResult.actions.filter { it.messageTimetoken == timetoken }
-                // update actions map
-                messageActionsForMessage.forEach { pnMessageAction ->
-                    updatedActions = assignAction(updatedActions, pnMessageAction)
-                }
             }.then {
+                // deleteThread method deletes reaction related to thread from PN and here be want to remove this action from "actions" map
+                updatedActions = updatedActions.filterNot { it.key == THREAD_ROOT_ID }
                 copyWithActions(updatedActions)
             }
         } else {
@@ -234,29 +227,19 @@ abstract class BaseMessage<T : Message>(
         val deleteActions: List<PNFetchMessageItem.Action> = getDeleteActions()
             ?: return PubNubException(THIS_MESSAGE_HAS_NOT_BEEN_DELETED).logWarnAndReturnException(log).asFuture()
 
-        var updatedActions: Actions? = actions?.filterNot {
-            it.key == chat.deleteMessageActionName
-        }
+        var updatedActions: Actions? = actions?.filterNot { it.key == chat.deleteMessageActionName }
 
         return deleteActions
             .map { removeMessageAction(it.actionTimetoken) }
             .awaitAll()
             .thenAsync {
-                // get messageAction for all messages in channel
-                chat.pubNub.getMessageActions(channel = channelId, page = PNBoundedPage(end = timetoken))
-            }.then { pnGetMessageActionsResult: PNGetMessageActionsResult ->
-                // getMessageAction assigned to this message
-                val messageActionsForMessage = pnGetMessageActionsResult.actions.filter { it.messageTimetoken == timetoken }
-
-                // update actions map
-                messageActionsForMessage.forEach { pnMessageAction ->
-                    updatedActions = assignAction(updatedActions, pnMessageAction)
-                }
-            }.thenAsync {
+                // attempt to restore the thread channel related to this message if exists
                 chat.restoreThreadChannel(this)
-            }.then { pnMessageAction: PNMessageAction? ->
-                // update actions map
-                pnMessageAction?.let { updatedActions = assignAction(updatedActions, it) }
+            }.then { addThreadRootIdMessageAction: PNMessageAction? ->
+                // update actions map by adding THREAD_ROOT_ID if there is thread related to the message
+                addThreadRootIdMessageAction?.let { notNullAction ->
+                    updatedActions = assignAction(updatedActions, notNullAction)
+                }
                 copyWithActions(updatedActions)
             }
     }
