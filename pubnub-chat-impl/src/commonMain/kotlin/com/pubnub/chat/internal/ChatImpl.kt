@@ -485,12 +485,12 @@ class ChatImpl(
 
         val meta = message.meta?.toMutableMap() ?: mutableMapOf()
         meta[ORIGINAL_PUBLISHER] = message.userId
+        meta[ORIGINAL_CHANNEL_ID] = message.channelId
 
         return pubNub.publish(
-            message = message.content.encodeForSending(message.channelId),
+            message = message.content.encodeForSending(channelId, config.customPayloads?.getMessagePublishBody),
             channel = channelId,
-            meta = meta,
-            ttl = message.timetoken.toInt()
+            meta = meta
         ).catch { exception ->
             Result.failure(PubNubException(FAILED_TO_FORWARD_MESSAGE, exception))
         }

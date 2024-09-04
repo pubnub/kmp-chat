@@ -12,6 +12,7 @@ private val log = logging(tag = "DefaultGetMessage")
 
 internal const val DELETED = "deleted"
 internal const val ORIGINAL_PUBLISHER = "originalPublisher"
+internal const val ORIGINAL_CHANNEL_ID = "originalChannelId"
 internal const val HTTP_ERROR_404 = 404
 internal const val INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_"
 internal const val MESSAGE_THREAD_ID_PREFIX = "PUBNUB_INTERNAL_THREAD"
