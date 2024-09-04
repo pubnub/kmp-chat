@@ -4,12 +4,14 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
+import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.MESSAGE_THREAD_ID_PREFIX
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.MessageActionType
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
@@ -25,6 +27,17 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun createMessageThenSoftDeleteThenRestore() = runTest {
         val messageText = "messageText_${randomString()}"
+        val publishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = publishResult.timetoken
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
+        val deletedMessage = message.delete(soft = true).await()!!
+        val restoredMessage = deletedMessage.restore().await()
+        assertEquals(message.content.text, restoredMessage.content.text)
+    }
+
+    @Test
+    fun createMessageWithThreadThenSoftDeleteThenRestore() = runTest {
+        val messageText = "messageText_${randomString()}"
         val reactionValue = "wow"
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val publishTimetoken = pnPublishResult.timetoken
@@ -32,16 +45,19 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val threadChannel: ThreadChannel = message.createThread().await()
         // we need to call sendText because addMessageAction is called in sendText that stores details about thread
         threadChannel.sendText("message in thread_${randomString()}").await()
+
+        val history: HistoryResponse<ThreadMessage> = threadChannel.getHistory().await()
+
         val messageWithThread = channel01.getMessage(publishTimetoken).await()
         val messageWithReaction = messageWithThread!!.toggleReaction(reactionValue).await()
         val deletedMessage: Message = messageWithReaction.delete(soft = true).await()!!
-        // todo returned message provide invalid state because in actions map there is THREAD_ROOT_ID.
-        // To workaround this we need to call channel01.getMessage(publishTimetoken) to get message in proper state.
-        val messageAfterDeletedMessage: Message = channel01.getMessage(publishTimetoken).await()!!
 
-        val restoredMessage: Message = messageAfterDeletedMessage.restore().await()
-//        val messageAfterRestore: Message = channel01.getMessage(publishTimetoken).await()!!
+        val restoredMessage: Message = deletedMessage.restore().await()
+        val restoredThread: ThreadChannel = restoredMessage.getThread().await()
+        val historyAfterRestore: HistoryResponse<ThreadMessage> = restoredThread.getHistory().await()
 
+        assertEquals(history.messages.first().content.text, historyAfterRestore.messages.first().content.text)
+        assertEquals(history.messages.size, historyAfterRestore.messages.size)
         assertEquals(messageText, restoredMessage.text)
         assertEquals(reactionValue, restoredMessage.actions!!["reactions"]?.keys?.first())
         assertTrue(
