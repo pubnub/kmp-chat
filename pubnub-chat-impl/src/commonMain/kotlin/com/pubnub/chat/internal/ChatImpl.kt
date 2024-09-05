@@ -594,7 +594,7 @@ class ChatImpl(
                 channelName ?: finalChannelId,
                 channelDescription,
                 channelCustom,
-                ChannelType.DIRECT,
+                ChannelType.GROUP,
                 channelStatus
             )
         }.thenAsync { channel: Channel ->
