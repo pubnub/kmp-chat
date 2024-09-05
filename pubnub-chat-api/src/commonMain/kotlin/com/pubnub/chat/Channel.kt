@@ -80,7 +80,7 @@ interface Channel {
     fun inviteMultiple(users: Collection<User>): PNFuture<List<Membership>>
 
     fun getMembers(
-        limit: Int? = null,
+        limit: Int? = 100,
         page: PNPage? = null,
         filter: String? = null,
         sort: Collection<PNSortKey<PNMemberKey>> = listOf(),

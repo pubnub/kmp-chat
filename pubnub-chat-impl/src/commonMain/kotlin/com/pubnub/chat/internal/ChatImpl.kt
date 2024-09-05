@@ -489,12 +489,12 @@ class ChatImpl(
 
         val meta = message.meta?.toMutableMap() ?: mutableMapOf()
         meta[ORIGINAL_PUBLISHER] = message.userId
+        meta[ORIGINAL_CHANNEL_ID] = message.channelId
 
         return pubNub.publish(
-            message = message.content,
+            message = message.content.encodeForSending(channelId, config.customPayloads?.getMessagePublishBody),
             channel = channelId,
-            meta = meta,
-            ttl = message.timetoken.toInt()
+            meta = meta
         ).catch { exception ->
             Result.failure(PubNubException(FAILED_TO_FORWARD_MESSAGE, exception))
         }
@@ -598,7 +598,7 @@ class ChatImpl(
                 channelName ?: finalChannelId,
                 channelDescription,
                 channelCustom,
-                ChannelType.DIRECT,
+                ChannelType.GROUP,
                 channelStatus
             )
         }.thenAsync { channel: Channel ->
@@ -1164,7 +1164,7 @@ class ChatImpl(
                 customMetadataToSet["pinnedMessageTimetoken"] = message.timetoken
                 customMetadataToSet["pinnedMessageChannelID"] = message.channelId
             }
-            return pubNub.setChannelMetadata(channel.id, custom = createCustomObject(customMetadataToSet))
+            return pubNub.setChannelMetadata(channel.id, includeCustom = true, custom = createCustomObject(customMetadataToSet))
         }
 
         internal fun getThreadId(channelId: String, messageTimetoken: Long): String {
