@@ -5,7 +5,6 @@ import platform.Foundation.NSDefaultRunLoopMode
 import platform.Foundation.NSOperationQueue
 import platform.Foundation.NSRunLoop
 import platform.Foundation.NSTimer
-import kotlin.concurrent.AtomicReference
 import kotlin.time.Duration
 
 actual class PlatformTimer(
@@ -20,7 +19,7 @@ actual class PlatformTimer(
     }
 }
 
-class TimerManagerImpl: TimerManager {
+class TimerManagerImpl : TimerManager {
     private val timersRef: AtomicRef<MutableSet<NSTimer>?> = atomic(mutableSetOf<NSTimer>())
 
     override fun runPeriodically(period: Duration, action: () -> Unit): PlatformTimer {
@@ -67,7 +66,6 @@ class TimerManagerImpl: TimerManager {
             timers.forEach { it.invalidate() }
         }
     }
-
 }
 
 actual fun createTimerManager(): TimerManager {

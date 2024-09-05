@@ -2,7 +2,6 @@ package com.pubnub.chat.internal.utils
 
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.chat.internal.timer.PlatformTimer
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.kmp.PNFuture
 import kotlinx.atomicfu.locks.reentrantLock

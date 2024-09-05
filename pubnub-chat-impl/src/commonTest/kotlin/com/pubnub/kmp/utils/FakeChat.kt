@@ -41,6 +41,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     override fun destroy() {
         TODO("Not yet implemented")
     }
+
     override val currentUser: User
         get() = TODO("Not yet implemented")
 

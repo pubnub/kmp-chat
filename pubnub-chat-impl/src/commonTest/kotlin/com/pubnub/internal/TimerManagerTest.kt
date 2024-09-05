@@ -13,7 +13,6 @@ import kotlin.test.assertFalse
 import kotlin.time.Duration.Companion.seconds
 
 class TimerManagerTest {
-
     @Test
     fun cancelOneOff() = runTest {
         val timerManager = createTimerManager()

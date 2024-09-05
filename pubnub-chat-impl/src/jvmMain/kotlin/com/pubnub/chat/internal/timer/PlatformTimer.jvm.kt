@@ -16,9 +16,11 @@ actual class PlatformTimer(
 
 class TimerManagerImpl(
     private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
-) : TimerManager{
+) : TimerManager {
     override fun runPeriodically(period: Duration, action: () -> Unit): PlatformTimer {
-        return PlatformTimer(executor.scheduleAtFixedRate(action, period.inWholeMilliseconds, period.inWholeMilliseconds, TimeUnit.MILLISECONDS))
+        return PlatformTimer(
+            executor.scheduleAtFixedRate(action, period.inWholeMilliseconds, period.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        )
     }
 
     override fun runWithDelay(delay: Duration, action: () -> Unit): PlatformTimer {

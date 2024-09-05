@@ -117,6 +117,7 @@ import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+
 class ChatImpl(
     override val config: ChatConfiguration,
     override val pubNub: PubNub,
@@ -1250,4 +1251,3 @@ class ChatImpl(
         }
     }
 }
-
