@@ -125,6 +125,7 @@ class ChatImpl(
         ?: MessageActionType.EDITED.toString(),
     override val deleteMessageActionName: String = config.customPayloads?.deleteMessageActionName
         ?: MessageActionType.DELETED.toString(),
+    override val timerManager: TimerManager = createTimerManager()
 ) : ChatInternal {
     override var currentUser: User =
         UserImpl(this, pubNub.configuration.userId.value, name = pubNub.configuration.userId.value)
@@ -132,7 +133,7 @@ class ChatImpl(
 
     private val suggestedChannelsCache: MutableMap<String, Set<Channel>> = mutableMapOf()
     private val suggestedUsersCache: MutableMap<String, Set<User>> = mutableMapOf()
-    override val timerManager: TimerManager = createTimerManager()
+
     private var lastSavedActivityInterval: PlatformTimer? = null
     private var runWithDelayTimer: PlatformTimer? = null
 

@@ -509,6 +509,13 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(mapOf("abc" to "def"), (eventFromHistory.payload as EventContent.Custom).data)
     }
 
+    @Test
+    fun destroy_completes_successfully() {
+        chat.getChannel("abc").async {}
+        channel01.streamUpdates { }
+        chat.destroy()
+    }
+
     private suspend fun assertPushChannels(expectedNumberOfChannels: Int) {
         val pushChannels = chat.getPushChannels().await()
         assertEquals(expectedNumberOfChannels, pushChannels.size)
