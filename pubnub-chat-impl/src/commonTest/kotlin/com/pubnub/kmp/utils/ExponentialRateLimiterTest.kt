@@ -23,7 +23,6 @@ class ExponentialRateLimiterTest {
         times.add(Clock.System.now() - start)
     }
 
-    // todo fix on iOS
     @Test
     fun testDelays() = runTest(timeout = 10.seconds) {
         val start = Clock.System.now()
