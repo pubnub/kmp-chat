@@ -55,7 +55,6 @@ import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
-import com.pubnub.chat.internal.timer.PlatformTimer.Companion.runWithDelay
 import com.pubnub.chat.internal.util.channelsUrlDecoded
 import com.pubnub.chat.internal.util.getPhraseToLookFor
 import com.pubnub.chat.internal.util.logErrorAndReturnException
@@ -118,7 +117,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
     private val sendTextRateLimiter by lazy {
         ExponentialRateLimiter(
             type?.let { typeNotNull -> chat.config.rateLimitPerChannel[typeNotNull] } ?: Duration.ZERO,
-            chat.config.rateLimitFactor
+            chat.config.rateLimitFactor,
+            chat.timerManager
         )
     }
     private val channelFilterString get() = "channel.id == '${this.id}'"
@@ -192,7 +192,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             val isTyping = event.payload.value
 
             if (isTyping) {
-                runWithDelay(typingTimeout + 10.milliseconds) { // +10ms just to make sure the timeout expires
+                chat.timerManager.runWithDelay(typingTimeout + 10.milliseconds) { // +10ms just to make sure the timeout expires
                     typingIndicatorsLock.withLock {
                         removeExpiredTypingIndicators(typingTimeout, typingIndicators, clock.now())
                         typingIndicators.keys.toList()

@@ -1,44 +1,37 @@
 package com.pubnub.chat.internal.timer
 
-import java.util.Timer
-import java.util.TimerTask
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 
 actual class PlatformTimer(
-    private val timer: Timer
+    private val future: ScheduledFuture<*>
 ) {
-    actual companion object {
-        actual fun runPeriodically(period: Duration, action: () -> Unit): PlatformTimer {
-            val timer = Timer().apply {
-                scheduleAtFixedRate(
-                    object : TimerTask() {
-                        override fun run() {
-                            action()
-                        }
-                    },
-                    period.inWholeMilliseconds,
-                    period.inWholeMilliseconds
-                )
-            }
-            return PlatformTimer(timer)
-        }
-
-        actual fun runWithDelay(delay: Duration, action: () -> Unit): PlatformTimer {
-            val timer = Timer().apply {
-                schedule(
-                    object : TimerTask() {
-                        override fun run() {
-                            action()
-                        }
-                    },
-                    delay.inWholeMilliseconds
-                )
-            }
-            return PlatformTimer(timer)
-        }
-    }
-
     actual fun cancel() {
-        timer.cancel()
+        future.cancel(true)
     }
+}
+
+class TimerManagerImpl(
+    private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+) : TimerManager {
+    override fun runPeriodically(period: Duration, action: () -> Unit): PlatformTimer {
+        return PlatformTimer(
+            executor.scheduleAtFixedRate(action, period.inWholeMilliseconds, period.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        )
+    }
+
+    override fun runWithDelay(delay: Duration, action: () -> Unit): PlatformTimer {
+        return PlatformTimer(executor.schedule(action, delay.inWholeMilliseconds, TimeUnit.MILLISECONDS))
+    }
+
+    override fun destroy() {
+        executor.shutdownNow()
+    }
+}
+
+actual fun createTimerManager(): TimerManager {
+    return TimerManagerImpl()
 }

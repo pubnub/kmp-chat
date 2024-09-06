@@ -54,6 +54,7 @@ import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.message.MessageImpl
+import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
@@ -86,6 +87,7 @@ class ChatTest : BaseTest() {
     private lateinit var objectUnderTest: ChatImpl
     private val chatMock: ChatInternal = mock(MockMode.strict)
     private val pubnub: PubNub = mock(MockMode.strict)
+    private val timerManager: TimerManager = mock(MockMode.strict)
     private lateinit var pnConfiguration: PNConfiguration
     private lateinit var chatConfig: ChatConfiguration
     private val setUUIDMetadataEndpoint: SetUUIDMetadata = mock(MockMode.strict)
@@ -132,7 +134,7 @@ class ChatTest : BaseTest() {
         chatConfig = ChatConfiguration(
             typingTimeout = 2000.milliseconds
         )
-        objectUnderTest = ChatImpl(chatConfig, pubnub)
+        objectUnderTest = ChatImpl(chatConfig, pubnub, timerManager = timerManager)
     }
 
     @Test
@@ -1428,5 +1430,14 @@ class ChatTest : BaseTest() {
             next = null,
             prev = null
         )
+    }
+
+    @Test
+    fun destroy() {
+        every { timerManager.destroy() } returns Unit
+        every { pubnub.destroy() } returns Unit
+        objectUnderTest.destroy()
+        verify { pubnub.destroy() }
+        verify { timerManager.destroy() }
     }
 }

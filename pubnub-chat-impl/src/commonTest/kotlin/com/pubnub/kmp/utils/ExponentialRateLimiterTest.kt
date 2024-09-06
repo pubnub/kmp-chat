@@ -1,5 +1,6 @@
 package com.pubnub.kmp.utils
 
+import com.pubnub.chat.internal.timer.createTimerManager
 import com.pubnub.chat.internal.utils.ExponentialRateLimiter
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
@@ -22,7 +23,6 @@ class ExponentialRateLimiterTest {
         times.add(Clock.System.now() - start)
     }
 
-    // todo fix on iOS
     @Test
     fun testDelays() = runTest(timeout = 10.seconds) {
         val start = Clock.System.now()
@@ -36,7 +36,7 @@ class ExponentialRateLimiterTest {
 
         val expectedTimes = listOf(0, 100, 300, 700, 2800, 2900)
 
-        val rateLimiter = ExponentialRateLimiter(100.milliseconds, 2)
+        val rateLimiter = ExponentialRateLimiter(100.milliseconds, 2, createTimerManager())
 
         rateLimiter.runWithinLimits(future1).async {} // 0
         rateLimiter.runWithinLimits(future2).async {} // 100

@@ -188,6 +188,8 @@ interface Chat {
         count: Int = 100
     ): PNFuture<GetCurrentUserMentionsResult>
 
+    fun destroy()
+
     // Companion object required for extending this class elsewhere
     companion object
 }
