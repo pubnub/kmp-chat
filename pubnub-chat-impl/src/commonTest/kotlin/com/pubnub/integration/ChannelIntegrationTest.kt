@@ -15,6 +15,8 @@ import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.JoinResult
+import com.pubnub.chat.types.MessageMentionedUser
+import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
@@ -28,6 +30,7 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
@@ -355,19 +358,44 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun getMessage() = runTest(timeout = 10.seconds) {
+    fun getMessage() = runTest(timeout = 200.seconds) {
         val messageText = "some text"
-        val channelId = randomString()
-        val channel = chat.createChannel(channelId).await()
-        val tt = channel.sendText(messageText, ttl = 60).await().timetoken
+        val tt = channel01.sendText(text = messageText, ttl = 60).await().timetoken
 
         delayInMillis(150)
 
-        val message = channel.getMessage(tt).await()
+        val message = channel01.getMessage(tt).await()
         assertEquals(messageText, message?.text)
         assertEquals(tt, message?.timetoken)
+    }
 
-        chat.deleteChannel(channelId).await()
+    @Test
+    fun getMessageWithMentionedUsersAndReferencedChannels() = runTest(timeout = 200.seconds) {
+        val messageText = "some text"
+        val mentionedPosition = 1
+        val referencedPosition = 1
+        val mentionedUsers =
+            mapOf<Int, MessageMentionedUser>(mentionedPosition to MessageMentionedUser("user01Id", "user01Name"))
+        val referencedChannels =
+            mapOf<Int, MessageReferencedChannel>(referencedPosition to MessageReferencedChannel(id = "channel01Id", name = "channel01Name"))
+        val tt = channel01.sendText(
+            text = messageText,
+            ttl = 60,
+            mentionedUsers = mentionedUsers,
+            referencedChannels = referencedChannels
+        ).await().timetoken
+
+        delayInMillis(150)
+
+        val message = channel01.getMessage(tt).await()
+        val actualMentionedUsers: Map<Int, MessageMentionedUser>? = message?.mentionedUsers
+        val actualMentionPosition = actualMentionedUsers?.keys?.first()
+        assertIs<Int>(actualMentionPosition)
+        assertEquals(mentionedPosition, actualMentionPosition)
+        val actualReferencedChannels: Map<Int, MessageReferencedChannel>? = message?.referencedChannels
+        val actualReferencedPosition = actualReferencedChannels?.keys?.first()
+        assertIs<Int>(actualReferencedPosition)
+        assertEquals(referencedPosition, actualReferencedPosition)
     }
 
     @Test

@@ -19,7 +19,7 @@ import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
-import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -69,7 +69,7 @@ interface Channel {
         usePost: Boolean = false,
         ttl: Int? = null,
         mentionedUsers: MessageMentionedUsers? = null,
-        referencedChannels: Map<Int, MessageReferencedChannel>? = null,
+        referencedChannels: MessageReferencedChannels? = null,
         textLinks: List<TextLink>? = null,
         quotedMessage: Message? = null,
         files: List<InputFile>? = null,

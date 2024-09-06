@@ -22,6 +22,7 @@ import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST
+import com.pubnub.chat.internal.error.PubNubErrorMessage.KEY_IS_NOT_VALID_INTEGER
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_MESSAGE_HAS_NOT_BEEN_DELETED
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.util.logWarnAndReturnException
@@ -29,7 +30,9 @@ import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.chat.types.MessageActionType
+import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageMentionedUsers
+import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
 import com.pubnub.chat.types.TextLink
@@ -323,11 +326,23 @@ abstract class BaseMessage<T : Message>(
         }
 
         internal fun JsonElement?.extractMentionedUsers(): MessageMentionedUsers? {
-            return this?.asMap()?.get(METADATA_MENTIONED_USERS)?.let { PNDataEncoder.decode(it) }
+            return this?.asMap()?.get(METADATA_MENTIONED_USERS)?.let {
+                // Json doesn't support integers as key and for some reason decode method doesn't automatically convert string keys to integers even
+                // though MessageMentionedUsers = Map<Int, MessageMentionedUser>
+                val decodeMap: Map<String, MessageMentionedUser> = PNDataEncoder.decode<Map<String, MessageMentionedUser>>(it)
+                // manually convert key as string to int
+                decodeMap.mapKeys { (key, _) -> key.toIntOrNull() ?: throw IllegalArgumentException(KEY_IS_NOT_VALID_INTEGER) }
+            }
         }
 
         internal fun JsonElement?.extractReferencedChannels(): MessageReferencedChannels? {
-            return this?.asMap()?.get(METADATA_REFERENCED_CHANNELS)?.let { PNDataEncoder.decode(it) }
+            return this?.asMap()?.get(METADATA_REFERENCED_CHANNELS)?.let {
+                // Json doesn't support integers as key and for some reason decode method doesn't automatically convert string keys to integers even
+                // though MessageReferencedChannels = Map<Int, MessageReferencedChannel>
+                val decodeMap: Map<String, MessageReferencedChannel> = PNDataEncoder.decode<Map<String, MessageReferencedChannel>>(it)
+                // manually convert key as string to int
+                decodeMap.mapKeys { (key, _) -> key.toIntOrNull() ?: throw IllegalArgumentException(KEY_IS_NOT_VALID_INTEGER) }
+            }
         }
 
         internal fun JsonElement?.extractQuotedMessage(): QuotedMessage? {

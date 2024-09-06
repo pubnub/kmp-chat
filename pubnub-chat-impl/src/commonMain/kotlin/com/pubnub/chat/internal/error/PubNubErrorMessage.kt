@@ -72,4 +72,5 @@ internal object PubNubErrorMessage {
     internal const val ERROR_HANDLING_ONMESSAGE_EVENT = "Error handling onMessage event"
     internal const val THIS_MESSAGE_HAS_NOT_BEEN_DELETED = "This message has not been deleted"
     internal const val THIS_THREAD_ID_ALREADY_RESTORED = "This thread is already restored"
+    internal const val KEY_IS_NOT_VALID_INTEGER = "Key is not a valid integer"
 }
