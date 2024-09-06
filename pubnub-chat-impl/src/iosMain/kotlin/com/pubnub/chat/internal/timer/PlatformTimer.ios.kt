@@ -32,7 +32,7 @@ class TimerManagerImpl : TimerManager {
         }
         NSOperationQueue.mainQueue().addOperationWithBlock {
             timersRef.value?.add(timer) ?: return@addOperationWithBlock
-            NSRunLoop.mainRunLoop.addTimer(timer, NSDefaultRunLoopMode)
+            NSRunLoop.mainRunLoop.addTimer(timer, NSRunLoopCommonModes)
         }
         return PlatformTimer(timer, onCancel = {
             timersRef.value?.remove(timer)
