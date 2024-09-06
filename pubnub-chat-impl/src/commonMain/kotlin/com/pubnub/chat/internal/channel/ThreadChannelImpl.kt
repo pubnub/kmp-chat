@@ -18,7 +18,7 @@ import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUsers
-import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
@@ -86,7 +86,7 @@ data class ThreadChannelImpl(
         usePost: Boolean,
         ttl: Int?,
         mentionedUsers: MessageMentionedUsers?,
-        referencedChannels: Map<Int, MessageReferencedChannel>?,
+        referencedChannels: MessageReferencedChannels?,
         textLinks: List<com.pubnub.chat.types.TextLink>?,
         quotedMessage: Message?,
         files: List<InputFile>?,

@@ -76,7 +76,7 @@ import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
-import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -248,7 +248,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         usePost: Boolean,
         ttl: Int?,
         mentionedUsers: MessageMentionedUsers?,
-        referencedChannels: Map<Int, MessageReferencedChannel>?,
+        referencedChannels: MessageReferencedChannels?,
         textLinks: List<TextLink>?,
         quotedMessage: Message?,
         files: List<InputFile>?,
@@ -296,7 +296,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     private fun buildMetaForPublish(
         meta: Map<String, Any>?,
         mentionedUsers: MessageMentionedUsers?,
-        referencedChannels: Map<Int, MessageReferencedChannel>?,
+        referencedChannels: MessageReferencedChannels?,
         textLinks: List<TextLink>?,
         quotedMessage: Message?,
     ): Map<String, Any> = buildMap {
