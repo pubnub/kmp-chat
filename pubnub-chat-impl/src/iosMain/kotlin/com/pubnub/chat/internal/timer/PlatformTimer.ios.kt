@@ -1,9 +1,9 @@
 package com.pubnub.chat.internal.timer
 import kotlinx.atomicfu.AtomicRef
 import kotlinx.atomicfu.atomic
-import platform.Foundation.NSDefaultRunLoopMode
 import platform.Foundation.NSOperationQueue
 import platform.Foundation.NSRunLoop
+import platform.Foundation.NSRunLoopCommonModes
 import platform.Foundation.NSTimer
 import kotlin.time.Duration
 
