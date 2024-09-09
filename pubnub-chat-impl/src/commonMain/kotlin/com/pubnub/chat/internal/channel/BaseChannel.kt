@@ -42,6 +42,8 @@ import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
 import com.pubnub.chat.internal.METADATA_TEXT_LINKS
 import com.pubnub.chat.internal.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.chat.internal.MembershipImpl
+import com.pubnub.chat.internal.PINNED_MESSAGE_CHANNEL_ID
+import com.pubnub.chat.internal.PINNED_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.defaultGetMessageResponseBody
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_CHANNEL_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
@@ -454,8 +456,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
     override fun leave(): PNFuture<Unit> = chat.pubNub.removeMemberships(channels = listOf(id)).then { Unit }
 
     override fun getPinnedMessage(): PNFuture<Message?> {
-        val pinnedMessageTimetoken = this.custom?.get("pinnedMessageTimetoken").tryLong() ?: return null.asFuture()
-        val pinnedMessageChannelID = this.custom?.get("pinnedMessageChannelID") as? String ?: return null.asFuture()
+        val pinnedMessageTimetoken = this.custom?.get(PINNED_MESSAGE_TIMETOKEN).tryLong() ?: return null.asFuture()
+        val pinnedMessageChannelID = this.custom?.get(PINNED_MESSAGE_CHANNEL_ID) as? String ?: return null.asFuture()
 
         if (pinnedMessageChannelID == this.id) {
             return getMessage(pinnedMessageTimetoken)

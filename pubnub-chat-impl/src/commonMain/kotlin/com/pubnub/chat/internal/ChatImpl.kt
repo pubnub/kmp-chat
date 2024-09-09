@@ -1144,11 +1144,12 @@ class ChatImpl(
         ): PNFuture<PNChannelMetadataResult> {
             val customMetadataToSet = channel.custom?.toMutableMap() ?: mutableMapOf()
             if (message == null) {
-                customMetadataToSet.remove("pinnedMessageTimetoken")
-                customMetadataToSet.remove("pinnedMessageChannelID")
+                customMetadataToSet.remove(PINNED_MESSAGE_TIMETOKEN)
+                customMetadataToSet.remove(PINNED_MESSAGE_CHANNEL_ID)
             } else {
-                customMetadataToSet["pinnedMessageTimetoken"] = message.timetoken
-                customMetadataToSet["pinnedMessageChannelID"] = message.channelId
+                // toString is required because server for odd numbers in setChannelMetadata response returns values that differ by one
+                customMetadataToSet[PINNED_MESSAGE_TIMETOKEN] = message.timetoken.toString()
+                customMetadataToSet[PINNED_MESSAGE_CHANNEL_ID] = message.channelId
             }
             return pubNub.setChannelMetadata(channel.id, includeCustom = true, custom = createCustomObject(customMetadataToSet))
         }
