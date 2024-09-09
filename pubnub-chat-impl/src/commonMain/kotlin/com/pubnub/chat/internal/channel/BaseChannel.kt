@@ -597,11 +597,13 @@ abstract class BaseChannel<C : Channel, M : Message>(
                         onPresence = { _, event ->
                             when (event.event) {
                                 "join" -> {
-                                    ids.add(event.uuid!!)
+                                    ids.addAll(event.join ?: emptyList())
                                 }
-
-                                "leave", "timeout" -> {
-                                    ids.remove(event.uuid)
+                                "leave" -> {
+                                    ids.removeAll((event.leave ?: emptyList()).toSet())
+                                }
+                                "timeout" -> {
+                                    ids.removeAll((event.timeout ?: emptyList()).toSet())
                                 }
                             }
                             callback(ids.toSet())
