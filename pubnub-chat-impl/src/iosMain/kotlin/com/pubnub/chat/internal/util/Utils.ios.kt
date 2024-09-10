@@ -26,7 +26,7 @@ class KClassConstants {
     }
 }
 
-class KotlinDurationConstants {
+class KotlinDurationUtils {
     companion object {
         fun toSeconds(interval: Int): Duration {
             return interval.toDuration(DurationUnit.SECONDS)
