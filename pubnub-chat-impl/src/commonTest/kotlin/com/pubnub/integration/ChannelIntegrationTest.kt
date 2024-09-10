@@ -8,6 +8,7 @@ import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
+import com.pubnub.chat.internal.PINNED_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
@@ -36,6 +37,18 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 class ChannelIntegrationTest : BaseChatIntegrationTest() {
+    @Test
+    fun getPinnedMessage() = runTest {
+        val timetoken = channel01.sendText("Text text text").await()
+        val message = channel01.getMessage(timetoken.timetoken).await()!!
+
+        val updatedChannel = channel01.pinMessage(message).await()
+        assertEquals(timetoken.timetoken.toString(), updatedChannel.custom?.get(PINNED_MESSAGE_TIMETOKEN))
+        val pinnedMessage = updatedChannel.getPinnedMessage().await()
+
+        assertNotNull(pinnedMessage)
+    }
+
     @Test
     fun join() = runTest {
         val channelId = randomString()
