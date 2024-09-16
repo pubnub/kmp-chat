@@ -20,7 +20,7 @@ internal val MINIMAL_TYPING_INDICATOR_TIMEOUT: Duration = 1.seconds
 internal const val THREAD_ROOT_ID = "threadRootId"
 internal const val PINNED_MESSAGE_TIMETOKEN = "pinnedMessageTimetoken"
 internal const val PINNED_MESSAGE_CHANNEL_ID = "pinnedMessageChannelID"
-internal const val INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL"
+internal const val LAST_ACTIVE_TIMESTAMP = "lastActiveTimestamp"
 
 fun defaultGetMessagePublishBody(m: EventContent.TextMessageContent): Map<String, Any> =
     PNDataEncoder.encode(m as EventContent) as Map<String, Any>
@@ -30,7 +30,7 @@ fun defaultGetMessageResponseBody(message: JsonElement): EventContent.TextMessag
         ?: try {
             PNDataEncoder.decode<EventContent.TextMessageContent>(message)
         } catch (e: Exception) {
-            log.e { "Error calling defaultGetMessageResponseBody: ${e.message}" }
+            log.e { "Error calling defaultGetMessageResponseBody: ${e.message}" } // todo move message to PubNubErrorMessage
             null
         }
 }

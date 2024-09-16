@@ -10,8 +10,8 @@ import kotlin.time.Duration.Companion.seconds
 interface ChatConfiguration {
     val logLevel: LogLevel
     val typingTimeout: Duration
-    val storeUserActivityInterval: Duration
-    val storeUserActivityTimestamps: Boolean
+    val storeUserActivityInterval: Duration  // todo do we have test for this?
+    val storeUserActivityTimestamps: Boolean // todo do we have test for this?
     val pushNotifications: PushNotificationsConfig
     val rateLimitFactor: Int
     val rateLimitPerChannel: Map<ChannelType, Duration>
@@ -19,7 +19,7 @@ interface ChatConfiguration {
 }
 
 fun ChatConfiguration(
-    logLevel: LogLevel = LogLevel.OFF, // todo document all levels including "Off"
+    logLevel: LogLevel = LogLevel.OFF,
     typingTimeout: Duration = 5.seconds,
     storeUserActivityInterval: Duration = 600.seconds,
     storeUserActivityTimestamps: Boolean = false,

@@ -4,11 +4,14 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.Chat
+import com.pubnub.chat.Membership
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.test.await
@@ -191,5 +194,23 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
 
         // then
         assertTrue(isUserActive)
+    }
+
+    @Test
+    fun whenUserHasRestriction_GetMembershipShouldNotReturnedInternalModerationChannel() = runTest {
+        val mute = true
+        val ban = true
+        val reason = "rude"
+        userPam.setRestrictions(channel = channelPam, mute = true, ban = true, reason = reason).await()
+        val restrictions = userPam.getChannelRestrictions(channel = channelPam).await()
+        assertEquals(mute, restrictions.mute)
+        assertEquals(ban, restrictions.ban)
+        assertEquals(reason, restrictions.reason)
+
+        val membershipsResponse: MembershipsResponse = userPam.getMemberships().await()
+        val internalModerationChannelCount = membershipsResponse.memberships.filter { membership ->
+            membership.channel.id.contains(INTERNAL_MODERATION_PREFIX)
+        }.size
+        assertEquals(0, internalModerationChannelCount)
     }
 }

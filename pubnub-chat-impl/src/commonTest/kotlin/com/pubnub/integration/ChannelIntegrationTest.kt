@@ -33,6 +33,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
@@ -200,6 +201,33 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(ban, restriction.ban)
         assertEquals(mute, restriction.mute)
         assertEquals(reason, restriction.reason)
+    }
+
+    @Test
+    fun muteAndUnMuteUser() = runTest {
+        var mute = true
+        val reason = "rude"
+
+        channelPam.setRestrictions(user = userPam, mute = mute, reason = reason).await()
+        var restriction = channelPam.getUserRestrictions(userPam).await()
+        assertEquals(mute, restriction.mute)
+
+        mute = false
+        channelPam.setRestrictions(user = userPam, mute = mute, reason = reason).await()
+        restriction = channelPam.getUserRestrictions(userPam).await()
+        assertEquals(mute, restriction.mute)
+        assertFalse(restriction.ban)
+        assertNull(restriction.reason)
+    }
+
+    @Test
+    fun canGetRestrictionForUserThatDoesNotHaveRestrictionSet() = runTest {
+        val restriction = channel01.getUserRestrictions(userPam).await()
+        assertEquals(channel01.id, restriction.channelId)
+        assertEquals(userPam.id, restriction.userId)
+        assertFalse(restriction.mute)
+        assertFalse(restriction.ban)
+        assertNull(restriction.reason)
     }
 
     @Test
@@ -533,6 +561,18 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
             streamMessageReportsCloseable?.close()
         }
+    }
+
+    @Test
+    fun canGetUpdatesOnChannel() = runTest {
+        val expectedDescription = "Modified description"
+        val expectedStatus = "Modified status"
+        chat.createChannel(channel01.id).await()
+        channel01.streamUpdates { channel: Channel? ->
+            assertEquals(expectedDescription, channel?.description)
+            assertEquals(expectedStatus, channel?.status)
+        }
+        channel01.update(description = "NewDesc", status = expectedStatus).await()
     }
 }
 

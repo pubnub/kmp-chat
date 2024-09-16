@@ -91,11 +91,14 @@ data class UserImpl(
     ): PNFuture<MembershipsResponse> {
         val includeParameters = IncludeParameters()
 
+        val internalModerationFilter = "!(channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*')"
+        val effectiveFilter: String = filter?.let { "$internalModerationFilter && $filter"} ?: internalModerationFilter
+
         return chat.pubNub.getMemberships(
             uuid = id,
             limit = limit,
             page = page,
-            filter = filter,
+            filter = effectiveFilter,
             sort = sort,
             includeCount = includeParameters.totalCount,
             includeCustom = includeParameters.customFields,
@@ -257,7 +260,7 @@ data class UserImpl(
             updated = user.updated?.value,
             status = user.status?.value,
             type = user.type?.value,
-            lastActiveTimestamp = user.custom?.value?.get("lastActiveTimestamp")?.tryLong()
+            lastActiveTimestamp = user.custom?.value?.get(LAST_ACTIVE_TIMESTAMP)?.tryLong()
         )
 
         fun streamUpdatesOn(users: Collection<User>, callback: (users: Collection<User>) -> Unit): AutoCloseable {
