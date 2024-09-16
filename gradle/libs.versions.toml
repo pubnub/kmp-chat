@@ -10,7 +10,6 @@ kotlinx_serialization = "1.7.1"
 pubnub = "9.2.0-DEV"
 
 [libraries]
-pubnub-core-api = { module = "com.pubnub:pubnub-core-api", version.ref = "pubnub" }
 pubnub-kotlin-api = { module = "com.pubnub:pubnub-kotlin-api", version.ref = "pubnub" }
 pubnub-kotlin-impl = { module = "com.pubnub:pubnub-kotlin-impl", version.ref = "pubnub" }
 pubnub-kotlin = { module = "com.pubnub:pubnub-kotlin", version.ref = "pubnub" }

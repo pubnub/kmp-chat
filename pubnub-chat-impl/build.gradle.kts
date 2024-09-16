@@ -17,7 +17,6 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":pubnub-chat-api"))
-                implementation(libs.pubnub.core.api)
                 implementation(libs.pubnub.kotlin.api)
                 implementation(libs.kotlinx.datetime)
                 implementation(libs.kotlinx.serialization.core)
