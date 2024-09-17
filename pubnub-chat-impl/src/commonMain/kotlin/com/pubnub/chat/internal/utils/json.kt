@@ -1,7 +1,6 @@
 import com.pubnub.chat.internal.defaultGetMessagePublishBody
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
-import kotlinx.serialization.InternalSerializationApi
 
 internal fun Any?.tryLong(): Long? {
     return when (this) {
@@ -48,7 +47,6 @@ internal fun EventContent.TextMessageContent.encodeForSending(
     return finalMessage
 }
 
-@OptIn(InternalSerializationApi::class)
 internal fun EventContent.encodeForSending(
     mergeMessageWith: Map<String, Any>? = null,
 ): Map<String, Any?> {

@@ -496,7 +496,8 @@ class ChatImpl(
         payload: T,
         mergePayloadWith: Map<String, Any>?
     ): PNFuture<PNPublishResult> {
-        return if (payload::class.getEmitMethod() == EmitEventMethod.SIGNAL) {
+        val emitMethod = payload::class.getEmitMethod() ?: (payload as? EventContent.Custom)?.method
+        return if (emitMethod == EmitEventMethod.SIGNAL) {
             pubNub.signal(channel = channelId, message = payload.encodeForSending(mergePayloadWith))
         } else {
             pubNub.publish(channel = channelId, message = payload.encodeForSending(mergePayloadWith))
