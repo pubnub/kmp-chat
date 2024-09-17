@@ -595,13 +595,16 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     createEventListener(
                         chat.pubNub,
                         onPresence = { _, event ->
+                            event.leave?.let { ids.removeAll(it.toSet()) }
+                            event.timeout?.let { ids.removeAll(it.toSet()) }
+                            event.join?.let { ids.addAll(it) }
+
                             when (event.event) {
                                 "join" -> {
                                     ids.add(event.uuid!!)
                                 }
-
                                 "leave", "timeout" -> {
-                                    ids.remove(event.uuid)
+                                    ids.remove(event.uuid!!)
                                 }
                             }
                             callback(ids.toSet())

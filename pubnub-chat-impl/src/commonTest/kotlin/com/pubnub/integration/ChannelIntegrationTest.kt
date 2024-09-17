@@ -91,6 +91,22 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         }
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
+    @Test
+    fun streamPresence() = runTest {
+        val completable = CompletableDeferred<Collection<String>>()
+        val closeable = channel01.connect {}
+
+        channel01.streamPresence {
+            if (it.isNotEmpty()) {
+                completable.complete(it)
+            }
+        }
+
+        assertEquals(setOf(someUser.id), completable.await())
+        closeable.close()
+    }
+
     @Test
     fun join_close_unsubscribes() = runTest {
         val channel = chat.createChannel(randomString()).await()
