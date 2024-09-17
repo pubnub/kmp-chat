@@ -94,11 +94,10 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @OptIn(ExperimentalStdlibApi::class)
     @Test
     fun streamPresence() = runTest {
-        val channel = chat.createChannel(randomString()).await()
         val completable = CompletableDeferred<Collection<String>>()
-        val closeable = channel.connect {}
+        val closeable = channel01.connect {}
 
-        channel.streamPresence {
+        channel01.streamPresence {
             if (it.isNotEmpty()) {
                 completable.complete(it)
             }
@@ -106,7 +105,6 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         assertEquals(setOf(someUser.id), completable.await())
         closeable.close()
-        chat.deleteChannel(channel.id).await()
     }
 
     @Test
