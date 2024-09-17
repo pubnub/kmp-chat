@@ -1,3 +1,3 @@
-headers = PubNub-Swift.h
+headers = PubNubSDK-Swift.h
 language = Objective-C
 package = pubnubobjc
