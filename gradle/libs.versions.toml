@@ -7,10 +7,9 @@ dokka = "1.9.20"
 kotlinx_datetime = "0.6.0"
 kotlinx_coroutines = "1.8.1"
 kotlinx_serialization = "1.7.1"
-pubnub = "9.2.0-DEV"
+pubnub = "9.2.4"
 
 [libraries]
-pubnub-core-api = { module = "com.pubnub:pubnub-core-api", version.ref = "pubnub" }
 pubnub-kotlin-api = { module = "com.pubnub:pubnub-kotlin-api", version.ref = "pubnub" }
 pubnub-kotlin-impl = { module = "com.pubnub:pubnub-kotlin-impl", version.ref = "pubnub" }
 pubnub-kotlin = { module = "com.pubnub:pubnub-kotlin", version.ref = "pubnub" }

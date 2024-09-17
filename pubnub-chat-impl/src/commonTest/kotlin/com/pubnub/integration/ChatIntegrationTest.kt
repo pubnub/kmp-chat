@@ -510,6 +510,25 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun emitEvent_with_custom_signal() = runTest {
+        val channel = chat.createChannel(randomString()).await()
+        val event = CompletableDeferred<Event<EventContent.Custom>>()
+        var tt: Long = 0
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var unsubscribe: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel.id)) {
+                unsubscribe = chat.listenForEvents<EventContent.Custom>(channel.id, EmitEventMethod.SIGNAL) {
+                    event.complete(it)
+                }
+            }
+            tt = chat.emitEvent(channel.id, EventContent.Custom(mapOf("abc" to "def"), EmitEventMethod.SIGNAL)).await().timetoken
+            assertEquals(mapOf("abc" to "def"), event.await().payload.data)
+            assertFalse(channel.getMembers().await().members.any { it.user.id == chat.currentUser.id })
+            unsubscribe?.close()
+        }
+    }
+
+    @Test
     fun destroy_completes_successfully() {
         chat.getChannel("abc").async {}
         channel01.streamUpdates { }

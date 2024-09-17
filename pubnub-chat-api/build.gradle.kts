@@ -10,7 +10,6 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(libs.pubnub.core.api)
                 api(libs.pubnub.kotlin.api)
                 implementation(libs.kotlinx.serialization.core)
             }
