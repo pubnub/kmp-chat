@@ -3,8 +3,10 @@ package com.pubnub.integration
 import com.pubnub.api.PubNubException
 import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
+import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
+import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
@@ -526,6 +528,43 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             assertFalse(channel.getMembers().await().members.any { it.user.id == chat.currentUser.id })
             unsubscribe?.close()
         }
+    }
+
+    @Test
+    fun canEmitEventCustomEvent() = runTest {
+        val element1 = "element1"
+        val element1Value = "element1Value"
+        val additionalElement = "additionalElement"
+        val additionalElementValue = "element2Value"
+        var tt: Long = 0
+        val channelId = channel01.id
+        val customPayloads = EventContent.Custom(
+            data = mapOf(
+                element1 to element1Value,
+            )
+        )
+
+        // mergePayloadWith is not needed in case of EventContent.Custom but come in handy e.g. for EventContent.TextMessageContent
+        val mergePayloadWith: Map<String, Any> = mapOf(additionalElement to additionalElementValue)
+
+        chat.emitEvent(channelId = channelId, payload = customPayloads, mergePayloadWith = mergePayloadWith)
+            .async { result: Result<PNPublishResult> ->
+                result.onSuccess { pnPublishResult: PNPublishResult ->
+                    tt = pnPublishResult.timetoken
+                }.onFailure { ex: PubNubException ->
+                    throw IllegalStateException(ex)
+                }
+            }
+
+        delayInMillis(1000)
+
+        val eventFromHistory = chat.getEventsHistory(channelId, tt + 1, tt).await().events.first()
+        val payload: EventContent.Custom = eventFromHistory.payload as EventContent.Custom
+        val customEventData = payload.data
+
+        assertEquals(2, customEventData.size)
+        assertEquals(element1Value, customEventData[element1])
+        assertEquals(additionalElementValue, customEventData[additionalElement])
     }
 
     @Test

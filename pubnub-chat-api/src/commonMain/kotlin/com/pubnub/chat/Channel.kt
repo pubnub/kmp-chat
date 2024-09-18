@@ -88,7 +88,7 @@ interface Channel {
      *       - `ChannelType.UNKNOWN`: Used for channels created with the Kotlin SDK, where the channel type
      *         in the metadata does not match any of the three default Chat SDK types.
      *
-     * @return [PNFuture] containing the updated the [Channel] object with its metadata.
+     * @return [PNFuture] containing the updated [Channel] object with its metadata.
      */
     fun update(
         name: String? = null,
@@ -101,7 +101,7 @@ interface Channel {
     /**
      * Allows to delete  an existing [Channel] (with or without deleting its historical data from the App Context storage)
      *
-     * @param soft Define if you want to permanently remove channel metadata. The channel metadata gets permanently
+     * @param soft Decide if you want to permanently remove channel metadata. The channel metadata gets permanently
      *             deleted from the App Context storage by default. If you set this parameter to true, the Channel object
      *             gets the deleted status, and you can still restore/get its data.
      * @return For hard delete, the method returns [PNFuture] with the last version of the [Channel] object before it was permanently deleted.
@@ -195,7 +195,7 @@ interface Channel {
      *
      *  @param startTimetoken
      *  @param endTimetoken
-     *  @param count The maximum number of messages to retrieve. Defaults and maximum values is 25.
+     *  @param count The maximum number of messages to retrieve. Default and maximum values is 25.
      *
      *  @return [PNFuture] containing a list of messages with pagination information (isMore: Boolean). The result of
      *  this future can be processed using the `async` method of `PNFuture`.
@@ -300,7 +300,7 @@ interface Channel {
      * content and be its full-fledged member.
      *
      * @param custom Any custom properties or metadata associated with the channel-user membership in the form of
-     *      * a JSON. Values must be scalar only; arrays or objects are not supported.
+     *                a JSON. Values must be scalar only; arrays or objects are not supported.
      * @param callback defines the custom behavior to be executed whenever a message is received on the [Channel]
      *
      * @return [PNFuture] containing [JoinResult] that contains the [JoinResult.membership] and
@@ -327,14 +327,14 @@ interface Channel {
      *
      * @param message that you want to pin to the selected channel.
      *
-     * @return [PNFuture] containing updated [Channel.custom]
+     * @return [PNFuture] containing [Channel] with updated [Channel.custom]
      */
     fun pinMessage(message: Message): PNFuture<Channel>
 
     /**
      * Unpins a message from the [Channel].
      *
-     * @return [PNFuture] containing updated [Channel.custom]
+     * @return [PNFuture] containing [Channel] with updated [Channel.custom]
      */
     fun unpinMessage(): PNFuture<Channel>
 
@@ -404,7 +404,7 @@ interface Channel {
     ): PNFuture<GetRestrictionsResponse>
 
     /**
-     * Checks updates on a single Channel object.
+     * Receive updates on a single Channel object.
      *
      * @param callback Function that takes a single Channel object. It defines the custom behavior to be executed when detecting channel changes.
      *
