@@ -3,17 +3,17 @@ package com.pubnub.chat
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
-import com.pubnub.chat.internal.message.BaseMessage
+import com.pubnub.chat.internal.message.BaseMessageImpl
 
 fun Message.Companion.streamUpdatesOn(
     messages: Collection<Message>,
     callback: (messages: Collection<Message>) -> Unit,
-): AutoCloseable = BaseMessage.streamUpdatesOn(messages, callback)
+): AutoCloseable = BaseMessageImpl.streamUpdatesOn(messages, callback)
 
 fun ThreadMessage.Companion.streamUpdatesOn(
     messages: Collection<ThreadMessage>,
     callback: (messages: Collection<ThreadMessage>) -> Unit,
-): AutoCloseable = BaseMessage.streamUpdatesOn(messages, callback)
+): AutoCloseable = BaseMessageImpl.streamUpdatesOn(messages, callback)
 
 fun Channel.Companion.streamUpdatesOn(
     channels: Collection<Channel>,

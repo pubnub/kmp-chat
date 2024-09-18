@@ -5,7 +5,7 @@ import com.pubnub.kmp.PNFuture
 
 // todo add unit and integTests
 interface ThreadChannel : Channel {
-    val parentMessage: Message
+    val parentMessage: BaseMessage<*>
     val parentChannelId: String
 
     // TODO change parameter to ThreadMessage

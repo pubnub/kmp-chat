@@ -1,3 +1,40 @@
+public abstract interface class com/pubnub/chat/BaseMessage {
+	public static final field Companion Lcom/pubnub/chat/BaseMessage$Companion;
+	public abstract fun createThread ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun delete (ZZ)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun delete$default (Lcom/pubnub/chat/BaseMessage;ZZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun editText (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun forward (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun getActions ()Ljava/util/Map;
+	public abstract fun getChannelId ()Ljava/lang/String;
+	public abstract fun getChat ()Lcom/pubnub/chat/Chat;
+	public abstract fun getContent ()Lcom/pubnub/chat/types/EventContent$TextMessageContent;
+	public abstract fun getDeleted ()Z
+	public abstract fun getFiles ()Ljava/util/List;
+	public abstract fun getHasThread ()Z
+	public abstract fun getMentionedUsers ()Ljava/util/Map;
+	public abstract fun getMeta ()Ljava/util/Map;
+	public abstract fun getQuotedMessage ()Lcom/pubnub/chat/types/QuotedMessage;
+	public abstract fun getReactions ()Ljava/util/Map;
+	public abstract fun getReferencedChannels ()Ljava/util/Map;
+	public abstract fun getText ()Ljava/lang/String;
+	public abstract fun getTextLinks ()Ljava/util/List;
+	public abstract fun getThread ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun getTimetoken ()J
+	public abstract fun getType ()Ljava/lang/String;
+	public abstract fun getUserId ()Ljava/lang/String;
+	public abstract fun hasUserReaction (Ljava/lang/String;)Z
+	public abstract fun pin ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun removeThread ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun report (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun restore ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun streamUpdates (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun toggleReaction (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+}
+
+public final class com/pubnub/chat/BaseMessage$Companion {
+}
+
 public abstract interface class com/pubnub/chat/Channel {
 	public static final field Companion Lcom/pubnub/chat/Channel$Companion;
 	public abstract fun connect (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
@@ -77,7 +114,7 @@ public abstract interface class com/pubnub/chat/Chat {
 	public abstract fun destroy ()V
 	public abstract fun emitEvent (Ljava/lang/String;Lcom/pubnub/chat/types/EventContent;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun emitEvent$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Lcom/pubnub/chat/types/EventContent;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun forwardMessage (Lcom/pubnub/chat/Message;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun forwardMessage (Lcom/pubnub/chat/BaseMessage;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getChannel (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getChannelSuggestions (Ljava/lang/String;I)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getChannelSuggestions$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
@@ -91,7 +128,7 @@ public abstract interface class com/pubnub/chat/Chat {
 	public static synthetic fun getEventsHistory$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getPubNub ()Lcom/pubnub/api/PubNub;
 	public abstract fun getPushChannels ()Lcom/pubnub/kmp/PNFuture;
-	public abstract fun getThreadChannel (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun getThreadChannel (Lcom/pubnub/chat/BaseMessage;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getUnreadMessagesCounts (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getUnreadMessagesCounts$default (Lcom/pubnub/chat/Chat;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getUser (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
@@ -147,38 +184,8 @@ public abstract interface class com/pubnub/chat/Membership {
 public final class com/pubnub/chat/Membership$Companion {
 }
 
-public abstract interface class com/pubnub/chat/Message {
+public abstract interface class com/pubnub/chat/Message : com/pubnub/chat/BaseMessage {
 	public static final field Companion Lcom/pubnub/chat/Message$Companion;
-	public abstract fun createThread ()Lcom/pubnub/kmp/PNFuture;
-	public abstract fun delete (ZZ)Lcom/pubnub/kmp/PNFuture;
-	public static synthetic fun delete$default (Lcom/pubnub/chat/Message;ZZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun editText (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun forward (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun getActions ()Ljava/util/Map;
-	public abstract fun getChannelId ()Ljava/lang/String;
-	public abstract fun getChat ()Lcom/pubnub/chat/Chat;
-	public abstract fun getContent ()Lcom/pubnub/chat/types/EventContent$TextMessageContent;
-	public abstract fun getDeleted ()Z
-	public abstract fun getFiles ()Ljava/util/List;
-	public abstract fun getHasThread ()Z
-	public abstract fun getMentionedUsers ()Ljava/util/Map;
-	public abstract fun getMeta ()Ljava/util/Map;
-	public abstract fun getQuotedMessage ()Lcom/pubnub/chat/types/QuotedMessage;
-	public abstract fun getReactions ()Ljava/util/Map;
-	public abstract fun getReferencedChannels ()Ljava/util/Map;
-	public abstract fun getText ()Ljava/lang/String;
-	public abstract fun getTextLinks ()Ljava/util/List;
-	public abstract fun getThread ()Lcom/pubnub/kmp/PNFuture;
-	public abstract fun getTimetoken ()J
-	public abstract fun getType ()Ljava/lang/String;
-	public abstract fun getUserId ()Ljava/lang/String;
-	public abstract fun hasUserReaction (Ljava/lang/String;)Z
-	public abstract fun pin ()Lcom/pubnub/kmp/PNFuture;
-	public abstract fun removeThread ()Lcom/pubnub/kmp/PNFuture;
-	public abstract fun report (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun restore ()Lcom/pubnub/kmp/PNFuture;
-	public abstract fun streamUpdates (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
-	public abstract fun toggleReaction (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 }
 
 public final class com/pubnub/chat/Message$Companion {
@@ -192,7 +199,7 @@ public abstract interface class com/pubnub/chat/ThreadChannel : com/pubnub/chat/
 	public static final field Companion Lcom/pubnub/chat/ThreadChannel$Companion;
 	public abstract fun getHistory (Ljava/lang/Long;Ljava/lang/Long;I)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getParentChannelId ()Ljava/lang/String;
-	public abstract fun getParentMessage ()Lcom/pubnub/chat/Message;
+	public abstract fun getParentMessage ()Lcom/pubnub/chat/BaseMessage;
 	public abstract fun pinMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun pinMessageToParentChannel (Lcom/pubnub/chat/ThreadMessage;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun unpinMessage ()Lcom/pubnub/kmp/PNFuture;
@@ -202,7 +209,7 @@ public abstract interface class com/pubnub/chat/ThreadChannel : com/pubnub/chat/
 public final class com/pubnub/chat/ThreadChannel$Companion {
 }
 
-public abstract interface class com/pubnub/chat/ThreadMessage : com/pubnub/chat/Message {
+public abstract interface class com/pubnub/chat/ThreadMessage : com/pubnub/chat/BaseMessage {
 	public static final field Companion Lcom/pubnub/chat/ThreadMessage$Companion;
 	public abstract fun getParentChannelId ()Ljava/lang/String;
 	public abstract fun pinToParentChannel ()Lcom/pubnub/kmp/PNFuture;

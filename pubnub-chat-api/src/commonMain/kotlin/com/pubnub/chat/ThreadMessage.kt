@@ -2,7 +2,7 @@ package com.pubnub.chat
 
 import com.pubnub.kmp.PNFuture
 
-interface ThreadMessage : Message {
+interface ThreadMessage : BaseMessage<ThreadMessage> {
     val parentChannelId: String
 
     fun pinToParentChannel(): PNFuture<Channel>

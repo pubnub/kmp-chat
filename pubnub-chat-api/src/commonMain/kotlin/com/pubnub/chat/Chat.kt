@@ -98,7 +98,7 @@ interface Chat {
 
     fun deleteChannel(id: String, soft: Boolean = false): PNFuture<Channel>
 
-    fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult>
+    fun forwardMessage(message: BaseMessage<*>, channelId: String): PNFuture<PNPublishResult>
 
     fun whoIsPresent(channelId: String): PNFuture<Collection<String>>
 
@@ -153,7 +153,7 @@ interface Chat {
 
     fun unregisterAllPushChannels(): PNFuture<Unit>
 
-    fun getThreadChannel(message: Message): PNFuture<ThreadChannel>
+    fun getThreadChannel(message: BaseMessage<*>): PNFuture<ThreadChannel>
 
     fun getUnreadMessagesCounts(
         limit: Int? = null,
