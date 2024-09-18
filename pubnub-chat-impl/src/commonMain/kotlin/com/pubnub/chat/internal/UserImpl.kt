@@ -92,7 +92,7 @@ data class UserImpl(
         val includeParameters = IncludeParameters()
 
         val internalModerationFilter = "!(channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*')"
-        val effectiveFilter: String = filter?.let { "$internalModerationFilter && $filter"} ?: internalModerationFilter
+        val effectiveFilter: String = filter?.let { "$internalModerationFilter && $filter" } ?: internalModerationFilter
 
         return chat.pubNub.getMemberships(
             uuid = id,

@@ -407,13 +407,13 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 try {
                     if (
                         (
-                                chat.config.customPayloads?.getMessageResponseBody?.invoke(
-                                    pnMessageResult.message,
-                                    pnMessageResult.channel,
-                                    ::defaultGetMessageResponseBody
-                                )
-                                    ?: defaultGetMessageResponseBody(pnMessageResult.message)
-                                ) == null
+                            chat.config.customPayloads?.getMessageResponseBody?.invoke(
+                                pnMessageResult.message,
+                                pnMessageResult.channel,
+                                ::defaultGetMessageResponseBody
+                            )
+                                ?: defaultGetMessageResponseBody(pnMessageResult.message)
+                        ) == null
                     ) {
                         return@createEventListener
                     }
@@ -457,7 +457,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
-    //there is a discrepancy between KMP and JS. There is no unsubscribe here. This is agreed and will be changed in JS Chat
+    // there is a discrepancy between KMP and JS. There is no unsubscribe here. This is agreed and will be changed in JS Chat
     override fun leave(): PNFuture<Unit> = chat.pubNub.removeMemberships(channels = listOf(id)).then { Unit }
 
     override fun getPinnedMessage(): PNFuture<Message?> {

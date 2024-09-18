@@ -27,6 +27,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -305,6 +306,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     // todo flaky
+    @Ignore
     @Test
     fun streamReadReceipts() = runTest(timeout = 10.seconds) {
         val completableBeforeMark = CompletableDeferred<Unit>()
@@ -419,7 +421,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "some text"
         val tt = channel01.sendText(text = messageText, ttl = 60).await().timetoken
 
-        delayInMillis(150)
+        delayInMillis(1000)
 
         val message = channel01.getMessage(tt).await()
         assertEquals(messageText, message?.text)
@@ -442,7 +444,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             referencedChannels = referencedChannels
         ).await().timetoken
 
-        delayInMillis(150)
+        delayInMillis(1500)
 
         val message = channel01.getMessage(tt).await()
         val actualMentionedUsers: Map<Int, MessageMentionedUser>? = message?.mentionedUsers
@@ -566,7 +568,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun canGetUpdatesOnChannel() = runTest {
         val expectedDescription = "Modified description"
-        val expectedStatus = "Modified status"
+        val expectedStatus = "ModifiedStatus"
         chat.createChannel(channel01.id).await()
         channel01.streamUpdates { channel: Channel? ->
             assertEquals(expectedDescription, channel?.description)

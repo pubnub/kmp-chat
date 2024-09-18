@@ -4,7 +4,6 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.Chat
-import com.pubnub.chat.Membership
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatImpl

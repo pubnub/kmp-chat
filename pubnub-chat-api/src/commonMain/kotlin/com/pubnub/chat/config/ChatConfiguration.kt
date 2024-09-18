@@ -10,7 +10,7 @@ import kotlin.time.Duration.Companion.seconds
 interface ChatConfiguration {
     val logLevel: LogLevel
     val typingTimeout: Duration
-    val storeUserActivityInterval: Duration  // todo do we have test for this?
+    val storeUserActivityInterval: Duration // todo do we have test for this?
     val storeUserActivityTimestamps: Boolean // todo do we have test for this?
     val pushNotifications: PushNotificationsConfig
     val rateLimitFactor: Int
