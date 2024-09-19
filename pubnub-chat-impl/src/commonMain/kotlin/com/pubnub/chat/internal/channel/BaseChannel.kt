@@ -32,7 +32,7 @@ import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.config.PushNotificationsConfig
-import com.pubnub.chat.internal.ChatImpl.Companion.pinMessageToChannel
+import com.pubnub.chat.internal.ChatImpl.Companion.pinOrUnpinMessageToChannel
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.METADATA_LAST_READ_MESSAGE_TIMETOKEN
@@ -333,7 +333,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 ).then { setMembershipsResult ->
                     MembershipImpl.fromMembershipDTO(chat, setMembershipsResult.data.first(), user)
                 }.thenAsync { membership ->
-                    chat.pubNub.time().thenAsync { time ->
+                    chat.pubNub.time().thenAsync { time -> // todo time API maybe removed from SDK soon
                         membership.setLastReadMessageTimetoken(time.timetoken)
                     }
                 }.alsoAsync {
@@ -407,7 +407,11 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 try {
                     if (
                         (
-                            chat.config.customPayloads?.getMessageResponseBody?.invoke(pnMessageResult.message, pnMessageResult.channel, ::defaultGetMessageResponseBody)
+                            chat.config.customPayloads?.getMessageResponseBody?.invoke(
+                                pnMessageResult.message,
+                                pnMessageResult.channel,
+                                ::defaultGetMessageResponseBody
+                            )
                                 ?: defaultGetMessageResponseBody(pnMessageResult.message)
                         ) == null
                     ) {
@@ -453,6 +457,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
+    // there is a discrepancy between KMP and JS. There is no unsubscribe here. This is agreed and will be changed in JS Chat
     override fun leave(): PNFuture<Unit> = chat.pubNub.removeMemberships(channels = listOf(id)).then { Unit }
 
     override fun getPinnedMessage(): PNFuture<Message?> {
@@ -479,11 +484,11 @@ abstract class BaseChannel<C : Channel, M : Message>(
     override fun unregisterFromPush() = chat.unregisterPushChannels(listOf(id))
 
     override fun pinMessage(message: Message): PNFuture<C> {
-        return pinMessageToChannel(chat.pubNub, message, this).then { channelFactory(chat, it.data) }
+        return pinOrUnpinMessageToChannel(chat.pubNub, message, this).then { channelFactory(chat, it.data) }
     }
 
     override fun unpinMessage(): PNFuture<C> {
-        return pinMessageToChannel(chat.pubNub, null, this).then { channelFactory(chat, it.data) }
+        return pinOrUnpinMessageToChannel(chat.pubNub, null, this).then { channelFactory(chat, it.data) }
     }
 
     override fun getUsersRestrictions(
@@ -513,8 +518,13 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun getUserRestrictions(user: User): PNFuture<Restriction> {
         return getRestrictions(user).then { pnMemberArrayResult: PNMemberArrayResult ->
-            val firstMember: PNMember = pnMemberArrayResult.data.first()
-            RestrictionImpl.fromMemberDTO(id, firstMember)
+            val userHasRestrictions = pnMemberArrayResult.data.isNotEmpty()
+            val userRestrictions: Restriction = if (userHasRestrictions) {
+                RestrictionImpl.fromMemberDTO(id, pnMemberArrayResult.data.first())
+            } else {
+                Restriction(userId = user.id, channelId = id)
+            }
+            userRestrictions
         }
     }
 

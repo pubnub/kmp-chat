@@ -148,8 +148,6 @@ class ChatImpl(
         if (config.pushNotifications.deviceGateway == PNPushType.APNS2 && config.pushNotifications.apnsTopic == null) {
             log.pnError(APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2)
         }
-
-        // TODO from TS, but config is immutable at this point: pubnub._config._addPnsdkSuffix("chat-sdk", `__PLATFORM__/__VERSION__`)
     }
 
     fun initialize(): PNFuture<Chat> {
@@ -1138,7 +1136,7 @@ class ChatImpl(
     companion object {
         private val log = logging()
 
-        internal fun pinMessageToChannel(
+        internal fun pinOrUnpinMessageToChannel(
             pubNub: PubNub,
             message: Message?,
             channel: Channel
@@ -1148,7 +1146,8 @@ class ChatImpl(
                 customMetadataToSet.remove(PINNED_MESSAGE_TIMETOKEN)
                 customMetadataToSet.remove(PINNED_MESSAGE_CHANNEL_ID)
             } else {
-                // toString is required because server for odd numbers in setChannelMetadata response returns values that differ by one
+                // toString is required because server for odd numbers larger than 9007199254740991(timetoken has 17 digits)
+                // in setChannelMetadata response returns values that differ by one
                 customMetadataToSet[PINNED_MESSAGE_TIMETOKEN] = message.timetoken.toString()
                 customMetadataToSet[PINNED_MESSAGE_CHANNEL_ID] = message.channelId
             }
@@ -1224,7 +1223,7 @@ class ChatImpl(
     private fun saveTimeStampFunc(): PNFuture<Unit> {
         val customWithUpdatedLastActiveTimestamp = buildMap {
             currentUser.custom?.let { putAll(it) }
-            put("lastActiveTimestamp", Clock.System.now().toEpochMilliseconds())
+            put(LAST_ACTIVE_TIMESTAMP, Clock.System.now().toEpochMilliseconds())
         }
         return pubNub.setUUIDMetadata(
             uuid = currentUser.id,

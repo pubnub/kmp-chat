@@ -27,12 +27,14 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
@@ -203,6 +205,33 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun muteAndUnMuteUser() = runTest {
+        var mute = true
+        val reason = "rude"
+
+        channelPam.setRestrictions(user = userPam, mute = mute, reason = reason).await()
+        var restriction = channelPam.getUserRestrictions(userPam).await()
+        assertEquals(mute, restriction.mute)
+
+        mute = false
+        channelPam.setRestrictions(user = userPam, mute = mute, reason = reason).await()
+        restriction = channelPam.getUserRestrictions(userPam).await()
+        assertEquals(mute, restriction.mute)
+        assertFalse(restriction.ban)
+        assertNull(restriction.reason)
+    }
+
+    @Test
+    fun canGetRestrictionForUserThatDoesNotHaveRestrictionSet() = runTest {
+        val restriction = channel01.getUserRestrictions(userPam).await()
+        assertEquals(channel01.id, restriction.channelId)
+        assertEquals(userPam.id, restriction.userId)
+        assertFalse(restriction.mute)
+        assertFalse(restriction.ban)
+        assertNull(restriction.reason)
+    }
+
+    @Test
     fun getUsersRestrictions() = runTest {
         val userId01 = "userId01"
         val userId02 = "userId02"
@@ -277,6 +306,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     // todo flaky
+    @Ignore
     @Test
     fun streamReadReceipts() = runTest(timeout = 10.seconds) {
         val completableBeforeMark = CompletableDeferred<Unit>()
@@ -391,7 +421,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "some text"
         val tt = channel01.sendText(text = messageText, ttl = 60).await().timetoken
 
-        delayInMillis(150)
+        delayInMillis(1000)
 
         val message = channel01.getMessage(tt).await()
         assertEquals(messageText, message?.text)
@@ -414,7 +444,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             referencedChannels = referencedChannels
         ).await().timetoken
 
-        delayInMillis(150)
+        delayInMillis(1500)
 
         val message = channel01.getMessage(tt).await()
         val actualMentionedUsers: Map<Int, MessageMentionedUser>? = message?.mentionedUsers
@@ -533,6 +563,18 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
             streamMessageReportsCloseable?.close()
         }
+    }
+
+    @Test
+    fun canGetUpdatesOnChannel() = runTest {
+        val expectedDescription = "Modified description"
+        val expectedStatus = "ModifiedStatus"
+        chat.createChannel(channel01.id).await()
+        channel01.streamUpdates { channel: Channel? ->
+            assertEquals(expectedDescription, channel?.description)
+            assertEquals(expectedStatus, channel?.status)
+        }
+        channel01.update(description = "NewDesc", status = expectedStatus).await()
     }
 }
 

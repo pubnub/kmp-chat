@@ -69,7 +69,7 @@ data class ThreadChannelImpl(
             if (parentChannel == null) {
                 log.pnError(PARENT_CHANNEL_DOES_NOT_EXISTS)
             }
-            ChatImpl.pinMessageToChannel(chat.pubNub, message, parentChannel).then {
+            ChatImpl.pinOrUnpinMessageToChannel(chat.pubNub, message, parentChannel).then {
                 ChannelImpl.fromDTO(chat, it.data)
             }
         }

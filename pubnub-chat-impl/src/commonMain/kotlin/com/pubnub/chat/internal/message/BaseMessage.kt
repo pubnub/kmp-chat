@@ -177,7 +177,7 @@ abstract class BaseMessage<T : Message>(
             if (channel == null) {
                 log.pnError(PubNubErrorMessage.CHANNEL_NOT_EXIST)
             }
-            ChatImpl.pinMessageToChannel(chat.pubNub, this, channel).then {
+            ChatImpl.pinOrUnpinMessageToChannel(chat.pubNub, this, channel).then {
                 ChannelImpl.fromDTO(chat, it.data)
             }
         }
