@@ -1,6 +1,5 @@
 package compubnub.chat
 
-import com.pubnub.api.JsonElement
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.asList
@@ -52,7 +51,6 @@ class ChatIntegrationTest {
                     // The rest of the channels will use the default Chat SDK message body structure
                     defaultMessagePublishBody(content)
                 }
-
             },
             getMessageResponseBody = { json, channelId, defaultMessageResponseBody ->
                 if (channelId === "support-channel") {
@@ -67,7 +65,7 @@ class ChatIntegrationTest {
                             )
                         }
                     )
-                }else{
+                } else {
                     defaultMessageResponseBody(json)
                 }
             },

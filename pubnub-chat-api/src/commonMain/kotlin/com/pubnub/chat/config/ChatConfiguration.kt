@@ -21,9 +21,9 @@ interface ChatConfiguration {
     val typingTimeout: Duration
 
     /**
-        Specifies how often the user global presence in the app should be updated. Requires storeUserActivityTimestamps
-        to be set to true. The default value is set to 60 seconds, and that's the minimum possible value.
-        If you try to set it to a lower value, you'll get the storeUserActivityInterval must be at least 60000ms error.
+     * Specifies how often the user global presence in the app should be updated. Requires storeUserActivityTimestamps
+     * to be set to true. The default value is set to 60 seconds, and that's the minimum possible value.
+     * If you try to set it to a lower value, you'll get the storeUserActivityInterval must be at least 60000ms error.
      */
     val storeUserActivityInterval: Duration // todo do we have test for this?
 
