@@ -218,6 +218,35 @@ interface Channel {
      * If shouldStore = true and ttl = X, the message is stored with an expiry time of X hours.
      * If shouldStore = false, the ttl parameter is ignored.
      * If ttl is not specified, then the expiration of the message defaults back to the expiry value for the keyset.
+     * @param quotedMessage Object added to a message when you quote another message. This object stores the following
+     * info about the quoted message: timetoken for the time when the quoted message was published, text with the
+     * original message content, and userId as the identifier of the user who published the quoted message.
+     * @param files One or multiple files attached to the text message.
+     *
+     * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the sent message.
+     */
+    fun sendText(
+        text: String,
+        meta: Map<String, Any>? = null,
+        shouldStore: Boolean = true,
+        usePost: Boolean = false,
+        ttl: Int? = null,
+        quotedMessage: Message? = null,
+        files: List<InputFile>? = null,
+    ): PNFuture<PNPublishResult>
+
+    /**
+     * Sends text to the [Channel]
+     *
+     * @param text Text that you want to send to the selected channel.
+     * @param meta Publish additional details with the request.
+     * @param shouldStore If true, the messages are stored in Message Persistence if enabled in Admin Portal.
+     * @param usePost Use HTTP POST
+     * @param ttl Defines if / how long (in hours) the message should be stored in Message Persistence.
+     * If shouldStore = true, and ttl = 0, the message is stored with no expiry time.
+     * If shouldStore = true and ttl = X, the message is stored with an expiry time of X hours.
+     * If shouldStore = false, the ttl parameter is ignored.
+     * If ttl is not specified, then the expiration of the message defaults back to the expiry value for the keyset.
      * @param mentionedUsers Object mapping a mentioned user (with name and ID) with the number of mention (like @Mar)
      * in the message (relative to other user mentions).
      * For example, { 0: { id: 123, name: "Mark" }, 2: { id: 345, name: "Rob" } } means that Mark will be shown on
@@ -236,6 +265,10 @@ interface Channel {
      *
      * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the sent message.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future",
+        level = DeprecationLevel.WARNING,
+    )
     fun sendText(
         text: String,
         meta: Map<String, Any>? = null,
