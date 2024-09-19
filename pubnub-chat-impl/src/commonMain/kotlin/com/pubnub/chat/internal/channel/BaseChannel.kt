@@ -26,6 +26,7 @@ import com.pubnub.api.models.consumer.push.payload.PushPayloadHelper
 import com.pubnub.api.utils.PatchValue
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.subscriptions.SubscriptionOptions
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
@@ -53,7 +54,7 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_O
 import com.pubnub.chat.internal.error.PubNubErrorMessage.READ_RECEIPTS_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THREAD_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
-import com.pubnub.chat.internal.message.BaseMessage
+import com.pubnub.chat.internal.message.BaseMessageImpl
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
@@ -101,7 +102,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 private const val CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS = "You cannot quote messages from other channels"
 
-abstract class BaseChannel<C : Channel, M : Message>(
+abstract class BaseChannel<C : Channel, M : BaseMessage<M>>(
     override val chat: ChatInternal,
     private val clock: Clock = Clock.System,
     override val id: String,
@@ -309,7 +310,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         quotedMessage?.let {
             put(
                 METADATA_QUOTED_MESSAGE,
-                PNDataEncoder.encode((quotedMessage as BaseMessage<*>).asQuotedMessage())!!
+                PNDataEncoder.encode((quotedMessage as BaseMessageImpl<*>).asQuotedMessage())!!
             )
         }
     }
@@ -718,7 +719,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     companion object {
         private val log = logging()
 
-        fun <M : Message> getHistory(
+        fun <M : BaseMessage<M>> getHistory(
             chat: ChatInternal,
             channelId: String,
             messageFactory: (ChatInternal, PNFetchMessageItem, channelId: String) -> M,

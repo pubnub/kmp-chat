@@ -3,6 +3,7 @@ package com.pubnub.chat.internal.channel
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
@@ -28,7 +29,7 @@ import kotlinx.datetime.Clock
 import org.lighthousegames.logging.logging
 
 data class ThreadChannelImpl(
-    override val parentMessage: Message,
+    override val parentMessage: BaseMessage<*>,
     override val chat: ChatInternal,
     val clock: Clock = Clock.System,
     override val id: String,
@@ -137,7 +138,7 @@ data class ThreadChannelImpl(
     companion object {
         private val log = logging()
 
-        internal fun fromDTO(chat: ChatInternal, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {
+        internal fun fromDTO(chat: ChatInternal, parentMessage: BaseMessage<*>, channel: PNChannelMetadata): ThreadChannel {
             return ThreadChannelImpl(
                 parentMessage,
                 chat,

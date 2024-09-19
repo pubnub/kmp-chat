@@ -10,10 +10,10 @@ import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
-import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
@@ -56,7 +56,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
 
     override fun removeThreadChannel(
         chat: Chat,
-        message: Message,
+        message: BaseMessage<*>,
         soft: Boolean
     ): PNFuture<Pair<PNRemoveMessageActionResult, Channel>> {
         TODO("Not yet implemented")
@@ -169,7 +169,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult> {
+    override fun forwardMessage(message: BaseMessage<*>, channelId: String): PNFuture<PNPublishResult> {
         TODO("Not yet implemented")
     }
 
@@ -240,7 +240,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun getThreadChannel(message: Message): PNFuture<ThreadChannel> {
+    override fun getThreadChannel(message: BaseMessage<*>): PNFuture<ThreadChannel> {
         TODO("Not yet implemented")
     }
 
@@ -278,7 +278,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun restoreThreadChannel(message: Message): PNFuture<PNMessageAction?> {
+    override fun restoreThreadChannel(message: BaseMessage<*>): PNFuture<PNMessageAction?> {
         TODO("Not yet implemented")
     }
 }

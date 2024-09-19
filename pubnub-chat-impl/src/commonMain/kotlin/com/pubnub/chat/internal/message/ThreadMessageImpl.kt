@@ -33,7 +33,7 @@ data class ThreadMessageImpl(
     override val mentionedUsers: MessageMentionedUsers? = null,
     override val referencedChannels: MessageReferencedChannels? = null,
     override val quotedMessage: QuotedMessage? = null,
-) : BaseMessage<ThreadMessage>(
+) : BaseMessageImpl<ThreadMessage>(
         chat = chat,
         timetoken = timetoken,
         content = content,

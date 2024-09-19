@@ -31,6 +31,7 @@ import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushListProvisionsResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
@@ -179,7 +180,7 @@ class ChatImpl(
         type = user.type
     )
 
-    override fun restoreThreadChannel(message: Message): PNFuture<PNMessageAction?> {
+    override fun restoreThreadChannel(message: BaseMessage<*>): PNFuture<PNMessageAction?> {
         val threadChannelId = getThreadId(message.channelId, message.timetoken)
         return getChannel(threadChannelId).thenAsync { channel: Channel? ->
             if (channel == null) {
@@ -229,7 +230,7 @@ class ChatImpl(
 
     override fun removeThreadChannel(
         chat: Chat,
-        message: Message,
+        message: BaseMessage<*>,
         soft: Boolean
     ): PNFuture<Pair<PNRemoveMessageActionResult, Channel>> {
         if (!message.hasThread) {
@@ -470,7 +471,7 @@ class ChatImpl(
         }
     }
 
-    override fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult> {
+    override fun forwardMessage(message: BaseMessage<*>, channelId: String): PNFuture<PNPublishResult> {
         if (!isValidId(channelId)) {
             return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
@@ -773,7 +774,7 @@ class ChatImpl(
         }
     }
 
-    override fun getThreadChannel(message: Message): PNFuture<ThreadChannel> {
+    override fun getThreadChannel(message: BaseMessage<*>): PNFuture<ThreadChannel> {
         val threadChannelId = getThreadId(message.channelId, message.timetoken)
         return pubNub.getChannelMetadata(threadChannelId).then {
             ThreadChannelImpl.fromDTO(this, message, it.data)
@@ -1140,7 +1141,7 @@ class ChatImpl(
 
         internal fun pinMessageToChannel(
             pubNub: PubNub,
-            message: Message?,
+            message: BaseMessage<*>?,
             channel: Channel
         ): PNFuture<PNChannelMetadataResult> {
             val customMetadataToSet = channel.custom?.toMutableMap() ?: mutableMapOf()
@@ -1159,7 +1160,7 @@ class ChatImpl(
             return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_$messageTimetoken"
         }
 
-        internal fun createThreadChannel(chat: ChatInternal, message: Message): PNFuture<ThreadChannel> {
+        internal fun createThreadChannel(chat: ChatInternal, message: BaseMessage<*>): PNFuture<ThreadChannel> {
             if (message.channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
                 return log.logErrorAndReturnException(ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED).asFuture()
             }

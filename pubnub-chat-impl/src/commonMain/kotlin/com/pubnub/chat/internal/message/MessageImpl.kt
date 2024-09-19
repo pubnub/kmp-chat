@@ -23,7 +23,7 @@ data class MessageImpl(
     override val mentionedUsers: MessageMentionedUsers? = null,
     override val referencedChannels: MessageReferencedChannels? = null,
     override val quotedMessage: QuotedMessage? = null,
-) : BaseMessage<Message>(
+) : Message, BaseMessageImpl<Message>(
         chat = chat,
         timetoken = timetoken,
         content = content,
