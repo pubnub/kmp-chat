@@ -103,7 +103,7 @@ interface Message {
     val textLinks: List<TextLink>?
 
     /**
-     * hasUserReaction() checks if the current user added a given emoji to the message.
+     * Checks if the current user added a given emoji to the message.
      *
      * @param reaction Specific emoji added to the message.
      * @return Specifies if the current user added a given emoji to the message or not.
@@ -111,7 +111,7 @@ interface Message {
     fun hasUserReaction(reaction: String): Boolean
 
     /**
-     * Change the content of the existing message to a new one.
+     * Changes the content of the existing message to a new one.
      *
      * @param newText New/updated text that you want to add in place of the existing message.
      * @return An updated message instance with an added `edited` action type.
@@ -119,7 +119,7 @@ interface Message {
     fun editText(newText: String): PNFuture<Message>
 
     /**
-     * delete() either permanently removes a historical message from Message Persistence or marks it as deleted (if you remove the message with the soft option).
+     * Either permanently removes a historical message from Message Persistence or marks it as deleted (if you remove the message with the soft option).
      *
      * Requires Message Persistence configuration. To manage messages, you must enable Message Persistence for your app's keyset in the Admin Portal. To delete messages from PubNub storage, you must also mark the Enable Delete-From-History option.
      *
@@ -140,7 +140,7 @@ interface Message {
      * Forward a given message from one channel to another.
      *
      * @param channelId Unique identifier of the channel to which you want to forward the message. You can forward a message to the same channel on which it was published or to any other.
-     * @return PNFuture containing the timetoken of the forwarded message.
+     * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the forwarded message.
      */
     fun forward(channelId: String): PNFuture<PNPublishResult>
 
@@ -157,6 +157,7 @@ interface Message {
      * Flag and report an inappropriate message to the admin.
      *
      * @param reason Reason for reporting/flagging a given message.
+     * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the report message.
      */
     fun report(reason: String): PNFuture<PNPublishResult>
 
