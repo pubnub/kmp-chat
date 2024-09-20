@@ -5,11 +5,25 @@ import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.message.BaseMessage
 
+/**
+ * Receive updates when specific messages and related message reactions are added, edited, or removed.
+ *
+ * @param messages A collection of [Message] objects for which you want to get updates on changed messages or message reactions.
+ * @param callback Function that takes a collection of Message objects. It defines the custom behavior to be executed when detecting message or message reaction changes.
+ * @return Interface that lets you stop receiving message-related updates by invoking the close() method
+ */
 fun Message.Companion.streamUpdatesOn(
     messages: Collection<Message>,
     callback: (messages: Collection<Message>) -> Unit,
 ): AutoCloseable = BaseMessage.streamUpdatesOn(messages, callback)
 
+/**
+ * Receive updates when specific messages and related message reactions are added, edited, or removed.
+ *
+ * @param messages A collection of [ThreadMessage] objects for which you want to get updates on changed messages or message reactions.
+ * @param callback Function that takes a collection of ThreadMessage objects. It defines the custom behavior to be executed when detecting message or message reaction changes.
+ * @return Interface that lets you stop receiving message-related updates by invoking the close() method
+ */
 fun ThreadMessage.Companion.streamUpdatesOn(
     messages: Collection<ThreadMessage>,
     callback: (messages: Collection<ThreadMessage>) -> Unit,
