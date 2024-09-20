@@ -62,7 +62,7 @@ interface ChatConfiguration {
 
     /**
      * Property that lets you define your custom message payload to be sent and/or received by Chat SDK on one or all
-     * channels, whenever it differs from the default message.text Chat SDK payload.     *
+     * channels, whenever it differs from the default message.text Chat SDK payload.
      * It also lets you configure your own message actions whenever a message is edited or deleted.
      */
     val customPayloads: CustomPayloads?
