@@ -296,25 +296,17 @@ abstract class BaseChannel<C : Channel, M : Message>(
         quotedMessage: Message?,
         files: List<InputFile>?,
     ): PNFuture<PNPublishResult> {
-        if (quotedMessage != null && quotedMessage.channelId != id) {
-            return log.logErrorAndReturnException(CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS).asFuture()
-        }
-        return sendTextRateLimiter.runWithinLimits(
-            sendFilesForPublish(files).thenAsync { filesData ->
-                val newMeta = buildMetaForPublish(meta, quotedMessage)
-                chat.pubNub.publish(
-                    channel = id,
-                    message = EventContent.TextMessageContent(text, filesData).encodeForSending(
-                        id,
-                        chat.config.customPayloads?.getMessagePublishBody,
-                        getPushPayload(this, text, chat.config.pushNotifications)
-                    ),
-                    meta = newMeta,
-                    shouldStore = shouldStore,
-                    usePost = usePost,
-                    ttl = ttl,
-                )
-            }
+        return sendText(
+            text = text,
+            meta = meta,
+            shouldStore = shouldStore,
+            usePost = usePost,
+            ttl = ttl,
+            mentionedUsers = null,
+            referencedChannels = null,
+            textLinks = null,
+            quotedMessage = quotedMessage,
+            files = files
         )
     }
 

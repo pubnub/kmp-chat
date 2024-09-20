@@ -246,7 +246,7 @@ interface Channel {
      * If shouldStore = true, and ttl = 0, the message is stored with no expiry time.
      * If shouldStore = true and ttl = X, the message is stored with an expiry time of X hours.
      * If shouldStore = false, the ttl parameter is ignored.
-     * If ttl is not specified, then the expiration of the message defaults back to the expiry value for the keyset.
+     * If ttl is not specified, then the expiration of the message defaults to the expiry value for the keyset.
      * @param mentionedUsers Object mapping a mentioned user (with name and ID) with the number of mention (like @Mar)
      * in the message (relative to other user mentions).
      * For example, { 0: { id: 123, name: "Mark" }, 2: { id: 345, name: "Rob" } } means that Mark will be shown on

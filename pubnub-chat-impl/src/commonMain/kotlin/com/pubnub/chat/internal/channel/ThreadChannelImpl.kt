@@ -133,22 +133,18 @@ data class ThreadChannelImpl(
         quotedMessage: Message?,
         files: List<InputFile>?,
     ): PNFuture<PNPublishResult> {
-        return (
-            if (!threadCreated) {
-                awaitAll(
-                    chat.pubNub.setChannelMetadata(id, description = description),
-                    chat.pubNub.addMessageAction(
-                        parentMessage.channelId,
-                        PNMessageAction(THREAD_ROOT_ID, id, parentMessage.timetoken)
-                    )
-                )
-            } else {
-                Unit.asFuture()
-            }
-        ).thenAsync {
-            threadCreated = true
-            super.sendText(text, meta, shouldStore, usePost, ttl, quotedMessage, files)
-        }
+        return sendText(
+            text = text,
+            meta = meta,
+            shouldStore = shouldStore,
+            usePost = usePost,
+            ttl = ttl,
+            mentionedUsers = null,
+            referencedChannels = null,
+            textLinks = null,
+            quotedMessage = quotedMessage,
+            files = files
+        )
     }
 
     override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
