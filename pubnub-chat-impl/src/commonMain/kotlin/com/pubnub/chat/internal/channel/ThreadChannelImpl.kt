@@ -124,6 +124,45 @@ data class ThreadChannelImpl(
         }
     }
 
+    override fun sendText(
+        text: String,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean,
+        usePost: Boolean,
+        ttl: Int?,
+        quotedMessage: Message?,
+        files: List<InputFile>?,
+    ): PNFuture<PNPublishResult> {
+        return (
+                if (!threadCreated) {
+                    awaitAll(
+                        chat.pubNub.setChannelMetadata(id, description = description),
+                        chat.pubNub.addMessageAction(
+                            parentMessage.channelId,
+                            PNMessageAction(
+                                THREAD_ROOT_ID,
+                                id,
+                                parentMessage.timetoken
+                            )
+                        )
+                    )
+                } else {
+                    Unit.asFuture()
+                }
+                ).thenAsync {
+                threadCreated = true
+                super.sendText(
+                    text,
+                    meta,
+                    shouldStore,
+                    usePost,
+                    ttl,
+                    quotedMessage,
+                    files
+                )
+            }
+    }
+
     override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
 
     override fun emitUserMention(userId: String, timetoken: Long, text: String): PNFuture<PNPublishResult> {
