@@ -124,6 +124,29 @@ data class ThreadChannelImpl(
         }
     }
 
+    override fun sendText(
+        text: String,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean,
+        usePost: Boolean,
+        ttl: Int?,
+        quotedMessage: Message?,
+        files: List<InputFile>?,
+    ): PNFuture<PNPublishResult> {
+        return sendText(
+            text = text,
+            meta = meta,
+            shouldStore = shouldStore,
+            usePost = usePost,
+            ttl = ttl,
+            mentionedUsers = null,
+            referencedChannels = null,
+            textLinks = null,
+            quotedMessage = quotedMessage,
+            files = files
+        )
+    }
+
     override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
 
     override fun emitUserMention(userId: String, timetoken: Long, text: String): PNFuture<PNPublishResult> {

@@ -261,7 +261,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
         return sendTextRateLimiter.runWithinLimits(
             sendFilesForPublish(files).thenAsync { filesData ->
-                val newMeta = buildMetaForPublish(meta, mentionedUsers, referencedChannels, textLinks, quotedMessage)
+                val newMeta = buildMetaForPublish(meta, quotedMessage, mentionedUsers, referencedChannels, textLinks)
                 chat.pubNub.publish(
                     channel = id,
                     message = EventContent.TextMessageContent(text, filesData).encodeForSending(
@@ -287,6 +287,29 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
+    override fun sendText(
+        text: String,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean,
+        usePost: Boolean,
+        ttl: Int?,
+        quotedMessage: Message?,
+        files: List<InputFile>?,
+    ): PNFuture<PNPublishResult> {
+        return sendText(
+            text = text,
+            meta = meta,
+            shouldStore = shouldStore,
+            usePost = usePost,
+            ttl = ttl,
+            mentionedUsers = null,
+            referencedChannels = null,
+            textLinks = null,
+            quotedMessage = quotedMessage,
+            files = files
+        )
+    }
+
     private fun sendFilesForPublish(files: List<InputFile>?) =
         (files ?: emptyList()).map { file ->
             chat.pubNub.sendFile(id, file.name, file.source, shouldStore = false).thenAsync { sendFileResult ->
@@ -298,21 +321,21 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     private fun buildMetaForPublish(
         meta: Map<String, Any>?,
-        mentionedUsers: MessageMentionedUsers?,
-        referencedChannels: MessageReferencedChannels?,
-        textLinks: List<TextLink>?,
         quotedMessage: Message?,
+        mentionedUsers: MessageMentionedUsers? = null,
+        referencedChannels: MessageReferencedChannels? = null,
+        textLinks: List<TextLink>? = null,
     ): Map<String, Any> = buildMap {
         meta?.let { putAll(it) }
-        mentionedUsers?.let { put(METADATA_MENTIONED_USERS, PNDataEncoder.encode(it)!!) }
-        referencedChannels?.let { put(METADATA_REFERENCED_CHANNELS, PNDataEncoder.encode(it)!!) }
-        textLinks?.let { put(METADATA_TEXT_LINKS, PNDataEncoder.encode(it)!!) }
         quotedMessage?.let {
             put(
                 METADATA_QUOTED_MESSAGE,
                 PNDataEncoder.encode((quotedMessage as BaseMessage<*>).asQuotedMessage())!!
             )
         }
+        mentionedUsers?.let { put(METADATA_MENTIONED_USERS, PNDataEncoder.encode(it)!!) }
+        referencedChannels?.let { put(METADATA_REFERENCED_CHANNELS, PNDataEncoder.encode(it)!!) }
+        textLinks?.let { put(METADATA_TEXT_LINKS, PNDataEncoder.encode(it)!!) }
     }
 
     override fun invite(user: User): PNFuture<Membership> {
