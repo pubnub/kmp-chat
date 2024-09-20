@@ -290,16 +290,6 @@ public final class com/pubnub/chat/config/PushNotificationsConfig {
 	public final fun getSendPushes ()Z
 }
 
-public final class com/pubnub/chat/membership/IncludeParameters {
-	public fun <init> ()V
-	public fun <init> (ZZZZ)V
-	public synthetic fun <init> (ZZZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun getChannelFields ()Z
-	public final fun getCustomChannelFields ()Z
-	public final fun getCustomFields ()Z
-	public final fun getTotalCount ()Z
-}
-
 public final class com/pubnub/chat/membership/MembersResponse {
 	public fun <init> (Lcom/pubnub/api/models/consumer/objects/PNPage;Lcom/pubnub/api/models/consumer/objects/PNPage;IILjava/util/Set;)V
 	public final fun getMembers ()Ljava/util/Set;
