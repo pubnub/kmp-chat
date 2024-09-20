@@ -29,7 +29,7 @@ interface ChatConfiguration {
 
     /**
      * Specifies if you want to track the user's global presence in your chat app. The user's activity is tracked
-     * through the lastActiveTimestamp parameter on the User object.
+     * through [com.pubnub.chat.User.lastActiveTimestamp].
      */
     val storeUserActivityTimestamps: Boolean // todo do we have test for this?
 
