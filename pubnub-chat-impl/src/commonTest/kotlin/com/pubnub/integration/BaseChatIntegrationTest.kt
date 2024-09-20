@@ -10,6 +10,7 @@ import com.pubnub.chat.internal.channel.ThreadChannelImpl
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
+import com.pubnub.internal.PLATFORM
 import com.pubnub.test.BaseIntegrationTest
 import com.pubnub.test.await
 import com.pubnub.test.randomString
@@ -109,5 +110,9 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
         withContext(Dispatchers.Default) {
             delay(timeMillis)
         }
+    }
+
+    internal fun isIos(): Boolean {
+        return PLATFORM == "iOS"
     }
 }

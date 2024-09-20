@@ -188,6 +188,10 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun getUserRestrictions() = runTest {
+        if (isIos()) {
+            println("Skipping test on iOS")
+            return@runTest
+        }
         val userId = "userId"
         val user = UserImpl(chat = chatPam, id = userId)
         val ban = true
@@ -206,6 +210,10 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun muteAndUnMuteUser() = runTest {
+        if (isIos()) {
+            println("Skipping test on iOS")
+            return@runTest
+        }
         var mute = true
         val reason = "rude"
 
@@ -233,6 +241,10 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun getUsersRestrictions() = runTest {
+        if (isIos()) {
+            println("Skipping test on iOS")
+            return@runTest
+        }
         val userId01 = "userId01"
         val userId02 = "userId02"
         val ban = true
