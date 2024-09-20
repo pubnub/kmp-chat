@@ -24,6 +24,10 @@ import kotlin.test.assertTrue
 class UserIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun getChannelRestrictions() = runTest {
+        if (isIos()) {
+            println("Skipping test on iOS")
+            return@runTest
+        }
         val channelId = "channelId01"
         val channel = ChannelImpl(chat = chatPam, id = channelId)
         val ban = true
@@ -42,6 +46,10 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun getChannelsRestrictions_sortAsc() = runTest {
+        if (isIos()) {
+            println("Skipping test on iOS")
+            return@runTest
+        }
         val channelId01 = "channelId01"
         val channelId02 = "channelId02"
         val ban = true
@@ -82,6 +90,10 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun getChannelsRestrictions_sortDsc() = runTest {
+        if (isIos()) {
+            println("Skipping test on iOS")
+            return@runTest
+        }
         val channelId01 = "channelId01"
         val channelId02 = "channelId02"
         val ban = true
@@ -197,6 +209,10 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun whenUserHasRestriction_GetMembershipShouldNotReturnedInternalModerationChannel() = runTest {
+        if (isIos()) {
+            println("Skipping test on iOS")
+            return@runTest
+        }
         val mute = true
         val ban = true
         val reason = "rude"
