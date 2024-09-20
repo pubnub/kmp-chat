@@ -150,8 +150,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
 
         val now = clock.now()
-        // todo currently in TypeScript there is "this.chat.config.typingTimeout - 1000". Typing timeout is actually 1sec shorter than this.chat.config.typingTimeout
-        //  Writing TypeScript wrapper make sure to mimic this behaviour. In KMP the lowest possible value for this timeout is 1000(millis)
+
+        // todo change so that sendTypingSignal is send 1 sec before typingTimeout expire e.g. typingTimeout=5sec so send TypingSignal every 4sec;
+        //  do this is to avoid situation that users see pause in writing
         typingSent?.let { typingSentNotNull: Instant ->
             if (!timeoutElapsed(typingTimeout, typingSentNotNull, now)) {
                 return Unit.asFuture()
