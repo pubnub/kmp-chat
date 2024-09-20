@@ -42,7 +42,7 @@ interface ChatConfiguration {
     /**
      * The so-called "exponential backoff" which multiplicatively decreases the rate at which messages are published on channels.
      *
-     * It's bound to the rateLimitPerChannel parameter and is meant to prevent message spamming caused by excessive retries.
+     * It's bound to the [rateLimitPerChannel] parameter and is meant to prevent message spamming caused by excessive retries.
      *
      * The default value of 2 means that if you set rateLimitPerChannel for direct channels to 1 second and try to send
      * three messages on such a channel type within the span of one second, the second message will be published
