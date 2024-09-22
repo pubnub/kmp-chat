@@ -39,6 +39,13 @@ fun ThreadChannel.Companion.streamUpdatesOn(
     callback: (channels: Collection<Channel>) -> Unit,
 ): AutoCloseable = BaseChannel.streamUpdatesOn(channels, callback)
 
+/**
+ * You can receive updates when specific user-channel Membership object(s) are added, edited, or removed.
+ *
+ * @param memberships Collection containing the [Membership]s to watch for updates.
+ * @param callback Defines the custom behavior to be executed when detecting membership changes.
+ * @return An [AutoCloseable] that you can use to stop receiving objects events by invoking [AutoCloseable.close].
+ */
 fun Membership.Companion.streamUpdatesOn(
     memberships: Collection<Membership>,
     callback: (memberships: Collection<Membership>) -> Unit,
