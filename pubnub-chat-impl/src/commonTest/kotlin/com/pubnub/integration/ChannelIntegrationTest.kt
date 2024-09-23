@@ -586,7 +586,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             assertEquals(expectedDescription, channel?.description)
             assertEquals(expectedStatus, channel?.status)
         }
-        channel01.update(description = "NewDesc", status = expectedStatus).await()
+        channel01.update(description = expectedDescription, status = expectedStatus).await()
     }
 }
 
