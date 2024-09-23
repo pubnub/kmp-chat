@@ -306,7 +306,7 @@ interface Channel {
      * @param limit Number of objects to return in response. The default (and maximum) value is 100.
      * @param page Object used for pagination to define which previous or next result page you want to fetch.
      * @param filter Expression used to filter the results. Returns only these members whose properties satisfy the given expression.
-     * @param sort A collection to specify the sort order. Available options are id, name, and updated. Use asc or desc
+     * @param sort A collection to specify the sort order. Available options are id, name, and updated. Use asc or desc.
      * to specify the sorting direction, or specify null to take the default sorting direction (ascending).
      *
      * @return [PNFuture] containing [MembersResponse]

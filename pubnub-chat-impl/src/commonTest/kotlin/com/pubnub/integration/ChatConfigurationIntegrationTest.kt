@@ -50,7 +50,7 @@ class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
             ),
             pubnub
         ).initialize().await()
-        val channel = chat.createChannel(randomString()).await()
+        val channel = chat.createPublicConversation(randomString()).await()
         val messageText = randomString()
         val message = CompletableDeferred<Message>()
 
@@ -108,8 +108,8 @@ class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
             ),
             pubnub
         ).initialize().await()
-        chat.createChannel(channel01.id).await()
-        chat.createChannel(channel02.id).await()
+        chat.createPublicConversation().await()
+        chat.createDirectConversation(someUser).await()
         val messageText = randomString()
         val message = CompletableDeferred<Message>()
         val message2 = CompletableDeferred<Message>()
