@@ -62,8 +62,6 @@ public final class com/pubnub/chat/Channel$Companion {
 
 public abstract interface class com/pubnub/chat/Chat {
 	public static final field Companion Lcom/pubnub/chat/Chat$Companion;
-	public abstract fun createChannel (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Lcom/pubnub/chat/types/ChannelType;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
-	public static synthetic fun createChannel$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Lcom/pubnub/chat/types/ChannelType;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun createDirectConversation (Lcom/pubnub/chat/User;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun createDirectConversation$default (Lcom/pubnub/chat/Chat;Lcom/pubnub/chat/User;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun createGroupConversation (Ljava/util/Collection;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
@@ -79,7 +77,6 @@ public abstract interface class com/pubnub/chat/Chat {
 	public abstract fun destroy ()V
 	public abstract fun emitEvent (Ljava/lang/String;Lcom/pubnub/chat/types/EventContent;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun emitEvent$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Lcom/pubnub/chat/types/EventContent;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun forwardMessage (Lcom/pubnub/chat/Message;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getChannel (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getChannelSuggestions (Ljava/lang/String;I)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getChannelSuggestions$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
@@ -93,7 +90,6 @@ public abstract interface class com/pubnub/chat/Chat {
 	public static synthetic fun getEventsHistory$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getPubNub ()Lcom/pubnub/api/PubNub;
 	public abstract fun getPushChannels ()Lcom/pubnub/kmp/PNFuture;
-	public abstract fun getThreadChannel (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getUnreadMessagesCounts (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getUnreadMessagesCounts$default (Lcom/pubnub/chat/Chat;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getUser (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;

@@ -67,6 +67,7 @@ class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
         }
     }
 
+    // todo flaky for iOS on command line execution
     @Test
     fun custom_payloads_send_receive_msgs_single_channel() = runTest {
         val chat = ChatImpl(
