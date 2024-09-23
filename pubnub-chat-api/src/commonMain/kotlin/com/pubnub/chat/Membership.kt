@@ -42,6 +42,7 @@ interface Membership {
     val lastReadMessageTimetoken: Long?
 
     // todo do we want to have test for this?
+
     /**
      * Setting the last read message for users lets you implement the Read Receipts feature and monitor which channel member read which message.
      *
@@ -58,6 +59,7 @@ interface Membership {
     fun update(custom: CustomObject): PNFuture<Membership>
 
     // todo do we have test for this?
+
     /**
      * Setting the last read message for users lets you implement the Read Receipts feature and monitor which channel member read which message.
      *
@@ -74,6 +76,7 @@ interface Membership {
     fun getUnreadMessagesCount(): PNFuture<Long?>
 
     // todo do we have test for this?
+
     /**
      * You can receive updates when specific user-channel Membership object(s) are added, edited, or removed.
      *
