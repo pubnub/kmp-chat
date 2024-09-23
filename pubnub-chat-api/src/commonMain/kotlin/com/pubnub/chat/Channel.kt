@@ -78,7 +78,8 @@ interface Channel {
      * Allows to update the [Channel] metadata
      *
      * @param name Display name for the channel.
-     * @param custom JSON object providing custom data about the channel. Values must be scalar only; arrays or objects are not supported.
+     * @param custom Any custom properties or metadata associated with the channel in the form of a `Map`.
+     * Values must be scalar only; arrays or objects are not supported.
      * @param description Additional details about the channel.
      * @param status Current status of the channel, like online, offline, or archived.
      * @param type Represents the type of channel, which can be one of the following:
@@ -306,7 +307,7 @@ interface Channel {
      * @param limit Number of objects to return in response. The default (and maximum) value is 100.
      * @param page Object used for pagination to define which previous or next result page you want to fetch.
      * @param filter Expression used to filter the results. Returns only these members whose properties satisfy the given expression.
-     * @param sort A collection to specify the sort order. Available options are id, name, and updated. Use asc or desc
+     * @param sort A collection to specify the sort order. Available options are id, name, and updated. Use asc or desc.
      * to specify the sorting direction, or specify null to take the default sorting direction (ascending).
      *
      * @return [PNFuture] containing [MembersResponse]
@@ -332,7 +333,8 @@ interface Channel {
      * Connects a user to the [Channel] and sets membership - this way, the chat user can both watch the channel's
      * content and be its full-fledged member.
      *
-     * @param custom Any custom properties or metadata associated with the channel-user membership in the form of
+     * @param custom Any custom properties or metadata associated with the channel-user membership in the form of a `Map`.
+     * Values must be scalar only; arrays or objects are not supported.
      *                a JSON. Values must be scalar only; arrays or objects are not supported.
      * @param callback defines the custom behavior to be executed whenever a message is received on the [Channel]
      *
@@ -421,7 +423,7 @@ interface Channel {
     fun getUserRestrictions(user: User): PNFuture<Restriction>
 
     /**
-     * Check if there are any mute or ban restrictions set for user on a given channel
+     * Check if there are any mute or ban restrictions set for users on a given channel
      *
      * @param limit Number of objects to return in response. The default (and maximum) value is 100.
      * @param page Object used for pagination to define which previous or next result page you want to fetch.

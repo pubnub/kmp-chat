@@ -50,7 +50,7 @@ class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
             ),
             pubnub
         ).initialize().await()
-        val channel = chat.createChannel(randomString()).await()
+        val channel = chat.createPublicConversation(randomString()).await()
         val messageText = randomString()
         val message = CompletableDeferred<Message>()
 
@@ -67,6 +67,7 @@ class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
         }
     }
 
+    // todo flaky for iOS on command line execution
     @Test
     fun custom_payloads_send_receive_msgs_single_channel() = runTest {
         val chat = ChatImpl(
@@ -108,8 +109,8 @@ class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
             ),
             pubnub
         ).initialize().await()
-        chat.createChannel(channel01.id).await()
-        chat.createChannel(channel02.id).await()
+        chat.createPublicConversation().await()
+        chat.createDirectConversation(someUser).await()
         val messageText = randomString()
         val message = CompletableDeferred<Message>()
         val message2 = CompletableDeferred<Message>()

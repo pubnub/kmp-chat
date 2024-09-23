@@ -1,5 +1,6 @@
 package com.pubnub.integration
 
+import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.Channel
@@ -18,6 +19,7 @@ import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
@@ -315,6 +317,33 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(1, userSuggestionsMembershipsFromCache.size)
         assertEquals(someUser.id, userSuggestionsMembershipsFromCache.first().user.id)
         assertEquals(userName, userSuggestionsMembershipsFromCache.first().user.name)
+    }
+
+    @Test
+    fun canGetSoftDeletedUsers() = runTest {
+        val userId = "user2"
+        try {
+            chat.deleteUser(userId, false).await()
+        } catch (_: Exception) {
+        }
+        val user2 = chat.createUser(UserImpl(chat, userId)).await()
+        val deletedUser = chat.deleteUser(id = userId, soft = true).await()
+        println(deletedUser)
+
+        chat.getUsers(filter = "status=='deleted'").async { result ->
+            result.onSuccess { getUsersResponse: GetUsersResponse ->
+                assertEquals(userId, getUsersResponse.users.first().id)
+                assertEquals("deleted", getUsersResponse.users.first().status)
+            }.onFailure { e: PubNubException ->
+                throw IllegalStateException(e)
+            }
+        }
+
+        // clean
+        try {
+            chat.deleteUser(userId, false).await()
+        } catch (_: Exception) {
+        }
     }
 
     // todo flaky
