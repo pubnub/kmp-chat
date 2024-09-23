@@ -78,7 +78,8 @@ interface Channel {
      * Allows to update the [Channel] metadata
      *
      * @param name Display name for the channel.
-     * @param custom JSON object providing custom data about the channel. Values must be scalar only; arrays or objects are not supported.
+     * @param custom Any custom properties or metadata associated with the channel in the form of a `Map`.
+     * Values must be scalar only; arrays or objects are not supported.
      * @param description Additional details about the channel.
      * @param status Current status of the channel, like online, offline, or archived.
      * @param type Represents the type of channel, which can be one of the following:
@@ -332,7 +333,8 @@ interface Channel {
      * Connects a user to the [Channel] and sets membership - this way, the chat user can both watch the channel's
      * content and be its full-fledged member.
      *
-     * @param custom Any custom properties or metadata associated with the channel-user membership in the form of
+     * @param custom Any custom properties or metadata associated with the channel-user membership in the form of a `Map`.
+     * Values must be scalar only; arrays or objects are not supported.
      *                a JSON. Values must be scalar only; arrays or objects are not supported.
      * @param callback defines the custom behavior to be executed whenever a message is received on the [Channel]
      *

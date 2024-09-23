@@ -64,7 +64,8 @@ interface Chat {
      * @param externalId User's identifier in an external system. You can use it to match id with a similar identifier from an external database.
      * @param profileUrl URL of the user's profile picture.
      * @param email User's email address.
-     * @param custom Any object of key-value pairs with supported data types.
+     * @param custom Any custom properties or metadata associated with the user in the form of a `Map`.
+     * Values must be scalar only; arrays or objects are not supported.
      * @param status Tag that lets you categorize your app users by their current state. The tag choice is entirely up
      * to you and depends on your use case. For example, you can use status to mark users in your chat app as invited,
      * active, or archived.
@@ -113,10 +114,26 @@ interface Chat {
 
     /**
      * Updates metadata of [User]
+     *
+     * @param id Unique user identifier. A User ID is a UTF-8 encoded, unique string of up to 92 characters used to
+     * identify a single client (end user, device, or server).
+     * @param name Display name for the user (must not be empty or consist only of whitespace characters).
+     * @param externalId User's identifier in an external system. You can use it to match id with a similar identifier from an external database.
+     * @param profileUrl URL of the user's profile picture.
+     * @param email User's email address.
+     * @param custom Any custom properties or metadata associated with the user in the form of a `Map`.
+     * Values must be scalar only; arrays or objects are not supported.
+     * @param status Tag that lets you categorize your app users by their current state. The tag choice is entirely up
+     * to you and depends on your use case. For example, you can use status to mark users in your chat app as invited,
+     * active, or archived.
+     * @param type Tag that lets you categorize your app users by their functional roles. The tag choice is entirely up
+     * to you and depends on your use case. For example, you can use type to group users by their roles in your app, such as moderator, player, or support-agent.
+     *
+     * @return [PNFuture] containing updated [User] object.
      */
     fun updateUser(
         id: String,
-        // TODO change nulls to Optionals when there is support
+        // TODO change nulls to Optionals when there is support. In Kotlin SDK there should be possibility to handle PatchValue
         name: String? = null,
         externalId: String? = null,
         profileUrl: String? = null,
@@ -186,18 +203,19 @@ interface Chat {
     /**
      * Allows to update the [Channel] metadata
      *
-     * @param
-     * @param
-     * @param
-     * @param
-     * @param
-     * @param
+     * @param id Unique channel identifier.
+     * @param name Display name for the channel.
+     * @param custom Any custom properties or metadata associated with the channel in the form of a `Map`.
+     * Values must be scalar only; arrays or objects are not supported.
+     * @param description
+     * @param status
+     * @param type
      *
      * @return
      */
     fun updateChannel(
         id: String,
-        // TODO change nulls to Optionals when there is support
+        // TODO change nulls to Optionals when there is support. In Kotlin SDK there should be possibility to send PatchValue to sever.
         name: String? = null,
         custom: CustomObject? = null,
         description: String? = null,
