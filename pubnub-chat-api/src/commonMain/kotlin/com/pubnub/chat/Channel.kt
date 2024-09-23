@@ -423,7 +423,7 @@ interface Channel {
     fun getUserRestrictions(user: User): PNFuture<Restriction>
 
     /**
-     * Check if there are any mute or ban restrictions set for user on a given channel
+     * Check if there are any mute or ban restrictions set for users on a given channel
      *
      * @param limit Number of objects to return in response. The default (and maximum) value is 100.
      * @param page Object used for pagination to define which previous or next result page you want to fetch.

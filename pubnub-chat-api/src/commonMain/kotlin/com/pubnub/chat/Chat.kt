@@ -317,13 +317,15 @@ interface Chat {
      * Create channel for group communication, promoting collaboration and teamwork.
      * A user can initiate a group chat and invite others to be channel members.
      *
-     * @param invitedUsers
-     * @param channelId
-     * @param channelName
-     * @param channelDescription
-     * @param channelCustom
-     * @param channelStatus
-     * @param membershipCustom
+     * @param invitedUsers Users that you invite to join a channel.
+     * @param channelId ID of the group channel. The channel ID is created automatically using the v4 UUID generator.
+     * You can override it by providing your own ID.
+     * @param channelName Display name for the channel. If you don't provide the name, the channel will get the same
+     * name as id (value of channelId).
+     * @param channelDescription Additional details about the channel.
+     * @param channelCustom Any custom properties or metadata associated with the channel in the form of a `Map`.
+     * @param channelStatus Current status of the channel, like online, offline, or archived.
+     * @param membershipCustom Any custom properties or metadata associated with the membership in the form of a `Map`.
      *
      * @return [PNFuture] containing [CreateGroupConversationResult]
      */

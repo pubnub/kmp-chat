@@ -3,13 +3,27 @@ package com.pubnub.chat.types
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
 
+/**
+ * A sealed class representing the data related to a user mention event.
+ *
+ * @property event The [Event] containing information about the mention event.
+ * @property message The [Message] object associated with the mention, if available.
+ * @property userId The ID of the user who was mentioned.
+ */
 sealed class UserMentionData {
     abstract val event: Event<EventContent.Mention>
     abstract val message: Message?
     abstract val userId: String
 }
 
-// UserMentionDataInChannel
+/**
+ * Represents data related to a mention of a user in a channel.
+ *
+ * @property channelId The ID of the channel in which the user was mentioned.
+ * @property event The [Event] containing information about the mention event.
+ * @property message The [Message] object associated with the mention, if available.
+ * @property userId The ID of the user who was mentioned.
+ */
 class ChannelMentionData(
     override val event: Event<EventContent.Mention>,
     override val message: Message?,
@@ -17,7 +31,15 @@ class ChannelMentionData(
     val channelId: String
 ) : UserMentionData()
 
-// UserMentionDataInThreadChannel
+/**
+ * Represents data related to a mention of a user in a thread channel.
+ *
+ * @property parentChannelId The ID of the parent channel where the thread exists.
+ * @property threadChannelId The ID of the thread channel in which the user was mentioned.
+ * @property event The [Event] containing information about the mention event.
+ * @property message The [Message] object associated with the mention, if available.
+ * @property userId The ID of the user who was mentioned.
+ */
 class ThreadMentionData(
     override val event: Event<EventContent.Mention>,
     override val message: Message?,
