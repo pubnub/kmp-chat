@@ -40,4 +40,26 @@ interface ChatInternal : Chat {
     fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult>
 
     fun getThreadChannel(message: Message): PNFuture<ThreadChannel>
+
+    /**
+     * Retrieves all channels referenced in the [Channel.sendText] that match the provided 3-letter string from
+     * your app's keyset.
+     * @param text At least a 3-letter string typed in after # with the channel name you want to reference.
+     * @param limit Maximum number of returned channel names that match the typed 3-letter suggestion.
+     * The default value is set to 10, and the maximum is 100.
+     *
+     * @return [PNFuture] containing set of [Channel]
+     */
+    fun getChannelSuggestions(text: String, limit: Int = 10): PNFuture<Set<Channel>>
+
+    /**
+     * Returns all suggested users that match the provided 3-letter string.
+     *
+     * @param text At least a 3-letter string typed in after @ with the user name you want to mention.
+     * @param limit Maximum number of returned usernames that match the typed 3-letter suggestion.
+     * The default value is set to 10, and the maximum is 100.
+     *
+     * @return [PNFuture] containing set of [User]
+     */
+    fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<Set<User>>
 }

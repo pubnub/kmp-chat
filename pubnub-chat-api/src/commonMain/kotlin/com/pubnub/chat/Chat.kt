@@ -48,10 +48,7 @@ interface Chat {
     val pubNub: PubNub
 
     /**
-     * Unique User ID that becomes your app's current user. It's a string of up to 92 characters that identifies
-     * a single client (end user, device, or server) that connects to PubNub. Based on User ID, PubNub calculates
-     * pricing for your apps' usage. User ID should be persisted and remain unchanged. If you don't set userId when
-     * you initialize your chat instance, you won't be able to connect to PubNub.
+     * [User] object representing current user.
      */
     val currentUser: User
 
@@ -98,7 +95,7 @@ interface Chat {
      * Returns a paginated list of all users and their details
      *
      * @param filter Expression used to filter the results. Returns only these users whose properties satisfy the
-     * given expression are returned. The filtering language is defined in docs.
+     * given expression are returned. The filtering language is defined in [documentation](https://www.pubnub.com/docs/general/metadata/filtering).
      * @param sort A collection to specify the sort order. Available options are id, name, and updated. Use asc or desc
      * @param limit Number of objects to return in response. The default (and maximum) value is 100.
      * @param page Object used for pagination to define which previous or next result page you want to fetch.
@@ -147,7 +144,7 @@ interface Chat {
      * Deletes a [User] with or without deleting its historical data from the App Context storage.
      *
      * @param id Unique user identifier.
-     * @param soft Define if you want to permanently remove user metadata. The user metadata gets permanently deleted
+     * @param soft Decide if you want to permanently remove user metadata. The user metadata gets permanently deleted
      * from the App Context storage by default. If you set this parameter to true, the User object gets the deleted
      * status, and you can still restore/get their metadata.
      *
@@ -249,7 +246,8 @@ interface Chat {
      * Constructs and sends events with your custom payload.
      *
      * @param channelId Channel where you want to send the events.
-     * @param payload Type of events. Use custom for full control over event payload and emitting method.
+     * @param payload The payload of the emitted event. Use one of [EventContent] subclasses, for example:
+     * [EventContent.Mention], [EventContent.TextMessageContent] or [EventContent.Custom] for sending arbitrary data.
      * @param mergePayloadWith Metadata in the form of key-value pairs you want to pass as events from your chat app.
      * Can contain anything in case of custom events, but has a predefined structure for other types of events.
      *
@@ -342,11 +340,9 @@ interface Chat {
     /**
      * Lets you watch a selected channel for any new custom events emitted by your chat app.
      *
-     * @param type Reified type parameter bounded by the EventContent interface, allowing access to type information at runtime
-     * e.g. EventContent.Receipt::class, EventContent.TextMessageContent::class
      * @param channelId Channel to listen for new events.
      * @param customMethod An optional custom method for emitting events. If not provided, defaults to null.
-     * @param callback A lambda function that is called with an Event<T> as its parameter.
+     * @param callback A function that is called with an Event<T> as its parameter.
      * It defines the custom behavior to be executed whenever an event is detected on the specified channel.
      *
      * @return AutoCloseable Interface you can call to stop listening for new messages and clean up resources when they
@@ -431,28 +427,6 @@ interface Chat {
     ): PNFuture<MarkAllMessageAsReadResponse>
 
     /**
-     * Retrieves all channels referenced in the [Channel.sendText] that match the provided 3-letter string from
-     * your app's keyset.
-     * @param text At least a 3-letter string typed in after # with the channel name you want to reference.
-     * @param limit Maximum number of returned channel names that match the typed 3-letter suggestion.
-     * The default value is set to 10, and the maximum is 100.
-     *
-     * @return [PNFuture] containing set of [Channel]
-     */
-    fun getChannelSuggestions(text: String, limit: Int = 10): PNFuture<Set<Channel>>
-
-    /**
-     * Returns all suggested users that match the provided 3-letter string.
-     *
-     * @param text At least a 3-letter string typed in after @ with the user name you want to mention.
-     * @param limit Maximum number of returned usernames that match the typed 3-letter suggestion.
-     * The default value is set to 10, and the maximum is 100.
-     *
-     * @return [PNFuture] containing set of [User]
-     */
-    fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<Set<User>>
-
-    /**
      * Retrieves all channels where your registered device receives push notifications.
      *
      * @return [PNFuture] containing list of [Channel.id]
@@ -505,6 +479,19 @@ interface Chat {
     companion object
 }
 
+/**
+ * Lets you watch a selected channel for any new custom events emitted by your chat app.
+ *
+ * @param type parameter bounded by the EventContent interface, allowing access to type information at runtime
+ * e.g. EventContent.Receipt::class, EventContent.TextMessageContent::class
+ * @param channelId Channel to listen for new events.
+ * @param customMethod An optional custom method for emitting events. If not provided, defaults to null.
+ * @param callback A function that is called with an Event<T> as its parameter.
+ * It defines the custom behavior to be executed whenever an event is detected on the specified channel.
+ *
+ * @return AutoCloseable Interface you can call to stop listening for new messages and clean up resources when they
+ * are no longer needed by invoking the close() method.
+ */
 inline fun <reified T : EventContent> Chat.listenForEvents(
     channelId: String,
     customMethod: EmitEventMethod = EmitEventMethod.PUBLISH,
