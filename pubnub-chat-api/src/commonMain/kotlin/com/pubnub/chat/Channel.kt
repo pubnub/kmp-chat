@@ -439,7 +439,7 @@ interface Channel {
     ): PNFuture<GetRestrictionsResponse>
 
     /**
-     * Receive updates on a single Channel object.
+     * Receives updates on a single Channel object.
      *
      * @param callback Function that takes a single Channel object. It defines the custom behavior to be executed when detecting channel changes.
      *
@@ -504,6 +504,8 @@ interface Channel {
      * @param endTimetoken   The end time token for fetching the history of reported messages, which allows specifying
      *                       the point in time where the history retrieval should end.
      * @param count          The number of reported message events to fetch from the history. Default and max is 100.
+     *
+     * @return [PNFuture] containing set of [GetEventsHistoryResult]
      */
     fun getMessageReportsHistory(
         startTimetoken: Long? = null,
