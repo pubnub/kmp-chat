@@ -582,11 +582,20 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val expectedDescription = "Modified description"
         val expectedStatus = "ModifiedStatus"
         chat.createChannel(channel01.id).await()
-        channel01.streamUpdates { channel: Channel? ->
-            assertEquals(expectedDescription, channel?.description)
-            assertEquals(expectedStatus, channel?.status)
+        val completableDescription = CompletableDeferred<String?>()
+        val completableStatus = CompletableDeferred<String?>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                channel01.streamUpdates { channel: Channel? ->
+                    completableDescription.complete(channel?.description)
+                    completableStatus.complete(channel?.status)
+                }
+            }
+            channel01.update(description = expectedDescription, status = expectedStatus).await()
+            assertEquals(expectedDescription, completableDescription.await())
+            assertEquals(expectedStatus, completableStatus.await())
         }
-        channel01.update(description = "NewDesc", status = expectedStatus).await()
     }
 }
 
