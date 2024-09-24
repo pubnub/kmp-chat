@@ -65,7 +65,7 @@ interface User {
     val updated: String?
 
     /**
-     * Timestamp (a number of seconds since January 1, 1970) for the last time the user information was updated or modified.
+     * Timestamp for the last time the user information was updated or modified.
      */
     val lastActiveTimestamp: Long?
 
