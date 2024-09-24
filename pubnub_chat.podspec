@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name                     = 'pubnub_chat'
-    spec.version                  = '0.8.0-DEV'
+    spec.version                  = '0.8.0'
     spec.homepage                 = 'Link to a Kotlin/Native module homepage'
     spec.source                   = { :http=> ''}
     spec.authors                  = ''
@@ -9,7 +9,7 @@ Pod::Spec.new do |spec|
     spec.vendored_frameworks      = 'build/cocoapods/framework/PubNubChat.framework'
     spec.libraries                = 'c++'
     spec.ios.deployment_target    = '14'
-    spec.dependency 'PubNubSwift'
+    spec.dependency 'PubNubSwift', '8.0.0'
                 
     if !Dir.exist?('build/cocoapods/framework/PubNubChat.framework') || Dir.empty?('build/cocoapods/framework/PubNubChat.framework')
         raise "
