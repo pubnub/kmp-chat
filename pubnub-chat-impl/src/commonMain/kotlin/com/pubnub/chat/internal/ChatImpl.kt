@@ -1224,7 +1224,7 @@ class ChatImpl(
     private fun saveTimeStampFunc(): PNFuture<Unit> {
         val customWithUpdatedLastActiveTimestamp = buildMap {
             currentUser.custom?.let { putAll(it) }
-            put(LAST_ACTIVE_TIMESTAMP, Clock.System.now().toEpochMilliseconds())
+            put(LAST_ACTIVE_TIMESTAMP, Clock.System.now().toEpochMilliseconds().toString())
         }
         return pubNub.setUUIDMetadata(
             uuid = currentUser.id,

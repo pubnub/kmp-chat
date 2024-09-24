@@ -556,7 +556,7 @@ class ChannelTest : BaseTest() {
                         )
                     ),
                     "quotedMessage" to mapOf(
-                        "timetoken" to message.timetoken,
+                        "timetoken" to message.timetoken.toString(),
                         "text" to message.text,
                         "userId" to message.userId
                     )
