@@ -5,5 +5,17 @@
       "clearedPrefix": true,
       "clearedSuffix": false
     }
+  ],
+  "README.md": [
+    {
+      "pattern": "^\\s{2,}<version>(v?(\\d+\\.?){2,}([a-zA-Z0-9-]+(\\.?\\d+)?)?)<\\/version>$",
+      "clearedPrefix": true,
+      "clearedSuffix": false
+    },
+        {
+          "pattern": "^\\s{2,}implementation 'com\\.pubnub:pubnub-chat:(v?(\\d+\\.?){2,}([a-zA-Z0-9-]+(\\.?\\d+)?)?)'$",
+          "clearedPrefix": true,
+          "clearedSuffix": false
+        }
   ]
 }

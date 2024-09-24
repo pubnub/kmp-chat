@@ -14,7 +14,7 @@ sdks:
             - Server
             - Mobile
           source-repository: https://github.com/pubnub/kmp-chat
-          documentation: https://www.pubnub.com/docs/sdks/kmp-chat/
+          documentation: https://www.pubnub.com/docs/chat/kotlin-chat-sdk/overview
           tier: 2
           artifact-type: library
           distributions:
