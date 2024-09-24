@@ -112,6 +112,11 @@ sdks:
                   license-url: https://www.apache.org/licenses/LICENSE-2.0.txt
                   is-required: Required
 changelog:
+  - date: 2024-09-24
+    version: v0.8.0
+    changes:
+      - type: feature
+        text: "Initial release of PubNub Kotlin Chat SDK ."
   - date: 2024-06-26
     version: v0.8.0-DEV
     changes:
