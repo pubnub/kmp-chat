@@ -22,7 +22,6 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.STORE_USER_ACTIVITY_INT
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
-import com.pubnub.chat.membership.IncludeParameters
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
@@ -89,8 +88,6 @@ data class UserImpl(
         filter: String?,
         sort: Collection<PNSortKey<PNMembershipKey>>,
     ): PNFuture<MembershipsResponse> {
-        val includeParameters = IncludeParameters()
-
         val internalModerationFilter = "!(channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*')"
         val effectiveFilter: String = filter?.let { "$internalModerationFilter && $filter" } ?: internalModerationFilter
 
@@ -100,9 +97,9 @@ data class UserImpl(
             page = page,
             filter = effectiveFilter,
             sort = sort,
-            includeCount = includeParameters.totalCount,
-            includeCustom = includeParameters.customFields,
-            includeChannelDetails = getChannelDetailsType(includeParameters.customChannelFields)
+            includeCount = true,
+            includeCustom = true,
+            includeChannelDetails = getChannelDetailsType(true)
         ).then { pnChannelMembershipArrayResult ->
             MembershipsResponse(
                 next = pnChannelMembershipArrayResult.next,

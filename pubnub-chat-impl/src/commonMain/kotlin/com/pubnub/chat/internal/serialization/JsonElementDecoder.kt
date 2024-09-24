@@ -116,7 +116,7 @@ class JsonElementDecoder(
     }
 
     override fun decodeLong(): Long {
-        return jsonElement?.asLong() ?: error("Can't decode as long")
+        return jsonElement?.tryLongOrString() ?: error("Can't decode as long")
     }
 
     @ExperimentalSerializationApi
@@ -192,8 +192,8 @@ class JsonElementDecoder(
 
     override fun decodeLongElement(descriptor: SerialDescriptor, index: Int): Long {
         return (
-            currentMap?.get(descriptor.getElementName(index))?.asLong() ?: currentList?.get(index)
-                ?.asLong()
+            currentMap?.get(descriptor.getElementName(index))?.tryLongOrString() ?: currentList?.get(index)
+                ?.tryLongOrString()
         ) ?: error("Can't find long for $descriptor")
     }
 
@@ -296,4 +296,8 @@ class JsonElementDecoder(
     }
 
     override fun endStructure(descriptor: SerialDescriptor) {}
+}
+
+private fun JsonElement.tryLongOrString(): Long? {
+    return asLong() ?: asString()?.toLongOrNull()
 }

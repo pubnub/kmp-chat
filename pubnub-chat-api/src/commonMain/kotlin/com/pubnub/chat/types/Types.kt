@@ -5,6 +5,7 @@ import com.pubnub.chat.restrictions.RestrictionType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.builtins.LongAsStringSerializer
 
 /**
  * Represents a file that is associated with a message in the chat system.
@@ -51,6 +52,7 @@ sealed class EventContent {
     class Report(
         val text: String? = null,
         val reason: String,
+        @Serializable(with = LongAsStringSerializer::class)
         val reportedMessageTimetoken: Long? = null,
         val reportedMessageChannelId: String? = null,
         val reportedUserId: String?,
@@ -63,7 +65,9 @@ sealed class EventContent {
      */
     @Serializable
     @SerialName("receipt")
-    class Receipt(val messageTimetoken: Long) : EventContent()
+    class Receipt(
+        @Serializable(with = LongAsStringSerializer::class) val messageTimetoken: Long
+    ) : EventContent()
 
     /**
      * Represents a mention event, which indicates that a user was mentioned in a message.
@@ -74,7 +78,11 @@ sealed class EventContent {
      */
     @Serializable
     @SerialName("mention")
-    class Mention(val messageTimetoken: Long, val channel: String, val parentChannel: String? = null) : EventContent()
+    class Mention(
+        @Serializable(with = LongAsStringSerializer::class) val messageTimetoken: Long,
+        val channel: String,
+        val parentChannel: String? = null
+    ) : EventContent()
     // channel should be channelId and parentChannel should be parentChannelId, but we can't change it not tt break compatibility with existing Chat SDK
 
     /**

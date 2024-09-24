@@ -2,6 +2,7 @@ package com.pubnub.internal
 
 import com.pubnub.api.createJsonElement
 import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.types.EventContent
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.test.Test
@@ -239,5 +240,19 @@ class JsonElementDecoderTest {
 
         // then
         assertEquals(mapOf("aaa" to SealedClass.Sealed2(intValue, null)), decoded)
+    }
+
+    @Test
+    fun testDecodingStringsAsLongs() {
+        val expectedLong = 3823943489389428923L
+        val mention = EventContent.Mention(expectedLong, "someChannel", null)
+        val map: Map<String, Any?> = PNDataEncoder.encode(mention) as Map<String, Any?>
+
+        assertEquals(expectedLong.toString(), map["messageTimetoken"])
+
+        val jsonElement = createJsonElement(map)
+        val actualMention: EventContent.Mention = PNDataEncoder.decode(jsonElement)
+
+        assertEquals(expectedLong, actualMention.messageTimetoken)
     }
 }

@@ -443,7 +443,7 @@ interface Channel {
      *
      * @param callback Function that takes a single Channel object. It defines the custom behavior to be executed when detecting channel changes.
      *
-     * @return AutoCloseable Interface that lets you stop receiving channel-related updates (objects events)
+     * @return AutoCloseable interface that lets you stop receiving channel-related updates (objects events)
      * and clean up resources by invoking the close() method.
      */
     fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable
