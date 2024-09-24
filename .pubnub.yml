@@ -1,5 +1,5 @@
-name: kotlin
-version: 0.8.0-DEV
+name: kmp-chat
+version: 0.8.0
 schema: 1
 scm: github.com/pubnub/kmp-chat
 sdks:
@@ -21,8 +21,8 @@ sdks:
             -
               distribution-type: library
               distribution-repository: maven
-              package-name: pubnub-chat-0.8.0-DEV
-              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.8.0-DEV/pubnub-chat-0.8.0-DEV.jar
+              package-name: pubnub-chat-0.8.0
+              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.8.0/pubnub-chat-0.8.0.jar
               supported-platforms:
                 supported-operating-systems:
                   Android:
