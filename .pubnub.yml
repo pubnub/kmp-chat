@@ -116,8 +116,7 @@ changelog:
     version: v0.8.0
     changes:
       - type: feature
-        text: "Initial release of PubNub Kotlin Chat SDK."
-  - date: 2024-06-26
+        text: "Initial release of PubNub Kotlin Chat SDK."  - date: 2024-06-26
     version: v0.8.0-DEV
     changes:
       - type: feature
