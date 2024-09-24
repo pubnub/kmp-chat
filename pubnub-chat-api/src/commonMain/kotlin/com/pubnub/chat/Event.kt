@@ -19,7 +19,9 @@ interface Event<T : EventContent> {
     val timetoken: Long
 
     /**
-     * Data passed in an event (of [EventContent] subtype) that differ depending on the emitted event type ([EventContent.Typing]], [EventContent.Report], [EventContent.Receipt], [EventContent.Mention], [EventContent.Invite], [EventContent.Custom], [EventContent.Moderation], or [EventContent.TextMessageContent]).
+     * Data passed in an event (of [EventContent] subtype) that differs depending on the emitted event type
+     * ([EventContent.Typing]], [EventContent.Report], [EventContent.Receipt], [EventContent.Mention],
+     * [EventContent.Invite], [EventContent.Custom], [EventContent.Moderation], or [EventContent.TextMessageContent]).
      */
     val payload: T
 

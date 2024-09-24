@@ -4,6 +4,9 @@ import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEvent
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 
+/**
+ * Membership is an object that refers to a single user-channel relationship in a chat.
+ */
 interface Membership {
     /**
      * Reference to the main Chat object.
@@ -88,6 +91,7 @@ interface Membership {
     /**
      * Get a new [Membership] object updated with the values received in the [update].
      *
+     * @param update Data received from the PubNub [com.pubnub.api.v2.callbacks.EventListener.objects] callback.
      * @return A [Membership] updated with values that are present in the [update]
      */
     operator fun plus(update: PNSetMembershipEvent): Membership
