@@ -690,6 +690,7 @@ class ChatImpl(
         return subscription
     }
 
+    // todo do we have test for this method?
     override fun setRestrictions(
         restriction: Restriction
     ): PNFuture<Unit> {
