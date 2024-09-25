@@ -29,7 +29,6 @@ import com.pubnub.api.v2.subscriptions.SubscriptionOptions
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
-import com.pubnub.chat.Mention
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.config.PushNotificationsConfig
@@ -38,7 +37,6 @@ import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.METADATA_LAST_READ_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.METADATA_MENTIONED_USERS
-import com.pubnub.chat.internal.METADATA_MENTIONS_V2
 import com.pubnub.chat.internal.METADATA_QUOTED_MESSAGE
 import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
 import com.pubnub.chat.internal.METADATA_TEXT_LINKS
@@ -78,6 +76,7 @@ import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
+import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
@@ -245,6 +244,45 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
+    @Deprecated("Will be removed from SDK in the future", level = DeprecationLevel.WARNING)
+    override fun sendText(
+        text: String,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean,
+        usePost: Boolean,
+        ttl: Int?,
+        mentionedUsers: MessageMentionedUsers?,
+        referencedChannels: Map<Int, MessageReferencedChannel>?,
+        textLinks: List<TextLink>?,
+        quotedMessage: Message?,
+        files: List<InputFile>?,
+    ): PNFuture<PNPublishResult> {
+        val newMeta = buildMetaForPublish(meta, quotedMessage, mentionedUsers, referencedChannels, textLinks)
+        return sendTextInternal(text, newMeta, shouldStore, usePost, ttl, quotedMessage, files, mentionedUsers?.map { it.value.id })
+    }
+
+    override fun sendText(
+        text: String,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean,
+        usePost: Boolean,
+        ttl: Int?,
+        quotedMessage: Message?,
+        files: List<InputFile>?,
+        usersToMention: Collection<String>?,
+    ): PNFuture<PNPublishResult> {
+        return sendTextInternal(
+            text = text,
+            meta = meta,
+            shouldStore = shouldStore,
+            usePost = usePost,
+            ttl = ttl,
+            quotedMessage = quotedMessage,
+            files = files,
+            usersToMention = usersToMention
+        )
+    }
+
     private fun sendTextInternal(
         text: String,
         meta: Map<String, Any>?,
@@ -253,6 +291,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         ttl: Int?,
         quotedMessage: Message?,
         files: List<InputFile>?,
+        usersToMention: Collection<String>? = null
     ): PNFuture<PNPublishResult> {
         if (quotedMessage != null && quotedMessage.channelId != id) {
             return log.logErrorAndReturnException(CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS).asFuture()
@@ -271,54 +310,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     usePost = usePost,
                     ttl = ttl,
                 )
-            }
-        )
-    }
-
-    override fun sendText(
-        text: String,
-        meta: Map<String, Any>?,
-        shouldStore: Boolean,
-        usePost: Boolean,
-        ttl: Int?,
-        quotedMessage: Message?,
-        mentions: List<Mention>?,
-        files: List<InputFile>?
-    ): PNFuture<PNPublishResult> {
-        val newMeta = buildMap {
-            meta?.let { putAll(it) }
-            mentions?.let { put(METADATA_MENTIONS_V2, PNDataEncoder.encode(it)!!) }
-        }
-        return sendTextInternal(text, newMeta, shouldStore, usePost, ttl, quotedMessage, files).then { publishResult: PNPublishResult ->
-            mentions?.filterIsInstance<Mention.UserMention>()?.forEach { mentionedUser ->
-                emitUserMention(mentionedUser.userId, publishResult.timetoken, text).async {
-                    it.onFailure { ex ->
-                        log.warn(err = ex, msg = { ex.message })
-                    }
-                }
-            }
-            publishResult
-        }
-    }
-
-    @Deprecated("Use `sendText` that accepts `mentions: List<Mention>` instead.")
-    override fun sendText(
-        text: String,
-        meta: Map<String, Any>?,
-        shouldStore: Boolean,
-        usePost: Boolean,
-        ttl: Int?,
-        mentionedUsers: MessageMentionedUsers?,
-        referencedChannels: Map<Int, MessageReferencedChannel>?,
-        textLinks: List<TextLink>?,
-        quotedMessage: Message?,
-        files: List<InputFile>?,
-    ): PNFuture<PNPublishResult> {
-        val newMeta = buildMetaForPublish(meta, mentionedUsers, referencedChannels, textLinks, quotedMessage)
-        return sendTextInternal(text, newMeta, shouldStore, usePost, ttl, quotedMessage, files)
-            .then { publishResult: PNPublishResult ->
-                mentionedUsers?.forEach { mentionedUser ->
-                    emitUserMention(mentionedUser.value.id, publishResult.timetoken, text).async {
+            }.then { publishResult: PNPublishResult ->
+                usersToMention?.forEach { mentionedUser ->
+                    emitUserMention(mentionedUser, publishResult.timetoken, text).async {
                         it.onFailure { ex ->
                             log.warn(err = ex, msg = { ex.message })
                         }
@@ -326,28 +320,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 }
                 publishResult
             }
-    }
-
-    override fun sendText(
-        text: String,
-        meta: Map<String, Any>?,
-        shouldStore: Boolean,
-        usePost: Boolean,
-        ttl: Int?,
-        quotedMessage: Message?,
-        files: List<InputFile>?,
-    ): PNFuture<PNPublishResult> {
-        return sendText(
-            text = text,
-            meta = meta,
-            shouldStore = shouldStore,
-            usePost = usePost,
-            ttl = ttl,
-            mentionedUsers = null,
-            referencedChannels = null,
-            textLinks = null,
-            quotedMessage = quotedMessage,
-            files = files
         )
     }
 

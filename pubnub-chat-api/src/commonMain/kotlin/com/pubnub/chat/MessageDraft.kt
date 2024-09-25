@@ -1,11 +1,8 @@
 package com.pubnub.chat
 
-import com.pubnub.chat.types.File
-import com.pubnub.chat.types.QuotedMessage
+import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.chat.types.InputFile
 import com.pubnub.kmp.PNFuture
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 
 interface MessageDraft {
     val channel: Channel
@@ -13,8 +10,8 @@ interface MessageDraft {
     val isTypingIndicatorTriggered: Boolean
     val userLimit: Int
     val channelLimit: Int
-    var quotedMessage: QuotedMessage?
-    val files: MutableList<File>
+    var quotedMessage: Message?
+    val files: MutableList<InputFile>
 
     fun insertText(offset: Int, text: String): PNFuture<Map<Int, List<SuggestedMention>>>
 
@@ -22,13 +19,20 @@ interface MessageDraft {
 
     fun insertSuggestedMention(mention: SuggestedMention, text: String): PNFuture<Map<Int, List<SuggestedMention>>>
 
-    fun addMention(mention: Mention)
+    fun addMention(offset: Int, length: Int, target: MentionTarget)
 
     fun removeMention(offset: Int)
 
-    fun removeMention(mention: Mention)
-
     fun update(text: String): PNFuture<Map<Int, List<SuggestedMention>>>
+
+    fun send(
+        meta: Map<String, Any>? = null,
+        shouldStore: Boolean = true,
+        usePost: Boolean = false,
+        ttl: Int? = null,
+    ): PNFuture<PNPublishResult>
+
+    fun getMessageElements(): List<MessageElement>
 
     enum class UserSuggestionSource {
         GLOBAL,
@@ -36,58 +40,20 @@ interface MessageDraft {
     }
 }
 
-@Serializable
-sealed class Mention : Comparable<Mention> {
-    @SerialName("s")
-    abstract var start: Int
+sealed interface MentionTarget {
+    data class User(val userId: String) : MentionTarget
 
-    @SerialName("l")
-    abstract var length: Int
+    data class Channel(val channelId: String) : MentionTarget
 
-    val endExclusive get() = start + length
-
-    abstract val startChar: Char?
-
-    @Serializable
-    @SerialName("usr")
-    class UserMention(
-        override var start: Int,
-        override var length: Int,
-        @SerialName("v") var userId: String
-    ) : Mention() {
-        @Transient
-        override val startChar: Char = '@'
-    }
-
-    @Serializable
-    @SerialName("cha")
-    class ChannelReference(
-        override var start: Int,
-        override var length: Int,
-        @SerialName("v") var channelId: String
-    ) : Mention() {
-        @Transient
-        override val startChar: Char = '#'
-    }
-
-    @Serializable
-    @SerialName("url")
-    class TextLink(
-        override var start: Int,
-        override var length: Int,
-        @SerialName("v") var url: String
-    ) : Mention() {
-        @Transient
-        override val startChar: Char? = null
-    }
-
-    override fun compareTo(other: Mention): Int {
-        return start.compareTo(other.start)
-    }
+    data class Url(val url: String) : MentionTarget
 }
 
-sealed class SuggestedMention(val start: Int, val replaceFrom: String) {
-    class SuggestedUserMention(start: Int, replaceFrom: String, val user: User) : SuggestedMention(start, replaceFrom)
+sealed interface MessageElement {
+    val text: String
 
-    class SuggestedChannelMention(start: Int, replaceFrom: String, val channel: Channel) : SuggestedMention(start, replaceFrom)
+    data class PlainText(override val text: String) : MessageElement
+
+    data class Link(override val text: String, val target: MentionTarget) : MessageElement
 }
+
+class SuggestedMention(val start: Int, val replaceFrom: String, val replaceTo: String, val target: MentionTarget)

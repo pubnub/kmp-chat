@@ -47,6 +47,7 @@ interface Message {
      * Extra information added to the message giving additional context.
      */
     val meta: Map<String, Any>?
+
     /**
      * Access the original quoted message.
      *
@@ -85,7 +86,6 @@ interface Message {
      * List of reactions attached to the message.
      */
     val reactions: Map<String, List<Action>>
-    val mentions: Collection<Mention>
 
     /**
      * List of included text links and their position.

@@ -234,6 +234,7 @@ interface Channel {
         ttl: Int? = null,
         quotedMessage: Message? = null,
         files: List<InputFile>? = null,
+        usersToMention: Collection<String>? = null,
     ): PNFuture<PNPublishResult>
 
     /**
@@ -270,18 +271,6 @@ interface Channel {
         message = "Will be removed from SDK in the future",
         level = DeprecationLevel.WARNING,
     )
-    fun sendText(
-        text: String,
-        meta: Map<String, Any>? = null,
-        shouldStore: Boolean = true,
-        usePost: Boolean = false,
-        ttl: Int? = null,
-        quotedMessage: Message? = null,
-        mentions: List<Mention>? = null,
-        files: List<InputFile>? = null,
-    ): PNFuture<PNPublishResult>
-
-    @Deprecated("Use `sendText` that accepts `mentions: List<Mention>` instead.")
     fun sendText(
         text: String,
         meta: Map<String, Any>? = null,

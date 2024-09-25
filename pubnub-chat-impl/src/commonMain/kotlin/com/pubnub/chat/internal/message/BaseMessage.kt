@@ -10,14 +10,12 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Mention
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.METADATA_MENTIONED_USERS
-import com.pubnub.chat.internal.METADATA_MENTIONS_V2
 import com.pubnub.chat.internal.METADATA_QUOTED_MESSAGE
 import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
 import com.pubnub.chat.internal.METADATA_TEXT_LINKS
@@ -63,8 +61,6 @@ abstract class BaseMessage<T : Message>(
 ) : Message {
     override val meta: Map<String, Any>? get() = metaInternal?.decode() as? Map<String, Any>
     override val quotedMessage: QuotedMessage? get() = metaInternal.extractQuotedMessage()
-    override val mentions: Collection<Mention> get() = metaInternal.extractMentions() ?: emptyList()
-
     override val mentionedUsers: MessageMentionedUsers? get() = metaInternal.extractMentionedUsers()
     override val referencedChannels: MessageReferencedChannels? get() = metaInternal.extractReferencedChannels()
 
@@ -356,9 +352,10 @@ abstract class BaseMessage<T : Message>(
             return this?.asMap()?.get(METADATA_QUOTED_MESSAGE)?.let { PNDataEncoder.decode(it) }
         }
 
-        internal fun JsonElement?.extractMentions(): Collection<Mention>? {
-            return this?.asMap()?.get(METADATA_MENTIONS_V2)?.let { PNDataEncoder.decode(it) }
-        }
+//        internal fun JsonElement?.extractMentions(): Collection<Mention>? {
+// //            return this?.asMap()?.get(METADATA_MENTIONS_V2)?.let { PNDataEncoder.decode(it) }
+//            TODO()
+//        }
 
         internal fun assignAction(actions: Actions?, actionResult: PNMessageAction): Actions {
             val type = actionResult.type
