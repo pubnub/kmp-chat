@@ -45,28 +45,37 @@ sdks:
                     minimum-os-version:
                       - Ubuntu 12.04
                     maximum-os-version:
-                      - Any
+                      - Ubuntu 20.04 LTS
                     target-architecture:
-                      - Any
+                      - x86
+                      - x86-64
                   macOS:
                     runtime-version:
                       - JVM 8
                     minimum-os-version:
                       - macOS 10.12
                     maximum-os-version:
-                      - Any
+                      - macOS 11.0.1
                     target-architecture:
-                      - Any
+                      - x86-64
                   Windows:
                     runtime-version:
                       - JVM 8
                     minimum-os-version:
-                      - Windows Vista
+                      - Windows Vista Ultimate
                     maximum-os-version:
-                      - Any
+                      - Windows 10 Home
                     target-architecture:
-                      - Any
+                      - x86
+                      - x86-64
               requires:
+                -
+                  name: pubnub-kotlin
+                  min-version: 10.0.0
+                  location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-kotlin/10.0.0/pubnub-kotlin-10.0.0.jar
+                  license: PubNub Software Development Kit License
+                  license-url: https://github.com/pubnub/kotlin/blob/master/LICENSE
+                  is-required: Required
 changelog:
   - date: 2024-09-24
     version: v0.8.0
