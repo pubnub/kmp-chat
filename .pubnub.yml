@@ -77,6 +77,11 @@ sdks:
                   license-url: https://github.com/pubnub/kotlin/blob/master/LICENSE
                   is-required: Required
 changelog:
+  - date: 2024-09-25
+    version: v0.8.1
+    changes:
+      - type: improvement
+        text: "Release scripts."
   - date: 2024-09-24
     version: v0.8.0
     changes:
