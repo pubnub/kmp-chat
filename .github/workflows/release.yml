@@ -62,15 +62,15 @@ jobs:
         with:
           token: ${{ secrets.GH_TOKEN }}
           prepend-product-to-tag: true
-      - name: Update Pages
-        uses: ./.github/.release/actions/actions/services/github-pages
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          source-folder: build/dokka/gfmMultiModule
-          jira-api-key: ${{ secrets.JIRA_API_KEY }}
-          last-service: true
-      - name: Upload test reports
-        uses: ./.github/.release/actions/actions/test-reports/upload
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          acceptance-tests-workflow: Tests
+#      - name: Update Pages
+#        uses: ./.github/.release/actions/actions/services/github-pages
+#        with:
+#          token: ${{ secrets.GH_TOKEN }}
+#          source-folder: build/dokka/gfmMultiModule
+#          jira-api-key: ${{ secrets.JIRA_API_KEY }}
+#          last-service: true
+#      - name: Upload test reports
+#        uses: ./.github/.release/actions/actions/test-reports/upload
+#        with:
+#          token: ${{ secrets.GH_TOKEN }}
+#          acceptance-tests-workflow: Tests
