@@ -42,12 +42,31 @@ sdks:
                   Linux:
                     runtime-version:
                       - JVM 8
+                    minimum-os-version:
+                      - Ubuntu 12.04
+                    maximum-os-version:
+                      - Any
+                    target-architecture:
+                      - Any
                   macOS:
                     runtime-version:
                       - JVM 8
+                    minimum-os-version:
+                      - macOS 10.12
+                    maximum-os-version:
+                      - Any
+                    target-architecture:
+                      - Any
                   Windows:
                     runtime-version:
                       - JVM 8
+                    minimum-os-version:
+                      - Windows Vista
+                    maximum-os-version:
+                      - Any
+                    target-architecture:
+                      - Any
+              requires:
 changelog:
   - date: 2024-09-24
     version: v0.8.0
