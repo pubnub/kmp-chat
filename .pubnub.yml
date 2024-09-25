@@ -23,6 +23,31 @@ sdks:
               distribution-repository: maven
               package-name: pubnub-chat-0.8.0
               location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.8.0/
+              supported-platforms:
+                supported-operating-systems:
+                  Android:
+                    runtime-version:
+                      - ART
+                    target-api-level:
+                      - 23
+                    minimum-api-level:
+                      - 23
+                    maximum-api-level:
+                      - 30
+                    target-architecture:
+                      - armeabi-v7a
+                      - atom
+                      - armeabi
+                      - arm64-v8a
+                  Linux:
+                    runtime-version:
+                      - JVM 8
+                  macOS:
+                    runtime-version:
+                      - JVM 8
+                  Windows:
+                    runtime-version:
+                      - JVM 8
 changelog:
   - date: 2024-09-24
     version: v0.8.0
