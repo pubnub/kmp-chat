@@ -17,5 +17,22 @@
           "clearedPrefix": true,
           "clearedSuffix": false
         }
+  ],
+  ".pubnub.yml": [
+    {
+      "pattern": "^version: (v?(\\d+\\.?){2,}([a-zA-Z0-9-]+(\\.?\\d+)?)?)$",
+      "clearedPrefix": true,
+      "clearedSuffix": false
+    },
+    {
+      "pattern": "\\s+package-name: pubnub-chat-(v?(\\d+\\.?){2,}([a-zA-Z0-9-]+(\\.?\\d+)?)?)(-all)?$",
+      "clearedPrefix": true,
+      "clearedSuffix": false
+    },
+    {
+      "pattern": "/pubnub/pubnub-chat/(v?(\\d+\\.?){2,}([a-zA-Z0-9-]+(\\.?\\d+)?)?)/",
+      "clearedPrefix": true,
+      "clearedSuffix": false
+    }
   ]
 }

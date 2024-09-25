@@ -1,7 +1,7 @@
 {
   "chat": {
     "path": "./",
-    "name": "JVM Chat SDK",
+    "name": "PubNub Kotlin Chat SDK",
     "main": true,
     "overrideRelease": true
   }
