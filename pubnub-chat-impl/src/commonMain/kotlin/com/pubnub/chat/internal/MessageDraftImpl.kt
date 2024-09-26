@@ -1,5 +1,6 @@
 package com.pubnub.chat.internal
 
+import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.chat.Channel
 import com.pubnub.chat.MentionTarget
@@ -42,10 +43,10 @@ class MessageDraftImpl(
 
     private fun revalidateMentions(): PNFuture<Map<Int, List<SuggestedMention>>> {
         val allUserMentions = userMentionRegex.findAll(messageText).toList()
-        val allUserMentionStarts = allUserMentions.map { it.matchStart }.toSet()
+//        val allUserMentionStarts = allUserMentions.map { it.matchStart }.toSet()
 
         val allChannelMentions = channelReferenceRegex.findAll(messageText).toList()
-        val allChannelMentionStarts = allUserMentions.map { it.matchStart }.toSet()
+//        val allChannelMentionStarts = allUserMentions.map { it.matchStart }.toSet()
 
 //        // clean up mentions that no longer start with a @ or #, or are empty strings
 //        mentions.removeIf { mention ->
@@ -166,7 +167,9 @@ class MessageDraftImpl(
     }
 
     override fun insertSuggestedMention(mention: SuggestedMention, text: String): PNFuture<Map<Int, List<SuggestedMention>>> {
-        // TODO validate if the suggestion is still valid or messageText changed in the meantime
+        if (messageText.substring(mention.start, mention.start + mention.replaceFrom.length) != mention.replaceFrom) {
+            throw PubNubException("This mention suggestion is no longer valid - the message draft text has been changed.")
+        }
         removeTextInternal(mention.start, mention.replaceFrom.length)
         insertTextInternal(mention.start, text)
         addMention(mention.start, text.length, mention.target)
@@ -300,19 +303,17 @@ class Mention(
 ) : Comparable<Mention> {
     val endExclusive get() = start + length
 
-    val startChar: Char? = when (target) {
-        is MentionTarget.User -> '@'
-        is MentionTarget.Channel -> '#'
-        is MentionTarget.Url -> null
-    }
+//    val startChar: Char? = when (target) {
+//        is MentionTarget.User -> '@'
+//        is MentionTarget.Channel -> '#'
+//        is MentionTarget.Url -> null
+//    }
 
     override fun compareTo(other: Mention): Int {
         return start.compareTo(other.start)
     }
 }
 
-// private const val textWithinBracketsRegex = """\[(?<text>(?:[^]]*?(?:\\\\)*(?:\\])*)+?)]"""
-// private const val textWithinParensRegex = """\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)"""
 private val linkRegex = Regex("""\[(?<text>(?:[^]]*?(?:\\\\)*(?:\\])*)+?)]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
 
 fun escapeLinkText(text: String) = text.replace("\\", "\\\\").replace("]", "\\]")

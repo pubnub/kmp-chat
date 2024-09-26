@@ -1,9 +1,7 @@
 package com.pubnub.internal
 
 import com.pubnub.chat.Channel
-import com.pubnub.chat.MentionTarget
 import com.pubnub.chat.MessageDraft
-import com.pubnub.chat.SuggestedMention
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.MessageDraftImpl
@@ -61,7 +59,7 @@ class MessageDraftTest {
 //    fun testChannelSuggestions() = runTest {
 //        val draft = MessageDraftImpl(channels.first(), MessageDraft.UserSuggestionSource.GLOBAL, isTypingIndicatorTriggered = false)
 //        val suggestions = draft.update("abc @exa def 123").await()
-////        println(suggestions[4]!!.map { (it as SuggestedMention.SuggestedUserMention).user.name })
+// //        println(suggestions[4]!!.map { (it as SuggestedMention.SuggestedUserMention).user.name })
 //        val suggestedUserMention = suggestions[4]!![1] as SuggestedMention
 //        draft.insertSuggestedMention(suggestedUserMention, suggestedUserMention.user.name!!)
 //        println(draft.render()) // TODO make assertions
@@ -73,7 +71,7 @@ class MessageDraftTest {
 //        every { chat.getUserSuggestions(any(), any()) } returns emptySet<User>().asFuture()
 //
 //        draft.update("abc @exa def 123")
-////        draft.addMention(Mention.UserMention(4, 4, users.first().id))
+// //        draft.addMention(Mention.UserMention(4, 4, users.first().id))
 //        println(draft.render())
 //
 //        draft.update("cr sd rl @exa def 123")
@@ -87,17 +85,17 @@ class MessageDraftTest {
 //    }
 
     @Test
-    fun messageElementsEncodeDecode() {
+    fun messageElementsEncodeDecode() = runTest {
         val draft = MessageDraftImpl(channels.first(), MessageDraft.UserSuggestionSource.GLOBAL, isTypingIndicatorTriggered = false)
-        draft.update("abc @exa def 123")
-        draft.addMention(4, 4, MentionTarget.User("users.exa"))
+        val suggestions = draft.update("abc @exa def 123").await()
+        val suggestion = suggestions[4]!!.first()
+        draft.insertSuggestedMention(suggestion, suggestion.replaceTo)
 
         val rendered = draft.render()
-        assertEquals("abc [@exa](pn-user://users.exa) def 123", rendered)
+        assertEquals("abc [example User 0](pn-user://example.user.0) def 123", rendered)
 
         val draftElements = draft.getMessageElements()
         val renderedElements = messageElements(rendered)
         assertEquals(draftElements, renderedElements)
-
     }
 }

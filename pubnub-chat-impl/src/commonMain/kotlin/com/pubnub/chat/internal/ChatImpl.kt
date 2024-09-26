@@ -904,9 +904,8 @@ class ChatImpl(
         }
 
         return getChannels(filter = "name LIKE '$cacheKey*'", limit = limit).then { getChannelsResponse ->
-            val channels: Set<Channel> = getChannelsResponse.channels
-            suggestedChannelsCache[cacheKey] = channels
-            channels
+            suggestedChannelsCache[cacheKey] = getChannelsResponse.channels
+            getChannelsResponse.channels
         }
     }
 
@@ -918,9 +917,8 @@ class ChatImpl(
         }
 
         return getUsers(filter = "name LIKE '$cacheKey*'", limit = limit).then { getUsersResponse ->
-            val users: Set<User> = getUsersResponse.users
-            suggestedUsersCache[cacheKey] = users
-            users
+            suggestedUsersCache[cacheKey] = getUsersResponse.users
+            getUsersResponse.users
         }
     }
 
