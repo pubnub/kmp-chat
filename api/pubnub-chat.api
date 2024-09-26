@@ -1,4 +1,7 @@
 public final class com/pubnub/chat/MediatorsKt {
+	public static final fun createMessageDraft (Lcom/pubnub/chat/Channel;Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;ZII)Lcom/pubnub/chat/MessageDraft;
+	public static synthetic fun createMessageDraft$default (Lcom/pubnub/chat/Channel;Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;ZIIILjava/lang/Object;)Lcom/pubnub/chat/MessageDraft;
+	public static final fun getMessageElements (Lcom/pubnub/chat/Message;)Ljava/util/List;
 	public static final fun streamUpdatesOn (Lcom/pubnub/chat/Channel$Companion;Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public static final fun streamUpdatesOn (Lcom/pubnub/chat/Membership$Companion;Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public static final fun streamUpdatesOn (Lcom/pubnub/chat/Message$Companion;Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;

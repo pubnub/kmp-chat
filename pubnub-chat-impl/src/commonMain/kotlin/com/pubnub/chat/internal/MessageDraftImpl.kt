@@ -186,8 +186,8 @@ class MessageDraftImpl(
 //        }
         mentions.forEach {
             require(
-                (mention.start >= it.endExclusive) && (mention.endExclusive <= it.start)
-            ) { "Cannot intersect with existing mention: $it" }
+                (mention.start >= it.endExclusive || mention.endExclusive <= it.start)
+            ) { "Cannot intersect with existing mention: ${it.start} ${it.endExclusive}, ${mention.start} ${mention.endExclusive}" }
         }
         mentions.add(mention)
     }
@@ -237,7 +237,7 @@ class MessageDraftImpl(
         return buildList {
             var consumedUntil = 0
             mentions.forEach { mention ->
-                messageText.substring(0, mention.start).takeIf { it.isNotEmpty() }?.let {
+                messageText.substring(consumedUntil, mention.start).takeIf { it.isNotEmpty() }?.let {
                     add(MessageElement.PlainText(it))
                 }
                 add(MessageElement.Link(messageText.substring(mention.start, mention.endExclusive), mention.target))
@@ -324,11 +324,7 @@ fun escapeLinkUrl(text: String) = text.replace("\\", "\\\\").replace(")", "\\)")
 
 fun unEscapeLinkUrl(text: String) = text.replace("\\)", ")").replace("\\\\", "\\")
 
-fun Message.getMessageElements(): List<MessageElement> {
-    return messageElements(text)
-}
-
-internal fun messageElements(text: String): List<MessageElement> {
+fun messageElements(text: String): List<MessageElement> {
     return buildList {
         var offset = 0
         while (true) {

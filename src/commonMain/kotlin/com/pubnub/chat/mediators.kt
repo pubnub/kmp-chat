@@ -1,9 +1,11 @@
 package com.pubnub.chat
 
 import com.pubnub.chat.internal.MembershipImpl
+import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.message.BaseMessage
+import com.pubnub.chat.internal.messageElements
 
 /**
  * Receive updates when specific messages and related message reactions are added, edited, or removed.
@@ -55,3 +57,14 @@ fun User.Companion.streamUpdatesOn(
     users: Collection<User>,
     callback: (users: Collection<User>) -> Unit
 ): AutoCloseable = UserImpl.streamUpdatesOn(users, callback)
+
+fun Message.getMessageElements(): List<MessageElement> {
+    return messageElements(text)
+}
+
+fun Channel.createMessageDraft(
+    userSuggestionSource: MessageDraft.UserSuggestionSource = MessageDraft.UserSuggestionSource.CHANNEL,
+    isTypingIndicatorTriggered: Boolean = true,
+    userLimit: Int = 10,
+    channelLimit: Int = 10
+): MessageDraft = MessageDraftImpl(this, userSuggestionSource, isTypingIndicatorTriggered, userLimit, channelLimit)

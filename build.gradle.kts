@@ -42,7 +42,7 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-                implementation("com.pubnub:pubnub-kotlin-impl:9.2.3")
+//                implementation("com.pubnub:pubnub-kotlin-impl:9.2.3")
             }
         }
 
