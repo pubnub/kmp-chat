@@ -26,7 +26,7 @@ import com.pubnub.kmp.PNFuture
 import kotlin.reflect.KClass
 
 /**
- * To communicate with PubNub, you can use various methods on [Chat] object. For example, you can use deleteChannel()
+ * To communicate with PubNub, you can use various methods on [Chat] object. For example123, you can use deleteChannel()
  * to remove a given channel or wherePresent() to check which channels a given user is subscribed to.
  *
  * By calling methods on the Chat entity, you create chat objects like Channel, User, Message, Membership, ThreadChannel,
