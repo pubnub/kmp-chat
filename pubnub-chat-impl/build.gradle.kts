@@ -17,6 +17,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":pubnub-chat-api"))
+                implementation(project(":pubnub-3p-diff-match-patch"))
                 implementation(libs.pubnub.kotlin.api)
                 implementation(libs.kotlinx.datetime)
                 implementation(libs.kotlinx.serialization.core)
@@ -35,7 +36,6 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(libs.pubnub.kotlin)
-                implementation(libs.diff.match.patch)
                 implementation(kotlin("test-junit"))
             }
         }

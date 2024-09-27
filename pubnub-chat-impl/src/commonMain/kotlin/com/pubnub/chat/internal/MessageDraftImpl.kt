@@ -13,7 +13,9 @@ import com.pubnub.chat.types.InputFile
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.then
-import org.bitbucket.cowwoc.diffmatchpatch.DiffMatchPatch
+import kotlinx.atomicfu.atomic
+import kotlinx.atomicfu.update
+import name.fraser.neil.plaintext.diff_match_patch
 import kotlin.math.min
 
 private val userMentionRegex = Regex("""(?U)(?<=^|\p{Space})(@[\p{L}-]+)""")
@@ -21,6 +23,8 @@ private val channelReferenceRegex = Regex("""(?U)(?<=^|\p{Space})(#[\p{LD}-]+)""
 
 private const val SCHEMA_USER = "pn-user://"
 private const val SCHEMA_CHANNEL = "pn-channel://"
+
+typealias MessageElementsListener = (List<MessageElement>) -> Unit
 
 /**
  * This class is not thread safe. All methods on an instance of `MessageDraft` should only be called
@@ -36,40 +40,50 @@ class MessageDraftImpl(
     override var quotedMessage: Message? = null
     override val files: MutableList<InputFile> = mutableListOf()
 
+    private val listeners = atomic(setOf<MessageElementsListener>())
+
+    override fun addMessageElementsListener(callback: MessageElementsListener) {
+        listeners.update {
+            buildSet {
+                addAll(it)
+                add(callback)
+            }
+        }
+    }
+
+    override fun removeMessageElementsListener(callback: MessageElementsListener) {
+        listeners.update {
+            it.filterNot { element -> element == callback }.toSet()
+        }
+    }
+
+    private fun fireMessageElementsChanged() {
+        val listeners = listeners.value
+        if (listeners.isEmpty()) {
+            return
+        }
+        val messageElements = getMessageElements()
+        listeners.forEach { callback ->
+            callback(messageElements)
+        }
+    }
+
     private val chat = channel.chat as ChatInternal
     private var messageText: StringBuilder = StringBuilder("")
-    private val mentions: MutableSet<Mention> = sortedSetOf()
-    private val diffMatchPatch = DiffMatchPatch()
+    private val mentions: MutableSet<Mention> = mutableSetOf()
+    private val diffMatchPatch = diff_match_patch()
 
     private fun revalidateMentions(): PNFuture<Map<Int, List<SuggestedMention>>> {
         val allUserMentions = userMentionRegex.findAll(messageText).toList()
-//        val allUserMentionStarts = allUserMentions.map { it.matchStart }.toSet()
-
         val allChannelMentions = channelReferenceRegex.findAll(messageText).toList()
-//        val allChannelMentionStarts = allUserMentions.map { it.matchStart }.toSet()
 
-//        // clean up mentions that no longer start with a @ or #, or are empty strings
-//        mentions.removeIf { mention ->
-//            if (mention.length == 0 + (mention.startChar?.let { 1 } ?: 0)) {
-//                true
-//            } else {
-//                when (mention) {
-//                    is Mention.ChannelReference -> mention.start !in allChannelMentionStarts
-//                    is Mention.UserMention -> mention.start !in allUserMentionStarts
-//                    is Mention.TextLink -> false
-//                }
-//            }
-//        }
-
-        // find @s that don't have a Mention attached, we want to get suggestions for them
         val userSuggestionsNeededFor = allUserMentions
-            .filter { matchResult ->
+            .filter { matchResult: MatchResult ->
+                println(matchResult.groupValues)
                 matchResult.matchStart !in mentions
                     .filter { it.target is MentionTarget.User }
                     .map(Mention::start)
             }
-
-        // find #s that don't have a Mention attached, we want to get suggestions for them
         val channelSuggestionsNeededFor = allChannelMentions
             .filter { matchResult ->
                 matchResult.matchStart !in mentions
@@ -79,7 +93,7 @@ class MessageDraftImpl(
 
         val getSuggestedUsersFuture = userSuggestionsNeededFor
             .filter { matchResult -> matchResult.matchString.length > 3 }
-            .map { matchResult ->
+            .map { matchResult: MatchResult ->
                 getSuggestedUsers(matchResult.matchString.substring(1)).then {
                     matchResult.matchStart to it.map { user ->
                         SuggestedMention(matchResult.matchStart, matchResult.matchString, user.name ?: user.id, MentionTarget.User(user.id))
@@ -114,13 +128,16 @@ class MessageDraftImpl(
         }
     }
 
-    private val MatchResult.matchStart get() = groups[1]!!.range.first
+//    private val MatchResult.matchStart get() = groups[1]!!.range.first
+    private val MatchResult.matchStart get() = range.first
     private val MatchResult.matchString get() = groups[1]!!.value
 
     override fun insertText(offset: Int, text: String): PNFuture<Map<Int, List<SuggestedMention>>> {
         insertTextInternal(offset, text)
         triggerTypingIndicator()
-        return revalidateMentions()
+        return revalidateMentions().also {
+            fireMessageElementsChanged()
+        }
     }
 
     private fun insertTextInternal(offset: Int, text: String) {
@@ -129,7 +146,6 @@ class MessageDraftImpl(
         mentions.forEach { mention ->
             when {
                 offset > mention.start && offset < mention.endExclusive -> {
-//                    mention.length += text.length
                     toRemove += mention
                 }
                 offset <= mention.start -> {
@@ -143,19 +159,17 @@ class MessageDraftImpl(
     override fun removeText(offset: Int, length: Int): PNFuture<Map<Int, List<SuggestedMention>>> {
         removeTextInternal(offset, length)
         triggerTypingIndicator()
-        return revalidateMentions()
+        return revalidateMentions().also {
+            fireMessageElementsChanged()
+        }
     }
 
     private fun removeTextInternal(offset: Int, length: Int) {
-        messageText.delete(offset, offset + length)
+        messageText.deleteRange(offset, offset + length)
         val toRemove = mutableSetOf<Mention>()
         mentions.forEach { mention ->
             val removalEnd = offset + length
             if (offset <= mention.endExclusive && removalEnd >= mention.start) {
-//                val intersectStart = max(offset, mention.start)
-//                val intersectEnd = min(removalEnd, mention.endExclusive)
-//                val intersectLen = intersectEnd - intersectStart
-//                mention.length -= intersectLen
                 toRemove += mention
             }
             if (offset < mention.start) {
@@ -172,18 +186,15 @@ class MessageDraftImpl(
         }
         removeTextInternal(mention.start, mention.replaceFrom.length)
         insertTextInternal(mention.start, text)
-        addMention(mention.start, text.length, mention.target)
+        addMentionInternal(mention.start, text.length, mention.target)
         triggerTypingIndicator()
-        return revalidateMentions()
+        return revalidateMentions().also {
+            fireMessageElementsChanged()
+        }
     }
 
-    override fun addMention(offset: Int, length: Int, target: MentionTarget) {
+    private fun addMentionInternal(offset: Int, length: Int, target: MentionTarget) {
         val mention = Mention(offset, length, target)
-//        if (mention.startChar != null) {
-//            require(
-//                messageText[mention.start] == mention.startChar
-//            ) { "Starting character ${mention.startChar} not found at ${mention.start}" }
-//        }
         mentions.forEach {
             require(
                 (mention.start >= it.endExclusive || mention.endExclusive <= it.start)
@@ -192,29 +203,38 @@ class MessageDraftImpl(
         mentions.add(mention)
     }
 
+    override fun addMention(offset: Int, length: Int, target: MentionTarget) {
+        addMentionInternal(offset, length, target)
+        // todo revalidateMentions?
+        fireMessageElementsChanged()
+    }
+
     override fun removeMention(offset: Int) {
-        mentions.removeIf { it.start == offset }
+        mentions.removeAll { it.start == offset }
+        fireMessageElementsChanged()
     }
 
     override fun update(text: String): PNFuture<Map<Int, List<SuggestedMention>>> {
-        val diff = diffMatchPatch.diffMain(messageText.toString(), text).apply {
-            diffMatchPatch.diffCleanupSemantic(this)
+        val diff = diffMatchPatch.diff_main(messageText.toString(), text).apply {
+            diffMatchPatch.diff_cleanupSemantic(this)
         }
         var consumed = 0
         diff.forEach { action ->
             when (action.operation) {
-                DiffMatchPatch.Operation.DELETE -> removeTextInternal(consumed, action.text.length)
-                DiffMatchPatch.Operation.INSERT -> {
+                diff_match_patch.Operation.DELETE -> removeTextInternal(consumed, action.text.length)
+                diff_match_patch.Operation.INSERT -> {
                     insertTextInternal(consumed, action.text)
                     consumed += action.text.length
                 }
-                DiffMatchPatch.Operation.EQUAL -> {
+                diff_match_patch.Operation.EQUAL -> {
                     consumed += action.text.length
                 }
             }
         }
         triggerTypingIndicator()
-        return revalidateMentions()
+        return revalidateMentions().also {
+            fireMessageElementsChanged()
+        }
     }
 
     override fun send(

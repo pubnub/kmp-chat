@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name                     = 'pubnub_chat_api'
-    spec.version                  = '0.8.0'
+    spec.version                  = '0.8.1-DEV'
     spec.homepage                 = ''
     spec.source                   = { :http=> ''}
     spec.authors                  = ''

@@ -13,6 +13,10 @@ interface MessageDraft {
     var quotedMessage: Message?
     val files: MutableList<InputFile>
 
+    fun addMessageElementsListener(callback: (List<MessageElement>) -> Unit)
+
+    fun removeMessageElementsListener(callback: (List<MessageElement>) -> Unit)
+
     fun insertText(offset: Int, text: String): PNFuture<Map<Int, List<SuggestedMention>>>
 
     fun removeText(offset: Int, length: Int): PNFuture<Map<Int, List<SuggestedMention>>>
