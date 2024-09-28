@@ -180,7 +180,7 @@ interface Channel {
      *                    The result of this future can be processed using the `async` method of `PNFuture`.
      *
      */
-    fun whoIsPresent(): PNFuture<Collection<String>> // todo do we have an integTest for this ?
+    fun whoIsPresent(): PNFuture<Collection<String>>
 
     /**
      * Returns information if the user is present on the [Channel]
@@ -189,7 +189,7 @@ interface Channel {
      *
      * @return [PNFuture] with Boolean value informing if a given user is present on a specified [Channel]
      */
-    fun isPresent(userId: String): PNFuture<Boolean> // todo do we have an integTest for this ?
+    fun isPresent(userId: String): PNFuture<Boolean>
 
     /**
      *  Returns historical messages for the [Channel]
