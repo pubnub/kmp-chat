@@ -291,7 +291,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest {
-        val userSuggestions = channel01.getUserSuggestions("sas@las").await()
+        val userSuggestions = channel01.getUserSuggestions("las").await()
         assertEquals(0, userSuggestions.size)
     }
 
@@ -303,7 +303,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         channel01.invite(someUser).await()
 
         // when no data in cache
-        val userSuggestionsMemberships: Set<Membership> = channel01.getUserSuggestions("sas@$userName").await()
+        val userSuggestionsMemberships: Set<Membership> = channel01.getUserSuggestions(userName).await()
 
         // then
         assertEquals(1, userSuggestionsMemberships.size)
@@ -311,7 +311,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(userName, userSuggestionsMemberships.first().user.name)
 
         // when data in cache
-        val userSuggestionsMembershipsFromCache: Set<Membership> = channel01.getUserSuggestions("sas@$userName").await()
+        val userSuggestionsMembershipsFromCache: Set<Membership> = channel01.getUserSuggestions(userName).await()
 
         // then
         assertEquals(1, userSuggestionsMembershipsFromCache.size)
