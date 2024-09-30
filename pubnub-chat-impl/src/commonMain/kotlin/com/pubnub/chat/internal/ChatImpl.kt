@@ -896,7 +896,6 @@ class ChatImpl(
     }
 
     override fun getChannelSuggestions(text: String, limit: Int): PNFuture<Set<Channel>> {
-//        val cacheKey: String = getPhraseToLookFor(text, "#") ?: return emptySet<Channel>().asFuture()
         val cacheKey: String = text
 
         suggestedChannelsCache[cacheKey]?.let { nonNullChannels ->
@@ -910,7 +909,6 @@ class ChatImpl(
     }
 
     override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<User>> {
-//        val cacheKey: String = getPhraseToLookFor(text, "@") ?: return emptySet<User>().asFuture()
         val cacheKey = text
         suggestedUsersCache[cacheKey]?.let { nonNullUser ->
             return nonNullUser.asFuture()
