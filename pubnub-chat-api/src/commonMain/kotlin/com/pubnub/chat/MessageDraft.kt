@@ -13,21 +13,21 @@ interface MessageDraft {
     var quotedMessage: Message?
     val files: MutableList<InputFile>
 
-    fun addMessageElementsListener(callback: (List<MessageElement>) -> Unit)
+    fun addMessageElementsListener(callback: MessageDraftStateListener)
 
-    fun removeMessageElementsListener(callback: (List<MessageElement>) -> Unit)
+    fun removeMessageElementsListener(callback: MessageDraftStateListener)
 
-    fun insertText(offset: Int, text: String): PNFuture<Map<Int, List<SuggestedMention>>>
+    fun insertText(offset: Int, text: String)
 
-    fun removeText(offset: Int, length: Int): PNFuture<Map<Int, List<SuggestedMention>>>
+    fun removeText(offset: Int, length: Int)
 
-    fun insertSuggestedMention(mention: SuggestedMention, text: String): PNFuture<Map<Int, List<SuggestedMention>>>
+    fun insertSuggestedMention(mention: SuggestedMention, text: String)
 
     fun addMention(offset: Int, length: Int, target: MentionTarget)
 
     fun removeMention(offset: Int)
 
-    fun update(text: String): PNFuture<Map<Int, List<SuggestedMention>>>
+    fun update(text: String)
 
     fun send(
         meta: Map<String, Any>? = null,
@@ -35,8 +35,6 @@ interface MessageDraft {
         usePost: Boolean = false,
         ttl: Int? = null,
     ): PNFuture<PNPublishResult>
-
-    fun getMessageElements(): List<MessageElement>
 
     enum class UserSuggestionSource {
         GLOBAL,
@@ -61,3 +59,7 @@ sealed interface MessageElement {
 }
 
 class SuggestedMention(val start: Int, val replaceFrom: String, val replaceTo: String, val target: MentionTarget)
+
+fun interface MessageDraftStateListener {
+    fun onChange(messageElements: List<MessageElement>, suggestedMentions: PNFuture<List<SuggestedMention>>)
+}

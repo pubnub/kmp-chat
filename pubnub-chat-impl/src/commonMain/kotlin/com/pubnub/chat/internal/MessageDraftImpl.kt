@@ -6,6 +6,7 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.MentionTarget
 import com.pubnub.chat.Message
 import com.pubnub.chat.MessageDraft
+import com.pubnub.chat.MessageDraftStateListener
 import com.pubnub.chat.MessageElement
 import com.pubnub.chat.SuggestedMention
 import com.pubnub.chat.User
@@ -24,8 +25,6 @@ private val channelReferenceRegex = Regex("""(?U)(?<=^|\p{Space})(#[\p{LD}-]+)""
 private const val SCHEMA_USER = "pn-user://"
 private const val SCHEMA_CHANNEL = "pn-channel://"
 
-typealias MessageElementsListener = (List<MessageElement>) -> Unit
-
 /**
  * This class is not thread safe. All methods on an instance of `MessageDraft` should only be called
  * from a single thread at a time.
@@ -40,9 +39,9 @@ class MessageDraftImpl(
     override var quotedMessage: Message? = null
     override val files: MutableList<InputFile> = mutableListOf()
 
-    private val listeners = atomic(setOf<MessageElementsListener>())
+    private val listeners = atomic(setOf<MessageDraftStateListener>())
 
-    override fun addMessageElementsListener(callback: MessageElementsListener) {
+    override fun addMessageElementsListener(callback: MessageDraftStateListener) {
         listeners.update {
             buildSet {
                 addAll(it)
@@ -51,7 +50,7 @@ class MessageDraftImpl(
         }
     }
 
-    override fun removeMessageElementsListener(callback: MessageElementsListener) {
+    override fun removeMessageElementsListener(callback: MessageDraftStateListener) {
         listeners.update {
             it.filterNot { element -> element == callback }.toSet()
         }
@@ -63,23 +62,23 @@ class MessageDraftImpl(
             return
         }
         val messageElements = getMessageElements()
+        val suggestions = getSuggestedMentions()
         listeners.forEach { callback ->
-            callback(messageElements)
+            callback.onChange(messageElements, suggestions)
         }
     }
 
     private val chat = channel.chat as ChatInternal
     private var messageText: StringBuilder = StringBuilder("")
-    private val mentions: MutableSet<Mention> = mutableSetOf()
+    private val mentions: MutableList<Mention> = mutableListOf()
     private val diffMatchPatch = DiffMatchPatch()
 
-    private fun revalidateMentions(): PNFuture<Map<Int, List<SuggestedMention>>> {
+    private fun getSuggestedMentions(): PNFuture<List<SuggestedMention>> {
         val allUserMentions = userMentionRegex.findAll(messageText).toList()
         val allChannelMentions = channelReferenceRegex.findAll(messageText).toList()
 
         val userSuggestionsNeededFor = allUserMentions
             .filter { matchResult: MatchResult ->
-                println(matchResult.groupValues)
                 matchResult.matchStart !in mentions
                     .filter { it.target is MentionTarget.User }
                     .map(Mention::start)
@@ -95,26 +94,27 @@ class MessageDraftImpl(
             .filter { matchResult -> matchResult.matchString.length > 3 }
             .map { matchResult: MatchResult ->
                 getSuggestedUsers(matchResult.matchString.substring(1)).then {
-                    matchResult.matchStart to it.map { user ->
+                    it.map { user ->
                         SuggestedMention(matchResult.matchStart, matchResult.matchString, user.name ?: user.id, MentionTarget.User(user.id))
                     }
                 }
-            }.awaitAll().then { listOfPairs ->
-                listOfPairs.toMap()
-            }
+            }.awaitAll()
         val getSuggestedChannelsFuture = channelSuggestionsNeededFor
             .filter { matchResult -> matchResult.matchString.length > 3 }
             .map { matchResult ->
                 getSuggestedChannels(matchResult.matchString.substring(1)).then { channels ->
-                    matchResult.matchStart to channels.map { channel ->
-                        SuggestedMention(matchResult.matchStart, matchResult.matchString, channel.name ?: channel.id, MentionTarget.Channel(channel.id))
+                    channels.map { channel ->
+                        SuggestedMention(
+                            matchResult.matchStart,
+                            matchResult.matchString,
+                            channel.name ?: channel.id,
+                            MentionTarget.Channel(channel.id)
+                        )
                     }
                 }
-            }.awaitAll().then { listOfPairs ->
-                listOfPairs.toMap()
-            }
+            }.awaitAll()
         return awaitAll(getSuggestedUsersFuture, getSuggestedChannelsFuture).then {
-            it.first + it.second
+            it.first.flatten() + it.second.flatten()
         }
     }
 
@@ -128,16 +128,14 @@ class MessageDraftImpl(
         }
     }
 
-//    private val MatchResult.matchStart get() = groups[1]!!.range.first
+//    private val MatchResult.matchStart get() = groups[1]!!.range.first // not supported in JS
     private val MatchResult.matchStart get() = range.first
     private val MatchResult.matchString get() = groups[1]!!.value
 
-    override fun insertText(offset: Int, text: String): PNFuture<Map<Int, List<SuggestedMention>>> {
+    override fun insertText(offset: Int, text: String) {
         insertTextInternal(offset, text)
         triggerTypingIndicator()
-        return revalidateMentions().also {
-            fireMessageElementsChanged()
-        }
+        fireMessageElementsChanged()
     }
 
     private fun insertTextInternal(offset: Int, text: String) {
@@ -156,12 +154,10 @@ class MessageDraftImpl(
         mentions.removeAll(toRemove)
     }
 
-    override fun removeText(offset: Int, length: Int): PNFuture<Map<Int, List<SuggestedMention>>> {
+    override fun removeText(offset: Int, length: Int) {
         removeTextInternal(offset, length)
         triggerTypingIndicator()
-        return revalidateMentions().also {
-            fireMessageElementsChanged()
-        }
+        fireMessageElementsChanged()
     }
 
     private fun removeTextInternal(offset: Int, length: Int) {
@@ -169,7 +165,7 @@ class MessageDraftImpl(
         val toRemove = mutableSetOf<Mention>()
         mentions.forEach { mention ->
             val removalEnd = offset + length
-            if (offset <= mention.endExclusive && removalEnd >= mention.start) {
+            if (offset <= mention.endExclusive && removalEnd > mention.start) {
                 toRemove += mention
             }
             if (offset < mention.start) {
@@ -180,7 +176,7 @@ class MessageDraftImpl(
         mentions.removeAll(toRemove)
     }
 
-    override fun insertSuggestedMention(mention: SuggestedMention, text: String): PNFuture<Map<Int, List<SuggestedMention>>> {
+    override fun insertSuggestedMention(mention: SuggestedMention, text: String) {
         if (messageText.substring(mention.start, mention.start + mention.replaceFrom.length) != mention.replaceFrom) {
             throw PubNubException("This mention suggestion is no longer valid - the message draft text has been changed.")
         }
@@ -188,9 +184,7 @@ class MessageDraftImpl(
         insertTextInternal(mention.start, text)
         addMentionInternal(mention.start, text.length, mention.target)
         triggerTypingIndicator()
-        return revalidateMentions().also {
-            fireMessageElementsChanged()
-        }
+        fireMessageElementsChanged()
     }
 
     private fun addMentionInternal(offset: Int, length: Int, target: MentionTarget) {
@@ -205,7 +199,6 @@ class MessageDraftImpl(
 
     override fun addMention(offset: Int, length: Int, target: MentionTarget) {
         addMentionInternal(offset, length, target)
-        // todo revalidateMentions?
         fireMessageElementsChanged()
     }
 
@@ -214,7 +207,7 @@ class MessageDraftImpl(
         fireMessageElementsChanged()
     }
 
-    override fun update(text: String): PNFuture<Map<Int, List<SuggestedMention>>> {
+    override fun update(text: String) {
         val diff = diffMatchPatch.diff_main(messageText.toString(), text).apply {
             diffMatchPatch.diff_cleanupSemantic(this)
         }
@@ -232,9 +225,7 @@ class MessageDraftImpl(
             }
         }
         triggerTypingIndicator()
-        return revalidateMentions().also {
-            fireMessageElementsChanged()
-        }
+        fireMessageElementsChanged()
     }
 
     override fun send(
@@ -243,7 +234,7 @@ class MessageDraftImpl(
         usePost: Boolean,
         ttl: Int?
     ): PNFuture<PNPublishResult> = channel.sendText(
-        text = render(),
+        text = render(getMessageElements()),
         meta = meta,
         shouldStore = shouldStore,
         usePost = usePost,
@@ -253,47 +244,8 @@ class MessageDraftImpl(
         usersToMention = mentions.mapNotNull { it.target as? MentionTarget.User }.map { it.userId }
     )
 
-    override fun getMessageElements(): List<MessageElement> {
-        return buildList {
-            var consumedUntil = 0
-            mentions.forEach { mention ->
-                messageText.substring(consumedUntil, mention.start).takeIf { it.isNotEmpty() }?.let {
-                    add(MessageElement.PlainText(it))
-                }
-                add(MessageElement.Link(messageText.substring(mention.start, mention.endExclusive), mention.target))
-                consumedUntil = mention.endExclusive
-            }
-            messageText.substring(consumedUntil).takeIf { it.isNotEmpty() }?.let {
-                add(MessageElement.PlainText(it))
-            }
-        }
-    }
-
-    internal fun render(): String {
-        val builder = StringBuilder(messageText.length)
-        getMessageElements().forEach { element ->
-            when (element) {
-                is MessageElement.Link -> {
-                    builder.append("[${escapeLinkText(element.text)}]")
-                    when (val target = element.target) {
-                        is MentionTarget.User -> {
-                            builder.append("(${escapeLinkUrl(SCHEMA_USER + target.userId)})")
-                        }
-
-                        is MentionTarget.Channel -> {
-                            builder.append("(${escapeLinkUrl(SCHEMA_CHANNEL + target.channelId)})")
-                        }
-
-                        is MentionTarget.Url -> {
-                            builder.append("(${escapeLinkUrl(target.url)})")
-                        }
-                    }
-                }
-                is MessageElement.PlainText -> builder.append(element.text)
-            }
-        }
-        return builder.toString()
-    }
+    internal fun getMessageElements(): List<MessageElement> =
+        getMessageElements(messageText, mentions)
 
     private fun getSuggestedUsers(searchText: String): PNFuture<Collection<User>> {
         return if (userSuggestionSource == MessageDraft.UserSuggestionSource.CHANNEL) {
@@ -308,11 +260,117 @@ class MessageDraftImpl(
     private fun getSuggestedChannels(searchText: String): PNFuture<Collection<Channel>> {
         return chat.getChannelSuggestions(searchText, channelLimit)
     }
+
+    companion object {
+        private val linkRegex = Regex("""\[(?<text>(?:[^]]*?(?:\\\\)*(?:\\])*)+?)]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
+
+        internal fun escapeLinkText(text: String) = text.replace("\\", "\\\\").replace("]", "\\]")
+
+        internal fun unEscapeLinkText(text: String) = text.replace("\\]", "]").replace("\\\\", "\\")
+
+        internal fun escapeLinkUrl(text: String) = text.replace("\\", "\\\\").replace(")", "\\)")
+
+        internal fun unEscapeLinkUrl(text: String) = text.replace("\\)", ")").replace("\\\\", "\\")
+
+        /**
+         * Parses text from a received message that includes Markdown links into a list of [MessageElement]
+         */
+        fun getMessageElements(markdownText: String): List<MessageElement> {
+            return buildList {
+                var offset = 0
+                while (true) {
+                    val found = linkRegex.find(markdownText, offset) ?: break
+                    val linkText = unEscapeLinkText(found.groups["text"]!!.value)
+                    val linkTarget = unEscapeLinkUrl(found.groups["link"]!!.value)
+                    markdownText.substring(offset, found.range.first).takeIf { it.isNotEmpty() }?.let {
+                        add(MessageElement.PlainText(it))
+                    }
+                    when {
+                        linkTarget.startsWith(SCHEMA_USER) -> {
+                            add(
+                                MessageElement.Link(
+                                    linkText,
+                                    MentionTarget.User(
+                                        linkTarget.substring(SCHEMA_USER.length)
+                                    )
+                                )
+                            )
+                        }
+
+                        linkTarget.startsWith(SCHEMA_CHANNEL) -> {
+                            add(
+                                MessageElement.Link(
+                                    linkText,
+                                    MentionTarget.Channel(
+                                        linkTarget.substring(SCHEMA_CHANNEL.length)
+                                    )
+                                )
+                            )
+                        }
+
+                        else -> {
+                            add(MessageElement.Link(linkText, MentionTarget.Url(linkTarget)))
+                        }
+                    }
+                    offset = found.range.last + 1
+                }
+                markdownText.substring(offset).takeIf { it.isNotEmpty() }?.let {
+                    add(MessageElement.PlainText(it))
+                }
+            }
+        }
+
+        /**
+         * Combines a list of mentions and draft plain text into a list of [MessageElement]
+         */
+        internal fun getMessageElements(plainText: CharSequence, mentions: List<Mention>): List<MessageElement> {
+            return buildList {
+                var consumedUntil = 0
+                mentions.sorted().forEach { mention ->
+                    plainText.substring(consumedUntil, mention.start).takeIf { it.isNotEmpty() }?.let {
+                        add(MessageElement.PlainText(it))
+                    }
+                    add(MessageElement.Link(plainText.substring(mention.start, mention.endExclusive), mention.target))
+                    consumedUntil = mention.endExclusive
+                }
+                plainText.substring(consumedUntil).takeIf { it.isNotEmpty() }?.let {
+                    add(MessageElement.PlainText(it))
+                }
+            }
+        }
+
+        internal fun render(messageElements: List<MessageElement>): String {
+            val builder = StringBuilder(messageElements.sumOf { it.text.length })
+            messageElements.forEach { element ->
+                when (element) {
+                    is MessageElement.Link -> {
+                        builder.append("[${escapeLinkText(element.text)}]")
+                        when (val target = element.target) {
+                            is MentionTarget.User -> {
+                                builder.append("(${escapeLinkUrl(SCHEMA_USER + target.userId)})")
+                            }
+
+                            is MentionTarget.Channel -> {
+                                builder.append("(${escapeLinkUrl(SCHEMA_CHANNEL + target.channelId)})")
+                            }
+
+                            is MentionTarget.Url -> {
+                                builder.append("(${escapeLinkUrl(target.url)})")
+                            }
+                        }
+                    }
+
+                    is MessageElement.PlainText -> builder.append(element.text)
+                }
+            }
+            return builder.toString()
+        }
+    }
 }
 
-fun Map<Int, SuggestedMention>.getSuggestionsFor(position: Int): List<SuggestedMention> =
-    filter { it.key <= position }
-        .values.filter { suggestedMention ->
+fun List<SuggestedMention>.getSuggestionsFor(position: Int): List<SuggestedMention> =
+    filter { it.start <= position }
+        .filter { suggestedMention ->
             position in suggestedMention.start..(suggestedMention.start + suggestedMention.replaceFrom.length)
         }
 
@@ -323,68 +381,7 @@ class Mention(
 ) : Comparable<Mention> {
     val endExclusive get() = start + length
 
-//    val startChar: Char? = when (target) {
-//        is MentionTarget.User -> '@'
-//        is MentionTarget.Channel -> '#'
-//        is MentionTarget.Url -> null
-//    }
-
     override fun compareTo(other: Mention): Int {
         return start.compareTo(other.start)
-    }
-}
-
-private val linkRegex = Regex("""\[(?<text>(?:[^]]*?(?:\\\\)*(?:\\])*)+?)]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
-
-fun escapeLinkText(text: String) = text.replace("\\", "\\\\").replace("]", "\\]")
-
-fun unEscapeLinkText(text: String) = text.replace("\\]", "]").replace("\\\\", "\\")
-
-fun escapeLinkUrl(text: String) = text.replace("\\", "\\\\").replace(")", "\\)")
-
-fun unEscapeLinkUrl(text: String) = text.replace("\\)", ")").replace("\\\\", "\\")
-
-fun messageElements(text: String): List<MessageElement> {
-    return buildList {
-        var offset = 0
-        while (true) {
-            val found = linkRegex.find(text, offset) ?: break
-            val linkText = unEscapeLinkText(found.groups["text"]!!.value)
-            val linkTarget = unEscapeLinkUrl(found.groups["link"]!!.value)
-            text.substring(offset, found.range.first).takeIf { it.isNotEmpty() }?.let {
-                add(MessageElement.PlainText(it))
-            }
-            when {
-                linkTarget.startsWith(SCHEMA_USER) -> {
-                    add(
-                        MessageElement.Link(
-                            linkText,
-                            MentionTarget.User(
-                                linkTarget.substring(SCHEMA_USER.length)
-                            )
-                        )
-                    )
-                }
-
-                linkTarget.startsWith(SCHEMA_CHANNEL) -> {
-                    add(
-                        MessageElement.Link(
-                            linkText,
-                            MentionTarget.Channel(
-                                linkTarget.substring(SCHEMA_CHANNEL.length)
-                            )
-                        )
-                    )
-                }
-
-                else -> {
-                    add(MessageElement.Link(linkText, MentionTarget.Url(linkTarget)))
-                }
-            }
-            offset = found.range.last + 1
-        }
-        text.substring(offset).takeIf { it.isNotEmpty() }?.let {
-            add(MessageElement.PlainText(it))
-        }
     }
 }
