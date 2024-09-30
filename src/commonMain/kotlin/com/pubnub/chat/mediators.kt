@@ -4,7 +4,6 @@ import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
-import com.pubnub.chat.internal.getMessageElements
 import com.pubnub.chat.internal.message.BaseMessage
 
 /**
@@ -59,7 +58,7 @@ fun User.Companion.streamUpdatesOn(
 ): AutoCloseable = UserImpl.streamUpdatesOn(users, callback)
 
 fun Message.getMessageElements(): List<MessageElement> {
-    return getMessageElements(text)
+    return MessageDraftImpl.getMessageElements(text)
 }
 
 fun Channel.createMessageDraft(

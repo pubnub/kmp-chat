@@ -1,0 +1,97 @@
+public final class name/fraser/neil/plaintext/DiffMatchPatch {
+	public static final field Companion Lname/fraser/neil/plaintext/DiffMatchPatch$Companion;
+	public fun <init> ()V
+	public fun <init> (FSFIFS)V
+	public synthetic fun <init> (FSFIFSILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun diff_bisect (Ljava/lang/String;Ljava/lang/String;J)Ljava/util/List;
+	public final fun diff_charsToLines (Ljava/util/List;Ljava/util/List;)V
+	public final fun diff_cleanupEfficiency (Ljava/util/List;)V
+	public final fun diff_cleanupMerge (Ljava/util/List;)V
+	public final fun diff_cleanupSemantic (Ljava/util/List;)V
+	public final fun diff_cleanupSemanticLossless (Ljava/util/List;)V
+	public final fun diff_commonOverlap (Ljava/lang/String;Ljava/lang/String;)I
+	public final fun diff_commonPrefix (Ljava/lang/String;Ljava/lang/String;)I
+	public final fun diff_commonSuffix (Ljava/lang/String;Ljava/lang/String;)I
+	public final fun diff_halfMatch (Ljava/lang/String;Ljava/lang/String;)[Ljava/lang/String;
+	public final fun diff_levenshtein (Ljava/util/List;)I
+	public final fun diff_main (Ljava/lang/String;Ljava/lang/String;Z)Ljava/util/List;
+	public static synthetic fun diff_main$default (Lname/fraser/neil/plaintext/DiffMatchPatch;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Ljava/util/List;
+	public final fun diff_prettyHtml (Ljava/util/List;)Ljava/lang/String;
+	public final fun diff_text1 (Ljava/util/List;)Ljava/lang/String;
+	public final fun diff_text2 (Ljava/util/List;)Ljava/lang/String;
+	public final fun diff_xIndex (Ljava/util/List;I)I
+	public final fun getDiffEditCost ()S
+	public final fun getDiffTimeout ()F
+	public final fun getMatchDistance ()I
+	public final fun getMatchThreshold ()F
+	public final fun getPatchDeleteThreshold ()F
+	public final fun getPatchMargin ()S
+	public final fun match_alphabet (Ljava/lang/String;)Ljava/util/Map;
+	public final fun match_bitap (Ljava/lang/String;Ljava/lang/String;I)I
+	public final fun match_main (Ljava/lang/String;Ljava/lang/String;I)I
+	public final fun patch_addContext (Lname/fraser/neil/plaintext/DiffMatchPatch$Patch;Ljava/lang/String;)V
+	public final fun patch_addPadding (Ljava/util/List;)Ljava/lang/String;
+	public final fun patch_apply (Ljava/util/List;Ljava/lang/String;)[Ljava/lang/Object;
+	public final fun patch_deepCopy (Ljava/util/List;)Ljava/util/List;
+	public final fun patch_make (Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;
+	public final fun patch_make (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)Ljava/util/List;
+	public final fun patch_make (Ljava/lang/String;Ljava/util/List;)Ljava/util/List;
+	public final fun patch_make (Ljava/util/List;)Ljava/util/List;
+	public final fun patch_splitMax (Ljava/util/List;)V
+	public final fun patch_toText (Ljava/util/List;)Ljava/lang/String;
+	public final fun setDiffEditCost (S)V
+	public final fun setDiffTimeout (F)V
+	public final fun setMatchDistance (I)V
+	public final fun setMatchThreshold (F)V
+	public final fun setPatchDeleteThreshold (F)V
+	public final fun setPatchMargin (S)V
+}
+
+public final class name/fraser/neil/plaintext/DiffMatchPatch$Companion {
+}
+
+public final class name/fraser/neil/plaintext/DiffMatchPatch$Diff {
+	public fun <init> (Lname/fraser/neil/plaintext/DiffMatchPatch$Operation;Ljava/lang/String;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getOperation ()Lname/fraser/neil/plaintext/DiffMatchPatch$Operation;
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun setOperation (Lname/fraser/neil/plaintext/DiffMatchPatch$Operation;)V
+	public final fun setText (Ljava/lang/String;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class name/fraser/neil/plaintext/DiffMatchPatch$LinesToCharsResult {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public final fun getChars1 ()Ljava/lang/String;
+	public final fun getChars2 ()Ljava/lang/String;
+	public final fun getLineArray ()Ljava/util/List;
+	public final fun setChars1 (Ljava/lang/String;)V
+	public final fun setChars2 (Ljava/lang/String;)V
+	public final fun setLineArray (Ljava/util/List;)V
+}
+
+public final class name/fraser/neil/plaintext/DiffMatchPatch$Operation : java/lang/Enum {
+	public static final field DELETE Lname/fraser/neil/plaintext/DiffMatchPatch$Operation;
+	public static final field EQUAL Lname/fraser/neil/plaintext/DiffMatchPatch$Operation;
+	public static final field INSERT Lname/fraser/neil/plaintext/DiffMatchPatch$Operation;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lname/fraser/neil/plaintext/DiffMatchPatch$Operation;
+	public static fun values ()[Lname/fraser/neil/plaintext/DiffMatchPatch$Operation;
+}
+
+public final class name/fraser/neil/plaintext/DiffMatchPatch$Patch {
+	public fun <init> ()V
+	public final fun getDiffs ()Ljava/util/List;
+	public final fun getLength1 ()I
+	public final fun getLength2 ()I
+	public final fun getStart1 ()I
+	public final fun getStart2 ()I
+	public final fun setDiffs (Ljava/util/List;)V
+	public final fun setLength1 (I)V
+	public final fun setLength2 (I)V
+	public final fun setStart1 (I)V
+	public final fun setStart2 (I)V
+	public fun toString ()Ljava/lang/String;
+}
+

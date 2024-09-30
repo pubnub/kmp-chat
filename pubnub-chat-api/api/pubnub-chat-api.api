@@ -216,22 +216,23 @@ public final class com/pubnub/chat/Message$Companion {
 
 public abstract interface class com/pubnub/chat/MessageDraft {
 	public abstract fun addMention (IILcom/pubnub/chat/MentionTarget;)V
+	public abstract fun addMessageElementsListener (Lcom/pubnub/chat/MessageDraftStateListener;)V
 	public abstract fun getChannel ()Lcom/pubnub/chat/Channel;
 	public abstract fun getChannelLimit ()I
 	public abstract fun getFiles ()Ljava/util/List;
-	public abstract fun getMessageElements ()Ljava/util/List;
 	public abstract fun getQuotedMessage ()Lcom/pubnub/chat/Message;
 	public abstract fun getUserLimit ()I
 	public abstract fun getUserSuggestionSource ()Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
-	public abstract fun insertSuggestedMention (Lcom/pubnub/chat/SuggestedMention;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun insertText (ILjava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun insertSuggestedMention (Lcom/pubnub/chat/SuggestedMention;Ljava/lang/String;)V
+	public abstract fun insertText (ILjava/lang/String;)V
 	public abstract fun isTypingIndicatorTriggered ()Z
 	public abstract fun removeMention (I)V
-	public abstract fun removeText (II)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun removeMessageElementsListener (Lcom/pubnub/chat/MessageDraftStateListener;)V
+	public abstract fun removeText (II)V
 	public abstract fun send (Ljava/util/Map;ZZLjava/lang/Integer;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun send$default (Lcom/pubnub/chat/MessageDraft;Ljava/util/Map;ZZLjava/lang/Integer;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun setQuotedMessage (Lcom/pubnub/chat/Message;)V
-	public abstract fun update (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun update (Ljava/lang/String;)V
 }
 
 public final class com/pubnub/chat/MessageDraft$UserSuggestionSource : java/lang/Enum {
@@ -240,6 +241,10 @@ public final class com/pubnub/chat/MessageDraft$UserSuggestionSource : java/lang
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
 	public static fun values ()[Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
+}
+
+public abstract interface class com/pubnub/chat/MessageDraftStateListener {
+	public abstract fun onChange (Ljava/util/List;Lcom/pubnub/kmp/PNFuture;)V
 }
 
 public abstract interface class com/pubnub/chat/MessageElement {

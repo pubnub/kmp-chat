@@ -4,8 +4,10 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
 import com.pubnub.chat.MentionTarget
+import com.pubnub.chat.MessageDraft
 import com.pubnub.chat.MessageDraftStateListener
 import com.pubnub.chat.MessageElement
+import com.pubnub.chat.SuggestedMention
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.Mention
@@ -14,6 +16,7 @@ import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
+import com.pubnub.test.await
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -22,6 +25,7 @@ import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verifyNoMoreCalls
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -48,19 +52,31 @@ class MessageDraftTest {
     }.toList()
 
     init {
-        every { chat.getUserSuggestions("exa", any()) } returns users.filter { it.name!!.startsWith("exa") }.toSet().asFuture()
-        every { chat.getUserSuggestions("exam", any()) } returns users.filter { it.name!!.startsWith("exam") }.toSet().asFuture()
-        every { chat.getUserSuggestions("examp", any()) } returns users.filter { it.name!!.startsWith("examp") }.toSet().asFuture()
-        every { chat.getUserSuggestions("sam", any()) } returns users.filter { it.name!!.startsWith("sam") }.toSet().asFuture()
-        every { chat.getUserSuggestions("samp", any()) } returns users.filter { it.name!!.startsWith("samp") }.toSet().asFuture()
-        every { chat.getUserSuggestions("sampl", any()) } returns users.filter { it.name!!.startsWith("sampl") }.toSet().asFuture()
+        every { chat.getUserSuggestions("exa", any()) } returns users.filter { it.name!!.startsWith("exa") }.toSet()
+            .asFuture()
+        every { chat.getUserSuggestions("exam", any()) } returns users.filter { it.name!!.startsWith("exam") }.toSet()
+            .asFuture()
+        every { chat.getUserSuggestions("examp", any()) } returns users.filter { it.name!!.startsWith("examp") }.toSet()
+            .asFuture()
+        every { chat.getUserSuggestions("sam", any()) } returns users.filter { it.name!!.startsWith("sam") }.toSet()
+            .asFuture()
+        every { chat.getUserSuggestions("samp", any()) } returns users.filter { it.name!!.startsWith("samp") }.toSet()
+            .asFuture()
+        every { chat.getUserSuggestions("sampl", any()) } returns users.filter { it.name!!.startsWith("sampl") }.toSet()
+            .asFuture()
 
-        every { chat.getChannelSuggestions("exa", any()) } returns channels.filter { it.name!!.startsWith("exa") }.toSet().asFuture()
-        every { chat.getChannelSuggestions("exam", any()) } returns channels.filter { it.name!!.startsWith("exam") }.toSet().asFuture()
-        every { chat.getChannelSuggestions("examp", any()) } returns channels.filter { it.name!!.startsWith("examp") }.toSet().asFuture()
-        every { chat.getChannelSuggestions("sam", any()) } returns channels.filter { it.name!!.startsWith("sam") }.toSet().asFuture()
-        every { chat.getChannelSuggestions("samp", any()) } returns channels.filter { it.name!!.startsWith("samp") }.toSet().asFuture()
-        every { chat.getChannelSuggestions("sampl", any()) } returns channels.filter { it.name!!.startsWith("sampl") }.toSet().asFuture()
+        every { chat.getChannelSuggestions("exa", any()) } returns channels.filter { it.name!!.startsWith("exa") }
+            .toSet().asFuture()
+        every { chat.getChannelSuggestions("exam", any()) } returns channels.filter { it.name!!.startsWith("exam") }
+            .toSet().asFuture()
+        every { chat.getChannelSuggestions("examp", any()) } returns channels.filter { it.name!!.startsWith("examp") }
+            .toSet().asFuture()
+        every { chat.getChannelSuggestions("sam", any()) } returns channels.filter { it.name!!.startsWith("sam") }
+            .toSet().asFuture()
+        every { chat.getChannelSuggestions("samp", any()) } returns channels.filter { it.name!!.startsWith("samp") }
+            .toSet().asFuture()
+        every { chat.getChannelSuggestions("sampl", any()) } returns channels.filter { it.name!!.startsWith("sampl") }
+            .toSet().asFuture()
     }
 
     @Test
@@ -86,7 +102,13 @@ class MessageDraftTest {
 
     @Test
     fun isTypingIndicatorFired_true() {
-        every { chat.emitEvent(any(), any(), any()) } returns PNFuture { it.accept(Result.success(PNPublishResult(123))) }
+        every {
+            chat.emitEvent(
+                any(),
+                any(),
+                any()
+            )
+        } returns PNFuture { it.accept(Result.success(PNPublishResult(123))) }
         val draft = MessageDraftImpl(channels.first(), isTypingIndicatorTriggered = true)
         draft.update("aaa")
         verify { chat.emitEvent(channels.first().id, any(), any()) }
@@ -94,7 +116,13 @@ class MessageDraftTest {
 
     @Test
     fun isTypingIndicatorFired_false() {
-        every { chat.emitEvent(any(), any(), any()) } returns PNFuture { it.accept(Result.success(PNPublishResult(123))) }
+        every {
+            chat.emitEvent(
+                any(),
+                any(),
+                any()
+            )
+        } returns PNFuture { it.accept(Result.success(PNPublishResult(123))) }
         val draft = MessageDraftImpl(channels.first(), isTypingIndicatorTriggered = false)
         draft.update("aaa")
         verifyNoMoreCalls(chat)
@@ -116,8 +144,14 @@ class MessageDraftTest {
         assertEquals(
             listOf(
                 listOf<MessageElement>(MessageElement.PlainText("aaaa")),
-                listOf<MessageElement>(MessageElement.PlainText("aa"), MessageElement.Link("aa", MentionTarget.User("abc"))),
-                listOf<MessageElement>(MessageElement.PlainText("aabbb"), MessageElement.Link("aa", MentionTarget.User("abc"))),
+                listOf<MessageElement>(
+                    MessageElement.PlainText("aa"),
+                    MessageElement.Link("aa", MentionTarget.User("abc"))
+                ),
+                listOf<MessageElement>(
+                    MessageElement.PlainText("aabbb"),
+                    MessageElement.Link("aa", MentionTarget.User("abc"))
+                ),
                 listOf<MessageElement>(MessageElement.PlainText("aabbbaccca")),
             ),
             list
@@ -146,7 +180,10 @@ class MessageDraftTest {
                     MessageElement.Link("bb", MentionTarget.User("abc")),
                     MessageElement.PlainText("baccc")
                 ),
-                listOf<MessageElement>(MessageElement.Link("bb", MentionTarget.User("abc")), MessageElement.PlainText("baccc")),
+                listOf<MessageElement>(
+                    MessageElement.Link("bb", MentionTarget.User("abc")),
+                    MessageElement.PlainText("baccc")
+                ),
                 listOf<MessageElement>(MessageElement.PlainText("baccc")),
             ),
             list
@@ -170,7 +207,10 @@ class MessageDraftTest {
         assertEquals(
             listOf(
                 listOf<MessageElement>(MessageElement.PlainText("a bb")),
-                listOf<MessageElement>(MessageElement.PlainText("a "), MessageElement.Link("bb", MentionTarget.User("abc"))),
+                listOf<MessageElement>(
+                    MessageElement.PlainText("a "),
+                    MessageElement.Link("bb", MentionTarget.User("abc"))
+                ),
                 listOf<MessageElement>(
                     MessageElement.PlainText("dd bb a "),
                     MessageElement.Link("bb", MentionTarget.User("abc")),
@@ -191,7 +231,10 @@ class MessageDraftTest {
             MessageElement.Link("example user 0", MentionTarget.User("example.user.0")),
             MessageElement.PlainText(" def 123 "),
         )
-        assertEquals("abc [example user 0](pn-user://example.user.0) def 123 ", MessageDraftImpl.render(messageElements1))
+        assertEquals(
+            "abc [example user 0](pn-user://example.user.0) def 123 ",
+            MessageDraftImpl.render(messageElements1)
+        )
 
         // last mention
         val messageElements2 = listOf(
@@ -231,7 +274,8 @@ class MessageDraftTest {
         assertEquals(messageElements1, MessageDraftImpl.getMessageElements(text1))
 
         // last mention
-        val text2 = "abc [example user 0](pn-user://example.user.0) def 123 [example chan 0](pn-channel://example.chan.0)"
+        val text2 =
+            "abc [example user 0](pn-user://example.user.0) def 123 [example chan 0](pn-channel://example.chan.0)"
         val messageElements2 = listOf(
             MessageElement.PlainText("abc "),
             MessageElement.Link("example user 0", MentionTarget.User("example.user.0")),
@@ -242,7 +286,8 @@ class MessageDraftTest {
         assertEquals(messageElements2, MessageDraftImpl.getMessageElements(text2))
 
         // first mention
-        val text3 = "[link](http://aaa) abc [example user 0](pn-user://example.user.0) def 123 [example chan 0](pn-channel://example.chan.0)"
+        val text3 =
+            "[link](http://aaa) abc [example user 0](pn-user://example.user.0) def 123 [example chan 0](pn-channel://example.chan.0)"
         val messageElements3 = listOf(
             MessageElement.Link("link", MentionTarget.Url("http://aaa")),
             MessageElement.PlainText(" abc "),
@@ -313,18 +358,41 @@ class MessageDraftTest {
             assertEquals(it.second, MessageDraftImpl.unEscapeLinkUrl(it.first))
         }
     }
+
+    @Test
+    fun testSuggestions() = runTest {
+        val draft = MessageDraftImpl(
+            channels.first(),
+            MessageDraft.UserSuggestionSource.GLOBAL,
+            isTypingIndicatorTriggered = false
+        )
+        val result = CompletableDeferred<List<SuggestedMention>>()
+        draft.addMessageElementsListener { messageElements, suggestedMentions ->
+            backgroundScope.launch {
+                if (!result.isCompleted) {
+                    result.complete(suggestedMentions.await())
+                }
+            }
+        }
+
+        draft.update("abc @exa def 123")
+        val suggestion = result.await().first()
+        draft.insertSuggestedMention(suggestion, suggestion.replaceTo)
+
+        assertEquals("@exa", suggestion.replaceFrom)
+        assertEquals("example User 0", suggestion.replaceTo)
+        assertEquals("example.user.0", (suggestion.target as? MentionTarget.User)?.userId)
+
+        assertEquals(
+            listOf(
+                MessageElement.PlainText("abc "),
+                MessageElement.Link("example User 0", MentionTarget.User("example.user.0")),
+                MessageElement.PlainText(" def 123")
+            ),
+            draft.getMessageElements()
+        )
+    }
 }
-
-//    @Test
-//    fun testChannelSuggestions() = runTest {
-//        val draft = MessageDraftImpl(channels.first(), MessageDraft.UserSuggestionSource.GLOBAL, isTypingIndicatorTriggered = false)
-//        val suggestions = draft.update("abc @exa def 123").await()
-// //        println(suggestions[4]!!.map { (it as SuggestedMention.SuggestedUserMention).user.name })
-//        val suggestedUserMention = suggestions[4]!![1] as SuggestedMention
-//        draft.insertSuggestedMention(suggestedUserMention, suggestedUserMention.user.name!!)
-//        println(draft.render()) // TODO make assertions
-//    }
-
 //        val draft = MessageDraftImpl(channels.first(), MessageDraft.UserSuggestionSource.GLOBAL, isTypingIndicatorTriggered = false)
 //        val resultList = mutableListOf<List<MessageElement>>()
 //        val suggestion = CompletableDeferred<SuggestedMention>()
