@@ -142,7 +142,7 @@ data class ThreadChannelImpl(
         usersToMention: Collection<String>?,
     ): PNFuture<PNPublishResult> {
         return createThreadAndSend {
-            sendText(
+            super.sendText(
                 text = text,
                 meta = meta,
                 shouldStore = shouldStore,
