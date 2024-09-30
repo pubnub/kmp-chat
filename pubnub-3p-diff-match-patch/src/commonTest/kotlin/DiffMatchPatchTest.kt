@@ -18,14 +18,14 @@
 package name.fraser.neil.plaintext
 
 import kotlinx.datetime.Clock
-import name.fraser.neil.plaintext.diff_match_patch.LinesToCharsResult
+import name.fraser.neil.plaintext.DiffMatchPatch.LinesToCharsResult
 import kotlin.test.Test
 
-class diff_match_patch_test {
-    private val dmp: diff_match_patch = diff_match_patch()
-    private val DELETE = diff_match_patch.Operation.DELETE
-    private val EQUAL = diff_match_patch.Operation.EQUAL
-    private val INSERT = diff_match_patch.Operation.INSERT
+class DiffMatchPatchTest {
+    private val dmp: DiffMatchPatch = DiffMatchPatch()
+    private val DELETE = DiffMatchPatch.Operation.DELETE
+    private val EQUAL = DiffMatchPatch.Operation.EQUAL
+    private val INSERT = DiffMatchPatch.Operation.INSERT
 
 
     //  DIFF TEST FUNCTIONS
@@ -68,7 +68,7 @@ class diff_match_patch_test {
     @Test
     fun testDiffHalfmatch() {
         // Detect a halfmatch.
-        dmp.Diff_Timeout = 1f
+        dmp.diffTimeout = 1f
         assertNull("diff_halfMatch: No match #1.", dmp.diff_halfMatch("1234567890", "abcdef"))
 
         assertNull("diff_halfMatch: No match #2.", dmp.diff_halfMatch("12345", "23"))
@@ -122,7 +122,7 @@ class diff_match_patch_test {
             dmp.diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy")
         )
 
-        dmp.Diff_Timeout = 0f
+        dmp.diffTimeout = 0f
         assertNull("diff_halfMatch: Optimal no halfmatch.", dmp.diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy"))
     }
 
@@ -186,8 +186,8 @@ class diff_match_patch_test {
     fun testDiffCharsToLines() {
         // First check that Diff equality works.
         assertTrue(
-            "diff_charsToLines: Equality #1.", diff_match_patch.Diff(EQUAL, "a").equals(
-                diff_match_patch.Diff(
+            "diff_charsToLines: Equality #1.", DiffMatchPatch.Diff(EQUAL, "a").equals(
+                DiffMatchPatch.Diff(
                     EQUAL, "a"
                 )
             )
@@ -195,14 +195,14 @@ class diff_match_patch_test {
 
         assertEquals(
             "diff_charsToLines: Equality #2.",
-            diff_match_patch.Diff(EQUAL, "a"),
-            diff_match_patch.Diff(EQUAL, "a")
+            DiffMatchPatch.Diff(EQUAL, "a"),
+            DiffMatchPatch.Diff(EQUAL, "a")
         )
 
         // Convert chars up to lines.
         var diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "\u0001\u0002\u0001"),
-            diff_match_patch.Diff(INSERT, "\u0002\u0001\u0002")
+            DiffMatchPatch.Diff(EQUAL, "\u0001\u0002\u0001"),
+            DiffMatchPatch.Diff(INSERT, "\u0002\u0001\u0002")
         )
         val tmpVector = ArrayList<String>()
         tmpVector.add("")
@@ -211,7 +211,7 @@ class diff_match_patch_test {
         dmp.diff_charsToLines(diffs, tmpVector)
         assertEquals(
             "diff_charsToLines: Shared lines.", diffList(
-                diff_match_patch.Diff(EQUAL, "alpha\nbeta\nalpha\n"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(EQUAL, "alpha\nbeta\nalpha\n"), DiffMatchPatch.Diff(
                     INSERT, "beta\nalpha\nbeta\n"
                 )
             ), diffs
@@ -232,9 +232,9 @@ class diff_match_patch_test {
         var chars = charList.toString()
         assertEquals("Test initialization fail #4.", n, chars.length)
         tmpVector.add(0, "")
-        diffs = diffList(diff_match_patch.Diff(DELETE, chars))
+        diffs = diffList(DiffMatchPatch.Diff(DELETE, chars))
         dmp.diff_charsToLines(diffs, tmpVector)
-        assertEquals("diff_charsToLines: More than 256.", diffList(diff_match_patch.Diff(DELETE, lines)), diffs)
+        assertEquals("diff_charsToLines: More than 256.", diffList(DiffMatchPatch.Diff(DELETE, lines)), diffs)
 
         // More than 65536 to verify any 16-bit limitation.
         lineList = StringBuilder()
@@ -243,7 +243,7 @@ class diff_match_patch_test {
         }
         chars = lineList.toString()
         val results = dmp.diff_linesToChars(chars, "")
-        diffs = diffList(diff_match_patch.Diff(INSERT, results.chars1))
+        diffs = diffList(DiffMatchPatch.Diff(INSERT, results.chars1))
         dmp.diff_charsToLines(diffs, results.lineArray)
         assertEquals("diff_charsToLines: More than 65536.", chars, diffs.first().text)
     }
@@ -256,168 +256,168 @@ class diff_match_patch_test {
         assertEquals("diff_cleanupMerge: Null case.", diffList(), diffs)
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(DELETE, "b"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(DELETE, "b"), DiffMatchPatch.Diff(
                 INSERT, "c"
             )
         )
         dmp.diff_cleanupMerge(diffs)
         assertEquals(
             "diff_cleanupMerge: No change case.", diffList(
-                diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(
                     DELETE, "b"
-                ), diff_match_patch.Diff(INSERT, "c")
+                ), DiffMatchPatch.Diff(INSERT, "c")
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(EQUAL, "b"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(EQUAL, "b"), DiffMatchPatch.Diff(
                 EQUAL, "c"
             )
         )
         dmp.diff_cleanupMerge(diffs)
-        assertEquals("diff_cleanupMerge: Merge equalities.", diffList(diff_match_patch.Diff(EQUAL, "abc")), diffs)
+        assertEquals("diff_cleanupMerge: Merge equalities.", diffList(DiffMatchPatch.Diff(EQUAL, "abc")), diffs)
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "a"), diff_match_patch.Diff(DELETE, "b"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "a"), DiffMatchPatch.Diff(DELETE, "b"), DiffMatchPatch.Diff(
                 DELETE, "c"
             )
         )
         dmp.diff_cleanupMerge(diffs)
-        assertEquals("diff_cleanupMerge: Merge deletions.", diffList(diff_match_patch.Diff(DELETE, "abc")), diffs)
+        assertEquals("diff_cleanupMerge: Merge deletions.", diffList(DiffMatchPatch.Diff(DELETE, "abc")), diffs)
 
         diffs = diffList(
-            diff_match_patch.Diff(INSERT, "a"), diff_match_patch.Diff(INSERT, "b"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(INSERT, "a"), DiffMatchPatch.Diff(INSERT, "b"), DiffMatchPatch.Diff(
                 INSERT, "c"
             )
         )
         dmp.diff_cleanupMerge(diffs)
-        assertEquals("diff_cleanupMerge: Merge insertions.", diffList(diff_match_patch.Diff(INSERT, "abc")), diffs)
+        assertEquals("diff_cleanupMerge: Merge insertions.", diffList(DiffMatchPatch.Diff(INSERT, "abc")), diffs)
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "a"), diff_match_patch.Diff(INSERT, "b"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "a"), DiffMatchPatch.Diff(INSERT, "b"), DiffMatchPatch.Diff(
                 DELETE, "c"
-            ), diff_match_patch.Diff(INSERT, "d"), diff_match_patch.Diff(EQUAL, "e"), diff_match_patch.Diff(
+            ), DiffMatchPatch.Diff(INSERT, "d"), DiffMatchPatch.Diff(EQUAL, "e"), DiffMatchPatch.Diff(
                 EQUAL, "f"
             )
         )
         dmp.diff_cleanupMerge(diffs)
         assertEquals(
             "diff_cleanupMerge: Merge interweave.", diffList(
-                diff_match_patch.Diff(DELETE, "ac"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "ac"), DiffMatchPatch.Diff(
                     INSERT, "bd"
-                ), diff_match_patch.Diff(EQUAL, "ef")
+                ), DiffMatchPatch.Diff(EQUAL, "ef")
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "a"), diff_match_patch.Diff(INSERT, "abc"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "a"), DiffMatchPatch.Diff(INSERT, "abc"), DiffMatchPatch.Diff(
                 DELETE, "dc"
             )
         )
         dmp.diff_cleanupMerge(diffs)
         assertEquals(
             "diff_cleanupMerge: Prefix and suffix detection.", diffList(
-                diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(
                     DELETE, "d"
-                ), diff_match_patch.Diff(INSERT, "b"), diff_match_patch.Diff(EQUAL, "c")
+                ), DiffMatchPatch.Diff(INSERT, "b"), DiffMatchPatch.Diff(EQUAL, "c")
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "x"), diff_match_patch.Diff(DELETE, "a"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "x"), DiffMatchPatch.Diff(DELETE, "a"), DiffMatchPatch.Diff(
                 INSERT, "abc"
-            ), diff_match_patch.Diff(DELETE, "dc"), diff_match_patch.Diff(EQUAL, "y")
+            ), DiffMatchPatch.Diff(DELETE, "dc"), DiffMatchPatch.Diff(EQUAL, "y")
         )
         dmp.diff_cleanupMerge(diffs)
         assertEquals(
             "diff_cleanupMerge: Prefix and suffix detection with equalities.", diffList(
-                diff_match_patch.Diff(
+                DiffMatchPatch.Diff(
                     EQUAL, "xa"
-                ), diff_match_patch.Diff(DELETE, "d"), diff_match_patch.Diff(INSERT, "b"), diff_match_patch.Diff(
+                ), DiffMatchPatch.Diff(DELETE, "d"), DiffMatchPatch.Diff(INSERT, "b"), DiffMatchPatch.Diff(
                     EQUAL, "cy"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(INSERT, "ba"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(INSERT, "ba"), DiffMatchPatch.Diff(
                 EQUAL, "c"
             )
         )
         dmp.diff_cleanupMerge(diffs)
         assertEquals(
             "diff_cleanupMerge: Slide edit left.", diffList(
-                diff_match_patch.Diff(INSERT, "ab"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(INSERT, "ab"), DiffMatchPatch.Diff(
                     EQUAL, "ac"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "c"), diff_match_patch.Diff(INSERT, "ab"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "c"), DiffMatchPatch.Diff(INSERT, "ab"), DiffMatchPatch.Diff(
                 EQUAL, "a"
             )
         )
         dmp.diff_cleanupMerge(diffs)
         assertEquals(
             "diff_cleanupMerge: Slide edit right.", diffList(
-                diff_match_patch.Diff(EQUAL, "ca"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(EQUAL, "ca"), DiffMatchPatch.Diff(
                     INSERT, "ba"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(DELETE, "b"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(DELETE, "b"), DiffMatchPatch.Diff(
                 EQUAL, "c"
-            ), diff_match_patch.Diff(DELETE, "ac"), diff_match_patch.Diff(EQUAL, "x")
+            ), DiffMatchPatch.Diff(DELETE, "ac"), DiffMatchPatch.Diff(EQUAL, "x")
         )
         dmp.diff_cleanupMerge(diffs)
         assertEquals(
             "diff_cleanupMerge: Slide edit left recursive.", diffList(
-                diff_match_patch.Diff(DELETE, "abc"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "abc"), DiffMatchPatch.Diff(
                     EQUAL, "acx"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "x"), diff_match_patch.Diff(DELETE, "ca"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "x"), DiffMatchPatch.Diff(DELETE, "ca"), DiffMatchPatch.Diff(
                 EQUAL, "c"
-            ), diff_match_patch.Diff(DELETE, "b"), diff_match_patch.Diff(EQUAL, "a")
+            ), DiffMatchPatch.Diff(DELETE, "b"), DiffMatchPatch.Diff(EQUAL, "a")
         )
         dmp.diff_cleanupMerge(diffs)
         assertEquals(
             "diff_cleanupMerge: Slide edit right recursive.", diffList(
-                diff_match_patch.Diff(EQUAL, "xca"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(EQUAL, "xca"), DiffMatchPatch.Diff(
                     DELETE, "cba"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "b"), diff_match_patch.Diff(INSERT, "ab"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "b"), DiffMatchPatch.Diff(INSERT, "ab"), DiffMatchPatch.Diff(
                 EQUAL, "c"
             )
         )
         dmp.diff_cleanupMerge(diffs)
         assertEquals(
             "diff_cleanupMerge: Empty merge.", diffList(
-                diff_match_patch.Diff(INSERT, "a"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(INSERT, "a"), DiffMatchPatch.Diff(
                     EQUAL, "bc"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, ""), diff_match_patch.Diff(INSERT, "a"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, ""), DiffMatchPatch.Diff(INSERT, "a"), DiffMatchPatch.Diff(
                 EQUAL, "b"
             )
         )
         dmp.diff_cleanupMerge(diffs)
         assertEquals(
             "diff_cleanupMerge: Empty equality.", diffList(
-                diff_match_patch.Diff(INSERT, "a"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(INSERT, "a"), DiffMatchPatch.Diff(
                     EQUAL, "b"
                 )
             ), diffs
@@ -432,106 +432,106 @@ class diff_match_patch_test {
         assertEquals("diff_cleanupSemanticLossless: Null case.", diffList(), diffs)
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "AAA\r\n\r\nBBB"),
-            diff_match_patch.Diff(INSERT, "\r\nDDD\r\n\r\nBBB"),
-            diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "AAA\r\n\r\nBBB"),
+            DiffMatchPatch.Diff(INSERT, "\r\nDDD\r\n\r\nBBB"),
+            DiffMatchPatch.Diff(
                 EQUAL, "\r\nEEE"
             )
         )
         dmp.diff_cleanupSemanticLossless(diffs)
         assertEquals(
             "diff_cleanupSemanticLossless: Blank lines.", diffList(
-                diff_match_patch.Diff(EQUAL, "AAA\r\n\r\n"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(EQUAL, "AAA\r\n\r\n"), DiffMatchPatch.Diff(
                     INSERT, "BBB\r\nDDD\r\n\r\n"
-                ), diff_match_patch.Diff(EQUAL, "BBB\r\nEEE")
+                ), DiffMatchPatch.Diff(EQUAL, "BBB\r\nEEE")
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "AAA\r\nBBB"),
-            diff_match_patch.Diff(INSERT, " DDD\r\nBBB"),
-            diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "AAA\r\nBBB"),
+            DiffMatchPatch.Diff(INSERT, " DDD\r\nBBB"),
+            DiffMatchPatch.Diff(
                 EQUAL, " EEE"
             )
         )
         dmp.diff_cleanupSemanticLossless(diffs)
         assertEquals(
             "diff_cleanupSemanticLossless: Line boundaries.", diffList(
-                diff_match_patch.Diff(EQUAL, "AAA\r\n"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(EQUAL, "AAA\r\n"), DiffMatchPatch.Diff(
                     INSERT, "BBB DDD\r\n"
-                ), diff_match_patch.Diff(EQUAL, "BBB EEE")
+                ), DiffMatchPatch.Diff(EQUAL, "BBB EEE")
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "The c"), diff_match_patch.Diff(INSERT, "ow and the c"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "The c"), DiffMatchPatch.Diff(INSERT, "ow and the c"), DiffMatchPatch.Diff(
                 EQUAL, "at."
             )
         )
         dmp.diff_cleanupSemanticLossless(diffs)
         assertEquals(
             "diff_cleanupSemanticLossless: Word boundaries.", diffList(
-                diff_match_patch.Diff(EQUAL, "The "), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(EQUAL, "The "), DiffMatchPatch.Diff(
                     INSERT, "cow and the "
-                ), diff_match_patch.Diff(EQUAL, "cat.")
+                ), DiffMatchPatch.Diff(EQUAL, "cat.")
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "The-c"), diff_match_patch.Diff(INSERT, "ow-and-the-c"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "The-c"), DiffMatchPatch.Diff(INSERT, "ow-and-the-c"), DiffMatchPatch.Diff(
                 EQUAL, "at."
             )
         )
         dmp.diff_cleanupSemanticLossless(diffs)
         assertEquals(
             "diff_cleanupSemanticLossless: Alphanumeric boundaries.", diffList(
-                diff_match_patch.Diff(EQUAL, "The-"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(EQUAL, "The-"), DiffMatchPatch.Diff(
                     INSERT, "cow-and-the-"
-                ), diff_match_patch.Diff(EQUAL, "cat.")
+                ), DiffMatchPatch.Diff(EQUAL, "cat.")
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(DELETE, "a"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(DELETE, "a"), DiffMatchPatch.Diff(
                 EQUAL, "ax"
             )
         )
         dmp.diff_cleanupSemanticLossless(diffs)
         assertEquals(
             "diff_cleanupSemanticLossless: Hitting the start.", diffList(
-                diff_match_patch.Diff(DELETE, "a"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "a"), DiffMatchPatch.Diff(
                     EQUAL, "aax"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "xa"), diff_match_patch.Diff(DELETE, "a"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "xa"), DiffMatchPatch.Diff(DELETE, "a"), DiffMatchPatch.Diff(
                 EQUAL, "a"
             )
         )
         dmp.diff_cleanupSemanticLossless(diffs)
         assertEquals(
             "diff_cleanupSemanticLossless: Hitting the end.", diffList(
-                diff_match_patch.Diff(EQUAL, "xaa"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(EQUAL, "xaa"), DiffMatchPatch.Diff(
                     DELETE, "a"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "The xxx. The "),
-            diff_match_patch.Diff(INSERT, "zzz. The "),
-            diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "The xxx. The "),
+            DiffMatchPatch.Diff(INSERT, "zzz. The "),
+            DiffMatchPatch.Diff(
                 EQUAL, "yyy."
             )
         )
         dmp.diff_cleanupSemanticLossless(diffs)
         assertEquals(
             "diff_cleanupSemanticLossless: Sentence boundaries.", diffList(
-                diff_match_patch.Diff(EQUAL, "The xxx."), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(EQUAL, "The xxx."), DiffMatchPatch.Diff(
                     INSERT, " The zzz."
-                ), diff_match_patch.Diff(EQUAL, " The yyy.")
+                ), DiffMatchPatch.Diff(EQUAL, " The yyy.")
             ), diffs
         )
     }
@@ -544,140 +544,140 @@ class diff_match_patch_test {
         assertEquals("diff_cleanupSemantic: Null case.", diffList(), diffs)
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "ab"), diff_match_patch.Diff(INSERT, "cd"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "ab"), DiffMatchPatch.Diff(INSERT, "cd"), DiffMatchPatch.Diff(
                 EQUAL, "12"
-            ), diff_match_patch.Diff(DELETE, "e")
+            ), DiffMatchPatch.Diff(DELETE, "e")
         )
         dmp.diff_cleanupSemantic(diffs)
         assertEquals(
             "diff_cleanupSemantic: No elimination #1.", diffList(
-                diff_match_patch.Diff(DELETE, "ab"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "ab"), DiffMatchPatch.Diff(
                     INSERT, "cd"
-                ), diff_match_patch.Diff(EQUAL, "12"), diff_match_patch.Diff(DELETE, "e")
+                ), DiffMatchPatch.Diff(EQUAL, "12"), DiffMatchPatch.Diff(DELETE, "e")
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "abc"), diff_match_patch.Diff(INSERT, "ABC"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "abc"), DiffMatchPatch.Diff(INSERT, "ABC"), DiffMatchPatch.Diff(
                 EQUAL, "1234"
-            ), diff_match_patch.Diff(DELETE, "wxyz")
+            ), DiffMatchPatch.Diff(DELETE, "wxyz")
         )
         dmp.diff_cleanupSemantic(diffs)
         assertEquals(
             "diff_cleanupSemantic: No elimination #2.", diffList(
-                diff_match_patch.Diff(DELETE, "abc"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "abc"), DiffMatchPatch.Diff(
                     INSERT, "ABC"
-                ), diff_match_patch.Diff(EQUAL, "1234"), diff_match_patch.Diff(DELETE, "wxyz")
+                ), DiffMatchPatch.Diff(EQUAL, "1234"), DiffMatchPatch.Diff(DELETE, "wxyz")
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "a"), diff_match_patch.Diff(EQUAL, "b"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "a"), DiffMatchPatch.Diff(EQUAL, "b"), DiffMatchPatch.Diff(
                 DELETE, "c"
             )
         )
         dmp.diff_cleanupSemantic(diffs)
         assertEquals(
             "diff_cleanupSemantic: Simple elimination.", diffList(
-                diff_match_patch.Diff(DELETE, "abc"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "abc"), DiffMatchPatch.Diff(
                     INSERT, "b"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "ab"), diff_match_patch.Diff(EQUAL, "cd"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "ab"), DiffMatchPatch.Diff(EQUAL, "cd"), DiffMatchPatch.Diff(
                 DELETE, "e"
-            ), diff_match_patch.Diff(EQUAL, "f"), diff_match_patch.Diff(INSERT, "g")
+            ), DiffMatchPatch.Diff(EQUAL, "f"), DiffMatchPatch.Diff(INSERT, "g")
         )
         dmp.diff_cleanupSemantic(diffs)
         assertEquals(
             "diff_cleanupSemantic: Backpass elimination.", diffList(
-                diff_match_patch.Diff(DELETE, "abcdef"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "abcdef"), DiffMatchPatch.Diff(
                     INSERT, "cdfg"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(INSERT, "1"), diff_match_patch.Diff(EQUAL, "A"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(INSERT, "1"), DiffMatchPatch.Diff(EQUAL, "A"), DiffMatchPatch.Diff(
                 DELETE, "B"
-            ), diff_match_patch.Diff(INSERT, "2"), diff_match_patch.Diff(EQUAL, "_"), diff_match_patch.Diff(
+            ), DiffMatchPatch.Diff(INSERT, "2"), DiffMatchPatch.Diff(EQUAL, "_"), DiffMatchPatch.Diff(
                 INSERT, "1"
-            ), diff_match_patch.Diff(EQUAL, "A"), diff_match_patch.Diff(DELETE, "B"), diff_match_patch.Diff(
+            ), DiffMatchPatch.Diff(EQUAL, "A"), DiffMatchPatch.Diff(DELETE, "B"), DiffMatchPatch.Diff(
                 INSERT, "2"
             )
         )
         dmp.diff_cleanupSemantic(diffs)
         assertEquals(
             "diff_cleanupSemantic: Multiple elimination.", diffList(
-                diff_match_patch.Diff(DELETE, "AB_AB"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "AB_AB"), DiffMatchPatch.Diff(
                     INSERT, "1A2_1A2"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "The c"), diff_match_patch.Diff(DELETE, "ow and the c"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "The c"), DiffMatchPatch.Diff(DELETE, "ow and the c"), DiffMatchPatch.Diff(
                 EQUAL, "at."
             )
         )
         dmp.diff_cleanupSemantic(diffs)
         assertEquals(
             "diff_cleanupSemantic: Word boundaries.", diffList(
-                diff_match_patch.Diff(EQUAL, "The "), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(EQUAL, "The "), DiffMatchPatch.Diff(
                     DELETE, "cow and the "
-                ), diff_match_patch.Diff(EQUAL, "cat.")
+                ), DiffMatchPatch.Diff(EQUAL, "cat.")
             ), diffs
         )
 
-        diffs = diffList(diff_match_patch.Diff(DELETE, "abcxx"), diff_match_patch.Diff(INSERT, "xxdef"))
+        diffs = diffList(DiffMatchPatch.Diff(DELETE, "abcxx"), DiffMatchPatch.Diff(INSERT, "xxdef"))
         dmp.diff_cleanupSemantic(diffs)
         assertEquals(
             "diff_cleanupSemantic: No overlap elimination.", diffList(
-                diff_match_patch.Diff(DELETE, "abcxx"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "abcxx"), DiffMatchPatch.Diff(
                     INSERT, "xxdef"
                 )
             ), diffs
         )
 
-        diffs = diffList(diff_match_patch.Diff(DELETE, "abcxxx"), diff_match_patch.Diff(INSERT, "xxxdef"))
+        diffs = diffList(DiffMatchPatch.Diff(DELETE, "abcxxx"), DiffMatchPatch.Diff(INSERT, "xxxdef"))
         dmp.diff_cleanupSemantic(diffs)
         assertEquals(
             "diff_cleanupSemantic: Overlap elimination.", diffList(
-                diff_match_patch.Diff(DELETE, "abc"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "abc"), DiffMatchPatch.Diff(
                     EQUAL, "xxx"
-                ), diff_match_patch.Diff(INSERT, "def")
+                ), DiffMatchPatch.Diff(INSERT, "def")
             ), diffs
         )
 
-        diffs = diffList(diff_match_patch.Diff(DELETE, "xxxabc"), diff_match_patch.Diff(INSERT, "defxxx"))
+        diffs = diffList(DiffMatchPatch.Diff(DELETE, "xxxabc"), DiffMatchPatch.Diff(INSERT, "defxxx"))
         dmp.diff_cleanupSemantic(diffs)
         assertEquals(
             "diff_cleanupSemantic: Reverse overlap elimination.", diffList(
-                diff_match_patch.Diff(INSERT, "def"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(INSERT, "def"), DiffMatchPatch.Diff(
                     EQUAL, "xxx"
-                ), diff_match_patch.Diff(DELETE, "abc")
+                ), DiffMatchPatch.Diff(DELETE, "abc")
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "abcd1212"),
-            diff_match_patch.Diff(INSERT, "1212efghi"),
-            diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "abcd1212"),
+            DiffMatchPatch.Diff(INSERT, "1212efghi"),
+            DiffMatchPatch.Diff(
                 EQUAL, "----"
             ),
-            diff_match_patch.Diff(DELETE, "A3"),
-            diff_match_patch.Diff(INSERT, "3BC")
+            DiffMatchPatch.Diff(DELETE, "A3"),
+            DiffMatchPatch.Diff(INSERT, "3BC")
         )
         dmp.diff_cleanupSemantic(diffs)
         assertEquals(
             "diff_cleanupSemantic: Two overlap eliminations.", diffList(
-                diff_match_patch.Diff(DELETE, "abcd"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "abcd"), DiffMatchPatch.Diff(
                     EQUAL, "1212"
-                ), diff_match_patch.Diff(INSERT, "efghi"), diff_match_patch.Diff(EQUAL, "----"), diff_match_patch.Diff(
+                ), DiffMatchPatch.Diff(INSERT, "efghi"), DiffMatchPatch.Diff(EQUAL, "----"), DiffMatchPatch.Diff(
                     DELETE, "A"
-                ), diff_match_patch.Diff(EQUAL, "3"), diff_match_patch.Diff(INSERT, "BC")
+                ), DiffMatchPatch.Diff(EQUAL, "3"), DiffMatchPatch.Diff(INSERT, "BC")
             ), diffs
         )
     }
@@ -685,93 +685,93 @@ class diff_match_patch_test {
     @Test
     fun testDiffCleanupEfficiency() {
         // Cleanup operationally trivial equalities.
-        dmp.Diff_EditCost = 4
+        dmp.diffEditCost = 4
         var diffs = diffList()
         dmp.diff_cleanupEfficiency(diffs)
         assertEquals("diff_cleanupEfficiency: Null case.", diffList(), diffs)
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "ab"), diff_match_patch.Diff(INSERT, "12"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "ab"), DiffMatchPatch.Diff(INSERT, "12"), DiffMatchPatch.Diff(
                 EQUAL, "wxyz"
-            ), diff_match_patch.Diff(DELETE, "cd"), diff_match_patch.Diff(INSERT, "34")
+            ), DiffMatchPatch.Diff(DELETE, "cd"), DiffMatchPatch.Diff(INSERT, "34")
         )
         dmp.diff_cleanupEfficiency(diffs)
         assertEquals(
             "diff_cleanupEfficiency: No elimination.", diffList(
-                diff_match_patch.Diff(DELETE, "ab"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "ab"), DiffMatchPatch.Diff(
                     INSERT, "12"
-                ), diff_match_patch.Diff(EQUAL, "wxyz"), diff_match_patch.Diff(DELETE, "cd"), diff_match_patch.Diff(
+                ), DiffMatchPatch.Diff(EQUAL, "wxyz"), DiffMatchPatch.Diff(DELETE, "cd"), DiffMatchPatch.Diff(
                     INSERT, "34"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "ab"), diff_match_patch.Diff(INSERT, "12"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "ab"), DiffMatchPatch.Diff(INSERT, "12"), DiffMatchPatch.Diff(
                 EQUAL, "xyz"
-            ), diff_match_patch.Diff(DELETE, "cd"), diff_match_patch.Diff(INSERT, "34")
+            ), DiffMatchPatch.Diff(DELETE, "cd"), DiffMatchPatch.Diff(INSERT, "34")
         )
         dmp.diff_cleanupEfficiency(diffs)
         assertEquals(
             "diff_cleanupEfficiency: Four-edit elimination.", diffList(
-                diff_match_patch.Diff(DELETE, "abxyzcd"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "abxyzcd"), DiffMatchPatch.Diff(
                     INSERT, "12xyz34"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(INSERT, "12"), diff_match_patch.Diff(EQUAL, "x"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(INSERT, "12"), DiffMatchPatch.Diff(EQUAL, "x"), DiffMatchPatch.Diff(
                 DELETE, "cd"
-            ), diff_match_patch.Diff(INSERT, "34")
+            ), DiffMatchPatch.Diff(INSERT, "34")
         )
         dmp.diff_cleanupEfficiency(diffs)
         assertEquals(
             "diff_cleanupEfficiency: Three-edit elimination.", diffList(
-                diff_match_patch.Diff(DELETE, "xcd"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "xcd"), DiffMatchPatch.Diff(
                     INSERT, "12x34"
                 )
             ), diffs
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "ab"), diff_match_patch.Diff(INSERT, "12"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "ab"), DiffMatchPatch.Diff(INSERT, "12"), DiffMatchPatch.Diff(
                 EQUAL, "xy"
-            ), diff_match_patch.Diff(INSERT, "34"), diff_match_patch.Diff(EQUAL, "z"), diff_match_patch.Diff(
+            ), DiffMatchPatch.Diff(INSERT, "34"), DiffMatchPatch.Diff(EQUAL, "z"), DiffMatchPatch.Diff(
                 DELETE, "cd"
-            ), diff_match_patch.Diff(INSERT, "56")
+            ), DiffMatchPatch.Diff(INSERT, "56")
         )
         dmp.diff_cleanupEfficiency(diffs)
         assertEquals(
             "diff_cleanupEfficiency: Backpass elimination.", diffList(
-                diff_match_patch.Diff(DELETE, "abxyzcd"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "abxyzcd"), DiffMatchPatch.Diff(
                     INSERT, "12xy34z56"
                 )
             ), diffs
         )
 
-        dmp.Diff_EditCost = 5
+        dmp.diffEditCost = 5
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "ab"), diff_match_patch.Diff(INSERT, "12"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "ab"), DiffMatchPatch.Diff(INSERT, "12"), DiffMatchPatch.Diff(
                 EQUAL, "wxyz"
-            ), diff_match_patch.Diff(DELETE, "cd"), diff_match_patch.Diff(INSERT, "34")
+            ), DiffMatchPatch.Diff(DELETE, "cd"), DiffMatchPatch.Diff(INSERT, "34")
         )
         dmp.diff_cleanupEfficiency(diffs)
         assertEquals(
             "diff_cleanupEfficiency: High cost elimination.", diffList(
-                diff_match_patch.Diff(DELETE, "abwxyzcd"), diff_match_patch.Diff(
+                DiffMatchPatch.Diff(DELETE, "abwxyzcd"), DiffMatchPatch.Diff(
                     INSERT, "12wxyz34"
                 )
             ), diffs
         )
-        dmp.Diff_EditCost = 4
+        dmp.diffEditCost = 4
     }
 
     @Test
     fun testDiffPrettyHtml() {
         // Pretty print.
         val diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "a\n"), diff_match_patch.Diff(DELETE, "<B>b</B>"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "a\n"), DiffMatchPatch.Diff(DELETE, "<B>b</B>"), DiffMatchPatch.Diff(
                 INSERT, "c&d"
             )
         )
@@ -786,11 +786,11 @@ class diff_match_patch_test {
     fun testDiffText() {
         // Compute the source and destination texts.
         val diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "jump"), diff_match_patch.Diff(DELETE, "s"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "jump"), DiffMatchPatch.Diff(DELETE, "s"), DiffMatchPatch.Diff(
                 INSERT, "ed"
-            ), diff_match_patch.Diff(EQUAL, " over "), diff_match_patch.Diff(DELETE, "the"), diff_match_patch.Diff(
+            ), DiffMatchPatch.Diff(EQUAL, " over "), DiffMatchPatch.Diff(DELETE, "the"), DiffMatchPatch.Diff(
                 INSERT, "a"
-            ), diff_match_patch.Diff(EQUAL, " lazy")
+            ), DiffMatchPatch.Diff(EQUAL, " lazy")
         )
         assertEquals("diff_text1:", "jumps over the lazy", dmp.diff_text1(diffs))
         assertEquals("diff_text2:", "jumped over a lazy", dmp.diff_text2(diffs))
@@ -800,14 +800,14 @@ class diff_match_patch_test {
     fun testDiffXIndex() {
         // Translate a location in text1 to text2.
         var diffs = diffList(
-            diff_match_patch.Diff(DELETE, "a"), diff_match_patch.Diff(INSERT, "1234"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "a"), DiffMatchPatch.Diff(INSERT, "1234"), DiffMatchPatch.Diff(
                 EQUAL, "xyz"
             )
         )
         assertEquals("diff_xIndex: Translation on equality.", 5, dmp.diff_xIndex(diffs, 2))
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(DELETE, "1234"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(DELETE, "1234"), DiffMatchPatch.Diff(
                 EQUAL, "xyz"
             )
         )
@@ -817,21 +817,21 @@ class diff_match_patch_test {
     @Test
     fun testDiffLevenshtein() {
         var diffs = diffList(
-            diff_match_patch.Diff(DELETE, "abc"), diff_match_patch.Diff(INSERT, "1234"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "abc"), DiffMatchPatch.Diff(INSERT, "1234"), DiffMatchPatch.Diff(
                 EQUAL, "xyz"
             )
         )
         assertEquals("diff_levenshtein: Levenshtein with trailing equality.", 4, dmp.diff_levenshtein(diffs))
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "xyz"), diff_match_patch.Diff(DELETE, "abc"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "xyz"), DiffMatchPatch.Diff(DELETE, "abc"), DiffMatchPatch.Diff(
                 INSERT, "1234"
             )
         )
         assertEquals("diff_levenshtein: Levenshtein with leading equality.", 4, dmp.diff_levenshtein(diffs))
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "abc"), diff_match_patch.Diff(EQUAL, "xyz"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "abc"), DiffMatchPatch.Diff(EQUAL, "xyz"), DiffMatchPatch.Diff(
                 INSERT, "1234"
             )
         )
@@ -847,14 +847,14 @@ class diff_match_patch_test {
         // the insertion and deletion pairs are swapped.
         // If the order changes, tweak this test as required.
         var diffs = diffList(
-            diff_match_patch.Diff(DELETE, "c"), diff_match_patch.Diff(INSERT, "m"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "c"), DiffMatchPatch.Diff(INSERT, "m"), DiffMatchPatch.Diff(
                 EQUAL, "a"
-            ), diff_match_patch.Diff(DELETE, "t"), diff_match_patch.Diff(INSERT, "p")
+            ), DiffMatchPatch.Diff(DELETE, "t"), DiffMatchPatch.Diff(INSERT, "p")
         )
         assertEquals("diff_bisect: Normal.", diffs, dmp.diff_bisect(a, b, Long.MAX_VALUE))
 
         // Timeout.
-        diffs = diffList(diff_match_patch.Diff(DELETE, "cat"), diff_match_patch.Diff(INSERT, "map"))
+        diffs = diffList(DiffMatchPatch.Diff(DELETE, "cat"), DiffMatchPatch.Diff(INSERT, "map"))
         assertEquals("diff_bisect: Timeout.", diffs, dmp.diff_bisect(a, b, 0))
     }
 
@@ -864,47 +864,47 @@ class diff_match_patch_test {
         var diffs = diffList()
         assertEquals("diff_main: Null case.", diffs, dmp.diff_main("", "", false))
 
-        diffs = diffList(diff_match_patch.Diff(EQUAL, "abc"))
+        diffs = diffList(DiffMatchPatch.Diff(EQUAL, "abc"))
         assertEquals("diff_main: Equality.", diffs, dmp.diff_main("abc", "abc", false))
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "ab"), diff_match_patch.Diff(INSERT, "123"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "ab"), DiffMatchPatch.Diff(INSERT, "123"), DiffMatchPatch.Diff(
                 EQUAL, "c"
             )
         )
         assertEquals("diff_main: Simple insertion.", diffs, dmp.diff_main("abc", "ab123c", false))
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(DELETE, "123"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(DELETE, "123"), DiffMatchPatch.Diff(
                 EQUAL, "bc"
             )
         )
         assertEquals("diff_main: Simple deletion.", diffs, dmp.diff_main("a123bc", "abc", false))
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(INSERT, "123"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(INSERT, "123"), DiffMatchPatch.Diff(
                 EQUAL, "b"
-            ), diff_match_patch.Diff(INSERT, "456"), diff_match_patch.Diff(EQUAL, "c")
+            ), DiffMatchPatch.Diff(INSERT, "456"), DiffMatchPatch.Diff(EQUAL, "c")
         )
         assertEquals("diff_main: Two insertions.", diffs, dmp.diff_main("abc", "a123b456c", false))
 
         diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(DELETE, "123"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(DELETE, "123"), DiffMatchPatch.Diff(
                 EQUAL, "b"
-            ), diff_match_patch.Diff(DELETE, "456"), diff_match_patch.Diff(EQUAL, "c")
+            ), DiffMatchPatch.Diff(DELETE, "456"), DiffMatchPatch.Diff(EQUAL, "c")
         )
         assertEquals("diff_main: Two deletions.", diffs, dmp.diff_main("a123b456c", "abc", false))
 
         // Perform a real diff.
         // Switch off the timeout.
-        dmp.Diff_Timeout = 0f
-        diffs = diffList(diff_match_patch.Diff(DELETE, "a"), diff_match_patch.Diff(INSERT, "b"))
+        dmp.diffTimeout = 0f
+        diffs = diffList(DiffMatchPatch.Diff(DELETE, "a"), DiffMatchPatch.Diff(INSERT, "b"))
         assertEquals("diff_main: Simple case #1.", diffs, dmp.diff_main("a", "b", false))
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "Apple"), diff_match_patch.Diff(INSERT, "Banana"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "Apple"), DiffMatchPatch.Diff(INSERT, "Banana"), DiffMatchPatch.Diff(
                 EQUAL, "s are a"
-            ), diff_match_patch.Diff(INSERT, "lso"), diff_match_patch.Diff(EQUAL, " fruit.")
+            ), DiffMatchPatch.Diff(INSERT, "lso"), DiffMatchPatch.Diff(EQUAL, " fruit.")
         )
         assertEquals(
             "diff_main: Simple case #2.",
@@ -913,42 +913,42 @@ class diff_match_patch_test {
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "a"), diff_match_patch.Diff(INSERT, "\u0680"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "a"), DiffMatchPatch.Diff(INSERT, "\u0680"), DiffMatchPatch.Diff(
                 EQUAL, "x"
-            ), diff_match_patch.Diff(DELETE, "\t"), diff_match_patch.Diff(INSERT, "\u0000")
+            ), DiffMatchPatch.Diff(DELETE, "\t"), DiffMatchPatch.Diff(INSERT, "\u0000")
         )
         assertEquals("diff_main: Simple case #3.", diffs, dmp.diff_main("ax\t", "\u0680x\u0000", false))
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "1"), diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "1"), DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(
                 DELETE, "y"
-            ), diff_match_patch.Diff(EQUAL, "b"), diff_match_patch.Diff(DELETE, "2"), diff_match_patch.Diff(
+            ), DiffMatchPatch.Diff(EQUAL, "b"), DiffMatchPatch.Diff(DELETE, "2"), DiffMatchPatch.Diff(
                 INSERT, "xab"
             )
         )
         assertEquals("diff_main: Overlap #1.", diffs, dmp.diff_main("1ayb2", "abxab", false))
 
         diffs = diffList(
-            diff_match_patch.Diff(INSERT, "xaxcx"), diff_match_patch.Diff(EQUAL, "abc"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(INSERT, "xaxcx"), DiffMatchPatch.Diff(EQUAL, "abc"), DiffMatchPatch.Diff(
                 DELETE, "y"
             )
         )
         assertEquals("diff_main: Overlap #2.", diffs, dmp.diff_main("abcy", "xaxcxabc", false))
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "ABCD"),
-            diff_match_patch.Diff(EQUAL, "a"),
-            diff_match_patch.Diff(
+            DiffMatchPatch.Diff(DELETE, "ABCD"),
+            DiffMatchPatch.Diff(EQUAL, "a"),
+            DiffMatchPatch.Diff(
                 DELETE, "="
             ),
-            diff_match_patch.Diff(INSERT, "-"),
-            diff_match_patch.Diff(EQUAL, "bcd"),
-            diff_match_patch.Diff(
+            DiffMatchPatch.Diff(INSERT, "-"),
+            DiffMatchPatch.Diff(EQUAL, "bcd"),
+            DiffMatchPatch.Diff(
                 DELETE, "="
             ),
-            diff_match_patch.Diff(INSERT, "-"),
-            diff_match_patch.Diff(EQUAL, "efghijklmnopqrs"),
-            diff_match_patch.Diff(
+            DiffMatchPatch.Diff(INSERT, "-"),
+            DiffMatchPatch.Diff(EQUAL, "efghijklmnopqrs"),
+            DiffMatchPatch.Diff(
                 DELETE, "EFGHIJKLMNOefg"
             )
         )
@@ -959,9 +959,9 @@ class diff_match_patch_test {
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(INSERT, " "), diff_match_patch.Diff(EQUAL, "a"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(INSERT, " "), DiffMatchPatch.Diff(EQUAL, "a"), DiffMatchPatch.Diff(
                 INSERT, "nd"
-            ), diff_match_patch.Diff(EQUAL, " [[Pennsylvania]]"), diff_match_patch.Diff(DELETE, " and [[New")
+            ), DiffMatchPatch.Diff(EQUAL, " [[Pennsylvania]]"), DiffMatchPatch.Diff(DELETE, " and [[New")
         )
         assertEquals(
             "diff_main: Large equality.",
@@ -969,7 +969,7 @@ class diff_match_patch_test {
             dmp.diff_main("a [[Pennsylvania]] and [[New", " and [[Pennsylvania]]", false)
         )
 
-        dmp.Diff_Timeout = 0.1f // 100ms
+        dmp.diffTimeout = 0.1f // 100ms
         var a =
             "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n"
         var b =
@@ -983,12 +983,12 @@ class diff_match_patch_test {
         dmp.diff_main(a, b)
         val endTime = Clock.System.now().toEpochMilliseconds()
         // Test that we took at least the timeout period.
-        assertTrue("diff_main: Timeout min.", dmp.Diff_Timeout * 1000 <= endTime - startTime)
+        assertTrue("diff_main: Timeout min.", dmp.diffTimeout * 1000 <= endTime - startTime)
         // Test that we didn't take forever (be forgiving).
         // Theoretically this test could fail very occasionally if the
         // OS task swaps or locks up for a second at the wrong moment.
-        assertTrue("diff_main: Timeout max.", dmp.Diff_Timeout * 1000 * 2 > endTime - startTime)
-        dmp.Diff_Timeout = 0f
+        assertTrue("diff_main: Timeout max.", dmp.diffTimeout * 1000 * 2 > endTime - startTime)
+        dmp.diffTimeout = 0f
 
         // Test the linemode speedup.
         // Must be long to pass the 100 char cutoff.
@@ -1026,8 +1026,8 @@ class diff_match_patch_test {
     @Test
     fun testMatchBitap() {
         // Bitap algorithm.
-        dmp.Match_Distance = 100
-        dmp.Match_Threshold = 0.5f
+        dmp.matchDistance = 100
+        dmp.matchThreshold = 0.5f
         assertEquals("match_bitap: Exact match #1.", 5, dmp.match_bitap("abcdefghijk", "fgh", 5))
 
         assertEquals("match_bitap: Exact match #2.", 5, dmp.match_bitap("abcdefghijk", "fgh", 0))
@@ -1046,21 +1046,21 @@ class diff_match_patch_test {
 
         assertEquals("match_bitap: Oversized pattern.", 0, dmp.match_bitap("abcdef", "xabcdefy", 0))
 
-        dmp.Match_Threshold = 0.4f
+        dmp.matchThreshold = 0.4f
         assertEquals("match_bitap: Threshold #1.", 4, dmp.match_bitap("abcdefghijk", "efxyhi", 1))
 
-        dmp.Match_Threshold = 0.3f
+        dmp.matchThreshold = 0.3f
         assertEquals("match_bitap: Threshold #2.", -1, dmp.match_bitap("abcdefghijk", "efxyhi", 1))
 
-        dmp.Match_Threshold = 0.0f
+        dmp.matchThreshold = 0.0f
         assertEquals("match_bitap: Threshold #3.", 1, dmp.match_bitap("abcdefghijk", "bcdef", 1))
 
-        dmp.Match_Threshold = 0.5f
+        dmp.matchThreshold = 0.5f
         assertEquals("match_bitap: Multiple select #1.", 0, dmp.match_bitap("abcdexyzabcde", "abccde", 3))
 
         assertEquals("match_bitap: Multiple select #2.", 8, dmp.match_bitap("abcdexyzabcde", "abccde", 5))
 
-        dmp.Match_Distance = 10 // Strict location.
+        dmp.matchDistance = 10 // Strict location.
         assertEquals(
             "match_bitap: Distance test #1.",
             -1,
@@ -1073,7 +1073,7 @@ class diff_match_patch_test {
             dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdxxefg", 1)
         )
 
-        dmp.Match_Distance = 1000 // Loose location.
+        dmp.matchDistance = 1000 // Loose location.
         assertEquals(
             "match_bitap: Distance test #3.",
             0,
@@ -1096,13 +1096,13 @@ class diff_match_patch_test {
 
         assertEquals("match_main: Oversized pattern.", 0, dmp.match_main("abcdef", "abcdefy", 0))
 
-        dmp.Match_Threshold = 0.7f
+        dmp.matchThreshold = 0.7f
         assertEquals(
             "match_main: Complex match.",
             4,
             dmp.match_main("I am the very model of a modern major general.", " that berry ", 5)
         )
-        dmp.Match_Threshold = 0.5f
+        dmp.matchThreshold = 0.5f
     }
 
 
@@ -1110,17 +1110,17 @@ class diff_match_patch_test {
     @Test
     fun testPatchObj() {
         // Patch Object.
-        val p = diff_match_patch.Patch()
+        val p = DiffMatchPatch.Patch()
         p.start1 = 20
         p.start2 = 21
         p.length1 = 18
         p.length2 = 17
         p.diffs = diffList(
-            diff_match_patch.Diff(EQUAL, "jump"), diff_match_patch.Diff(DELETE, "s"), diff_match_patch.Diff(
+            DiffMatchPatch.Diff(EQUAL, "jump"), DiffMatchPatch.Diff(DELETE, "s"), DiffMatchPatch.Diff(
                 INSERT, "ed"
-            ), diff_match_patch.Diff(EQUAL, " over "), diff_match_patch.Diff(DELETE, "the"), diff_match_patch.Diff(
+            ), DiffMatchPatch.Diff(EQUAL, " over "), DiffMatchPatch.Diff(DELETE, "the"), DiffMatchPatch.Diff(
                 INSERT, "a"
-            ), diff_match_patch.Diff(EQUAL, "\nlaz")
+            ), DiffMatchPatch.Diff(EQUAL, "\nlaz")
         )
         val strp = """
             @@ -21,18 +22,17 @@
@@ -1140,7 +1140,7 @@ class diff_match_patch_test {
     @Suppress("deprecation")
     @Test
     fun testPatchMake() {
-        var patches: MutableList<diff_match_patch.Patch>?
+        var patches: MutableList<DiffMatchPatch.Patch>?
         patches = dmp.patch_make("", "")
         assertEquals("patch_make: Null case.", "", dmp.patch_toText(patches))
 
@@ -1180,8 +1180,8 @@ class diff_match_patch_test {
         )
 
         diffs = diffList(
-            diff_match_patch.Diff(DELETE, "`1234567890-=[]\\;',./"),
-            diff_match_patch.Diff(INSERT, "~!@#$%^&*()_+{}|:\"<>?")
+            DiffMatchPatch.Diff(DELETE, "`1234567890-=[]\\;',./"),
+            DiffMatchPatch.Diff(INSERT, "~!@#$%^&*()_+{}|:\"<>?")
         )
 //        assertEquals(
 //            "patch_fromText: Character decoding.",
@@ -1202,7 +1202,7 @@ class diff_match_patch_test {
     @Test
     fun testPatchSplitMax() {
         // Assumes that Match_MaxBits is 32.
-        var patches: MutableList<diff_match_patch.Patch>
+        var patches: MutableList<DiffMatchPatch.Patch>
         patches = dmp.patch_make(
             "abcdefghijklmnopqrstuvwxyz01234567890",
             "XabXcdXefXghXijXklXmnXopXqrXstXuvXwxXyzX01X23X45X67X89X0"
@@ -1259,7 +1259,7 @@ class diff_match_patch_test {
 
     @Test
     fun testPatchAddPadding() {
-        var patches: MutableList<diff_match_patch.Patch>
+        var patches: MutableList<DiffMatchPatch.Patch>
         patches = dmp.patch_make("", "test")
         assertEquals("patch_addPadding: Both edges full.", "@@ -0,0 +1,4 @@\n+test\n", dmp.patch_toText(patches))
         dmp.patch_addPadding(patches)
@@ -1310,10 +1310,10 @@ class diff_match_patch_test {
 
     @Test
     fun testPatchApply() {
-        dmp.Match_Distance = 1000
-        dmp.Match_Threshold = 0.5f
-        dmp.Patch_DeleteThreshold = 0.5f
-        var patches: MutableList<diff_match_patch.Patch>
+        dmp.matchDistance = 1000
+        dmp.matchThreshold = 0.5f
+        dmp.patchDeleteThreshold = 0.5f
+        var patches: MutableList<DiffMatchPatch.Patch>
         patches = dmp.patch_make("", "")
         var results = dmp.patch_apply(patches, "Hello world.")
         var boolArray = results[1] as BooleanArray
@@ -1369,7 +1369,7 @@ class diff_match_patch_test {
             resultStr
         )
 
-        dmp.Patch_DeleteThreshold = 0.6f
+        dmp.patchDeleteThreshold = 0.6f
         patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy")
         results = dmp.patch_apply(
             patches,
@@ -1378,11 +1378,11 @@ class diff_match_patch_test {
         boolArray = results[1] as BooleanArray
         resultStr = results[0].toString() + "\t" + boolArray[0] + "\t" + boolArray[1]
         assertEquals("patch_apply: Big delete, big change 2.", "xabcy\ttrue\ttrue", resultStr)
-        dmp.Patch_DeleteThreshold = 0.5f
+        dmp.patchDeleteThreshold = 0.5f
 
         // Compensate for failed patch.
-        dmp.Match_Threshold = 0.0f
-        dmp.Match_Distance = 0
+        dmp.matchThreshold = 0.0f
+        dmp.matchDistance = 0
         patches = dmp.patch_make(
             "abcdefghijklmnopqrstuvwxyz--------------------1234567890",
             "abcXXXXXXXXXXdefghijklmnopqrstuvwxyz--------------------1234567YYYYYYYYYY890"
@@ -1395,8 +1395,8 @@ class diff_match_patch_test {
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tfalse\ttrue",
             resultStr
         )
-        dmp.Match_Threshold = 0.5f
-        dmp.Match_Distance = 1000
+        dmp.matchThreshold = 0.5f
+        dmp.matchDistance = 1000
 
         patches = dmp.patch_make("", "test")
         var patchStr = dmp.patch_toText(patches)
@@ -1473,13 +1473,13 @@ class diff_match_patch_test {
     }
 
     // Construct the two texts which made up the diff originally.
-    private fun diff_rebuildtexts(diffs: MutableList<diff_match_patch.Diff>): Array<String> {
+    private fun diff_rebuildtexts(diffs: MutableList<DiffMatchPatch.Diff>): Array<String> {
         val text = arrayOf("", "")
         for (myDiff in diffs) {
-            if (myDiff.operation != diff_match_patch.Operation.INSERT) {
+            if (myDiff.operation != DiffMatchPatch.Operation.INSERT) {
                 text[0] += myDiff.text
             }
-            if (myDiff.operation != diff_match_patch.Operation.DELETE) {
+            if (myDiff.operation != DiffMatchPatch.Operation.DELETE) {
                 text[1] += myDiff.text
             }
         }
@@ -1487,7 +1487,7 @@ class diff_match_patch_test {
     }
 
     // Private function for quickly building lists of diffs.
-    private fun diffList(vararg diffs: diff_match_patch.Diff): MutableList<diff_match_patch.Diff> {
+    private fun diffList(vararg diffs: DiffMatchPatch.Diff): MutableList<DiffMatchPatch.Diff> {
         return diffs.asList().toMutableList()
     }
 }

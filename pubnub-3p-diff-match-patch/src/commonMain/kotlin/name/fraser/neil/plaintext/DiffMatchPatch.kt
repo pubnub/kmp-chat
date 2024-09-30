@@ -35,30 +35,30 @@ import kotlin.math.min
  * Class containing the diff, match and patch methods.
  * Also contains the behaviour settings.
  */
-class diff_match_patch {
+class DiffMatchPatch(
     // Defaults.
     // Set these on your diff_match_patch instance to override the defaults.
     /**
      * Number of seconds to map a diff before giving up (0 for infinity).
      */
-    var Diff_Timeout: Float = 1.0f
+    var diffTimeout: Float = 1.0f,
 
     /**
      * Cost of an empty edit operation in terms of edit characters.
      */
-    var Diff_EditCost: Short = 4
+    var diffEditCost: Short = 4,
 
     /**
      * At what point is no match declared (0.0 = perfection, 1.0 = very loose).
      */
-    var Match_Threshold: Float = 0.5f
+    var matchThreshold: Float = 0.5f,
 
     /**
      * How far to search for a match (0 = exact location, 1000+ = broad match).
      * A match this many characters away from the expected location will add
      * 1.0 to the score (0.0 is a perfect match).
      */
-    var Match_Distance: Int = 1000
+    var matchDistance: Int = 1000,
 
     /**
      * When deleting a large block of text (over ~64 characters), how close do
@@ -66,17 +66,18 @@ class diff_match_patch {
      * 1.0 = very loose).  Note that Match_Threshold controls how closely the
      * end points of a delete need to match.
      */
-    var Patch_DeleteThreshold: Float = 0.5f
+    var patchDeleteThreshold: Float = 0.5f,
 
     /**
      * Chunk size for context length.
      */
-    var Patch_Margin: Short = 4
+    var patchMargin: Short = 4,
+) {
 
     /**
      * The number of bits in an int.
      */
-    private val Match_MaxBits: Short = 32
+    private val matchMaxBits: Short = 32
 
     /**
      * Internal class for returning results from diff_linesToChars().
@@ -123,10 +124,10 @@ class diff_match_patch {
     ): MutableList<Diff> { // was LinkedList
         // Set a deadline by which time the diff must be complete.
         val deadline: Long
-        if (Diff_Timeout <= 0) {
+        if (diffTimeout <= 0) {
             deadline = Long.MAX_VALUE
         } else {
-            deadline = Clock.System.now().toEpochMilliseconds() + (Diff_Timeout * 1000).toLong()
+            deadline = Clock.System.now().toEpochMilliseconds() + (diffTimeout * 1000).toLong()
         }
         return diff_main(text1, text2, checklines, deadline)
     }
@@ -248,12 +249,10 @@ class diff_match_patch {
             val mid_common = hm[4]
             // Send both pairs off for separate processing.
             val diffs_a = diff_main(
-                text1_a, text2_a,
-                checklines, deadline
+                text1_a, text2_a, checklines, deadline
             )
             val diffs_b = diff_main(
-                text1_b, text2_b,
-                checklines, deadline
+                text1_b, text2_b, checklines, deadline
             )
             // Merge the results.
             diffs = diffs_a
@@ -330,8 +329,7 @@ class diff_match_patch {
                             j++
                         }
                         for (subDiff in diff_main(
-                            text_delete, text_insert, false,
-                            deadline
+                            text_delete, text_insert, false, deadline
                         )) {
                             pointer.add(subDiff)
                         }
@@ -438,9 +436,7 @@ class diff_match_patch {
                     v2[k2_offset - 1] + 1
                 }
                 var y2 = x2 - k2
-                while (x2 < text1_length && y2 < text2_length && (text1[text1_length - x2 - 1]
-                            == text2[text2_length - y2 - 1])
-                ) {
+                while (x2 < text1_length && y2 < text2_length && (text1[text1_length - x2 - 1] == text2[text2_length - y2 - 1])) {
                     x2++
                     y2++
                 }
@@ -688,7 +684,7 @@ class diff_match_patch {
      * common middle.  Or null if there was no match.
      */
     fun diff_halfMatch(text1: String, text2: String): Array<String>? {
-        if (Diff_Timeout <= 0) {
+        if (diffTimeout <= 0) {
             // Don't risk returning a non-optimal diff if we have unlimited time.
             return null
         }
@@ -700,13 +696,11 @@ class diff_match_patch {
 
         // First check if the second quarter is the seed for a half-match.
         val hm1 = diff_halfMatchI(
-            longtext, shorttext,
-            (longtext.length + 3) / 4
+            longtext, shorttext, (longtext.length + 3) / 4
         )
         // Check again based on the third quarter.
         val hm2 = diff_halfMatchI(
-            longtext, shorttext,
-            (longtext.length + 1) / 2
+            longtext, shorttext, (longtext.length + 1) / 2
         )
         val hm = if (hm1 == null && hm2 == null) {
             return null
@@ -749,16 +743,13 @@ class diff_match_patch {
         var best_shorttext_b = ""
         while ((shorttext.indexOf(seed, j + 1).also { j = it }) != -1) {
             val prefixLength = diff_commonPrefix(
-                longtext.substring(i),
-                shorttext.substring(j)
+                longtext.substring(i), shorttext.substring(j)
             )
             val suffixLength = diff_commonSuffix(
-                longtext.substring(0, i),
-                shorttext.substring(0, j)
+                longtext.substring(0, i), shorttext.substring(0, j)
             )
             if (best_common.length < suffixLength + prefixLength) {
-                best_common = (shorttext.substring(j - suffixLength, j)
-                        + shorttext.substring(j, j + prefixLength))
+                best_common = (shorttext.substring(j - suffixLength, j) + shorttext.substring(j, j + prefixLength))
                 best_longtext_a = longtext.substring(0, i - suffixLength)
                 best_longtext_b = longtext.substring(i + prefixLength)
                 best_shorttext_a = shorttext.substring(0, j - suffixLength)
@@ -767,8 +758,7 @@ class diff_match_patch {
         }
         return if (best_common.length * 2 >= longtext.length) {
             arrayOf(
-                best_longtext_a, best_longtext_b,
-                best_shorttext_a, best_shorttext_b, best_common
+                best_longtext_a, best_longtext_b, best_shorttext_a, best_shorttext_b, best_common
             )
         } else {
             null
@@ -812,10 +802,10 @@ class diff_match_patch {
                 }
                 // Eliminate an equality that is smaller or equal to the edits on both
                 // sides of it.
-                if (lastEquality != null && (lastEquality.length
-                            <= max(length_insertions1, length_deletions1))
-                    && (lastEquality.length
-                            <= max(length_insertions2, length_deletions2))
+                if (lastEquality != null && (lastEquality.length <= max(
+                        length_insertions1,
+                        length_deletions1
+                    )) && (lastEquality.length <= max(length_insertions2, length_deletions2))
                 ) {
                     //System.out.println("Splitting: '" + lastEquality + "'");
                     // Walk back to offending equality.
@@ -880,47 +870,37 @@ class diff_match_patch {
             }
         }
         while (thisDiff != null) {
-            if (prevDiff!!.operation == Operation.DELETE &&
-                thisDiff.operation == Operation.INSERT
-            ) {
+            if (prevDiff!!.operation == Operation.DELETE && thisDiff.operation == Operation.INSERT) {
                 val deletion = prevDiff.text
                 val insertion = thisDiff.text
                 val overlap_length1 = this.diff_commonOverlap(deletion, insertion)
                 val overlap_length2 = this.diff_commonOverlap(insertion, deletion)
                 if (overlap_length1 >= overlap_length2) {
-                    if (overlap_length1 >= deletion.length / 2.0 ||
-                        overlap_length1 >= insertion.length / 2.0
-                    ) {
+                    if (overlap_length1 >= deletion.length / 2.0 || overlap_length1 >= insertion.length / 2.0) {
                         // Overlap found. Insert an equality and trim the surrounding edits.
                         pointer.previous()
                         pointer.add(
                             Diff(
-                                Operation.EQUAL,
-                                insertion.substring(0, overlap_length1)
+                                Operation.EQUAL, insertion.substring(0, overlap_length1)
                             )
                         )
-                        prevDiff.text =
-                            deletion.substring(0, deletion.length - overlap_length1)
+                        prevDiff.text = deletion.substring(0, deletion.length - overlap_length1)
                         thisDiff.text = insertion.substring(overlap_length1)
                         // pointer.add inserts the element before the cursor, so there is
                         // no need to step past the new element.
                     }
                 } else {
-                    if (overlap_length2 >= deletion.length / 2.0 ||
-                        overlap_length2 >= insertion.length / 2.0
-                    ) {
+                    if (overlap_length2 >= deletion.length / 2.0 || overlap_length2 >= insertion.length / 2.0) {
                         // Reverse overlap found.
                         // Insert an equality and swap and trim the surrounding edits.
                         pointer.previous()
                         pointer.add(
                             Diff(
-                                Operation.EQUAL,
-                                deletion.substring(0, overlap_length2)
+                                Operation.EQUAL, deletion.substring(0, overlap_length2)
                             )
                         )
                         prevDiff.operation = Operation.INSERT
-                        prevDiff.text =
-                            insertion.substring(0, insertion.length - overlap_length2)
+                        prevDiff.text = insertion.substring(0, insertion.length - overlap_length2)
                         thisDiff.operation = Operation.DELETE
                         thisDiff.text = deletion.substring(overlap_length2)
                         // pointer.add inserts the element before the cursor, so there is
@@ -958,9 +938,7 @@ class diff_match_patch {
         var nextDiff = if (pointer.hasNext()) pointer.next() else null
         // Intentionally ignore the first and last element (don't need checking).
         while (nextDiff != null) {
-            if (prevDiff!!.operation == Operation.EQUAL &&
-                nextDiff.operation == Operation.EQUAL
-            ) {
+            if (prevDiff!!.operation == Operation.EQUAL && nextDiff.operation == Operation.EQUAL) {
                 // This is a single edit surrounded by equalities.
                 equality1 = prevDiff.text
                 edit = thisDiff!!.text
@@ -979,14 +957,12 @@ class diff_match_patch {
                 bestEquality1 = equality1
                 bestEdit = edit
                 bestEquality2 = equality2
-                bestScore = (diff_cleanupSemanticScore(equality1, edit)
-                        + diff_cleanupSemanticScore(edit, equality2))
+                bestScore = (diff_cleanupSemanticScore(equality1, edit) + diff_cleanupSemanticScore(edit, equality2))
                 while (edit.length != 0 && equality2.length != 0 && edit[0] == equality2[0]) {
                     equality1 += edit[0]
                     edit = edit.substring(1) + equality2[0]
                     equality2 = equality2.substring(1)
-                    score = (diff_cleanupSemanticScore(equality1, edit)
-                            + diff_cleanupSemanticScore(edit, equality2))
+                    score = (diff_cleanupSemanticScore(equality1, edit) + diff_cleanupSemanticScore(edit, equality2))
                     // The >= encourages trailing rather than leading whitespace on edits.
                     if (score >= bestScore) {
                         bestScore = score
@@ -1104,7 +1080,7 @@ class diff_match_patch {
         while (thisDiff != null) {
             if (thisDiff.operation == Operation.EQUAL) {
                 // Equality found.
-                if (thisDiff.text.length < Diff_EditCost && (post_ins || post_del)) {
+                if (thisDiff.text.length < diffEditCost && (post_ins || post_del)) {
                     // Candidate found.
                     equalities.addFirst(thisDiff)
                     pre_ins = post_ins
@@ -1124,8 +1100,7 @@ class diff_match_patch {
                     post_del = true
                 } else {
                     post_ins = true
-                }
-                /*
+                }/*
          * Five types to be split:
          * <ins>A</ins><del>B</del>XY<ins>C</ins><del>D</del>
          * <ins>A</ins>X<ins>C</ins><del>D</del>
@@ -1133,12 +1108,7 @@ class diff_match_patch {
          * <ins>A</del>X<ins>C</ins><del>D</del>
          * <ins>A</ins><del>B</del>X<del>C</del>
          */
-                if (lastEquality != null
-                    && ((pre_ins && pre_del && post_ins && post_del)
-                            || ((lastEquality.length < Diff_EditCost / 2)
-                            && (((if (pre_ins) 1 else 0) + (if (pre_del) 1 else 0)
-                            + (if (post_ins) 1 else 0) + (if (post_del) 1 else 0))) == 3))
-                ) {
+                if (lastEquality != null && ((pre_ins && pre_del && post_ins && post_del) || ((lastEquality.length < diffEditCost / 2) && (((if (pre_ins) 1 else 0) + (if (pre_del) 1 else 0) + (if (post_ins) 1 else 0) + (if (post_del) 1 else 0))) == 3))) {
                     //System.out.println("Splitting: '" + lastEquality + "'");
                     // Walk back to offending equality.
                     while (thisDiff !== equalities.firstOrNull()) {
@@ -1246,8 +1216,7 @@ class diff_match_patch {
                                 } else {
                                     pointer.add(
                                         Diff(
-                                            Operation.EQUAL,
-                                            text_insert.substring(0, commonlength)
+                                            Operation.EQUAL, text_insert.substring(0, commonlength)
                                         )
                                     )
                                 }
@@ -1259,16 +1228,13 @@ class diff_match_patch {
                             if (commonlength != 0) {
                                 thisDiff = pointer.next()
                                 thisDiff.text = text_insert.substring(
-                                    text_insert.length
-                                            - commonlength
+                                    text_insert.length - commonlength
                                 ) + thisDiff.text
                                 text_insert = text_insert.substring(
-                                    0, text_insert.length
-                                            - commonlength
+                                    0, text_insert.length - commonlength
                                 )
                                 text_delete = text_delete.substring(
-                                    0, text_delete.length
-                                            - commonlength
+                                    0, text_delete.length - commonlength
                                 )
                                 pointer.previous()
                             }
@@ -1316,16 +1282,12 @@ class diff_match_patch {
         var nextDiff = if (pointer.hasNext()) pointer.next() else null
         // Intentionally ignore the first and last element (don't need checking).
         while (nextDiff != null) {
-            if (prevDiff!!.operation == Operation.EQUAL &&
-                nextDiff.operation == Operation.EQUAL
-            ) {
+            if (prevDiff!!.operation == Operation.EQUAL && nextDiff.operation == Operation.EQUAL) {
                 // This is a single edit surrounded by equalities.
                 if (thisDiff!!.text.endsWith(prevDiff.text)) {
                     // Shift the edit over the previous equality.
-                    thisDiff.text = (prevDiff.text
-                            + thisDiff.text.substring(
-                        0, thisDiff.text.length
-                                - prevDiff.text.length
+                    thisDiff.text = (prevDiff.text + thisDiff.text.substring(
+                        0, thisDiff.text.length - prevDiff.text.length
                     ))
                     nextDiff.text = prevDiff.text + nextDiff.text
                     pointer.previous() // Walk past nextDiff.
@@ -1339,8 +1301,7 @@ class diff_match_patch {
                 } else if (thisDiff.text.startsWith(nextDiff.text)) {
                     // Shift the edit over the next equality.
                     prevDiff.text += nextDiff.text
-                    thisDiff.text = (thisDiff.text.substring(nextDiff.text.length)
-                            + nextDiff.text)
+                    thisDiff.text = (thisDiff.text.substring(nextDiff.text.length) + nextDiff.text)
                     pointer.remove() // Delete nextDiff.
                     nextDiff = if (pointer.hasNext()) pointer.next() else null
                     changes = true
@@ -1403,14 +1364,12 @@ class diff_match_patch {
     fun diff_prettyHtml(diffs: List<Diff>): String {
         val html = StringBuilder()
         for (aDiff in diffs) {
-            val text: String = aDiff.text.replace("&", "&amp;").replace("<", "&lt;")
-                .replace(">", "&gt;").replace("\n", "&para;<br>")
+            val text: String =
+                aDiff.text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "&para;<br>")
             when (aDiff.operation) {
-                Operation.INSERT -> html.append("<ins style=\"background:#e6ffe6;\">").append(text)
-                    .append("</ins>")
+                Operation.INSERT -> html.append("<ins style=\"background:#e6ffe6;\">").append(text).append("</ins>")
 
-                Operation.DELETE -> html.append("<del style=\"background:#ffe6e6;\">").append(text)
-                    .append("</del>")
+                Operation.DELETE -> html.append("<del style=\"background:#ffe6e6;\">").append(text).append("</del>")
 
                 Operation.EQUAL -> html.append("<span>").append(text).append("</span>")
             }
@@ -1608,9 +1567,7 @@ class diff_match_patch {
         } else if (text.length == 0) {
             // Nothing to match.
             -1
-        } else if (loc + pattern.length <= text.length
-            && text.substring(loc, loc + pattern.length) == pattern
-        ) {
+        } else if (loc + pattern.length <= text.length && text.substring(loc, loc + pattern.length) == pattern) {
             // Perfect match at the perfect spot!  (Includes case of null pattern)
             loc
         } else {
@@ -1628,26 +1585,24 @@ class diff_match_patch {
      * @return Best match index or -1.
      */
     fun match_bitap(text: String, pattern: String, loc: Int): Int {
-        require(Match_MaxBits.toInt() == 0 || pattern.length <= Match_MaxBits) { "Pattern too long for this application." }
+        require(matchMaxBits.toInt() == 0 || pattern.length <= matchMaxBits) { "Pattern too long for this application." }
 
         // Initialise the alphabet.
         val s = match_alphabet(pattern)
 
         // Highest score beyond which we give up.
-        var score_threshold = Match_Threshold.toDouble()
+        var score_threshold = matchThreshold.toDouble()
         // Is there a nearby exact match? (speedup)
         var best_loc: Int = text.indexOf(pattern, loc)
         if (best_loc != -1) {
             score_threshold = min(
-                match_bitapScore(0, best_loc, loc, pattern),
-                score_threshold
+                match_bitapScore(0, best_loc, loc, pattern), score_threshold
             )
             // What about in the other direction? (speedup)
             best_loc = text.lastIndexOf(pattern, loc + pattern.length)
             if (best_loc != -1) {
                 score_threshold = min(
-                    match_bitapScore(0, best_loc, loc, pattern),
-                    score_threshold
+                    match_bitapScore(0, best_loc, loc, pattern), score_threshold
                 )
             }
         }
@@ -1668,9 +1623,7 @@ class diff_match_patch {
             bin_min = 0
             bin_mid = bin_max
             while (bin_min < bin_mid) {
-                if (match_bitapScore(d, loc + bin_mid, loc, pattern)
-                    <= score_threshold
-                ) {
+                if (match_bitapScore(d, loc + bin_mid, loc, pattern) <= score_threshold) {
                     bin_min = bin_mid
                 } else {
                     bin_max = bin_mid
@@ -1697,8 +1650,8 @@ class diff_match_patch {
                     rd[j] = ((rd[j + 1] shl 1) or 1) and charMatch
                 } else {
                     // Subsequent passes: fuzzy match.
-                    rd[j] = ((((rd[j + 1] shl 1) or 1) and charMatch)
-                            or (((last_rd[j + 1] or last_rd[j]) shl 1) or 1) or last_rd[j + 1])
+                    rd[j] =
+                        ((((rd[j + 1] shl 1) or 1) and charMatch) or (((last_rd[j + 1] or last_rd[j]) shl 1) or 1) or last_rd[j + 1])
                 }
                 if ((rd[j] and matchmask) != 0) {
                     val score = match_bitapScore(d, j - 1, loc, pattern)
@@ -1739,11 +1692,11 @@ class diff_match_patch {
     private fun match_bitapScore(e: Int, x: Int, loc: Int, pattern: String): Double {
         val accuracy = e.toFloat() / pattern.length
         val proximity: Int = abs(loc - x)
-        if (Match_Distance == 0) {
+        if (matchDistance == 0) {
             // Dodge divide by zero error.
             return if (proximity == 0) accuracy.toDouble() else 1.0
         }
-        return (accuracy + (proximity / Match_Distance.toFloat())).toDouble()
+        return (accuracy + (proximity / matchDistance.toFloat())).toDouble()
     }
 
     /**
@@ -1782,30 +1735,25 @@ class diff_match_patch {
 
         // Look for the first and last matches of pattern in text.  If two different
         // matches are found, increase the pattern length.
-        while (text.indexOf(pattern) != text.lastIndexOf(pattern)
-            && pattern.length < Match_MaxBits - Patch_Margin - Patch_Margin
-        ) {
-            padding += Patch_Margin.toInt()
+        while (text.indexOf(pattern) != text.lastIndexOf(pattern) && pattern.length < matchMaxBits - patchMargin - patchMargin) {
+            padding += patchMargin.toInt()
             pattern = text.substring(
-                max(0, patch.start2 - padding),
-                min(text.length, patch.start2 + patch.length1 + padding)
+                max(0, patch.start2 - padding), min(text.length, patch.start2 + patch.length1 + padding)
             )
         }
         // Add one chunk for good luck.
-        padding += Patch_Margin.toInt()
+        padding += patchMargin.toInt()
 
         // Add the prefix.
         val prefix: String = text.substring(
-            max(0, patch.start2 - padding),
-            patch.start2
+            max(0, patch.start2 - padding), patch.start2
         )
         if (prefix.isNotEmpty()) {
             patch.diffs.add(0, Diff(Operation.EQUAL, prefix))
         }
         // Add the suffix.
         val suffix: String = text.substring(
-            patch.start2 + patch.length1,
-            min(text.length, patch.start2 + patch.length1 + padding)
+            patch.start2 + patch.length1, min(text.length, patch.start2 + patch.length1 + padding)
         )
         if (suffix.isNotEmpty()) {
             patch.diffs.add(Diff(Operation.EQUAL, suffix))
@@ -1897,26 +1845,28 @@ class diff_match_patch {
                 Operation.INSERT -> {
                     patch.diffs.add(aDiff)
                     patch.length2 += aDiff.text.length
-                    postpatch_text = (postpatch_text.substring(0, char_count2)
-                            + aDiff.text + postpatch_text.substring(char_count2))
+                    postpatch_text =
+                        (postpatch_text.substring(0, char_count2) + aDiff.text + postpatch_text.substring(char_count2))
                 }
 
                 Operation.DELETE -> {
                     patch.length1 += aDiff.text.length
                     patch.diffs.add(aDiff)
-                    postpatch_text = (postpatch_text.substring(0, char_count2)
-                            + postpatch_text.substring(char_count2 + aDiff.text.length))
+                    postpatch_text = (postpatch_text.substring(
+                        0,
+                        char_count2
+                    ) + postpatch_text.substring(char_count2 + aDiff.text.length))
                 }
 
                 Operation.EQUAL -> {
-                    if (aDiff.text.length <= 2 * Patch_Margin && !patch.diffs.isEmpty() && aDiff !== diffs.last()) {
+                    if (aDiff.text.length <= 2 * patchMargin && !patch.diffs.isEmpty() && aDiff !== diffs.last()) {
                         // Small equality inside a patch.
                         patch.diffs.add(aDiff)
                         patch.length1 += aDiff.text.length
                         patch.length2 += aDiff.text.length
                     }
 
-                    if (aDiff.text.length >= 2 * Patch_Margin && !patch.diffs.isEmpty()) {
+                    if (aDiff.text.length >= 2 * patchMargin && !patch.diffs.isEmpty()) {
                         // Time for a new patch.
                         if (!patch.diffs.isEmpty()) {
                             patch_addContext(patch, prepatch_text)
@@ -2006,18 +1956,17 @@ class diff_match_patch {
             val text1 = diff_text1(aPatch.diffs)
             var start_loc: Int
             var end_loc = -1
-            if (text1.length > this.Match_MaxBits) {
+            if (text1.length > this.matchMaxBits) {
                 // patch_splitMax will only provide an oversized pattern in the case of
                 // a monster delete.
                 start_loc = match_main(
-                    text,
-                    text1.substring(0, Match_MaxBits.toInt()), expected_loc
+                    text, text1.substring(0, matchMaxBits.toInt()), expected_loc
                 )
                 if (start_loc != -1) {
                     end_loc = match_main(
                         text,
-                        text1.substring(text1.length - this.Match_MaxBits),
-                        expected_loc + text1.length - this.Match_MaxBits
+                        text1.substring(text1.length - this.matchMaxBits),
+                        expected_loc + text1.length - this.matchMaxBits
                     )
                     if (end_loc == -1 || start_loc >= end_loc) {
                         // Can't find valid trailing context.  Drop this patch.
@@ -2039,27 +1988,24 @@ class diff_match_patch {
                 val text2: String
                 if (end_loc == -1) {
                     text2 = text.substring(
-                        start_loc,
-                        min(start_loc + text1.length, text.length)
+                        start_loc, min(start_loc + text1.length, text.length)
                     )
                 } else {
                     text2 = text.substring(
-                        start_loc,
-                        min(end_loc + this.Match_MaxBits, text.length)
+                        start_loc, min(end_loc + this.matchMaxBits, text.length)
                     )
                 }
                 if (text1 == text2) {
                     // Perfect match, just shove the replacement text in.
-                    text = (text.substring(0, start_loc) + diff_text2(aPatch.diffs)
-                            + text.substring(start_loc + text1.length))
+                    text = (text.substring(
+                        0,
+                        start_loc
+                    ) + diff_text2(aPatch.diffs) + text.substring(start_loc + text1.length))
                 } else {
                     // Imperfect match.  Run a diff to get a framework of equivalent
                     // indices.
                     val diffs = diff_main(text1, text2, false)
-                    if (text1.length > this.Match_MaxBits
-                        && (diff_levenshtein(diffs) / text1.length.toFloat()
-                                > this.Patch_DeleteThreshold)
-                    ) {
+                    if (text1.length > this.matchMaxBits && (diff_levenshtein(diffs) / text1.length.toFloat() > this.patchDeleteThreshold)) {
                         // The end points match, but the content is unacceptably bad.
                         results[x] = false
                     } else {
@@ -2070,15 +2016,15 @@ class diff_match_patch {
                                 val index2 = diff_xIndex(diffs, index1)
                                 if (aDiff.operation == Operation.INSERT) {
                                     // Insertion
-                                    text = (text.substring(0, start_loc + index2) + aDiff.text
-                                            + text.substring(start_loc + index2))
+                                    text = (text.substring(
+                                        0,
+                                        start_loc + index2
+                                    ) + aDiff.text + text.substring(start_loc + index2))
                                 } else if (aDiff.operation == Operation.DELETE) {
                                     // Deletion
-                                    text = (text.substring(0, start_loc + index2)
-                                            + text.substring(
+                                    text = (text.substring(0, start_loc + index2) + text.substring(
                                         start_loc + diff_xIndex(
-                                            diffs,
-                                            index1 + aDiff.text.length
+                                            diffs, index1 + aDiff.text.length
                                         )
                                     ))
                                 }
@@ -2094,8 +2040,7 @@ class diff_match_patch {
         }
         // Strip the padding off.
         text = text.substring(
-            nullPadding.length, text.length
-                    - nullPadding.length
+            nullPadding.length, text.length - nullPadding.length
         )
         return arrayOf(text, results)
     }
@@ -2107,7 +2052,7 @@ class diff_match_patch {
      * @return The padding string added to each side.
      */
     fun patch_addPadding(patches: MutableList<Patch>): String { // was LinkedList
-        val paddingLength = this.Patch_Margin
+        val paddingLength = this.patchMargin
         var nullPadding = ""
         for (x in 1..paddingLength) {
             nullPadding += Char(x.toUShort()).toString()
@@ -2133,8 +2078,7 @@ class diff_match_patch {
             // Grow first equality.
             val firstDiff = diffs.first()
             val extraLength = paddingLength - firstDiff.text.length
-            firstDiff.text = (nullPadding.substring(firstDiff.text.length)
-                    + firstDiff.text)
+            firstDiff.text = (nullPadding.substring(firstDiff.text.length) + firstDiff.text)
             patch.start1 -= extraLength
             patch.start2 -= extraLength
             patch.length1 += extraLength
@@ -2168,7 +2112,7 @@ class diff_match_patch {
      * @param patches LinkedList of Patch objects.
      */
     fun patch_splitMax(patches: MutableList<Patch>) { // was LinkedList
-        val patch_size = Match_MaxBits
+        val patch_size = matchMaxBits
         var precontext: String
         var postcontext: String
         var patch: Patch
@@ -2180,7 +2124,7 @@ class diff_match_patch {
         val pointer = patches.listIterator()
         var bigpatch = if (pointer.hasNext()) pointer.next() else null
         while (bigpatch != null) {
-            if (bigpatch.length1 <= Match_MaxBits) {
+            if (bigpatch.length1 <= matchMaxBits) {
                 bigpatch = if (pointer.hasNext()) pointer.next() else null
                 continue
             }
@@ -2200,9 +2144,7 @@ class diff_match_patch {
                     patch.length1 = patch.length2
                     patch.diffs.add(Diff(Operation.EQUAL, precontext))
                 }
-                while (!bigpatch.diffs.isEmpty()
-                    && patch.length1 < patch_size - Patch_Margin
-                ) {
+                while (!bigpatch.diffs.isEmpty() && patch.length1 < patch_size - patchMargin) {
                     diff_type = bigpatch.diffs.first().operation
                     diff_text = bigpatch.diffs.first().text
                     if (diff_type == Operation.INSERT) {
@@ -2222,8 +2164,7 @@ class diff_match_patch {
                         // Deletion or equality.  Only take as much as we can stomach.
                         diff_text = diff_text.substring(
                             0, min(
-                                diff_text.length,
-                                patch_size - patch.length1 - Patch_Margin
+                                diff_text.length, patch_size - patch.length1 - patchMargin
                             )
                         )
                         patch.length1 += diff_text.length
@@ -2238,8 +2179,7 @@ class diff_match_patch {
                         if (diff_text == bigpatch.diffs.first().text) {
                             bigpatch.diffs.removeFirst()
                         } else {
-                            bigpatch.diffs.first().text = bigpatch.diffs.first().text
-                                .substring(diff_text.length)
+                            bigpatch.diffs.first().text = bigpatch.diffs.first().text.substring(diff_text.length)
                         }
                     }
                 }
@@ -2247,22 +2187,19 @@ class diff_match_patch {
                 precontext = diff_text2(patch.diffs)
                 precontext = precontext.substring(
                     max(
-                        0, precontext.length
-                                - Patch_Margin
+                        0, precontext.length - patchMargin
                     )
                 )
                 // Append the end context for this patch.
-                if (diff_text1(bigpatch.diffs).length > Patch_Margin) {
-                    postcontext = diff_text1(bigpatch.diffs).substring(0, Patch_Margin.toInt())
+                if (diff_text1(bigpatch.diffs).length > patchMargin) {
+                    postcontext = diff_text1(bigpatch.diffs).substring(0, patchMargin.toInt())
                 } else {
                     postcontext = diff_text1(bigpatch.diffs)
                 }
                 if (postcontext.length != 0) {
                     patch.length1 += postcontext.length
                     patch.length2 += postcontext.length
-                    if (!patch.diffs.isEmpty()
-                        && patch.diffs.last().operation == Operation.EQUAL
-                    ) {
+                    if (!patch.diffs.isEmpty() && patch.diffs.last().operation == Operation.EQUAL) {
                         patch.diffs.last().text += postcontext
                     } else {
                         patch.diffs.add(Diff(Operation.EQUAL, postcontext))
@@ -2482,8 +2419,7 @@ class diff_match_patch {
                 (this.start2 + 1).toString() + "," + this.length2
             }
             val text = StringBuilder()
-            text.append("@@ -").append(coords1).append(" +").append(coords2)
-                .append(" @@\n")
+            text.append("@@ -").append(coords1).append(" +").append(coords2).append(" @@\n")
             // Escape the body of the patch with %xx notation.
             for (aDiff in this.diffs) {
                 when (aDiff.operation) {
@@ -2520,11 +2456,9 @@ class diff_match_patch {
          * @return The escaped string.
          */
         private fun unescapeForEncodeUriCompatability(str: String): String {
-            return str.replace("%21", "!").replace("%7E", "~")
-                .replace("%27", "'").replace("%28", "(").replace("%29", ")")
-                .replace("%3B", ";").replace("%2F", "/").replace("%3F", "?")
-                .replace("%3A", ":").replace("%40", "@").replace("%26", "&")
-                .replace("%3D", "=").replace("%2B", "+").replace("%24", "$")
+            return str.replace("%21", "!").replace("%7E", "~").replace("%27", "'").replace("%28", "(")
+                .replace("%29", ")").replace("%3B", ";").replace("%2F", "/").replace("%3F", "?").replace("%3A", ":")
+                .replace("%40", "@").replace("%26", "&").replace("%3D", "=").replace("%2B", "+").replace("%24", "$")
                 .replace("%2C", ",").replace("%23", "#")
         }
     }

@@ -15,7 +15,7 @@ import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.then
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
-import name.fraser.neil.plaintext.diff_match_patch
+import name.fraser.neil.plaintext.DiffMatchPatch
 import kotlin.math.min
 
 private val userMentionRegex = Regex("""(?U)(?<=^|\p{Space})(@[\p{L}-]+)""")
@@ -71,7 +71,7 @@ class MessageDraftImpl(
     private val chat = channel.chat as ChatInternal
     private var messageText: StringBuilder = StringBuilder("")
     private val mentions: MutableSet<Mention> = mutableSetOf()
-    private val diffMatchPatch = diff_match_patch()
+    private val diffMatchPatch = DiffMatchPatch()
 
     private fun revalidateMentions(): PNFuture<Map<Int, List<SuggestedMention>>> {
         val allUserMentions = userMentionRegex.findAll(messageText).toList()
@@ -221,12 +221,12 @@ class MessageDraftImpl(
         var consumed = 0
         diff.forEach { action ->
             when (action.operation) {
-                diff_match_patch.Operation.DELETE -> removeTextInternal(consumed, action.text.length)
-                diff_match_patch.Operation.INSERT -> {
+                DiffMatchPatch.Operation.DELETE -> removeTextInternal(consumed, action.text.length)
+                DiffMatchPatch.Operation.INSERT -> {
                     insertTextInternal(consumed, action.text)
                     consumed += action.text.length
                 }
-                diff_match_patch.Operation.EQUAL -> {
+                DiffMatchPatch.Operation.EQUAL -> {
                     consumed += action.text.length
                 }
             }
