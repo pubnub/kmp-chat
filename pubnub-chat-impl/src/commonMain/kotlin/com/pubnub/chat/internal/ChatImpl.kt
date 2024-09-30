@@ -643,8 +643,8 @@ class ChatImpl(
                 val eventContent: EventContent = try {
                     PNDataEncoder.decode<EventContent>(message)
                 } catch (e: Exception) {
-                    if (message.asMap()?.get("type")?.asString() == "custom") {
-                        EventContent.Custom((message.decode() as Map<String, Any?>) - "type")
+                    if (message.asMap()?.get(TYPE_OF_MESSAGE)?.asString() == TYPE_OF_MESSAGE_IS_CUSTOM) {
+                        EventContent.Custom((message.decode() as Map<String, Any?>) - TYPE_OF_MESSAGE)
                     } else {
                         throw e
                     }

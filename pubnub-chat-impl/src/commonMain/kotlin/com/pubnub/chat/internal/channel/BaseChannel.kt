@@ -45,6 +45,7 @@ import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.PINNED_MESSAGE_CHANNEL_ID
 import com.pubnub.chat.internal.PINNED_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.defaultGetMessageResponseBody
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_CHANNEL_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_HANDLING_ONMESSAGE_EVENT
@@ -98,8 +99,6 @@ import org.lighthousegames.logging.logging
 import tryLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
-
-private const val CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS = "You cannot quote messages from other channels"
 
 abstract class BaseChannel<C : Channel, M : Message>(
     override val chat: ChatInternal,

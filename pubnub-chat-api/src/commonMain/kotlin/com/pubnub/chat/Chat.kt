@@ -204,9 +204,9 @@ interface Chat {
      * @param name Display name for the channel.
      * @param custom Any custom properties or metadata associated with the channel in the form of a `Map`.
      * Values must be scalar only; arrays or objects are not supported.
-     * @param description
-     * @param status
-     * @param type
+     * @param description Additional details about the channel.
+     * @param status Tag that categorizes a channel by its state, like archived.
+     * @param type Tag that categorizes a channel by its function, like offtopic.
      *
      * @return
      */

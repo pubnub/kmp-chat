@@ -2,6 +2,7 @@ package com.pubnub.chat.internal
 
 import com.pubnub.api.JsonElement
 import com.pubnub.api.asString
+import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_CALLING_DEFAULT_GET_MESSAGE_RESPONSE_BODY
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
 import org.lighthousegames.logging.logging
@@ -30,7 +31,7 @@ fun defaultGetMessageResponseBody(message: JsonElement): EventContent.TextMessag
         ?: try {
             PNDataEncoder.decode<EventContent.TextMessageContent>(message)
         } catch (e: Exception) {
-            log.e { "Error calling defaultGetMessageResponseBody: ${e.message}" } // todo move message to PubNubErrorMessage
+            log.e { "$ERROR_CALLING_DEFAULT_GET_MESSAGE_RESPONSE_BODY ${e.message}" }
             null
         }
 }
@@ -40,3 +41,8 @@ internal const val METADATA_REFERENCED_CHANNELS = "referencedChannels"
 internal const val METADATA_QUOTED_MESSAGE = "quotedMessage"
 internal const val METADATA_TEXT_LINKS = "textLinks"
 internal const val METADATA_LAST_READ_MESSAGE_TIMETOKEN = "lastReadMessageTimetoken"
+internal const val TYPE_OF_MESSAGE = "type"
+internal const val TYPE_OF_MESSAGE_IS_CUSTOM = "custom"
+internal const val RESTRICTION_BAN = "ban"
+internal const val RESTRICTION_MUTE = "mute"
+internal const val RESTRICTION_REASON = "reason"

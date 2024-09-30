@@ -44,8 +44,6 @@ interface Membership {
      */
     val lastReadMessageTimetoken: Long?
 
-    // todo do we want to have test for this?
-
     /**
      * Setting the last read message for users lets you implement the Read Receipts feature and monitor which channel member read which message.
      *
@@ -60,8 +58,6 @@ interface Membership {
      * @param custom Any custom properties or metadata associated with the channel-user membership in a `Map`. Values must be scalar only; arrays or objects are not supported. App Context filtering language doesn’t support filtering by custom properties.
      */
     fun update(custom: CustomObject): PNFuture<Membership>
-
-    // todo do we have test for this?
 
     /**
      * Setting the last read message for users lets you implement the Read Receipts feature and monitor which channel member read which message.

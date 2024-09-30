@@ -25,8 +25,8 @@ class EventImpl<T : EventContent>(
             val eventContent: EventContent = try {
                 PNDataEncoder.decode<EventContent>(pnFetchMessageItem.message)
             } catch (e: Exception) {
-                if (pnFetchMessageItem.message.asMap()?.get("type")?.asString() == "custom") {
-                    EventContent.Custom((pnFetchMessageItem.message.decode() as Map<String, Any?>) - "type")
+                if (pnFetchMessageItem.message.asMap()?.get(TYPE_OF_MESSAGE)?.asString() == TYPE_OF_MESSAGE_IS_CUSTOM) {
+                    EventContent.Custom((pnFetchMessageItem.message.decode() as Map<String, Any?>) - TYPE_OF_MESSAGE)
                 } else {
                     throw e
                 }
