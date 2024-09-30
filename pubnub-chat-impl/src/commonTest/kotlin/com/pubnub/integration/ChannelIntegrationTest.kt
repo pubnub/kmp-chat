@@ -626,6 +626,39 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             assertEquals(expectedStatus, completableStatus.await())
         }
     }
+
+    @Test
+    fun canCheck_whoIsPresent() = runTest {
+        val channel01withChat = channel01
+        val join01 = channel01withChat.join { }.await()
+        val join02 = channel01Chat02.join { }.await()
+        delayInMillis(1000)
+        val whoIsPresent01: Collection<String> = channel01withChat.whoIsPresent().await()
+        val whoIsPresent02: Collection<String> = channel01Chat02.whoIsPresent().await()
+
+        join01.disconnect?.close()
+        join02.disconnect?.close()
+
+        assertEquals(whoIsPresent01.size, whoIsPresent02.size)
+        assertTrue(whoIsPresent01.contains(someUser.id))
+        assertTrue(whoIsPresent01.contains(someUser02.id))
+        assertTrue(whoIsPresent02.contains(someUser.id))
+        assertTrue(whoIsPresent02.contains(someUser02.id))
+    }
+
+    @Test
+    fun canCheck_isPresent() = runTest {
+        val channel01withChat = channel01
+        val join01 = channel01withChat.join { }.await()
+        val join02 = channel01Chat02.join { }.await()
+        delayInMillis(1000)
+
+        assertTrue(channel01withChat.isPresent(channel01Chat02.chat.currentUser.id).await())
+        assertTrue(channel01Chat02.isPresent(channel01withChat.chat.currentUser.id).await())
+
+        join01.disconnect?.close()
+        join02.disconnect?.close()
+    }
 }
 
 private fun Channel.asImpl(): ChannelImpl {

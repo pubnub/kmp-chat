@@ -26,12 +26,15 @@ internal const val THREAD_CHANNEL_ID_PREFIX = "threadChannel_id_"
 
 abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     lateinit var chat: ChatImpl
+    lateinit var chat02: ChatImpl
     lateinit var chatPam: ChatImpl
-    lateinit var channel01: Channel
+    lateinit var channel01: Channel // this simulates first user in channel01
+    lateinit var channel01Chat02: Channel // this simulates second user in channel01
     lateinit var channel02: Channel
     lateinit var threadChannel: ThreadChannel
     lateinit var channelPam: Channel
     lateinit var someUser: User
+    lateinit var someUser02: User
     lateinit var userPam: User
     var cleanup: MutableList<suspend () -> Unit> = mutableListOf() // todo is this used?
 
@@ -39,10 +42,22 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     override fun before() {
         super.before()
         chat = ChatImpl(ChatConfiguration(), pubnub)
+        chat02 = ChatImpl(ChatConfiguration(), pubnub02)
         chatPam = ChatImpl(ChatConfiguration(), pubnubPam)
+        val channel01Id = randomString() + "!_=-@"
         channel01 = ChannelImpl(
             chat = chat,
-            id = randomString() + "!_=-@",
+            id = channel01Id,
+            name = randomString(),
+            custom = mapOf(randomString() to randomString()),
+            description = randomString(),
+            updated = randomString(),
+            status = randomString(),
+            type = ChannelType.DIRECT
+        )
+        channel01Chat02 = ChannelImpl(
+            chat = chat02,
+            id = channel01Id,
             name = randomString(),
             custom = mapOf(randomString() to randomString()),
             description = randomString(),
@@ -92,6 +107,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
         )
         // user has chat and chat has user they should be the same?
         someUser = chat.currentUser
+        someUser02 = chat02.currentUser
         userPam = chatPam.currentUser
     }
 
@@ -100,6 +116,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
         pubnub.removeUUIDMetadata(someUser.id).await()
         pubnub.removeUUIDMetadata(userPam.id).await()
         pubnub.removeChannelMetadata(channel01.id).await()
+        pubnub.removeChannelMetadata(channel01Chat02.id).await()
         pubnub.removeChannelMetadata(channel02.id).await()
         pubnub.removeChannelMetadata(threadChannel.id).await()
         pubnub.removeChannelMetadata(channelPam.id).await()
