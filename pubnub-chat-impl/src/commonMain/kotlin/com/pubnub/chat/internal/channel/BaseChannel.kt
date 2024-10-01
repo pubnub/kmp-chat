@@ -459,7 +459,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     this.id,
                     custom
                 )
-            ), // todo should null overwrite? waiting for optionals?
+            ), // todo should null overwrite? Waiting for optionals?
             includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
             includeCustom = true,
             includeCount = true,
