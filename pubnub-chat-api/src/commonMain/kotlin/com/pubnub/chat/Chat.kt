@@ -341,7 +341,7 @@ interface Chat {
      * Lets you watch a selected channel for any new custom events emitted by your chat app.
      *
      * @param channelId Channel to listen for new events.
-     * @param customMethod An optional custom method for emitting events. If not provided, defaults to null.
+     * @param customMethod An optional custom method for emitting events. If not provided, defaults to EmitEventMethod.PUBLISH.
      * @param callback A function that is called with an Event<T> as its parameter.
      * It defines the custom behavior to be executed whenever an event is detected on the specified channel.
      *

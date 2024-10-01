@@ -11,7 +11,9 @@ import com.pubnub.chat.types.QuotedMessage
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.PNFuture
 
-// todo do we have tests for methods in this class?
+/**
+ * Represents an object that refers to a single message in a chat.
+ */
 interface Message {
     /**
      * Reference to the main Chat object.
@@ -108,7 +110,7 @@ interface Message {
      * @param reaction Specific emoji added to the message.
      * @return Specifies if the current user added a given emoji to the message or not.
      */
-    fun hasUserReaction(reaction: String): Boolean
+    fun hasUserReaction(reaction: String): Boolean // todo add test
 
     /**
      * Changes the content of the existing message to a new one.
@@ -142,14 +144,14 @@ interface Message {
      * @param channelId Unique identifier of the channel to which you want to forward the message. You can forward a message to the same channel on which it was published or to any other.
      * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the forwarded message.
      */
-    fun forward(channelId: String): PNFuture<PNPublishResult>
+    fun forward(channelId: String): PNFuture<PNPublishResult> // todo add test
 
     /**
      * Attach this message to its channel.
      *
      * @return `PNFuture` containing the updated channel metadata
      */
-    fun pin(): PNFuture<Channel>
+    fun pin(): PNFuture<Channel> // todo add test
 
     // todo do we have test for this?
 
@@ -175,7 +177,7 @@ interface Message {
      *
      * @return A pair of values containing an object with details about the result of the remove message action (indicating whether the message was successfully removed and potentially including additional metadata or information about the removal) and the updated channel object after the removal of the thread.
      */
-    fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel>>
+    fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel>> // todo add test
 
     /**
      * Add or remove a reaction to a message.
@@ -189,15 +191,13 @@ interface Message {
      */
     fun toggleReaction(reaction: String): PNFuture<Message>
 
-    // todo do we want to have test for this?
-
     /**
      * You can receive updates when this message and related message reactions are added, edited, or removed.
      *
      * @param callback Function that takes a single Message object. It defines the custom behavior to be executed when detecting message or message reaction changes.
      * @return Interface that lets you stop receiving message-related updates by invoking the close() method
      */
-    fun <T : Message> streamUpdates(callback: (message: T) -> Unit): AutoCloseable
+    fun <T : Message> streamUpdates(callback: (message: T) -> Unit): AutoCloseable // todo add test
 
     /**
      * If you delete a message, you can restore its content together with the attached files using the restore() method.

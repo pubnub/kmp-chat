@@ -3,8 +3,6 @@ package com.pubnub.chat
 import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.kmp.PNFuture
 
-// todo add unit and integTests
-
 /**
  * Represents an object that refers to a single thread (channel) in a chat.
  */
@@ -34,7 +32,7 @@ interface ThreadChannel : Channel {
      *
      * @return [PNFuture] containing [ThreadChannel]
      */
-    override fun unpinMessage(): PNFuture<ThreadChannel>
+    override fun unpinMessage(): PNFuture<ThreadChannel> // todo add test
 
     /**
      *  Returns historical messages for the [ThreadChannel]
@@ -58,7 +56,7 @@ interface ThreadChannel : Channel {
      *
      * @return [PNFuture] containing the updated [Channel] with the pinned message metadata.
      */
-    fun pinMessageToParentChannel(message: ThreadMessage): PNFuture<Channel>
+    fun pinMessageToParentChannel(message: ThreadMessage): PNFuture<Channel> // todo add test
 
     /**
      * Unpins the currently pinned message from the parent channel. This updates the parent channel's metadata by removing
@@ -68,7 +66,7 @@ interface ThreadChannel : Channel {
      *
      * @return [PNFuture] containing the updated [Channel] after the message is unpinned.
      */
-    fun unpinMessageFromParentChannel(): PNFuture<Channel>
+    fun unpinMessageFromParentChannel(): PNFuture<Channel> // todo add test
 
     companion object
 }
