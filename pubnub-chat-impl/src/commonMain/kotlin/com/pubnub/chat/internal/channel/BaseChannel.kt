@@ -356,7 +356,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 ).then { setMembershipsResult ->
                     MembershipImpl.fromMembershipDTO(chat, setMembershipsResult.data.first(), user)
                 }.thenAsync { membership ->
-                    chat.pubNub.time().thenAsync { time -> // todo time API maybe removed from SDK soon
+                    chat.pubNub.time().thenAsync { time ->
                         membership.setLastReadMessageTimetoken(time.timetoken)
                     }
                 }.alsoAsync {
@@ -459,7 +459,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     this.id,
                     custom
                 )
-            ), // todo should null overwrite? wait for optionals?
+            ), // todo should null overwrite? waiting for optionals?
             includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
             includeCustom = true,
             includeCount = true,

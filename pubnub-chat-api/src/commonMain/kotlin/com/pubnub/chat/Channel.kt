@@ -194,8 +194,8 @@ interface Channel {
     /**
      *  Returns historical messages for the [Channel]
      *
-     *  @param startTimetoken
-     *  @param endTimetoken
+     *  @param startTimetoken Timetoken delimiting the start of a time slice (exclusive) to pull messages from.
+     *  @param endTimetoken Timetoken delimiting the end of a time slice (inclusive) to pull messages from
      *  @param count The maximum number of messages to retrieve. Default and maximum values is 25.
      *
      *  @return [PNFuture] containing a list of messages with pagination information (isMore: Boolean). The result of
@@ -443,7 +443,7 @@ interface Channel {
      *
      * @param callback Function that takes a single Channel object. It defines the custom behavior to be executed when detecting channel changes.
      *
-     * @return AutoCloseable interface that lets you stop receiving channel-related updates (objects events)
+     * @return [AutoCloseable] interface that lets you stop receiving channel-related updates (objects events)
      * and clean up resources by invoking the close() method.
      */
     fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable
