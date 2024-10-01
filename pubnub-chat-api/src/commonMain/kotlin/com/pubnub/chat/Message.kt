@@ -110,7 +110,7 @@ interface Message {
      * @param reaction Specific emoji added to the message.
      * @return Specifies if the current user added a given emoji to the message or not.
      */
-    fun hasUserReaction(reaction: String): Boolean// todo add test
+    fun hasUserReaction(reaction: String): Boolean // todo add test
 
     /**
      * Changes the content of the existing message to a new one.
