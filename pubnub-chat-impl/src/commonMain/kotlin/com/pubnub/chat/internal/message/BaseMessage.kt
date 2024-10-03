@@ -260,7 +260,6 @@ abstract class BaseMessage<T : Message>(
     }
 
     private fun deleteThread(soft: Boolean): PNFuture<Unit> {
-        // todo check on server, discuss with Team
         if (hasThread) {
             return getThread().thenAsync {
                 it.delete(soft)

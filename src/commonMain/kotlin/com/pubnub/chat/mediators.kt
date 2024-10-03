@@ -31,11 +31,31 @@ fun ThreadMessage.Companion.streamUpdatesOn(
     callback: (messages: Collection<ThreadMessage>) -> Unit,
 ): AutoCloseable = BaseMessage.streamUpdatesOn(messages, callback)
 
+/**
+ * Receives updates on list of [Channel] object.
+ *
+ * @param channels Collection of channels to get updates.
+ * @param callback Function that takes a single Channel object. It defines the custom behavior to be executed when
+ * detecting channel changes.
+ *
+ * @return [AutoCloseable] interface that lets you stop receiving channel-related updates (objects events)
+ * and clean up resources by invoking the close() method.
+ */
 fun Channel.Companion.streamUpdatesOn(
     channels: Collection<Channel>,
     callback: (channels: Collection<Channel>) -> Unit,
 ): AutoCloseable = BaseChannel.streamUpdatesOn(channels, callback)
 
+/**
+ * Receives updates on list of [Channel] object.
+ *
+ * @param channels Collection of channels to get updates.
+ * @param callback Function that takes a single Channel object. It defines the custom behavior to be executed when
+ * detecting channel changes.
+ *
+ * @return [AutoCloseable] interface that lets you stop receiving channel-related updates (objects events)
+ * and clean up resources by invoking the close() method.
+ */
 fun ThreadChannel.Companion.streamUpdatesOn(
     channels: Collection<Channel>,
     callback: (channels: Collection<Channel>) -> Unit,

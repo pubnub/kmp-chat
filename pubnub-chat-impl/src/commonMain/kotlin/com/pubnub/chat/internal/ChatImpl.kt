@@ -139,7 +139,6 @@ class ChatImpl(
     init {
         KmLogging.setLogLevel(mapLogLevelFromConfigToKmLogging())
 
-        // todo move this to config initialization or setters?
         if (config.storeUserActivityInterval < 60.seconds) {
             log.pnError(STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN)
         }

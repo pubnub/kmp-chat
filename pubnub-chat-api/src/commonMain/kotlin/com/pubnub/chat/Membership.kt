@@ -56,6 +56,7 @@ interface Membership {
      * Updates the channel membership information for a given user.
      *
      * @param custom Any custom properties or metadata associated with the channel-user membership in a `Map`. Values must be scalar only; arrays or objects are not supported. App Context filtering language doesn’t support filtering by custom properties.
+     * @return A [PNFuture] that returns an updated [Membership] object.
      */
     fun update(custom: CustomObject): PNFuture<Membership>
 
@@ -73,8 +74,6 @@ interface Membership {
      * @return A [PNFuture] that returns the number of unread messages on the membership's channel or `null` when [lastReadMessageTimetoken] is also `null`.
      */
     fun getUnreadMessagesCount(): PNFuture<Long?>
-
-    // todo do we have test for this?
 
     /**
      * You can receive updates when specific user-channel Membership object(s) are added, edited, or removed.

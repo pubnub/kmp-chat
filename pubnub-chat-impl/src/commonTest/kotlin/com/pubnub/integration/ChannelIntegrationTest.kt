@@ -682,7 +682,10 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             draft.send().await()
             val elements = MessageDraftImpl.getMessageElements(message.await().text)
 
-            assertEquals(listOf(MessageElement.PlainText("Some text with a "), MessageElement.Link("mention", MentionTarget.User("someUser"))), elements)
+            assertEquals(
+                listOf(MessageElement.PlainText("Some text with a "), MessageElement.Link("mention", MentionTarget.User("someUser"))),
+                elements
+            )
         }
     }
 }
