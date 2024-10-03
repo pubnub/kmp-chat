@@ -13,8 +13,8 @@ import com.pubnub.api.models.consumer.objects.PNPage
  */
 class GetRestrictionsResponse(
     val restrictions: Set<Restriction>,
-    val next: PNPage?,
-    val prev: PNPage?,
+    val next: PNPage.PNNext?,
+    val prev: PNPage.PNPrev?,
     val total: Int,
     val status: Int
 )

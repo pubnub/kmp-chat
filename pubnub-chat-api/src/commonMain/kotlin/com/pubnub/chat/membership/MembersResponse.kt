@@ -13,8 +13,8 @@ import com.pubnub.chat.Membership
  * @property members A set of [Membership] objects representing the members of the channel.
  */
 class MembersResponse(
-    val next: PNPage?,
-    val prev: PNPage?,
+    val next: PNPage.PNNext?,
+    val prev: PNPage.PNPrev?,
     val total: Int,
     val status: Int,
     val members: Set<Membership>

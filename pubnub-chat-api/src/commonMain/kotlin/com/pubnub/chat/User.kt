@@ -9,6 +9,7 @@ import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
+import kotlin.js.JsName
 
 /**
  * Represents an object that refers to a single user in a chat, including details about the user's identity, metadata, and actions they can perform.
@@ -193,6 +194,7 @@ interface User {
      * @return [PNFuture] containing a boolean indicating whether the user is active.
      */
     @Deprecated("Use non-async `active` property instead.", ReplaceWith("active"))
+    @JsName("_active")
     fun active(): PNFuture<Boolean>
 
     /**

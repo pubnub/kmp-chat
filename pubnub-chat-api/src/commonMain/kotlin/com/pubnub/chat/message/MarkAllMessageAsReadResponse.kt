@@ -14,8 +14,8 @@ import com.pubnub.chat.Membership
  */
 class MarkAllMessageAsReadResponse(
     val memberships: Set<Membership>,
-    val next: PNPage?,
-    val prev: PNPage?,
+    val next: PNPage.PNNext?,
+    val prev: PNPage.PNPrev?,
     val total: Int,
     val status: Int
 )

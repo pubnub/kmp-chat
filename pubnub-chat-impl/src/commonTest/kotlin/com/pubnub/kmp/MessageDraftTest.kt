@@ -14,8 +14,8 @@ import com.pubnub.chat.internal.Mention
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
-import com.pubnub.chat.internal.channelReferenceRegex
-import com.pubnub.chat.internal.userMentionRegex
+import com.pubnub.chat.internal.findChannelMentionMatches
+import com.pubnub.chat.internal.findUserMentionMatches
 import com.pubnub.test.await
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -393,8 +393,6 @@ class MessageDraftTest {
         )
     }
 
-    // TODO iOS fails on diacritics (ęąść..)
-    // when JS is also enabled, we'll fix all platform's regexes at the same time
     @Test
     fun test_user_mention_regexes() {
         val stringsToExpectedMatches = listOf(
@@ -412,12 +410,10 @@ class MessageDraftTest {
         )
 
         stringsToExpectedMatches.forEach {
-            assertEquals(it.second, userMentionRegex.find(it.first)!!.value)
+            assertEquals(it.second, findUserMentionMatches(it.first).first().value)
         }
     }
 
-    // TODO iOS fails on diacritics (ęąść..)
-    // when JS is also enabled, we'll fix all platform's regexes at the same time
     @Test
     fun test_channel_mention_regexes() {
         val stringsToExpectedMatches = listOf(
@@ -435,7 +431,7 @@ class MessageDraftTest {
         )
 
         stringsToExpectedMatches.forEach {
-            assertEquals(it.second, channelReferenceRegex.find(it.first)!!.value)
+            assertEquals(it.second, findChannelMentionMatches(it.first).first().value)
         }
     }
 }

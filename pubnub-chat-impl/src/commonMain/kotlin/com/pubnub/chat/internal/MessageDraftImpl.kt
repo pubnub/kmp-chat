@@ -20,8 +20,16 @@ import kotlinx.atomicfu.update
 import name.fraser.neil.plaintext.DiffMatchPatch
 import kotlin.math.min
 
-internal val userMentionRegex = Regex("""(?U)(?<=^|\p{Space})(@[\p{Alpha}\-]+)""")
-internal val channelReferenceRegex = Regex("""(?U)(?<=^|\p{Space})(#[\p{Alnum}\-]+)""")
+// internal expect val userMentionRegex: Regex
+// internal expect val channelReferenceRegex: Regex
+
+// internal val userMentionRegex = Regex("""(?<=^|\p{Space})(@[\p{Alpha}\-]+)""")
+// internal val userMentionRegex = Regex("""(?U)(?<=^|\p{Space})(@[\p{Alpha}\-]+)""")
+// private val userMentionRegex = Regex("""(?<=^|\s)(@[\p{L}-]+)""")
+
+// internal val channelReferenceRegex = Regex("""(?<=^|\p{Space})(#[\p{Alpha}\-\d]+)""")
+// internal val channelReferenceRegex = Regex("""(?U)(?<=^|\p{Space})(#[\p{Alnum}\-]+)""")
+// private val channelReferenceRegex = Regex("""(?<=^|\s)(#[\p{L}\d-]+)""")
 
 private const val SCHEMA_USER = "pn-user://"
 private const val SCHEMA_CHANNEL = "pn-channel://"
@@ -144,14 +152,14 @@ class MessageDraftImpl(
         }
     }
 
-    private val MatchResult.matchStart get() = range.first
+    private val RegexMatchResult.matchStart get() = range.first
 
     private fun getSuggestedMentions(): PNFuture<List<SuggestedMention>> {
-        val allUserMentions = userMentionRegex.findAll(messageText).toList()
-        val allChannelMentions = channelReferenceRegex.findAll(messageText).toList()
+        val allUserMentions = findUserMentionMatches(messageText)
+        val allChannelMentions = findChannelMentionMatches(messageText)
 
         val userSuggestionsNeededFor = allUserMentions
-            .filter { matchResult: MatchResult ->
+            .filter { matchResult ->
                 matchResult.matchStart !in mentions
                     .filter { it.target is MentionTarget.User }
                     .map(Mention::start)
@@ -165,7 +173,7 @@ class MessageDraftImpl(
 
         val getSuggestedUsersFuture = userSuggestionsNeededFor
             .filter { matchResult -> matchResult.value.length > 3 }
-            .map { matchResult: MatchResult ->
+            .map { matchResult ->
                 getSuggestedUsers(matchResult.value.substring(1)).then {
                     it.map { user ->
                         SuggestedMention(matchResult.matchStart, matchResult.value, user.name ?: user.id, MentionTarget.User(user.id))
@@ -261,7 +269,8 @@ class MessageDraftImpl(
     }
 
     companion object {
-        private val linkRegex = Regex("""\[(?<text>(?:[^]]*?(?:\\\\)*(?:\\])*)+?)]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
+//        private val linkRegex = Regex("""\[(?<text>(?:[^]]*?(?:\\\\)*(?:\\])*)+?)]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
+        private val linkRegex = Regex("""\[(?<text>(?:[^\]]*?(?:\\\\)*(?:\\\])*)+?)\]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
 
         internal fun escapeLinkText(text: String) = text.replace("\\", "\\\\").replace("]", "\\]")
 
@@ -379,3 +388,12 @@ internal class Mention(
         return start.compareTo(other.start)
     }
 }
+
+internal expect interface RegexMatchResult {
+    val value: String
+    val range: IntRange
+}
+
+internal expect fun findUserMentionMatches(input: CharSequence): List<RegexMatchResult>
+
+internal expect fun findChannelMentionMatches(input: CharSequence): List<RegexMatchResult>

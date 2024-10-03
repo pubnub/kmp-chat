@@ -984,6 +984,9 @@ class ChatImpl(
 
                     BaseChannel.getMessage(chat = this, channelId = mentionChannelId, timetoken = mentionTimetoken)
                         .then { message: Message? ->
+                            if (message == null) {
+                                return@then null
+                            }
                             if (mentionEvent.payload.parentChannel == null) {
                                 ChannelMentionData(
                                     event = mentionEvent,
@@ -1002,9 +1005,11 @@ class ChatImpl(
                             }
                         }
                 }.awaitAll()
-        }.then { userMentionDataList: List<UserMentionData> ->
-            GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList.toSet(), isMore = isMore)
         }
+            .then { it.filterNotNull() }
+            .then { userMentionDataList: List<UserMentionData> ->
+                GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList.toSet(), isMore = isMore)
+            }
     }
 
     override fun destroy() {

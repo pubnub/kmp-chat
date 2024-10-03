@@ -13,7 +13,7 @@ import com.pubnub.chat.Channel
  */
 class GetChannelsResponse(
     val channels: Set<Channel>,
-    val next: PNPage?,
-    val prev: PNPage?,
+    val next: PNPage.PNNext?,
+    val prev: PNPage.PNPrev?,
     val total: Int
 )

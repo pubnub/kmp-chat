@@ -6,6 +6,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.LongAsStringSerializer
+import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
 
 /**
  * Represents a file that is associated with a message in the chat system.
@@ -15,7 +17,9 @@ import kotlinx.serialization.builtins.LongAsStringSerializer
  * @property url The URL where the file can be accessed or downloaded.
  * @property type The MIME type of the file (e.g., "image/jpeg", "application/pdf"). This is optional.
  */
+@OptIn(ExperimentalJsExport::class)
 @Serializable
+@JsExport
 class File(
     val name: String,
     val id: String,
