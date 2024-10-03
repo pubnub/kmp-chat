@@ -14,6 +14,8 @@ import com.pubnub.chat.internal.Mention
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.channelReferenceRegex
+import com.pubnub.chat.internal.userMentionRegex
 import com.pubnub.test.await
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -389,5 +391,51 @@ class MessageDraftTest {
             ),
             draft.getMessageElements()
         )
+    }
+
+    // TODO iOS fails on diacritics (ęąść..)
+    // when JS is also enabled, we'll fix all platform's regexes at the same time
+    @Test
+    fun test_user_mention_regexes() {
+        val stringsToExpectedMatches = listOf(
+            "@user" to "@user",
+            "@us()er" to "@us",
+            "@user @fsjdoif" to "@user",
+            "@123aaa @user" to "@user",
+            "@user aaa" to "@user",
+            "aaa @user aaa" to "@user",
+            "aaa @user," to "@user",
+            "aaa @user-user aaa" to "@user-user",
+            "@user-user" to "@user-user",
+            "@brzęczy" to "@brzęczy",
+            "@ąśćżć" to "@ąśćżć",
+        )
+
+        stringsToExpectedMatches.forEach {
+            assertEquals(it.second, userMentionRegex.find(it.first)!!.value)
+        }
+    }
+
+    // TODO iOS fails on diacritics (ęąść..)
+    // when JS is also enabled, we'll fix all platform's regexes at the same time
+    @Test
+    fun test_channel_mention_regexes() {
+        val stringsToExpectedMatches = listOf(
+            "#user" to "#user",
+            "#us()er" to "#us",
+            "#user #fsjdoif" to "#user",
+            "#123aaa #user" to "#123aaa",
+            "#user aaa" to "#user",
+            "aaa #user aaa" to "#user",
+            "aaa #user," to "#user",
+            "aaa #user-user aaa" to "#user-user",
+            "#user-user" to "#user-user",
+            "#brzęczy" to "#brzęczy",
+            "#ąśćżć" to "#ąśćżć",
+        )
+
+        stringsToExpectedMatches.forEach {
+            assertEquals(it.second, channelReferenceRegex.find(it.first)!!.value)
+        }
     }
 }

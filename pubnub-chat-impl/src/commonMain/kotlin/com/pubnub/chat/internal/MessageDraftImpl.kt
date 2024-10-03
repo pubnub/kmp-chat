@@ -20,8 +20,8 @@ import kotlinx.atomicfu.update
 import name.fraser.neil.plaintext.DiffMatchPatch
 import kotlin.math.min
 
-private val userMentionRegex = Regex("""(?U)(?<=^|\p{Space})(@[\p{L}-]+)""")
-private val channelReferenceRegex = Regex("""(?U)(?<=^|\p{Space})(#[\p{LD}-]+)""")
+internal val userMentionRegex = Regex("""(?U)(?<=^|\p{Space})(@[\p{Alpha}\-]+)""")
+internal val channelReferenceRegex = Regex("""(?U)(?<=^|\p{Space})(#[\p{Alnum}\-]+)""")
 
 private const val SCHEMA_USER = "pn-user://"
 private const val SCHEMA_CHANNEL = "pn-channel://"
