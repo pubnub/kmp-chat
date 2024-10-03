@@ -13,6 +13,12 @@ plugins {
 }
 
 kotlin {
+    if (enableJsTarget) {
+        js {
+            binaries.library()
+        }
+    }
+
     sourceSets {
         val commonMain by getting {
             dependencies {

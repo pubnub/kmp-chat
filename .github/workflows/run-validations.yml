@@ -43,6 +43,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Install JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu' # See 'Supported distributions' for available options
+          java-version: '21'
       - name: Cache
         uses: actions/cache@v4
         with:

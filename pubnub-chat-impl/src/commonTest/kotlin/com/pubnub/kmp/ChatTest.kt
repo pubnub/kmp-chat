@@ -65,6 +65,7 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.utils.BaseTest
+import com.pubnub.kmp.utils.get
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -1401,12 +1402,12 @@ class ChatTest : BaseTest() {
         }
 
         val actualRestrictedChannelId: String = channelIdSlot.get()
-        val actualRestriction = userIdsSlot.get()[0].custom as Map<String, String>
+        val actualRestriction = userIdsSlot.get()[0].custom
         val actualModerationEventChannelId = userIdSlot.get()
         val actualEncodedMessageSlot = encodedMessageSlot.get()
-        assertTrue(actualRestriction["ban"] as Boolean)
-        assertEquals(reason, actualRestriction["reason"])
-        assertEquals("banned", actualEncodedMessageSlot.get("restriction"))
+        assertTrue(actualRestriction?.get("ban") as Boolean)
+        assertEquals(reason, actualRestriction.get("reason"))
+        assertEquals("banned", actualEncodedMessageSlot["restriction"])
         assertEquals("PUBNUB_INTERNAL_MODERATION_$restrictedChannelId", actualRestrictedChannelId)
         assertEquals(restrictedUserId, actualModerationEventChannelId)
     }

@@ -13,8 +13,8 @@ import com.pubnub.chat.Membership
  * @property memberships A list of [Membership] objects representing the channels the user is a member of.
  */
 class MembershipsResponse(
-    val next: PNPage?,
-    val prev: PNPage?,
+    val next: PNPage.PNNext?,
+    val prev: PNPage.PNPrev?,
     val total: Int,
     val status: Int,
     val memberships: List<Membership>

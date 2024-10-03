@@ -12,7 +12,9 @@ import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.HistoryResponse
+import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageActionType
+import com.pubnub.kmp.Uploadable
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
@@ -25,6 +27,24 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MessageIntegrationTest : BaseChatIntegrationTest() {
+
+    @Test
+    fun sendingFiles() = runTest {
+        val tt = channel01.sendText("message", files = listOf(
+            InputFile("name.txt", "text/plain", generateFileContent())
+        )).await()
+
+        delayInMillis(250)
+        val message: Message = channel01.getMessage(tt.timetoken).await()!!
+        assertEquals(1, message.files.size)
+        val file = message.files.first()
+        assertEquals("text/plain", file.type)
+        assertEquals("name.txt", file.name)
+        assertTrue(file.url.startsWith("https://"))
+
+        pubnub.deleteFile(channel01.id, file.name, file.id).await()
+    }
+
     @Test
     fun createMessageThenSoftDeleteThenRestore() = runTest {
         val messageText = "messageText_${randomString()}"
@@ -237,3 +257,5 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
 private fun Message.asImpl(): MessageImpl {
     return this as MessageImpl
 }
+
+expect fun generateFileContent(): Uploadable

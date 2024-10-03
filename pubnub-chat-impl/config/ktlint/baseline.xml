@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<baseline version="1.0">
+    <file name="src/jsMain/kotlin/MembershipJs.kt">
+        <error line="39" column="46" source="standard:comment-wrapping" />
+    </file>
+    <file name="src/jsMain/kotlin/UserJs.kt">
+        <error line="46" column="53" source="standard:comment-wrapping" />
+    </file>
+    <file name="src/jsMain/kotlin/converters.kt">
+        <error line="138" column="14" source="standard:function-naming" />
+    </file>
+</baseline>

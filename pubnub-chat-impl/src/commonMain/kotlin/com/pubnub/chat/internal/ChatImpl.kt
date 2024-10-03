@@ -113,8 +113,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.seconds
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 class ChatImpl(
     override val config: ChatConfiguration,
@@ -505,7 +503,6 @@ class ChatImpl(
         }
     }
 
-    @OptIn(ExperimentalUuidApi::class)
     override fun createPublicConversation(
         channelId: String?,
         channelName: String?,
@@ -513,7 +510,7 @@ class ChatImpl(
         channelCustom: CustomObject?,
         channelStatus: String?
     ): PNFuture<Channel> {
-        val finalChannelId: String = channelId ?: Uuid.random().toString()
+        val finalChannelId: String = channelId ?: generateRandomUuid()
 
         return createChannel(
             id = finalChannelId,
@@ -573,7 +570,6 @@ class ChatImpl(
         }
     }
 
-    @OptIn(ExperimentalUuidApi::class)
     override fun createGroupConversation(
         invitedUsers: Collection<User>,
         channelId: String?,
@@ -584,7 +580,7 @@ class ChatImpl(
         membershipCustom: CustomObject?
     ): PNFuture<CreateGroupConversationResult> {
         val user = this.currentUser
-        val finalChannelId = channelId ?: Uuid.random().toString()
+        val finalChannelId = channelId ?: generateRandomUuid()
         return getChannel(finalChannelId).thenAsync { channel ->
             channel?.asFuture() ?: createChannel(
                 finalChannelId,
@@ -1249,3 +1245,6 @@ class ChatImpl(
         }
     }
 }
+
+
+internal expect fun generateRandomUuid(): String

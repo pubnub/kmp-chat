@@ -99,7 +99,7 @@ data class UserImpl(
         sort: Collection<PNSortKey<PNMembershipKey>>,
     ): PNFuture<MembershipsResponse> {
         val internalModerationFilter = "!(channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*')"
-        val effectiveFilter: String = filter?.let { "$internalModerationFilter && $filter" } ?: internalModerationFilter
+        val effectiveFilter: String = filter?.let { "$internalModerationFilter && ($filter)" } ?: internalModerationFilter
 
         return chat.pubNub.getMemberships(
             uuid = id,
@@ -109,6 +109,7 @@ data class UserImpl(
             sort = sort,
             includeCount = true,
             includeCustom = true,
+            includeType = true,
             includeChannelDetails = getChannelDetailsType(true)
         ).then { pnChannelMembershipArrayResult ->
             MembershipsResponse(

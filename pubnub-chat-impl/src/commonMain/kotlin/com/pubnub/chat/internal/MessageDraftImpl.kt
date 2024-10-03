@@ -91,7 +91,7 @@ class MessageDraftImpl(
     }
 
     override fun removeMention(offset: Int) {
-        mentions.removeAll { it.start == offset }
+        mentions.removeAll { offset in it.start until it.endExclusive  }
         fireMessageElementsChanged()
     }
 

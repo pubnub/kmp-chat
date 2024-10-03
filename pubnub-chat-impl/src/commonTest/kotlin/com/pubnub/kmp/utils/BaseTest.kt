@@ -8,6 +8,7 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.utils.PatchValue
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.kmp.CustomObject
 
 open class BaseTest {
     internal val id = "testId"
@@ -59,3 +60,5 @@ open class BaseTest {
         return PNChannelMetadataResult(status = 200, data = pnChannelMetadata)
     }
 }
+
+internal expect fun CustomObject.get(key: String): Any?

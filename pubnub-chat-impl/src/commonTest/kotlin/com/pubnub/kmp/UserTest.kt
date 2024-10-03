@@ -197,7 +197,8 @@ class UserTest {
                 sort = any(),
                 includeCount = any(),
                 includeCustom = any(),
-                includeChannelDetails = any()
+                includeChannelDetails = any(),
+                includeType = any()
             )
         } returns getMembershipsEndpoint
         every { getMembershipsEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMembershipArrayResult>>) ->
@@ -218,7 +219,7 @@ class UserTest {
         val limit = 10
         val page = PNPage.PNNext("nextPageHash")
         val filter = "channel.name LIKE '*super*'"
-        val expectedFilter = "!(channel.id LIKE '$INTERNAL_MODERATION_PREFIX*') && $filter"
+        val expectedFilter = "!(channel.id LIKE '$INTERNAL_MODERATION_PREFIX*') && ($filter)"
         val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
         val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub
@@ -231,7 +232,8 @@ class UserTest {
                 sort = any(),
                 includeCount = any(),
                 includeCustom = any(),
-                includeChannelDetails = any()
+                includeChannelDetails = any(),
+                includeType = any()
             )
         } returns getMembershipsEndpoint
         every { getMembershipsEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMembershipArrayResult>>) ->
@@ -256,7 +258,8 @@ class UserTest {
                 sort = sort,
                 includeCount = true,
                 includeCustom = true,
-                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM
+                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+                includeType = true
             )
         }
     }

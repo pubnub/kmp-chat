@@ -214,7 +214,7 @@ abstract class BaseMessage<T : Message>(
                 uuid = chat.currentUser.id
             }
         val newActions = if (existingReaction != null) {
-            chat.pubNub.removeMessageAction(channelId, timetoken, existingReaction.actionTimetoken.toLong())
+            chat.pubNub.removeMessageAction(channelId, timetoken, existingReaction.actionTimetoken)
                 .then { filterAction(actions, messageAction) }
         } else {
             chat.pubNub.addMessageAction(channelId, messageAction)
@@ -231,7 +231,7 @@ abstract class BaseMessage<T : Message>(
 
     override fun restore(): PNFuture<Message> {
         val deleteActions: List<PNFetchMessageItem.Action> = getDeleteActions()
-            ?: return PubNubException(THIS_MESSAGE_HAS_NOT_BEEN_DELETED).logWarnAndReturnException(log).asFuture()
+            ?: return this.also { log.warn { THIS_MESSAGE_HAS_NOT_BEEN_DELETED } }.asFuture()
 
         var updatedActions: Actions? = actions?.filterNot { it.key == chat.deleteMessageActionName }
 

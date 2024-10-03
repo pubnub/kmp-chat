@@ -411,10 +411,10 @@ public final class com/pubnub/chat/membership/MembersResponse {
 }
 
 public final class com/pubnub/chat/membership/MembershipsResponse {
-	public fun <init> (Lcom/pubnub/api/models/consumer/objects/PNPage;Lcom/pubnub/api/models/consumer/objects/PNPage;IILjava/util/List;)V
+	public fun <init> (Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;IILjava/util/List;)V
 	public final fun getMemberships ()Ljava/util/List;
-	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage;
-	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage;
+	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
+	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getStatus ()I
 	public final fun getTotal ()I
 }
