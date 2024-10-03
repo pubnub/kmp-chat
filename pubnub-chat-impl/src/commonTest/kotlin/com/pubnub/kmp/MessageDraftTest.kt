@@ -1,4 +1,4 @@
-package com.pubnub.internal
+package com.pubnub.kmp
 
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.v2.callbacks.Result
@@ -14,8 +14,6 @@ import com.pubnub.chat.internal.Mention
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
-import com.pubnub.kmp.PNFuture
-import com.pubnub.kmp.asFuture
 import com.pubnub.test.await
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -85,7 +83,7 @@ class MessageDraftTest {
         val result = CompletableDeferred<Unit>()
         val result2 = CompletableDeferred<Unit>()
 
-        val listener = MessageDraftStateListener { messageElements, suggestedMentions ->
+        val listener = MessageDraftStateListener { _, _ ->
             if (!result.isCompleted) {
                 result.complete(Unit)
             } else {
@@ -393,21 +391,3 @@ class MessageDraftTest {
         )
     }
 }
-//        val draft = MessageDraftImpl(channels.first(), MessageDraft.UserSuggestionSource.GLOBAL, isTypingIndicatorTriggered = false)
-//        val resultList = mutableListOf<List<MessageElement>>()
-//        val suggestion = CompletableDeferred<SuggestedMention>()
-//        draft.addMessageElementsListener { messageElements, suggestions ->
-//            resultList.add(messageElements)
-//            backgroundScope.launch {
-//                suggestion.complete(suggestions.await().first())
-//            }
-//        }
-//
-//        draft.update("abc @exa def 123")
-//        draft.insertSuggestedMention(suggestion.await(), suggestion.await().replaceTo)
-//
-//        val rendered = draft.render()
-
-//        val draftElements = draft.getMessageElements()
-//        val renderedElements = messageElements(rendered)
-//        assertEquals(draftElements, renderedElements)

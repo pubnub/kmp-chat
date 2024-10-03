@@ -1,5 +1,6 @@
 package com.pubnub.chat
 
+import com.pubnub.chat.MessageDraft.UserSuggestionSource
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.UserImpl
@@ -57,13 +58,27 @@ fun User.Companion.streamUpdatesOn(
     callback: (users: Collection<User>) -> Unit
 ): AutoCloseable = UserImpl.streamUpdatesOn(users, callback)
 
-fun Message.getMessageElements(): List<MessageElement> {
-    return MessageDraftImpl.getMessageElements(text)
-}
+// message draft v2
 
+/**
+ * Creates a [MessageDraft] for composing a message that will be sent to this [Channel].
+ *
+ * @param userSuggestionSource The scope for searching for suggested users, default: [UserSuggestionSource.CHANNEL]
+ * @param isTypingIndicatorTriggered Whether modifying the message text triggers the typing indicator on [Channel], default: true
+ * @param userLimit The limit on the number of users returned when searching for users to mention, default: 10
+ * @param channelLimit The limit on the number of channels returned when searching for channels to reference, default: 10
+ */
 fun Channel.createMessageDraft(
-    userSuggestionSource: MessageDraft.UserSuggestionSource = MessageDraft.UserSuggestionSource.CHANNEL,
+    userSuggestionSource: UserSuggestionSource = UserSuggestionSource.CHANNEL,
     isTypingIndicatorTriggered: Boolean = true,
     userLimit: Int = 10,
     channelLimit: Int = 10
 ): MessageDraft = MessageDraftImpl(this, userSuggestionSource, isTypingIndicatorTriggered, userLimit, channelLimit)
+
+/**
+ * Use this on the receiving end if a [Message] was sent using [MessageDraft] to parse the `Message` text into parts
+ * representing plain text or additional information such as user mentions, channel references and links.
+ */
+fun Message.getMessageElements(): List<MessageElement> {
+    return MessageDraftImpl.getMessageElements(text)
+}

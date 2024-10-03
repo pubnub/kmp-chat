@@ -666,19 +666,14 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
-    // todo rename to getMembershipSuggestions?
     override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<Membership>> {
-//        val cacheKey: String = getPhraseToLookFor(text, "@") ?: return emptySet<Membership>().asFuture()
-
-        val cacheKey = text
-
-        suggestedMemberships[cacheKey]?.let { nonNullMemberships ->
+        suggestedMemberships[text]?.let { nonNullMemberships ->
             return nonNullMemberships.asFuture()
         }
 
-        return getMembers(filter = "uuid.name LIKE '$cacheKey*'", limit = limit).then { membersResponse ->
+        return getMembers(filter = "uuid.name LIKE '$text*'", limit = limit).then { membersResponse ->
             val memberships = membersResponse.members
-            suggestedMemberships[cacheKey] = memberships
+            suggestedMemberships[text] = memberships
             memberships
         }
     }

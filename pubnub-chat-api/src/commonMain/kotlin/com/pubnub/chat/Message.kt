@@ -90,19 +90,19 @@ interface Message {
     /**
      * List of included text links and their position.
      */
-    @Deprecated("Use `mentions` instead.")
+    @Deprecated("Use `Message.getMessageElements()` instead.")
     val textLinks: List<TextLink>?
 
     /**
      * List of mentioned users with IDs and names.
      */
-    @Deprecated("Use `mentions` instead.")
+    @Deprecated("Use `Message.getMessageElements()` instead.")
     val mentionedUsers: MessageMentionedUsers?
 
     /**
      * List of referenced channels with IDs and names.
      */
-    @Deprecated("Use `mentions` instead.")
+    @Deprecated("Use `Message.getMessageElements()` instead.")
     val referencedChannels: MessageReferencedChannels?
 
     fun hasUserReaction(reaction: String): Boolean

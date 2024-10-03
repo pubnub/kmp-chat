@@ -10,6 +10,7 @@ import com.pubnub.chat.MessageDraftStateListener
 import com.pubnub.chat.MessageElement
 import com.pubnub.chat.SuggestedMention
 import com.pubnub.chat.User
+import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.types.InputFile
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.awaitAll
@@ -40,6 +41,11 @@ class MessageDraftImpl(
     override val files: MutableList<InputFile> = mutableListOf()
 
     private val listeners = atomic(setOf<MessageDraftStateListener>())
+    private val chat = channel.chat as ChatInternal
+    private val mentions: MutableList<Mention> = mutableListOf()
+    private val diffMatchPatch = DiffMatchPatch()
+
+    private var messageText: StringBuilder = StringBuilder("")
 
     override fun addMessageElementsListener(callback: MessageDraftStateListener) {
         listeners.update {
@@ -56,102 +62,10 @@ class MessageDraftImpl(
         }
     }
 
-    private fun fireMessageElementsChanged() {
-        val listeners = listeners.value
-        if (listeners.isEmpty()) {
-            return
-        }
-        val messageElements = getMessageElements()
-        val suggestions = getSuggestedMentions()
-        listeners.forEach { callback ->
-            callback.onChange(messageElements, suggestions)
-        }
-    }
-
-    private val chat = channel.chat as ChatInternal
-    private var messageText: StringBuilder = StringBuilder("")
-    private val mentions: MutableList<Mention> = mutableListOf()
-    private val diffMatchPatch = DiffMatchPatch()
-
-    private fun getSuggestedMentions(): PNFuture<List<SuggestedMention>> {
-        val allUserMentions = userMentionRegex.findAll(messageText).toList()
-        val allChannelMentions = channelReferenceRegex.findAll(messageText).toList()
-
-        val userSuggestionsNeededFor = allUserMentions
-            .filter { matchResult: MatchResult ->
-                matchResult.matchStart !in mentions
-                    .filter { it.target is MentionTarget.User }
-                    .map(Mention::start)
-            }
-        val channelSuggestionsNeededFor = allChannelMentions
-            .filter { matchResult ->
-                matchResult.matchStart !in mentions
-                    .filter { it.target is MentionTarget.Channel }
-                    .map(Mention::start)
-            }
-
-        val getSuggestedUsersFuture = userSuggestionsNeededFor
-            .filter { matchResult -> matchResult.matchString.length > 3 }
-            .map { matchResult: MatchResult ->
-                getSuggestedUsers(matchResult.matchString.substring(1)).then {
-                    it.map { user ->
-                        SuggestedMention(matchResult.matchStart, matchResult.matchString, user.name ?: user.id, MentionTarget.User(user.id))
-                    }
-                }
-            }.awaitAll()
-        val getSuggestedChannelsFuture = channelSuggestionsNeededFor
-            .filter { matchResult -> matchResult.matchString.length > 3 }
-            .map { matchResult ->
-                getSuggestedChannels(matchResult.matchString.substring(1)).then { channels ->
-                    channels.map { channel ->
-                        SuggestedMention(
-                            matchResult.matchStart,
-                            matchResult.matchString,
-                            channel.name ?: channel.id,
-                            MentionTarget.Channel(channel.id)
-                        )
-                    }
-                }
-            }.awaitAll()
-        return awaitAll(getSuggestedUsersFuture, getSuggestedChannelsFuture).then {
-            it.first.flatten() + it.second.flatten()
-        }
-    }
-
-    private fun triggerTypingIndicator() {
-        if (isTypingIndicatorTriggered) {
-            if (messageText.isNotEmpty()) {
-                channel.startTyping()
-            } else {
-                channel.stopTyping()
-            }
-        }
-    }
-
-//    private val MatchResult.matchStart get() = groups[1]!!.range.first // not supported in JS
-    private val MatchResult.matchStart get() = range.first
-    private val MatchResult.matchString get() = groups[1]!!.value
-
     override fun insertText(offset: Int, text: String) {
         insertTextInternal(offset, text)
         triggerTypingIndicator()
         fireMessageElementsChanged()
-    }
-
-    private fun insertTextInternal(offset: Int, text: String) {
-        messageText.insert(offset, text)
-        val toRemove = mutableSetOf<Mention>()
-        mentions.forEach { mention ->
-            when {
-                offset > mention.start && offset < mention.endExclusive -> {
-                    toRemove += mention
-                }
-                offset <= mention.start -> {
-                    mention.start += text.length
-                }
-            }
-        }
-        mentions.removeAll(toRemove)
     }
 
     override fun removeText(offset: Int, length: Int) {
@@ -160,41 +74,15 @@ class MessageDraftImpl(
         fireMessageElementsChanged()
     }
 
-    private fun removeTextInternal(offset: Int, length: Int) {
-        messageText.deleteRange(offset, offset + length)
-        val toRemove = mutableSetOf<Mention>()
-        mentions.forEach { mention ->
-            val removalEnd = offset + length
-            if (offset <= mention.endExclusive && removalEnd > mention.start) {
-                toRemove += mention
-            }
-            if (offset < mention.start) {
-                val numCharactersBefore = min(length, mention.start - offset)
-                mention.start -= numCharactersBefore
-            }
-        }
-        mentions.removeAll(toRemove)
-    }
-
     override fun insertSuggestedMention(mention: SuggestedMention, text: String) {
-        if (messageText.substring(mention.start, mention.start + mention.replaceFrom.length) != mention.replaceFrom) {
-            throw PubNubException("This mention suggestion is no longer valid - the message draft text has been changed.")
+        if (messageText.substring(mention.offset, mention.offset + mention.replaceFrom.length) != mention.replaceFrom) {
+            throw PubNubException(PubNubErrorMessage.MENTION_SUGGESTION_INVALID)
         }
-        removeTextInternal(mention.start, mention.replaceFrom.length)
-        insertTextInternal(mention.start, text)
-        addMentionInternal(mention.start, text.length, mention.target)
+        removeTextInternal(mention.offset, mention.replaceFrom.length)
+        insertTextInternal(mention.offset, text)
+        addMentionInternal(mention.offset, text.length, mention.target)
         triggerTypingIndicator()
         fireMessageElementsChanged()
-    }
-
-    private fun addMentionInternal(offset: Int, length: Int, target: MentionTarget) {
-        val mention = Mention(offset, length, target)
-        mentions.forEach {
-            require(
-                (mention.start >= it.endExclusive || mention.endExclusive <= it.start)
-            ) { "Cannot intersect with existing mention: ${it.start} ${it.endExclusive}, ${mention.start} ${mention.endExclusive}" }
-        }
-        mentions.add(mention)
     }
 
     override fun addMention(offset: Int, length: Int, target: MentionTarget) {
@@ -243,6 +131,117 @@ class MessageDraftImpl(
         files = files,
         usersToMention = mentions.mapNotNull { it.target as? MentionTarget.User }.map { it.userId }
     )
+
+    private fun fireMessageElementsChanged() {
+        val listeners = listeners.value
+        if (listeners.isEmpty()) {
+            return
+        }
+        val messageElements = getMessageElements()
+        val suggestions = getSuggestedMentions()
+        listeners.forEach { callback ->
+            callback.onChange(messageElements, suggestions)
+        }
+    }
+
+    private val MatchResult.matchStart get() = range.first
+
+    private fun getSuggestedMentions(): PNFuture<List<SuggestedMention>> {
+        val allUserMentions = userMentionRegex.findAll(messageText).toList()
+        val allChannelMentions = channelReferenceRegex.findAll(messageText).toList()
+
+        val userSuggestionsNeededFor = allUserMentions
+            .filter { matchResult: MatchResult ->
+                matchResult.matchStart !in mentions
+                    .filter { it.target is MentionTarget.User }
+                    .map(Mention::start)
+            }
+        val channelSuggestionsNeededFor = allChannelMentions
+            .filter { matchResult ->
+                matchResult.matchStart !in mentions
+                    .filter { it.target is MentionTarget.Channel }
+                    .map(Mention::start)
+            }
+
+        val getSuggestedUsersFuture = userSuggestionsNeededFor
+            .filter { matchResult -> matchResult.value.length > 3 }
+            .map { matchResult: MatchResult ->
+                getSuggestedUsers(matchResult.value.substring(1)).then {
+                    it.map { user ->
+                        SuggestedMention(matchResult.matchStart, matchResult.value, user.name ?: user.id, MentionTarget.User(user.id))
+                    }
+                }
+            }.awaitAll()
+        val getSuggestedChannelsFuture = channelSuggestionsNeededFor
+            .filter { matchResult -> matchResult.value.length > 3 }
+            .map { matchResult ->
+                getSuggestedChannels(matchResult.value.substring(1)).then { channels ->
+                    channels.map { channel ->
+                        SuggestedMention(
+                            matchResult.matchStart,
+                            matchResult.value,
+                            channel.name ?: channel.id,
+                            MentionTarget.Channel(channel.id)
+                        )
+                    }
+                }
+            }.awaitAll()
+        return awaitAll(getSuggestedUsersFuture, getSuggestedChannelsFuture).then {
+            it.first.flatten() + it.second.flatten()
+        }
+    }
+
+    private fun triggerTypingIndicator() {
+        if (isTypingIndicatorTriggered) {
+            if (messageText.isNotEmpty()) {
+                channel.startTyping()
+            } else {
+                channel.stopTyping()
+            }
+        }
+    }
+
+    private fun insertTextInternal(offset: Int, text: String) {
+        messageText.insert(offset, text)
+        val toRemove = mutableSetOf<Mention>()
+        mentions.forEach { mention ->
+            when {
+                offset > mention.start && offset < mention.endExclusive -> {
+                    toRemove += mention
+                }
+                offset <= mention.start -> {
+                    mention.start += text.length
+                }
+            }
+        }
+        mentions.removeAll(toRemove)
+    }
+
+    private fun removeTextInternal(offset: Int, length: Int) {
+        messageText.deleteRange(offset, offset + length)
+        val toRemove = mutableSetOf<Mention>()
+        mentions.forEach { mention ->
+            val removalEnd = offset + length
+            if (offset <= mention.endExclusive && removalEnd > mention.start) {
+                toRemove += mention
+            }
+            if (offset < mention.start) {
+                val numCharactersBefore = min(length, mention.start - offset)
+                mention.start -= numCharactersBefore
+            }
+        }
+        mentions.removeAll(toRemove)
+    }
+
+    private fun addMentionInternal(offset: Int, length: Int, target: MentionTarget) {
+        val mention = Mention(offset, length, target)
+        mentions.forEach {
+            require(
+                (mention.start >= it.endExclusive || mention.endExclusive <= it.start)
+            ) { "${PubNubErrorMessage.MENTION_CANNOT_INTERSECT} ${it.start} ${it.endExclusive}, ${mention.start} ${mention.endExclusive}" }
+        }
+        mentions.add(mention)
+    }
 
     internal fun getMessageElements(): List<MessageElement> =
         getMessageElements(messageText, mentions)
@@ -333,8 +332,9 @@ class MessageDraftImpl(
                     add(MessageElement.Link(plainText.substring(mention.start, mention.endExclusive), mention.target))
                     consumedUntil = mention.endExclusive
                 }
-                plainText.substring(consumedUntil).takeIf { it.isNotEmpty() }?.let {
-                    add(MessageElement.PlainText(it))
+                val remainingText = plainText.substring(consumedUntil)
+                if (remainingText.isNotEmpty()) {
+                    add(MessageElement.PlainText(remainingText))
                 }
             }
         }
@@ -368,13 +368,7 @@ class MessageDraftImpl(
     }
 }
 
-fun List<SuggestedMention>.getSuggestionsFor(position: Int): List<SuggestedMention> =
-    filter { it.start <= position }
-        .filter { suggestedMention ->
-            position in suggestedMention.start..(suggestedMention.start + suggestedMention.replaceFrom.length)
-        }
-
-class Mention(
+internal class Mention(
     var start: Int,
     var length: Int,
     val target: MentionTarget,

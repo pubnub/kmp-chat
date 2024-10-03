@@ -243,6 +243,10 @@ public final class com/pubnub/chat/MessageDraft$UserSuggestionSource : java/lang
 	public static fun values ()[Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
 }
 
+public final class com/pubnub/chat/MessageDraftKt {
+	public static final fun getSuggestionsFor (Ljava/util/List;I)Ljava/util/List;
+}
+
 public abstract interface class com/pubnub/chat/MessageDraftStateListener {
 	public abstract fun onChange (Ljava/util/List;Lcom/pubnub/kmp/PNFuture;)V
 }
@@ -277,9 +281,9 @@ public final class com/pubnub/chat/MessageElement$PlainText : com/pubnub/chat/Me
 
 public final class com/pubnub/chat/SuggestedMention {
 	public fun <init> (ILjava/lang/String;Ljava/lang/String;Lcom/pubnub/chat/MentionTarget;)V
+	public final fun getOffset ()I
 	public final fun getReplaceFrom ()Ljava/lang/String;
 	public final fun getReplaceTo ()Ljava/lang/String;
-	public final fun getStart ()I
 	public final fun getTarget ()Lcom/pubnub/chat/MentionTarget;
 }
 
