@@ -76,7 +76,6 @@ import com.pubnub.chat.internal.timer.PlatformTimer
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.internal.timer.createTimerManager
 import com.pubnub.chat.internal.util.channelsUrlDecoded
-import com.pubnub.chat.internal.util.getPhraseToLookFor
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.cyrb53a
@@ -896,30 +895,27 @@ class ChatImpl(
     }
 
     override fun getChannelSuggestions(text: String, limit: Int): PNFuture<Set<Channel>> {
-        val cacheKey: String = getPhraseToLookFor(text, "#") ?: return emptySet<Channel>().asFuture()
+        val cacheKey: String = text
 
         suggestedChannelsCache[cacheKey]?.let { nonNullChannels ->
             return nonNullChannels.asFuture()
         }
 
         return getChannels(filter = "name LIKE '$cacheKey*'", limit = limit).then { getChannelsResponse ->
-            val channels: Set<Channel> = getChannelsResponse.channels
-            suggestedChannelsCache[cacheKey] = channels
-            channels
+            suggestedChannelsCache[cacheKey] = getChannelsResponse.channels
+            getChannelsResponse.channels
         }
     }
 
     override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<User>> {
-        val cacheKey: String = getPhraseToLookFor(text, "@") ?: return emptySet<User>().asFuture()
-
+        val cacheKey = text
         suggestedUsersCache[cacheKey]?.let { nonNullUser ->
             return nonNullUser.asFuture()
         }
 
         return getUsers(filter = "name LIKE '$cacheKey*'", limit = limit).then { getUsersResponse ->
-            val users: Set<User> = getUsersResponse.users
-            suggestedUsersCache[cacheKey] = users
-            users
+            suggestedUsersCache[cacheKey] = getUsersResponse.users
+            getUsersResponse.users
         }
     }
 

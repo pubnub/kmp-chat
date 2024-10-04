@@ -223,6 +223,7 @@ interface Channel {
      * info about the quoted message: timetoken for the time when the quoted message was published, text with the
      * original message content, and userId as the identifier of the user who published the quoted message.
      * @param files One or multiple files attached to the text message.
+     * @param usersToMention A collection of user ids to automatically notify with a mention after this message is sent.
      *
      * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the sent message.
      */
@@ -234,6 +235,7 @@ interface Channel {
         ttl: Int? = null,
         quotedMessage: Message? = null,
         files: List<InputFile>? = null,
+        usersToMention: Collection<String>? = null,
     ): PNFuture<PNPublishResult>
 
     /**

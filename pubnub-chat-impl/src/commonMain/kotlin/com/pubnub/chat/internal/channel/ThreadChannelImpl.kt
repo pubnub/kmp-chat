@@ -79,18 +79,7 @@ data class ThreadChannelImpl(
         return chat.removeThreadChannel(chat, parentMessage, soft).then { it.second }
     }
 
-    override fun sendText(
-        text: String,
-        meta: Map<String, Any>?,
-        shouldStore: Boolean,
-        usePost: Boolean,
-        ttl: Int?,
-        mentionedUsers: MessageMentionedUsers?,
-        referencedChannels: MessageReferencedChannels?,
-        textLinks: List<com.pubnub.chat.types.TextLink>?,
-        quotedMessage: Message?,
-        files: List<InputFile>?,
-    ): PNFuture<PNPublishResult> {
+    private fun createThreadAndSend(sendAction: () -> PNFuture<PNPublishResult>): PNFuture<PNPublishResult> {
         return (
             if (!threadCreated) {
                 awaitAll(
@@ -109,6 +98,24 @@ data class ThreadChannelImpl(
             }
         ).thenAsync {
             threadCreated = true
+            sendAction()
+        }
+    }
+
+    @Deprecated("Will be removed from SDK in the future", level = DeprecationLevel.WARNING)
+    override fun sendText(
+        text: String,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean,
+        usePost: Boolean,
+        ttl: Int?,
+        mentionedUsers: MessageMentionedUsers?,
+        referencedChannels: MessageReferencedChannels?,
+        textLinks: List<com.pubnub.chat.types.TextLink>?,
+        quotedMessage: Message?,
+        files: List<InputFile>?,
+    ): PNFuture<PNPublishResult> {
+        return createThreadAndSend {
             super.sendText(
                 text,
                 meta,
@@ -132,19 +139,20 @@ data class ThreadChannelImpl(
         ttl: Int?,
         quotedMessage: Message?,
         files: List<InputFile>?,
+        usersToMention: Collection<String>?,
     ): PNFuture<PNPublishResult> {
-        return sendText(
-            text = text,
-            meta = meta,
-            shouldStore = shouldStore,
-            usePost = usePost,
-            ttl = ttl,
-            mentionedUsers = null,
-            referencedChannels = null,
-            textLinks = null,
-            quotedMessage = quotedMessage,
-            files = files
-        )
+        return createThreadAndSend {
+            super.sendText(
+                text = text,
+                meta = meta,
+                shouldStore = shouldStore,
+                usePost = usePost,
+                ttl = ttl,
+                quotedMessage = quotedMessage,
+                files = files,
+                usersToMention = usersToMention
+            )
+        }
     }
 
     override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)

@@ -51,16 +51,6 @@ interface Message {
     val meta: Map<String, Any>?
 
     /**
-     * List of mentioned users with IDs and names.
-     */
-    val mentionedUsers: MessageMentionedUsers?
-
-    /**
-     * List of referenced channels with IDs and names.
-     */
-    val referencedChannels: MessageReferencedChannels?
-
-    /**
      * Access the original quoted message.
      *
      * `quotedMessage` returns only values for the timetoken, text, and userId parameters. If you want to return the
@@ -102,7 +92,20 @@ interface Message {
     /**
      * List of included text links and their position.
      */
+    @Deprecated("Use `Message.getMessageElements()` instead.")
     val textLinks: List<TextLink>?
+
+    /**
+     * List of mentioned users with IDs and names.
+     */
+    @Deprecated("Use `Message.getMessageElements()` instead.")
+    val mentionedUsers: MessageMentionedUsers?
+
+    /**
+     * List of referenced channels with IDs and names.
+     */
+    @Deprecated("Use `Message.getMessageElements()` instead.")
+    val referencedChannels: MessageReferencedChannels?
 
     /**
      * Checks if the current user added a given emoji to the message.

@@ -111,7 +111,13 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
         val membership1 = channel01.join().await().membership
 
         val membershipUpdated = membership1.setLastReadMessage(
-            MessageImpl(chat, timetoken, EventContent.TextMessageContent("abc"), channelId = channel01.id, userId = someUser.id)
+            MessageImpl(
+                chat,
+                timetoken,
+                EventContent.TextMessageContent("abc"),
+                channelId = channel01.id,
+                userId = someUser.id
+            )
         ).await()
 
         assertEquals(timetoken, membershipUpdated.lastReadMessageTimetoken)

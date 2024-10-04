@@ -3,6 +3,7 @@ package com.pubnub.chat.internal.message
 import com.pubnub.api.JsonElement
 import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
+import com.pubnub.api.decode
 import com.pubnub.api.endpoints.message_actions.RemoveMessageAction
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
@@ -56,11 +57,13 @@ abstract class BaseMessage<T : Message>(
     override val channelId: String,
     override val userId: String,
     override val actions: Map<String, Map<String, List<PNFetchMessageItem.Action>>>? = null,
-    override val meta: Map<String, Any>? = null,
-    override val mentionedUsers: MessageMentionedUsers? = null,
-    override val referencedChannels: MessageReferencedChannels? = null,
-    override val quotedMessage: QuotedMessage? = null,
+    private val metaInternal: JsonElement? = null,
 ) : Message {
+    override val meta: Map<String, Any>? get() = metaInternal?.decode() as? Map<String, Any>
+    override val quotedMessage: QuotedMessage? get() = metaInternal.extractQuotedMessage()
+    override val mentionedUsers: MessageMentionedUsers? get() = metaInternal.extractMentionedUsers()
+    override val referencedChannels: MessageReferencedChannels? get() = metaInternal.extractReferencedChannels()
+
     override val text: String
         get() {
             val edits = actions?.get(chat.editMessageActionName) ?: return content.text

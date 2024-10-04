@@ -26,3 +26,4 @@ includeBuild("pubnub-kotlin/build-logic/ktlint-custom-rules")
 
 include(":pubnub-chat-api")
 include(":pubnub-chat-impl")
+include("pubnub-3p-diff-match-patch")

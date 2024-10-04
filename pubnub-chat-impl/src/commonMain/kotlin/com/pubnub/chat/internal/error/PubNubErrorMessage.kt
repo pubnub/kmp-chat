@@ -59,4 +59,6 @@ internal object PubNubErrorMessage {
     internal const val KEY_IS_NOT_VALID_INTEGER = "Key is not a valid integer"
     internal const val ERROR_CALLING_DEFAULT_GET_MESSAGE_RESPONSE_BODY = "Error calling defaultGetMessageResponseBody:"
     internal const val CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS = "You cannot quote messages from other channels"
+    internal const val MENTION_SUGGESTION_INVALID = "This mention suggestion is no longer valid - the message draft text has been changed."
+    internal const val MENTION_CANNOT_INTERSECT = "Cannot intersect with existing mention:"
 }

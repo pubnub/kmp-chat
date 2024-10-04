@@ -59,7 +59,6 @@ import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.util.channelsUrlDecoded
-import com.pubnub.chat.internal.util.getPhraseToLookFor
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.ExponentialRateLimiter
@@ -78,6 +77,7 @@ import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
+import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
@@ -243,6 +243,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
+    @Deprecated("Will be removed from SDK in the future", level = DeprecationLevel.WARNING)
     override fun sendText(
         text: String,
         meta: Map<String, Any>?,
@@ -250,40 +251,13 @@ abstract class BaseChannel<C : Channel, M : Message>(
         usePost: Boolean,
         ttl: Int?,
         mentionedUsers: MessageMentionedUsers?,
-        referencedChannels: MessageReferencedChannels?,
+        referencedChannels: Map<Int, MessageReferencedChannel>?,
         textLinks: List<TextLink>?,
         quotedMessage: Message?,
         files: List<InputFile>?,
     ): PNFuture<PNPublishResult> {
-        if (quotedMessage != null && quotedMessage.channelId != id) {
-            return log.logErrorAndReturnException(CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS).asFuture()
-        }
-        return sendTextRateLimiter.runWithinLimits(
-            sendFilesForPublish(files).thenAsync { filesData ->
-                val newMeta = buildMetaForPublish(meta, quotedMessage, mentionedUsers, referencedChannels, textLinks)
-                chat.pubNub.publish(
-                    channel = id,
-                    message = EventContent.TextMessageContent(text, filesData).encodeForSending(
-                        id,
-                        chat.config.customPayloads?.getMessagePublishBody,
-                        getPushPayload(this, text, chat.config.pushNotifications)
-                    ),
-                    meta = newMeta,
-                    shouldStore = shouldStore,
-                    usePost = usePost,
-                    ttl = ttl,
-                ).then { publishResult: PNPublishResult ->
-                    mentionedUsers?.forEach {
-                        emitUserMention(it.value.id, publishResult.timetoken, text).async {
-                            it.onFailure { ex ->
-                                log.warn(err = ex, msg = { ex.message })
-                            }
-                        }
-                    }
-                    publishResult
-                }
-            }
-        )
+        val newMeta = buildMetaForPublish(meta, quotedMessage, mentionedUsers, referencedChannels, textLinks)
+        return sendTextInternal(text, newMeta, shouldStore, usePost, ttl, quotedMessage, files, mentionedUsers?.map { it.value.id })
     }
 
     override fun sendText(
@@ -294,18 +268,57 @@ abstract class BaseChannel<C : Channel, M : Message>(
         ttl: Int?,
         quotedMessage: Message?,
         files: List<InputFile>?,
+        usersToMention: Collection<String>?,
     ): PNFuture<PNPublishResult> {
-        return sendText(
+        return sendTextInternal(
             text = text,
             meta = meta,
             shouldStore = shouldStore,
             usePost = usePost,
             ttl = ttl,
-            mentionedUsers = null,
-            referencedChannels = null,
-            textLinks = null,
             quotedMessage = quotedMessage,
-            files = files
+            files = files,
+            usersToMention = usersToMention
+        )
+    }
+
+    private fun sendTextInternal(
+        text: String,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean,
+        usePost: Boolean,
+        ttl: Int?,
+        quotedMessage: Message?,
+        files: List<InputFile>?,
+        usersToMention: Collection<String>? = null
+    ): PNFuture<PNPublishResult> {
+        if (quotedMessage != null && quotedMessage.channelId != id) {
+            return log.logErrorAndReturnException(CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS).asFuture()
+        }
+        return sendTextRateLimiter.runWithinLimits(
+            sendFilesForPublish(files).thenAsync { filesData ->
+                chat.pubNub.publish(
+                    channel = id,
+                    message = EventContent.TextMessageContent(text, filesData).encodeForSending(
+                        id,
+                        chat.config.customPayloads?.getMessagePublishBody,
+                        getPushPayload(this, text, chat.config.pushNotifications)
+                    ),
+                    meta = meta,
+                    shouldStore = shouldStore,
+                    usePost = usePost,
+                    ttl = ttl,
+                )
+            }.then { publishResult: PNPublishResult ->
+                usersToMention?.forEach { mentionedUser ->
+                    emitUserMention(mentionedUser, publishResult.timetoken, text).async {
+                        it.onFailure { ex ->
+                            log.warn(err = ex, msg = { ex.message })
+                        }
+                    }
+                }
+                publishResult
+            }
         )
     }
 
@@ -653,17 +666,14 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
-    // todo rename to getMembershipSuggestions?
     override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<Membership>> {
-        val cacheKey: String = getPhraseToLookFor(text, "@") ?: return emptySet<Membership>().asFuture()
-
-        suggestedMemberships[cacheKey]?.let { nonNullMemberships ->
+        suggestedMemberships[text]?.let { nonNullMemberships ->
             return nonNullMemberships.asFuture()
         }
 
-        return getMembers(filter = "uuid.name LIKE '$cacheKey*'", limit = limit).then { membersResponse ->
+        return getMembers(filter = "uuid.name LIKE '$text*'", limit = limit).then { membersResponse ->
             val memberships = membersResponse.members
-            suggestedMemberships[cacheKey] = memberships
+            suggestedMemberships[text] = memberships
             memberships
         }
     }

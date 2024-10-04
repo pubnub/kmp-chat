@@ -400,7 +400,7 @@ class ChannelTest : BaseTest() {
             channelId = "noster",
             userId = "myUserId",
             actions = mapOf(),
-            meta = mapOf()
+            metaInternal = null
         )
     }
 

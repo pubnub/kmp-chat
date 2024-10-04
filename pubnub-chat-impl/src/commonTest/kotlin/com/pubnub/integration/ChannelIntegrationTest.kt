@@ -6,9 +6,12 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
+import com.pubnub.chat.MentionTarget
 import com.pubnub.chat.Message
+import com.pubnub.chat.MessageElement
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
+import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.PINNED_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
@@ -291,7 +294,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest {
-        val userSuggestions = channel01.getUserSuggestions("sas@las").await()
+        val userSuggestions = channel01.getUserSuggestions("las").await()
         assertEquals(0, userSuggestions.size)
     }
 
@@ -303,7 +306,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         channel01.invite(someUser).await()
 
         // when no data in cache
-        val userSuggestionsMemberships: Set<Membership> = channel01.getUserSuggestions("sas@$userName").await()
+        val userSuggestionsMemberships: Set<Membership> = channel01.getUserSuggestions(userName).await()
 
         // then
         assertEquals(1, userSuggestionsMemberships.size)
@@ -311,7 +314,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(userName, userSuggestionsMemberships.first().user.name)
 
         // when data in cache
-        val userSuggestionsMembershipsFromCache: Set<Membership> = channel01.getUserSuggestions("sas@$userName").await()
+        val userSuggestionsMembershipsFromCache: Set<Membership> = channel01.getUserSuggestions(userName).await()
 
         // then
         assertEquals(1, userSuggestionsMembershipsFromCache.size)
@@ -658,6 +661,32 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         join01.disconnect?.close()
         join02.disconnect?.close()
+    }
+
+    @Test
+    fun messageDraft_send() = runTest {
+        val draft = MessageDraftImpl(channel01, isTypingIndicatorTriggered = false)
+        draft.update("Some text with a mention")
+        draft.addMention(17, 7, MentionTarget.User("someUser"))
+        val message = CompletableDeferred<Message>()
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var unsubscribe: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                unsubscribe = channel01.connect {
+                    if (!message.isCompleted) {
+                        message.complete(it)
+                        unsubscribe?.close()
+                    }
+                }
+            }
+            draft.send().await()
+            val elements = MessageDraftImpl.getMessageElements(message.await().text)
+
+            assertEquals(
+                listOf(MessageElement.PlainText("Some text with a "), MessageElement.Link("mention", MentionTarget.User("someUser"))),
+                elements
+            )
+        }
     }
 }
 

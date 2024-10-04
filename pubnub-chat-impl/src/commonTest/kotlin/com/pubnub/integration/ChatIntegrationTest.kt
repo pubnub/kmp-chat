@@ -330,7 +330,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             val channelName = "channelName_${channel01.id}"
             chat.createChannel(id = channel01.id, name = channelName).await()
 
-            val channelSuggestions: Set<Channel> = chat.getChannelSuggestions("sas#$channelName").await()
+            val channelSuggestions: Set<Channel> = chat.getChannelSuggestions(channelName).await()
 
             assertEquals(1, channelSuggestions.size)
             assertEquals(channel01.id, channelSuggestions.first().id)
@@ -339,7 +339,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun shouldReturnNoUserSuggestions_whenNoDatInCacheAndNoChannelsInChat() = runTest {
-        val userSuggestions = chat.getUserSuggestions("sas@las").await()
+        val userSuggestions = chat.getUserSuggestions("las").await()
         assertEquals(0, userSuggestions.size)
     }
 
@@ -348,7 +348,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val userName = "userName_${someUser.id}"
         chat.createUser(id = someUser.id, name = userName).await()
 
-        val userSuggestions = chat.getUserSuggestions("sas@$userName").await()
+        val userSuggestions = chat.getUserSuggestions(userName).await()
 
         assertEquals(1, userSuggestions.size)
         assertEquals(someUser.id, userSuggestions.first().id)

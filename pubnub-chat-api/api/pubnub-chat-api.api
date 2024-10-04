@@ -38,9 +38,9 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun pinMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun plus (Lcom/pubnub/api/models/consumer/objects/channel/PNChannelMetadata;)Lcom/pubnub/chat/Channel;
 	public abstract fun registerForPush ()Lcom/pubnub/kmp/PNFuture;
-	public abstract fun sendText (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun sendText (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun sendText (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Ljava/util/Map;Ljava/util/Map;Ljava/util/List;Lcom/pubnub/chat/Message;Ljava/util/List;)Lcom/pubnub/kmp/PNFuture;
-	public static synthetic fun sendText$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun sendText$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun sendText$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Ljava/util/Map;Ljava/util/Map;Ljava/util/List;Lcom/pubnub/chat/Message;Ljava/util/List;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun setRestrictions (Lcom/pubnub/chat/User;ZZLjava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun setRestrictions$default (Lcom/pubnub/chat/Channel;Lcom/pubnub/chat/User;ZZLjava/lang/String;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
@@ -141,6 +141,42 @@ public abstract interface class com/pubnub/chat/Membership {
 public final class com/pubnub/chat/Membership$Companion {
 }
 
+public abstract interface class com/pubnub/chat/MentionTarget {
+}
+
+public final class com/pubnub/chat/MentionTarget$Channel : com/pubnub/chat/MentionTarget {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/pubnub/chat/MentionTarget$Channel;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/MentionTarget$Channel;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/chat/MentionTarget$Channel;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChannelId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/pubnub/chat/MentionTarget$Url : com/pubnub/chat/MentionTarget {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/pubnub/chat/MentionTarget$Url;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/MentionTarget$Url;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/chat/MentionTarget$Url;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getUrl ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/pubnub/chat/MentionTarget$User : com/pubnub/chat/MentionTarget {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/pubnub/chat/MentionTarget$User;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/MentionTarget$User;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/chat/MentionTarget$User;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getUserId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/pubnub/chat/Message {
 	public static final field Companion Lcom/pubnub/chat/Message$Companion;
 	public abstract fun createThread ()Lcom/pubnub/kmp/PNFuture;
@@ -178,8 +214,77 @@ public abstract interface class com/pubnub/chat/Message {
 public final class com/pubnub/chat/Message$Companion {
 }
 
-public final class com/pubnub/chat/MessageDraft {
-	public fun <init> ()V
+public abstract interface class com/pubnub/chat/MessageDraft {
+	public abstract fun addMention (IILcom/pubnub/chat/MentionTarget;)V
+	public abstract fun addMessageElementsListener (Lcom/pubnub/chat/MessageDraftStateListener;)V
+	public abstract fun getChannel ()Lcom/pubnub/chat/Channel;
+	public abstract fun getChannelLimit ()I
+	public abstract fun getFiles ()Ljava/util/List;
+	public abstract fun getQuotedMessage ()Lcom/pubnub/chat/Message;
+	public abstract fun getUserLimit ()I
+	public abstract fun getUserSuggestionSource ()Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
+	public abstract fun insertSuggestedMention (Lcom/pubnub/chat/SuggestedMention;Ljava/lang/String;)V
+	public abstract fun insertText (ILjava/lang/String;)V
+	public abstract fun isTypingIndicatorTriggered ()Z
+	public abstract fun removeMention (I)V
+	public abstract fun removeMessageElementsListener (Lcom/pubnub/chat/MessageDraftStateListener;)V
+	public abstract fun removeText (II)V
+	public abstract fun send (Ljava/util/Map;ZZLjava/lang/Integer;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun send$default (Lcom/pubnub/chat/MessageDraft;Ljava/util/Map;ZZLjava/lang/Integer;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun setQuotedMessage (Lcom/pubnub/chat/Message;)V
+	public abstract fun update (Ljava/lang/String;)V
+}
+
+public final class com/pubnub/chat/MessageDraft$UserSuggestionSource : java/lang/Enum {
+	public static final field CHANNEL Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
+	public static final field GLOBAL Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
+	public static fun values ()[Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
+}
+
+public final class com/pubnub/chat/MessageDraftKt {
+	public static final fun getSuggestionsFor (Ljava/util/List;I)Ljava/util/List;
+}
+
+public abstract interface class com/pubnub/chat/MessageDraftStateListener {
+	public abstract fun onChange (Ljava/util/List;Lcom/pubnub/kmp/PNFuture;)V
+}
+
+public abstract interface class com/pubnub/chat/MessageElement {
+	public abstract fun getText ()Ljava/lang/String;
+}
+
+public final class com/pubnub/chat/MessageElement$Link : com/pubnub/chat/MessageElement {
+	public fun <init> (Ljava/lang/String;Lcom/pubnub/chat/MentionTarget;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/pubnub/chat/MentionTarget;
+	public final fun copy (Ljava/lang/String;Lcom/pubnub/chat/MentionTarget;)Lcom/pubnub/chat/MessageElement$Link;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/MessageElement$Link;Ljava/lang/String;Lcom/pubnub/chat/MentionTarget;ILjava/lang/Object;)Lcom/pubnub/chat/MessageElement$Link;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getTarget ()Lcom/pubnub/chat/MentionTarget;
+	public fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/pubnub/chat/MessageElement$PlainText : com/pubnub/chat/MessageElement {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/pubnub/chat/MessageElement$PlainText;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/MessageElement$PlainText;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/chat/MessageElement$PlainText;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/pubnub/chat/SuggestedMention {
+	public fun <init> (ILjava/lang/String;Ljava/lang/String;Lcom/pubnub/chat/MentionTarget;)V
+	public final fun getOffset ()I
+	public final fun getReplaceFrom ()Ljava/lang/String;
+	public final fun getReplaceTo ()Ljava/lang/String;
+	public final fun getTarget ()Lcom/pubnub/chat/MentionTarget;
 }
 
 public abstract interface class com/pubnub/chat/ThreadChannel : com/pubnub/chat/Channel {

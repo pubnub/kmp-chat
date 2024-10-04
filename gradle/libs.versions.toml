@@ -21,6 +21,7 @@ kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version = "0.25.
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx_serialization" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx_datetime"}
 lighthousegames-logging = { module = "org.lighthousegames:logging", version = "1.5.0"}
+diff-match-patch = { module = "org.bitbucket.cowwoc:diff-match-patch", version = "1.2" }
 
 ## tests
 #logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
