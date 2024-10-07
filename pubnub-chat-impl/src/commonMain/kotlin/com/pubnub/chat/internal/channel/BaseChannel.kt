@@ -153,7 +153,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
         // todo change so that sendTypingSignal is send 1 sec before typingTimeout expire e.g. typingTimeout=5sec so send TypingSignal every 4sec;
         //  do this is to avoid situation that users see pause in writing
         typingSent?.let { typingSentNotNull: Instant ->
-            if (!timeoutElapsed(typingTimeout, typingSentNotNull, now)) {
+            val typingTimoutMargin = 500.milliseconds // sendTypingSignal 500 millis before typingTimeout expires to ensure continuity
+            if (!timeoutElapsed(typingTimeout - typingTimoutMargin, typingSentNotNull, now)) {
                 return Unit.asFuture()
             }
         }
@@ -164,7 +165,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun stopTyping(): PNFuture<Unit> {
         if (type == ChannelType.PUBLIC) {
-            return PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
+            return log.logErrorAndReturnException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
 
         typingSent?.let { typingSentNotNull: Instant ->
