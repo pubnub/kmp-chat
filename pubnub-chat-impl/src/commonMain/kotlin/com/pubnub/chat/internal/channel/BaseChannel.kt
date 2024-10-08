@@ -150,8 +150,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
         val now = clock.now()
 
-        // todo change so that sendTypingSignal is send 1 sec before typingTimeout expire e.g. typingTimeout=5sec so send TypingSignal every 4sec;
-        //  do this is to avoid situation that users see pause in writing
         typingSent?.let { typingSentNotNull: Instant ->
             val typingTimoutMargin = 500.milliseconds // sendTypingSignal 500 millis before typingTimeout expires to ensure continuity
             if (!timeoutElapsed(typingTimeout - typingTimoutMargin, typingSentNotNull, now)) {
