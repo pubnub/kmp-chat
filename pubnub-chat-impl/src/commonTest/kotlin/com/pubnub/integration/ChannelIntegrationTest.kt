@@ -317,9 +317,9 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
                 typingSubscription?.close()
             }
             channel01Chat02.startTyping().await()
-            delayInMillis(6000)
+            delayInMillis(1000)
             channel01.startTyping().await()
-            delayInMillis(2000)
+            delayInMillis(1000)
             assertEquals(1, numberOfTypingEvents.value)
         }
     }
