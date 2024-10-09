@@ -91,6 +91,7 @@ import com.pubnub.kmp.remember
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import encodeForSending
+import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
 import kotlinx.datetime.Clock
@@ -181,12 +182,14 @@ abstract class BaseChannel<C : Channel, M : Message>(
     override fun getTyping(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable {
         val typingIndicators = mutableMapOf<String, Instant>()
         val typingIndicatorsLock = reentrantLock()
+        val atomicClosed = atomic(false)
+        var closed: Boolean by atomicClosed
         if (type == ChannelType.PUBLIC) {
             log.pnError(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS)
         }
 
         return chat.listenForEvents(this.id) { event: Event<EventContent.Typing> ->
-            if (event.channelId != id) {
+            if (event.channelId != id || closed) {
                 return@listenForEvents
             }
             val now = clock.now()
@@ -195,6 +198,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
             if (isTyping) {
                 chat.timerManager.runWithDelay(typingTimeout + 10.milliseconds) { // +10ms just to make sure the timeout expires
+                    if (closed) {
+                        return@runWithDelay
+                    }
                     typingIndicatorsLock.withLock {
                         removeExpiredTypingIndicators(typingTimeout, typingIndicators, clock.now())
                         typingIndicators.keys.toList()
@@ -210,6 +216,13 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 typingIndicators.keys.toList()
             }.also { typingIndicatorsList ->
                 callback(typingIndicatorsList)
+            }
+        }.let { autoCloseable ->
+            object : AutoCloseable {
+                override fun close() {
+                    autoCloseable.close()
+                    closed = true
+                }
             }
         }
     }

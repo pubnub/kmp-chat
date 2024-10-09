@@ -299,6 +299,32 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun getTyping_listener_should_not_receive_typing_info_after_close() = runTest {
+        val numberOfTypingEvents = atomic(0)
+        pubnub02.test(backgroundScope, checkAllEvents = false) {
+            var typingSubscription: AutoCloseable? = null
+            pubnub02.awaitSubscribe(listOf(channel01.id)) {
+                typingSubscription = channel01Chat02.getTyping { typingUserIds ->
+                    numberOfTypingEvents.incrementAndGet()
+                }
+            }
+            // T = 0s: User1 starts typing
+            println("-=T ${Clock.System.now()} = 0s: user: ${channel01.chat.currentUser.id} starts typing")
+            channel01.startTyping().await()
+            delayInMillis(1000)
+
+            pubnub02.awaitUnsubscribe(listOf(channel01.id)) {
+                typingSubscription?.close()
+            }
+            channel01Chat02.startTyping().await()
+            delayInMillis(1000)
+            channel01.startTyping().await()
+            delayInMillis(1000)
+            assertEquals(1, numberOfTypingEvents.value)
+        }
+    }
+
+    @Test
     fun shouldReturnUserSuggestions_whenNoDataInCacheButUserAvailableInChat() = runTest {
         // given
         val userName = "userName_${someUser.id}"
