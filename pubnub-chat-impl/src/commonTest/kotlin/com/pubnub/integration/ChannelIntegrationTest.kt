@@ -527,9 +527,47 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(referencedPosition, actualReferencedPosition)
     }
 
+    @Ignore // run it to see typing behaviour
+    @Test
+    fun can_illustrate_typing_behaviour() = runTest {
+        val typingSubscription = channel01Chat02.getTyping { typingUserIds: Collection<String> ->
+            if (typingUserIds.isNotEmpty()) {
+                println("-= ${Clock.System.now()} Users currently typing: ${typingUserIds.joinToString(", ")}")
+            } else {
+                println("-= ${Clock.System.now()} No one is typing now.")
+            }
+        }
+
+        // T = 0s: User1 starts typing
+        println("-=T ${Clock.System.now()} = 0s: user: ${channel01.chat.currentUser.id} starts typing")
+        channel01.startTyping().await()
+        delayInMillis(1000)
+
+        // T = 1s: User2 starts typing
+        println("-=T ${Clock.System.now()} = 1s: user: ${channel01Chat02.chat.currentUser.id} starts typing")
+        channel01Chat02.startTyping().await()
+
+        // Wait 6 seconds (T = 7s) for timeout to expire
+        delayInMillis(6000)
+        println("-=T ${Clock.System.now()} = 7s: user: ${channel01.chat.currentUser.id} starts typing again")
+        channel01.startTyping().await()
+
+        // Wait 2 more seconds (T = 9s)
+        delayInMillis(2000)
+        println("-=T ${Clock.System.now()} = 9s: user: ${channel01.chat.currentUser.id} stops typing")
+        channel01.stopTyping().await()
+
+        // Wait 4 seconds for typing to timeout (T = 8s)
+        delayInMillis(4000)
+        println("-=T ${Clock.System.now()} = 13s: Timeout expires")
+
+        // Close typing subscription
+        typingSubscription.close()
+    }
+
     @Test
     fun getTyping() = runTest(timeout = 10.seconds) {
-        val channelId = randomString()
+        val channelId = randomString() // change to channel
         val channel = chat.createChannel(channelId).await()
         val typingStarted = CompletableDeferred<Unit>()
         val typingStopped = CompletableDeferred<Unit>()

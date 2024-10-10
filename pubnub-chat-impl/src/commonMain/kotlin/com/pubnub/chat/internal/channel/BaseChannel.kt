@@ -125,6 +125,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
     private val channelFilterString get() = "channel.id == '${this.id}'"
     private val typingTimeout get() = maxOf(chat.config.typingTimeout, MINIMAL_TYPING_INDICATOR_TIMEOUT)
+    private val typingTimoutMargin = 500.milliseconds // sendTypingSignal 500 millis before typingTimeout expires to ensure continuity
 
     override fun update(
         name: String?,
@@ -148,13 +149,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
         if (type == ChannelType.PUBLIC) {
             return log.logErrorAndReturnException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
-
         val now = clock.now()
 
-        // todo change so that sendTypingSignal is send 1 sec before typingTimeout expire e.g. typingTimeout=5sec so send TypingSignal every 4sec;
-        //  do this is to avoid situation that users see pause in writing
         typingSent?.let { typingSentNotNull: Instant ->
-            if (!timeoutElapsed(typingTimeout, typingSentNotNull, now)) {
+            if (!timeoutElapsed(typingTimeout - typingTimoutMargin, typingSentNotNull, now)) {
                 return Unit.asFuture()
             }
         }
@@ -165,7 +163,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun stopTyping(): PNFuture<Unit> {
         if (type == ChannelType.PUBLIC) {
-            return PubNubException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
+            return log.logErrorAndReturnException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
 
         typingSent?.let { typingSentNotNull: Instant ->
