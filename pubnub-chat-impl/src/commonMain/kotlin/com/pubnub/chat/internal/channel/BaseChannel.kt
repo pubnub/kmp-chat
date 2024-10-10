@@ -124,6 +124,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
     private val channelFilterString get() = "channel.id == '${this.id}'"
     private val typingTimeout get() = maxOf(chat.config.typingTimeout, MINIMAL_TYPING_INDICATOR_TIMEOUT)
+    private val typingTimoutMargin = 500.milliseconds // sendTypingSignal 500 millis before typingTimeout expires to ensure continuity
 
     override fun update(
         name: String?,
@@ -147,11 +148,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
         if (type == ChannelType.PUBLIC) {
             return log.logErrorAndReturnException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
-
         val now = clock.now()
 
         typingSent?.let { typingSentNotNull: Instant ->
-            val typingTimoutMargin = 500.milliseconds // sendTypingSignal 500 millis before typingTimeout expires to ensure continuity
             if (!timeoutElapsed(typingTimeout - typingTimoutMargin, typingSentNotNull, now)) {
                 return Unit.asFuture()
             }
