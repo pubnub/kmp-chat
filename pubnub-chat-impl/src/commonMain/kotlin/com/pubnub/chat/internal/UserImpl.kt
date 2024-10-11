@@ -49,6 +49,16 @@ data class UserImpl(
     override val updated: String? = null,
     override val lastActiveTimestamp: Long? = null,
 ) : User {
+    override val active: Boolean
+        get() {
+            if (!chat.config.storeUserActivityTimestamps) {
+                log.pnError(STORE_USER_ACTIVITY_INTERVAL_IS_FALSE)
+            }
+            return lastActiveTimestamp?.let { lastActiveTimestampNonNull ->
+                Clock.System.now() - Instant.fromEpochMilliseconds(lastActiveTimestampNonNull) <= chat.config.storeUserActivityInterval
+            } ?: false
+        }
+
     override fun update(
         name: String?,
         externalId: String?,
@@ -168,16 +178,8 @@ data class UserImpl(
         }
     }
 
-    override fun active(): PNFuture<Boolean> {
-        if (!chat.config.storeUserActivityTimestamps) {
-            return log.logErrorAndReturnException(STORE_USER_ACTIVITY_INTERVAL_IS_FALSE).asFuture()
-        }
-        return (
-            lastActiveTimestamp?.let { lastActiveTimestampNonNull ->
-                Clock.System.now() - Instant.fromEpochMilliseconds(lastActiveTimestampNonNull) <= chat.config.storeUserActivityInterval
-            } ?: false
-        ).asFuture()
-    }
+    @Deprecated("Use non-async `active` property instead.", replaceWith = ReplaceWith("active"))
+    override fun active(): PNFuture<Boolean> = active.asFuture()
 
     override operator fun plus(update: PNUUIDMetadata): User {
         return fromDTO(chat, toUUIDMetadata() + update)

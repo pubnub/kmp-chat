@@ -70,6 +70,11 @@ interface User {
     val lastActiveTimestamp: Long?
 
     /**
+     * Indicates whether the user is currently (at the time of obtaining this `User` object) active.
+     */
+    val active: Boolean
+
+    /**
      * Updates the metadata of the user with the provided details.
      *
      * @param name The new name for the user.
@@ -187,6 +192,7 @@ interface User {
      *
      * @return [PNFuture] containing a boolean indicating whether the user is active.
      */
+    @Deprecated("Use non-async `active` property instead.", ReplaceWith("active"))
     fun active(): PNFuture<Boolean>
 
     /**

@@ -162,7 +162,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun calling_active_should_throw_exception_when_storeUserActivityTimestamps_is_false() = runTest {
         val e = assertFailsWith<PubNubException> {
-            someUser.active().await()
+            someUser.active
         }
 
         assertEquals(
@@ -181,7 +181,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         someUser = chatNew.currentUser
 
         // when
-        val isUserActive = someUser.active().await()
+        val isUserActive = someUser.active
 
         // then
         assertTrue(isUserActive)
@@ -201,7 +201,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         someUser = chatNew2.currentUser
 
         // when
-        val isUserActive = someUser.active().await()
+        val isUserActive = someUser.active
 
         // then
         assertTrue(isUserActive)
