@@ -97,7 +97,7 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun setLastReadMessage() = runTest {
         val timetoken = 1000L
-        chat.createChannel(
+        val channel = chat.createChannel(
             channel01.id,
             channel01.name,
             channel01.description,
@@ -108,14 +108,14 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
             channel01.status
         ).await()
         delayInMillis(1000)
-        val membership1 = channel01.join().await().membership
+        val membership1 = channel.join().await().membership
 
         val membershipUpdated = membership1.setLastReadMessage(
             MessageImpl(
                 chat,
                 timetoken,
                 EventContent.TextMessageContent("abc"),
-                channelId = channel01.id,
+                channelId = channel.id,
                 userId = someUser.id
             )
         ).await()
