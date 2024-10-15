@@ -198,7 +198,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             return@runTest
         }
         val userId = "userId"
-        val user = UserImpl(chat = chatPam, id = userId)
+        val user = UserImpl(chat = chatPamServer, id = userId)
         val ban = true
         val mute = true
         val reason = "rude"
@@ -222,13 +222,13 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         var mute = true
         val reason = "rude"
 
-        channelPam.setRestrictions(user = userPam, mute = mute, reason = reason).await()
-        var restriction = channelPam.getUserRestrictions(userPam).await()
+        channelPam.setRestrictions(user = userPamServer, mute = mute, reason = reason).await()
+        var restriction = channelPam.getUserRestrictions(userPamServer).await()
         assertEquals(mute, restriction.mute)
 
         mute = false
-        channelPam.setRestrictions(user = userPam, mute = mute, reason = reason).await()
-        restriction = channelPam.getUserRestrictions(userPam).await()
+        channelPam.setRestrictions(user = userPamServer, mute = mute, reason = reason).await()
+        restriction = channelPam.getUserRestrictions(userPamServer).await()
         assertEquals(mute, restriction.mute)
         assertFalse(restriction.ban)
         assertNull(restriction.reason)
@@ -236,9 +236,9 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun canGetRestrictionForUserThatDoesNotHaveRestrictionSet() = runTest {
-        val restriction = channel01.getUserRestrictions(userPam).await()
+        val restriction = channel01.getUserRestrictions(userPamServer).await()
         assertEquals(channel01.id, restriction.channelId)
-        assertEquals(userPam.id, restriction.userId)
+        assertEquals(userPamServer.id, restriction.userId)
         assertFalse(restriction.mute)
         assertFalse(restriction.ban)
         assertNull(restriction.reason)
@@ -261,14 +261,14 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val channelId = channelPam.id
 
         channelPam.setRestrictions(
-            user = UserImpl(chat = chatPam, id = userId01),
+            user = UserImpl(chat = chatPamServer, id = userId01),
             ban = ban,
             mute = mute,
             reason = reason
         )
             .await()
         channelPam.setRestrictions(
-            user = UserImpl(chat = chatPam, id = userId02),
+            user = UserImpl(chat = chatPamServer, id = userId02),
             ban = ban,
             mute = mute,
             reason = reason

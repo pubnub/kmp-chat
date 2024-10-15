@@ -9,11 +9,11 @@ internal class AccessManager(private val chat: Chat) {
     internal enum class Permission { READ, WRITE, MANAGE, DELETE, GET, JOIN, UPDATE }
 
     fun canI(permission: Permission, resourceType: ResourceType, resourceName: String): Boolean {
-        val authKey = chat.pubNub.configuration.authKey
-        if (authKey.isEmpty()) {
+        val token: String? = chat.pubNub.getToken()
+        if (token.isNullOrEmpty()) {
             return true
         }
-        val parsedToken = chat.pubNub.parseToken(authKey)
+        val parsedToken = chat.pubNub.parseToken(token)
         return Companion.canI(resourceType, parsedToken, resourceName, permission)
     }
 

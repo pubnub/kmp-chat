@@ -29,15 +29,15 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
             return@runTest
         }
         val channelId = "channelId01"
-        val channel = ChannelImpl(chat = chatPam, id = channelId)
+        val channel = ChannelImpl(chat = chatPamServer, id = channelId)
         val ban = true
         val mute = true
         val reason = "rude"
 
-        userPam.setRestrictions(channel = channel, ban = ban, mute = mute, reason = reason).await()
+        userPamServer.setRestrictions(channel = channel, ban = ban, mute = mute, reason = reason).await()
 
-        val restriction: Restriction = userPam.getChannelRestrictions(channel).await()
-        assertEquals(userPam.id, restriction.userId)
+        val restriction: Restriction = userPamServer.getChannelRestrictions(channel).await()
+        assertEquals(userPamServer.id, restriction.userId)
         assertEquals(channelId, restriction.channelId)
         assertEquals(ban, restriction.ban)
         assertEquals(mute, restriction.mute)
@@ -59,20 +59,20 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         val page = null
         val sort: Collection<PNSortKey<PNMembershipKey>> = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
 
-        userPam.setRestrictions(
-            channel = ChannelImpl(chat = chatPam, id = channelId01),
+        userPamServer.setRestrictions(
+            channel = ChannelImpl(chat = chatPamServer, id = channelId01),
             ban = ban,
             mute = mute,
             reason = reason
         ).await()
-        userPam.setRestrictions(
-            channel = ChannelImpl(chat = chatPam, id = channelId02),
+        userPamServer.setRestrictions(
+            channel = ChannelImpl(chat = chatPamServer, id = channelId02),
             ban = ban,
             mute = mute,
             reason = reason
         ).await()
 
-        val getRestrictionsResponse = userPam.getChannelsRestrictions(limit = limit, page = page, sort = sort).await()
+        val getRestrictionsResponse = userPamServer.getChannelsRestrictions(limit = limit, page = page, sort = sort).await()
 
         assertEquals(limit, getRestrictionsResponse.total)
         assertEquals(200, getRestrictionsResponse.status)
@@ -103,21 +103,21 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         val page = null
         val sort: Collection<PNSortKey<PNMembershipKey>> = listOf(PNSortKey.PNDesc(PNMembershipKey.CHANNEL_ID))
 
-        userPam.setRestrictions(
-            channel = ChannelImpl(chat = chatPam, id = channelId01),
+        userPamServer.setRestrictions(
+            channel = ChannelImpl(chat = chatPamServer, id = channelId01),
             ban = ban,
             mute = mute,
             reason = reason
         ).await()
-        userPam.setRestrictions(
-            channel = ChannelImpl(chat = chatPam, id = channelId02),
+        userPamServer.setRestrictions(
+            channel = ChannelImpl(chat = chatPamServer, id = channelId02),
             ban = ban,
             mute = mute,
             reason = reason
         ).await()
 
         val getRestrictionsResponse: GetRestrictionsResponse =
-            userPam.getChannelsRestrictions(limit = limit, page = page, sort = sort).await()
+            userPamServer.getChannelsRestrictions(limit = limit, page = page, sort = sort).await()
 
         val firstRestriction = getRestrictionsResponse.restrictions.first()
         assertEquals(channelId02, firstRestriction.channelId)
@@ -216,13 +216,13 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         val mute = true
         val ban = true
         val reason = "rude"
-        userPam.setRestrictions(channel = channelPam, mute = true, ban = true, reason = reason).await()
-        val restrictions = userPam.getChannelRestrictions(channel = channelPam).await()
+        userPamServer.setRestrictions(channel = channelPam, mute = true, ban = true, reason = reason).await()
+        val restrictions = userPamServer.getChannelRestrictions(channel = channelPam).await()
         assertEquals(mute, restrictions.mute)
         assertEquals(ban, restrictions.ban)
         assertEquals(reason, restrictions.reason)
 
-        val membershipsResponse: MembershipsResponse = userPam.getMemberships().await()
+        val membershipsResponse: MembershipsResponse = userPamServer.getMemberships().await()
         val internalModerationChannelCount = membershipsResponse.memberships.filter { membership ->
             membership.channel.id.contains(INTERNAL_MODERATION_PREFIX)
         }.size

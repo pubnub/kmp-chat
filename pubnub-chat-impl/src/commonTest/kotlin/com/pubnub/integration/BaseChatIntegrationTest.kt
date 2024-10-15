@@ -27,7 +27,8 @@ internal const val THREAD_CHANNEL_ID_PREFIX = "threadChannel_id_"
 abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     lateinit var chat: ChatImpl
     lateinit var chat02: ChatImpl
-    lateinit var chatPam: ChatImpl
+    lateinit var chatPamServer: ChatImpl
+    lateinit var chatPamClient: ChatImpl
     lateinit var channel01: Channel // this simulates first user in channel01
     lateinit var channel01Chat02: Channel // this simulates second user in channel01
     lateinit var channel02: Channel
@@ -35,7 +36,8 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     lateinit var channelPam: Channel
     lateinit var someUser: User
     lateinit var someUser02: User
-    lateinit var userPam: User
+    lateinit var userPamServer: User
+    lateinit var userPamClient: User
     var cleanup: MutableList<suspend () -> Unit> = mutableListOf() // todo is this used?
 
     @BeforeTest
@@ -43,7 +45,8 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
         super.before()
         chat = ChatImpl(ChatConfiguration(), pubnub)
         chat02 = ChatImpl(ChatConfiguration(), pubnub02)
-        chatPam = ChatImpl(ChatConfiguration(), pubnubPam)
+        chatPamServer = ChatImpl(ChatConfiguration(), pubnubPamServer)
+        chatPamClient = ChatImpl(ChatConfiguration(), pubnubPamClient)
         val channel01Id = randomString() + "!_=-@"
         channel01 = ChannelImpl(
             chat = chat,
@@ -96,7 +99,7 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
             type = ChannelType.DIRECT,
         )
         channelPam = ChannelImpl(
-            chat = chatPam,
+            chat = chatPamServer,
             id = randomString() + "!_=-@",
             name = randomString(),
             custom = mapOf(randomString() to randomString()),
@@ -108,13 +111,15 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
         // user has chat and chat has user they should be the same?
         someUser = chat.currentUser
         someUser02 = chat02.currentUser
-        userPam = chatPam.currentUser
+        userPamServer = chatPamServer.currentUser
+        userPamClient = chatPamClient.currentUser
     }
 
     @AfterTest
     fun afterTest() = runTest {
         pubnub.removeUUIDMetadata(someUser.id).await()
-        pubnub.removeUUIDMetadata(userPam.id).await()
+        pubnubPamServer.removeUUIDMetadata(userPamServer.id).await()
+        pubnubPamServer.removeUUIDMetadata(userPamClient.id).await()
         pubnub.removeChannelMetadata(channel01.id).await()
         pubnub.removeChannelMetadata(channel01Chat02.id).await()
         pubnub.removeChannelMetadata(channel02.id).await()
