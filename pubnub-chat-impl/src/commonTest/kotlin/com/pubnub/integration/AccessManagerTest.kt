@@ -5,6 +5,7 @@ import com.pubnub.api.models.consumer.access_manager.v3.UUIDGrant
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
+import com.pubnub.chat.Membership
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.types.EventContent
@@ -23,7 +24,7 @@ class AccessManagerTest : BaseChatIntegrationTest() {
             result.onFailure { e ->
                 statusCode = e.statusCode
             }.onSuccess { channel: Channel? ->
-                throw IllegalStateException("Should not enter here. Should return exeption")
+                throw IllegalStateException("Should not enter here. Should return exception.")
             }
         }
         delayInMillis(1000)
