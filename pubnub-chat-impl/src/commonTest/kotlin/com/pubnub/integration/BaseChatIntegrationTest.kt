@@ -38,7 +38,6 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     lateinit var someUser02: User
     lateinit var userPamServer: User
     lateinit var userPamClient: User
-    var cleanup: MutableList<suspend () -> Unit> = mutableListOf() // todo is this used?
 
     @BeforeTest
     override fun before() {
@@ -125,7 +124,6 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
         pubnub.removeChannelMetadata(channel02.id).await()
         pubnub.removeChannelMetadata(threadChannel.id).await()
         pubnub.removeChannelMetadata(channelPam.id).await()
-        cleanup.forEach { it.invoke() }
     }
 
     internal suspend fun delayInMillis(timeMillis: Long) {

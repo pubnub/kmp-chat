@@ -466,7 +466,6 @@ class ChatImpl(
         }
     }
 
-    // todo do we have test for this?
     override fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult> {
         if (!isValidId(channelId)) {
             return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
@@ -688,7 +687,6 @@ class ChatImpl(
         return subscription
     }
 
-    // todo do we have test for this method?
     override fun setRestrictions(
         restriction: Restriction
     ): PNFuture<Unit> {
