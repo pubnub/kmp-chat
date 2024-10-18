@@ -147,16 +147,14 @@ interface Message {
      * @param channelId Unique identifier of the channel to which you want to forward the message. You can forward a message to the same channel on which it was published or to any other.
      * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the forwarded message.
      */
-    fun forward(channelId: String): PNFuture<PNPublishResult> // todo add test
+    fun forward(channelId: String): PNFuture<PNPublishResult>
 
     /**
      * Attach this message to its channel.
      *
      * @return `PNFuture` containing the updated channel metadata
      */
-    fun pin(): PNFuture<Channel> // todo add test
-
-    // todo do we have test for this?
+    fun pin(): PNFuture<Channel>
 
     /**
      * Flag and report an inappropriate message to the admin.

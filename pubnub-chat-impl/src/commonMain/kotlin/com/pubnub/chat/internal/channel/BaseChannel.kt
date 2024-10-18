@@ -754,6 +754,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
         typingSent = value
     }
 
+    internal fun getTypingSent(): Instant? {
+        return typingSent
+    }
+
     internal abstract fun copyWithStatusDeleted(): C
 
     private fun toPNChannelMetadata(): PNChannelMetadata {
