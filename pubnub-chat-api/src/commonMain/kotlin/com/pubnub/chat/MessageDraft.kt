@@ -54,12 +54,12 @@ interface MessageDraft {
      * @param callback the [MessageDraftStateListener] that will receive the most current message elements list and
      * suggestions list.
      */
-    fun addMessageElementsListener(callback: MessageDraftStateListener)
+    fun addMessageElementsListener(listener: MessageDraftStateListener)
 
     /**
      * Remove the given [MessageDraftStateListener] from active listeners.
      */
-    fun removeMessageElementsListener(callback: MessageDraftStateListener)
+    fun removeMessageElementsListener(listener: MessageDraftStateListener)
 
     /**
      * Insert some text into the [MessageDraft] text at the given offset.

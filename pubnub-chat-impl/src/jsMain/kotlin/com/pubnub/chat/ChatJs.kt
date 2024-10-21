@@ -1,7 +1,11 @@
 @file:OptIn(ExperimentalJsExport::class, ExperimentalJsStatic::class)
 
+import com.pubnub.api.JsonElement
 import com.pubnub.api.PubNubImpl
 import com.pubnub.api.createJsonElement
+import com.pubnub.api.decode
+import com.pubnub.api.enums.PNPushEnvironment
+import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
@@ -13,13 +17,18 @@ import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
+import com.pubnub.chat.ThreadChannel
+import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.config.CustomPayloads
+import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.config.RateLimitPerChannel
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
+import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
@@ -34,6 +43,7 @@ import com.pubnub.chat.types.GetFileItem
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.chat.types.QuotedMessage
 import com.pubnub.chat.types.TextLink
 import com.pubnub.chat.types.ThreadMentionData
 import com.pubnub.kmp.JsMap
@@ -47,6 +57,7 @@ import com.pubnub.kmp.toJsMap
 import com.pubnub.kmp.toMap
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
 import kotlin.js.Promise
 import kotlin.time.Duration.Companion.milliseconds
@@ -137,7 +148,7 @@ class ChatJs(val config: ChatConfig) {
             data.externalId,
             data.profileUrl,
             data.email,
-            createCustomObject(data.custom.unsafeCast<JsMap<Any?>>().toMap()),
+            getCustomObject(data.custom),
             data.status,
             data.type
         ).then { it.asJs() }.asPromise()
@@ -150,7 +161,7 @@ class ChatJs(val config: ChatConfig) {
             data.externalId,
             data.profileUrl,
             data.email,
-            createCustomObject(data.custom.unsafeCast<JsMap<Any?>>().toMap()),
+            getCustomObject(data.custom),
             data.status,
             data.type
         ).then { it.asJs() }.asPromise()
@@ -183,7 +194,7 @@ class ChatJs(val config: ChatConfig) {
         return chat.updateChannel(
             id,
             data.name,
-            createCustomObject(data.custom.unsafeCast<JsMap<Any?>>().toMap()), // TODO
+            getCustomObject(data.custom), // TODO
             data.description,
             data.status,
             ChannelType.from(data.type)
@@ -209,6 +220,11 @@ class ChatJs(val config: ChatConfig) {
         return chat.deleteChannel(id, params?.soft ?: false).then { it.asJs() }.asPromise()
     }
 
+    fun createChannel(id: String, data: dynamic): Promise<ChannelJs> {
+        data.channelId = id
+        return createPublicConversation(data)
+    }
+
     fun createPublicConversation(params: dynamic): Promise<ChannelJs> {
         val channelId: String? = params.channelId
         val data: PubNub.ChannelMetadata? = params.channelData
@@ -216,7 +232,7 @@ class ChatJs(val config: ChatConfig) {
             channelId,
             data?.name,
             data?.description,
-            createCustomObject(data?.custom.unsafeCast<JsMap<Any?>>().toMap()), // TODO
+            getCustomObject(data?.custom), // TODO
             data?.status
         ).then { it.asJs() }.asPromise()
     }
@@ -231,9 +247,9 @@ class ChatJs(val config: ChatConfig) {
             channelId,
             data?.name,
             data?.description,
-            createCustomObject(data?.custom.unsafeCast<JsMap<Any?>>().toMap()), // TODO
+            getCustomObject(data?.custom), // TODO
             data?.status,
-            createCustomObject(membershipCustom.unsafeCast<JsMap<Any?>>().toMap()), // TODO
+            getCustomObject(membershipCustom), // TODO
         ).then { result ->
             result.toJs()
         }.asPromise()
@@ -249,9 +265,9 @@ class ChatJs(val config: ChatConfig) {
             channelId,
             data?.name,
             data?.description,
-            createCustomObject(data?.custom.unsafeCast<JsMap<Any?>>().toMap()), // TODO
+            getCustomObject(data?.custom), // TODO
             data?.status,
-            createCustomObject(membershipCustom.unsafeCast<JsMap<Any?>>().toMap()), // TODO
+            getCustomObject(membershipCustom), // TODO
         ).then { result ->
             result.toJs()
         }.asPromise()
@@ -293,7 +309,8 @@ class ChatJs(val config: ChatConfig) {
     }
 
     fun getCurrentUserMentions(
-        params: dynamic/*params?: {
+        params: dynamic,
+        /*params?: {
         startTimetoken?: string;
         endTimetoken?: string;
         count?: number;
@@ -317,6 +334,7 @@ class ChatJs(val config: ChatConfig) {
                             this.event = it.event.toJs(this@ChatJs)
                             this.message = it.message.asJs()
                         }
+
                         is ThreadMentionData -> createJsObject<ThreadMentionDataJs> {
                             this.userId = it.userId
                             this.parentChannelId = it.parentChannelId
@@ -479,12 +497,170 @@ interface GetUnreadMessagesCountsJs {
 }
 
 @JsExport
-class MessageJs() {
-    internal lateinit var message: Message
+@JsName("Message")
+open class MessageJs internal constructor(internal open val message: Message) {
+    val hasThread by message::hasThread
 
-    internal constructor(message: Message) : this() {
-        this.message = message
+    /*get mentionedUsers(): any;
+    get referencedChannels(): any;
+    get textLinks(): any;*/
+    val type by message::type
+    val quotedMessage: QuotedMessageJs? get() = message.quotedMessage?.toJs()
+    val files by message::files
+    val text by message::text
+    val deleted by message::deleted
+    val reactions
+        get() = message.reactions.mapValues { mapEntry ->
+            mapEntry.value.map { action ->
+                val jsAction = Any().asDynamic()
+                jsAction.uuid = action.uuid
+                jsAction.actionTimetoken = action.actionTimetoken.toString()
+                jsAction
+            }.toTypedArray()
+        }.toJsMap()
+
+    fun streamUpdates(callback: (MessageJs?) -> Unit): () -> Unit {
+        return message.streamUpdates<Message> { it.asJs() }::close
     }
+
+//    fun getMessageElements() TODO
+
+    fun editText(newText: String): Promise<MessageJs> {
+        return message.editText(newText).then { it.asJs() }.asPromise()
+    }
+
+    fun delete(params: DeleteParameters?): Promise<Any> {
+        return message.delete(params?.soft ?: false, params?.asDynamic()?.preserveFiles ?: false)
+            .then {
+                it?.asJs() ?: true
+            }.asPromise()
+    }
+
+    fun restore(): Promise<MessageJs> {
+        return message.restore().then { it.asJs() }.asPromise()
+    }
+
+    fun hasUserReaction(reaction: String): Boolean {
+        return message.hasUserReaction(reaction)
+    }
+
+    fun toggleReaction(reaction: String): Promise<MessageJs> {
+        return message.toggleReaction(reaction).then { it.asJs() }.asPromise()
+    }
+
+    fun forward(channelId: String): Promise<PubNub.PublishResponse> {
+        return message.forward(channelId).then { result ->
+            createJsObject<PubNub.PublishResponse> { timetoken = result.timetoken.toString() }
+        }.asPromise()
+    }
+
+    fun pin(): Promise<Any> {
+        return message.pin().then { it.asJs() }.asPromise()
+    }
+
+    fun report(reason: String): Promise<PubNub.SignalResponse> {
+        return message.report(reason).then { result ->
+            createJsObject<PubNub.SignalResponse> { timetoken = result.timetoken.toDouble() }
+        }.asPromise()
+    }
+
+    fun getThread(): Promise<ThreadChannelJs> {
+        return message.getThread().then { it.asJs() }.asPromise()
+    }
+
+    fun createThread(): Promise<ThreadChannelJs> {
+        return message.createThread().then { it.asJs() }.asPromise()
+    }
+
+    fun removeThread(): Promise<Array<Any>> {
+        return message.removeThread().then {
+            arrayOf(
+                Any(),
+                it.second.asJs()
+            )
+        }.asPromise()
+    }
+
+    companion object {
+        @JsStatic
+        fun streamUpdatesOn(messages: Array<MessageJs>, callback: (Array<MessageJs>) -> Unit): () -> Unit {
+            return BaseMessage.streamUpdatesOn(messages.map { it.message }) { kmpMessages ->
+                callback(kmpMessages.map { kmpMessage -> kmpMessage.asJs() }.toTypedArray())
+            }::close
+        }
+    }
+}
+
+@JsExport
+@JsName("ThreadChannel")
+class ThreadChannelJs internal constructor(override val channel: ThreadChannel) : ChannelJs(channel) {
+    val parentChannelId by channel::parentChannelId
+
+    override fun pinMessage(message: MessageJs): Promise<ChannelJs> {
+        return channel.pinMessage(message.message).then { it.asJs() }.asPromise()
+    }
+
+    override fun unpinMessage(): Promise<ChannelJs> {
+        return channel.unpinMessage().then { it.asJs() }.asPromise()
+    }
+
+    fun pinMessageToParentChannel(message: ThreadMessageJs): Promise<ChannelJs> {
+        return channel.pinMessageToParentChannel(message.message).then { it.asJs() }.asPromise()
+    }
+
+    fun unpinMessageFromParentChannel(): Promise<ChannelJs> {
+        return channel.unpinMessageFromParentChannel().then { it.asJs() }.asPromise()
+    }
+
+    override fun getHistory(params: dynamic): Promise<HistoryResponseJs> {
+        return channel.getHistory(
+            params?.startTimetoken?.toString()?.toLong(),
+            params?.endTimetoken?.toString()?.toLong(),
+            params?.count?.toString()?.toInt() ?: 25
+        ).then { result ->
+            createJsObject<HistoryResponseJs> {
+                this.isMore = result.isMore
+                this.messages = result.messages.map(ThreadMessage::asJs).toTypedArray()
+            }
+        }.asPromise()
+    }
+}
+
+class ThreadMessageJs(override val message: ThreadMessage) : MessageJs(message) {
+    val parentChannelId by message::parentChannelId
+
+    fun pinToParentChannel(): Promise<ChannelJs> {
+        return message.pinToParentChannel().then { it.asJs() }.asPromise()
+    }
+
+    fun unpinFromParentChannel(): Promise<ChannelJs> {
+        return message.unpinFromParentChannel().then { it.asJs() }.asPromise()
+    }
+
+    companion object {
+        @JsStatic
+        fun streamUpdatesOn(threadMessages: Array<ThreadMessageJs>, callback: (Array<ThreadMessageJs>) -> Unit): () -> Unit {
+            return BaseMessage.streamUpdatesOn(threadMessages.map { it.message }) { messages ->
+                callback(messages.map(ThreadMessage::asJs).toTypedArray())
+            }::close
+        }
+    }
+}
+
+private fun QuotedMessage.toJs(): QuotedMessageJs {
+    return createJsObject {
+        this.text = this@toJs.text
+        this.userId = this@toJs.userId
+        this.timetoken = this@toJs.timetoken.toString()
+    }
+}
+
+@JsExport
+@JsName("QuotedMessage")
+interface QuotedMessageJs {
+    var timetoken: String
+    var text: String
+    var userId: String
 }
 
 @JsExport
@@ -545,7 +721,7 @@ class EventJs(
     val type: String,
     val payload: dynamic,
     val channelId: String,
-    val userId: String
+    val userId: String,
 )
 
 @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
@@ -554,10 +730,14 @@ internal fun Event<*>.toJs(chatJs: ChatJs): EventJs {
         chatJs,
         timetoken.toString(),
         payload::class.serializer().descriptor.serialName,
-        (PNDataEncoder.encode(payload) as Map<String, Any?>).toJsMap(),
+        payload.toJsObject(),
         channelId,
         userId
     )
+}
+
+private fun @Serializable Any.toJsObject() : JsMap<Any?> {
+    return (PNDataEncoder.encode(this) as Map<String, Any?>).toJsMap()
 }
 
 private fun ChatConfig.toChatConfiguration(): ChatConfiguration {
@@ -565,30 +745,63 @@ private fun ChatConfig.toChatConfiguration(): ChatConfiguration {
         typingTimeout = typingTimeout.milliseconds,
         storeUserActivityInterval = storeUserActivityInterval.milliseconds,
         storeUserActivityTimestamps = storeUserActivityTimestamps,
-        pushNotifications = TODO(),
+        pushNotifications = pushNotifications.toKmp(),
         rateLimitFactor = rateLimitFactor,
         rateLimitPerChannel = RateLimitPerChannel(),
-        customPayloads = TODO(),
+        customPayloads = customPayloads.toKmp(),
     )
 }
 
+private fun CustomPayloadsJs?.toKmp(): CustomPayloads {
+    if (this == null) {
+        return CustomPayloads()
+    }
+    return CustomPayloads(
+        getMessagePublishBody?.let { mpb ->
+            { m: EventContent.TextMessageContent, channelId: String, defaultMessagePublishBody: (m: EventContent.TextMessageContent) -> Map<String, Any?> ->
+                mpb(
+                    m.toJsObject(), channelId
+                ).unsafeCast<JsMap<Any>>().toMap()
+            }
+        },
+        getMessageResponseBody?.let { mrb ->
+            { m: JsonElement, channelId, defaultMessageResponseBody ->
+                PNDataEncoder.decode(createJsonElement(mrb(m.decode() as Map<String,Any?>)))
+            }
+        },
+        editMessageActionName,
+        deleteMessageActionName,
+        reactionsActionName
+    )
+}
+
+
 @JsExport
-external interface PushNotificationsConfig {
+@JsName("PushNotificationsConfig")
+external interface PushNotificationsConfigJs {
     val sendPushes: Boolean
     val deviceToken: String?
-    val deviceGateway: String? // "apns2" | "gcm"
+    val deviceGateway: String
     val apnsTopic: String?
     val apnsEnvironment: String
 }
 
-@JsExport
-class ChannelJs() : ChannelFields {
-    internal lateinit var channel: Channel
-
-    internal constructor(channel: Channel) : this() {
-        this.channel = channel
+fun PushNotificationsConfigJs?.toKmp(): PushNotificationsConfig {
+    if (this == null) {
+        return PushNotificationsConfig(false, "", PNPushType.FCM)
     }
+    return PushNotificationsConfig(
+        sendPushes,
+        deviceToken,
+        PNPushType.fromParamString(deviceGateway),
+        apnsTopic,
+        PNPushEnvironment.fromParamString(apnsEnvironment)
+    )
+}
 
+@JsExport
+@JsName("Channel")
+open class ChannelJs internal constructor(internal open val channel: Channel) : ChannelFields {
     override val id: String get() = channel.id
     override val name: String? get() = channel.name
     override val custom: Any? get() = channel.custom // TODO
@@ -600,7 +813,7 @@ class ChannelJs() : ChannelFields {
     fun update(data: ChannelFields): Promise<ChannelJs> {
         return channel.update(
             data.name,
-            createCustomObject(data.custom.unsafeCast<JsMap<Any?>>().toMap()), // TODO
+            getCustomObject(data.custom), // TODO
             data.description,
             data.status,
             ChannelType.from(data.type)
@@ -640,7 +853,8 @@ class ChannelJs() : ChannelFields {
             publishOptions?.sendByPost ?: false,
             publishOptions?.ttl?.toInt(),
             options?.mentionedUsers?.unsafeCast<JsMap<MessageMentionedUser>>()?.toMap()?.mapKeys { it.key.toInt() },
-            options?.referencedChannels?.unsafeCast<JsMap<MessageReferencedChannel>>()?.toMap()?.mapKeys { it.key.toInt() },
+            options?.referencedChannels?.unsafeCast<JsMap<MessageReferencedChannel>>()?.toMap()
+                ?.mapKeys { it.key.toInt() },
             options?.textLinks.unsafeCast<Array<TextLink>>().toList(),
             (options?.message as? MessageJs)?.message,
             files
@@ -690,7 +904,7 @@ class ChannelJs() : ChannelFields {
         }.asFuture().asPromise()
     }
 
-    fun getHistory(params: dynamic): Promise<HistoryResponseJs> {
+    open fun getHistory(params: dynamic): Promise<HistoryResponseJs> {
         return channel.getHistory(
             params?.startTimetoken?.toString()?.toLong(),
             params?.endTimetoken?.toString()?.toLong(),
@@ -747,11 +961,11 @@ class ChannelJs() : ChannelFields {
             }.asPromise()
     }
 
-    fun pinMessage(message: MessageJs): Promise<ChannelJs> {
+    open fun pinMessage(message: MessageJs): Promise<ChannelJs> {
         return channel.pinMessage(message.message).then { it.asJs() }.asPromise()
     }
 
-    fun unpinMessage(): Promise<ChannelJs> {
+    open fun unpinMessage(): Promise<ChannelJs> {
         return channel.unpinMessage().then { it.asJs() }.asPromise()
     }
 
@@ -878,7 +1092,8 @@ class UserJs private constructor() : UserFields {
     override val externalId get() = user.externalId
     override val profileUrl get() = user.profileUrl
     override val email get() = user.email
-    override val custom: Any? get() = user.custom?.toJsMap()?.asDynamic() // TODO need to convert map values recursively?
+    override val custom: Any?
+        get() = user.custom?.toJsMap()?.asDynamic() // TODO need to convert map values recursively?
     override val status get() = user.status
     override val type get() = user.type
     val updated get() = user.updated
@@ -894,7 +1109,7 @@ class UserJs private constructor() : UserFields {
             data.externalId,
             data.profileUrl,
             data.email,
-            createCustomObject(data.custom.unsafeCast<JsMap<Any?>>().toMap()), // TODO
+            getCustomObject(data.custom), // TODO
             data.status,
             data.type
         ).then {
@@ -957,9 +1172,14 @@ class UserJs private constructor() : UserFields {
 
     fun setRestrictions(
         channel: ChannelJs,
-        params: RestrictionJs
+        params: RestrictionJs,
     ): Promise<Any> {
-        return user.setRestrictions(channel.channel, params.ban ?: false, params.mute ?: false, params.reason.toString()).asPromise()
+        return user.setRestrictions(
+            channel.channel,
+            params.ban ?: false,
+            params.mute ?: false,
+            params.reason.toString()
+        ).asPromise()
     }
 
     fun getChannelRestrictions(channel: ChannelJs): Promise<RestrictionJs> {
@@ -1030,7 +1250,7 @@ class MembershipJs() {
     }
 
     fun update(custom: Any): Promise<MembershipJs> {
-        return membership.update(createCustomObject(custom.unsafeCast<JsMap<Any?>>().toMap()))
+        return membership.update(getCustomObject(custom)!!)
             .then { it.asJs() }
             .asPromise()
     }
@@ -1104,7 +1324,7 @@ external interface ChatConfig {
     val typingTimeout: Int
     val storeUserActivityInterval: Int
     val storeUserActivityTimestamps: Boolean
-    val pushNotifications: PushNotificationsConfig
+    val pushNotifications: PushNotificationsConfigJs
     val rateLimitFactor: Int
     val rateLimitPerChannel: RateLimitPerChannelJs
     val errorLogger: Any?
@@ -1112,7 +1332,14 @@ external interface ChatConfig {
 }
 
 @JsExport
-external interface CustomPayloadsJs
+@JsName("CustomPayloads")
+external interface CustomPayloadsJs {
+    val getMessagePublishBody: ((Any,String) -> Any)?
+    val getMessageResponseBody: ((Any) -> Any)?
+    val editMessageActionName: String?
+    val deleteMessageActionName: String?
+    val reactionsActionName: String?
+}
 
 @JsExport
 external interface RateLimitPerChannelJs {
@@ -1131,9 +1358,13 @@ private fun User.asJs() = UserJs(this)
 
 private fun Channel.asJs() = ChannelJs(this)
 
+private fun ThreadChannel.asJs() = ThreadChannelJs(this)
+
 private fun Membership.asJs() = MembershipJs(this)
 
 private fun Message.asJs() = MessageJs(this)
+
+private fun ThreadMessage.asJs() = ThreadMessageJs(this)
 
 private fun PubNub.MetadataPage?.toKmp() =
     this?.next?.let { PNPage.PNNext(it) } ?: this?.prev?.let { PNPage.PNPrev(it) }
@@ -1143,13 +1374,10 @@ private fun MetadataPage(next: PNPage.PNNext?, prev: PNPage.PNPrev?) = object : 
     override var prev: String? = prev?.pageHash
 }
 
-// @file:OptIn(ExperimentalJsExport::class)
-//
-// package com.pubnub.chat
-//
-// import com.pubnub.kmp.PNFuture
-// import kotlin.js.Promise
-//
+private fun getCustomObject(custom: Any?) = custom?.let {
+    createCustomObject(custom.unsafeCast<JsMap<Any?>>().toMap()) // TODO recursively
+}
+
 fun <T> PNFuture<T>.asPromise(): Promise<T> = Promise { resolve, reject ->
     async {
         it.onSuccess {
@@ -1159,70 +1387,3 @@ fun <T> PNFuture<T>.asPromise(): Promise<T> = Promise { resolve, reject ->
         }
     }
 }
-// //
-// // @JsExport
-// // @JsName("Chat")
-// // class ChatJs constructor(private val chatConfig: ChatConfiguration) {
-// //    private val chat: Chat = ChatImpl(chatConfig)
-//
-// //    fun createUser(
-// //        id: String,
-// //        userInfo: dynamic
-// //    ): Promise<UserJs> {
-// //        return GlobalScope.promise {
-// //            UserJs(chat.createUser(id,
-// //                userInfo.name,
-// //                userInfo.externalId,
-// //                userInfo.profileUrl,
-// //                userInfo.email,
-// //                userInfo.custom,
-// //                userInfo.status,
-// //                userInfo.type))
-// //        }
-// //    }
-// //
-// //    fun updateUser(
-// //        id: String,
-// //        userInfo: dynamic
-// //    ): Promise<UserJs> {
-// //        return chat.updateUser(
-// //            id,
-// //            userInfo.name,
-// //            userInfo.externalId,
-// //            userInfo.profileUrl,
-// //            userInfo.email,
-// //            userInfo.custom,
-// //            userInfo.status,
-// //            userInfo.type,
-// //        ).then { UserJs(it) }.asPromise()
-// //    }
-// //
-// //    fun deleteUser(id: String, params: dynamic = null): Promise<UserJs> {
-// //        return chat.deleteUser(
-// //            id,
-// //            params?.softDelete ?: false
-// //        ).then { UserJs(it) }.asPromise()
-// //    }
-// // }
-//
-// // @JsExport
-// // @JsName("User")
-// // class UserJs internal constructor(private val user: User) {
-// //    fun update(
-// //        name: String? = null,
-// //        externalId: String? = null,
-// //        profileUrl: String? = null,
-// //        email: String? = null,
-// //        custom: CustomObject? = null,
-// //        status: String? = null,
-// //        type: String? = null,
-// //        updated: String? = null, // todo do we need this?
-// //    ): Promise<UserJs> {
-// //        return user.update(name, externalId, profileUrl, email, custom, status, type)
-// //            .then { UserJs(it) }.asPromise()
-// //    }
-// //
-// //    fun delete(softDelete: Boolean): Promise<UserJs> {
-// //        return user.delete(softDelete).then { UserJs(it) }.asPromise()
-// //    }
-// // }

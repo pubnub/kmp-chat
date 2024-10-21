@@ -124,6 +124,8 @@ class ChatImpl(
         ?: MessageActionType.EDITED.toString(),
     override val deleteMessageActionName: String = config.customPayloads?.deleteMessageActionName
         ?: MessageActionType.DELETED.toString(),
+    override val reactionsActionName: String = config.customPayloads?.reactionsActionName
+        ?: MessageActionType.REACTIONS.toString(),
     override val timerManager: TimerManager = createTimerManager()
 ) : ChatInternal {
     override var currentUser: User =

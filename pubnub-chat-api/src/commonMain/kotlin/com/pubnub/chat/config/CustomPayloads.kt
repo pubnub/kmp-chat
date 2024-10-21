@@ -52,4 +52,6 @@ class CustomPayloads(
      *
      */
     val deleteMessageActionName: String? = null,
+
+    val reactionsActionName: String? = null
 )
