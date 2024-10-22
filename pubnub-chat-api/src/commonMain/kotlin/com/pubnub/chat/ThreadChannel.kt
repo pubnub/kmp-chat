@@ -32,7 +32,7 @@ interface ThreadChannel : Channel {
      *
      * @return [PNFuture] containing [ThreadChannel]
      */
-    override fun unpinMessage(): PNFuture<ThreadChannel> // todo add test
+    override fun unpinMessage(): PNFuture<ThreadChannel>
 
     /**
      *  Returns historical messages for the [ThreadChannel]
@@ -56,7 +56,7 @@ interface ThreadChannel : Channel {
      *
      * @return [PNFuture] containing the updated [Channel] with the pinned message metadata.
      */
-    fun pinMessageToParentChannel(message: ThreadMessage): PNFuture<Channel> // todo add test
+    fun pinMessageToParentChannel(message: ThreadMessage): PNFuture<Channel>
 
     /**
      * Unpins the currently pinned message from the parent channel. This updates the parent channel's metadata by removing
@@ -66,7 +66,7 @@ interface ThreadChannel : Channel {
      *
      * @return [PNFuture] containing the updated [Channel] after the message is unpinned.
      */
-    fun unpinMessageFromParentChannel(): PNFuture<Channel> // todo add test
+    fun unpinMessageFromParentChannel(): PNFuture<Channel>
 
     companion object
 }

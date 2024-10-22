@@ -21,6 +21,8 @@ import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
+import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.chat.restrictions.RestrictionType
 import com.pubnub.chat.types.ChannelMentionData
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
@@ -47,6 +49,7 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 class ChatIntegrationTest : BaseChatIntegrationTest() {
     @Test
@@ -572,6 +575,39 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         chat.getChannel("abc").async {}
         channel01.streamUpdates { }
         chat.destroy()
+    }
+
+    @Test
+    fun setRestrictionThenUnset() = runTest(timeout = 10.seconds) {
+        val userId = someUser.id
+        val channelId = channel01.id
+        val banned = CompletableDeferred<Unit>()
+        val unbanned = CompletableDeferred<Unit>()
+        val restrictionBan = Restriction(userId = userId, channelId = channelId, ban = true, reason = "rude")
+        val restrictionUnban = Restriction(userId = userId, channelId = channelId, ban = false, mute = false, reason = "ok")
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var removeListenerAndUnsubscribe: AutoCloseable? = null
+            pubnub.awaitSubscribe(channels = listOf(userId)) {
+                removeListenerAndUnsubscribe = chat.listenForEvents(
+                    type = EventContent.Moderation::class,
+                    channelId = userId
+                ) { event: Event<EventContent.Moderation> ->
+                    val restrictionType: RestrictionType = event.payload.restriction
+                    if (restrictionType == RestrictionType.BAN) {
+                        banned.complete(Unit)
+                    } else {
+                        unbanned.complete(Unit)
+                    }
+                }
+            }
+
+            chat.setRestrictions(restrictionBan).await()
+            banned.await()
+            chat.setRestrictions(restrictionUnban).await()
+            unbanned.await()
+
+            removeListenerAndUnsubscribe?.close()
+        }
     }
 
     private suspend fun assertPushChannels(expectedNumberOfChannels: Int) {

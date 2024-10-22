@@ -4,6 +4,7 @@ import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.endpoints.FetchMessages
+import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.endpoints.pubsub.Publish
 import com.pubnub.api.enums.PNPushEnvironment
@@ -15,6 +16,7 @@ import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
 import com.pubnub.api.utils.PatchValue
 import com.pubnub.api.v2.callbacks.Consumer
@@ -61,6 +63,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -80,6 +84,7 @@ class ChannelTest : BaseTest() {
     private val updated = "testUpdated"
     private val typingTimeout = 1001.milliseconds
     private val pubNub: PubNub = mock(MockMode.strict)
+    private val setChannelMetadataEndpoint: SetChannelMetadata = mock(MockMode.strict)
 
     @BeforeTest
     fun setUp() {
@@ -95,17 +100,18 @@ class ChannelTest : BaseTest() {
         objectUnderTest = createChannel(type)
     }
 
-    private fun createChannel(type: ChannelType, clock: Clock = Clock.System) = ChannelImpl(
-        chat = chat,
-        clock = clock,
-        id = channelId,
-        name = name,
-        custom = customData,
-        description = description,
-        updated = updated,
-        status = status,
-        type = type
-    )
+    private fun createChannel(type: ChannelType, clock: Clock = Clock.System, custom: Map<String, Any?> = customData) =
+        ChannelImpl(
+            chat = chat,
+            clock = clock,
+            id = channelId,
+            name = name,
+            custom = custom,
+            description = description,
+            updated = updated,
+            status = status,
+            type = type
+        )
 
     @Test
     fun canUpdateChannel() {
@@ -166,7 +172,7 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        objectUnderTest.setTypingSent(typingSent)
+        objectUnderTest.typingSent = typingSent
         objectUnderTest.startTyping().async { result ->
             // then
             assertTrue(result.isSuccess)
@@ -188,7 +194,7 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        objectUnderTest.setTypingSent(typingSent)
+        objectUnderTest.typingSent = typingSent
         objectUnderTest.startTyping().async { result ->
             // then
             assertTrue(result.isSuccess)
@@ -233,7 +239,7 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        objectUnderTest.setTypingSent(typingSent)
+        objectUnderTest.typingSent = typingSent
 
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
@@ -273,7 +279,7 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        objectUnderTest.setTypingSent(typingSent)
+        objectUnderTest.typingSent = typingSent
 
         objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
@@ -293,7 +299,7 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        objectUnderTest.setTypingSent(typingSent)
+        objectUnderTest.typingSent = typingSent
         every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
 
         // when
@@ -389,15 +395,15 @@ class ChannelTest : BaseTest() {
         assertEquals(now, typingIndicators[userId])
     }
 
-    private fun createMessage(): Message {
+    private fun createMessage(timetoken: Long = 123345, channelId: String = "channelIDnoster"): Message {
         return MessageImpl(
             chat = chat,
-            timetoken = 123345,
+            timetoken = timetoken,
             content = EventContent.TextMessageContent(
                 text = "justo",
                 files = listOf()
             ),
-            channelId = "noster",
+            channelId = channelId,
             userId = "myUserId",
             actions = mapOf(),
             metaInternal = null
@@ -669,23 +675,68 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
-    fun shouldUpdateTypingTimeWhenUserIsTyping() {
-        // todo whenTypingStatusIndicateThatUserIsTypingAndTypingEventReceiveGetTypingShouldUpdateTime
-    }
-
-    @Test
-    fun shouldRemoveTypingStatusWhenUserStopsTyping() {
-        // todo whenTypingStatusIndicateThatUserIsTypingAndNotTypingEventReceiveGetTypingShouldRemoveTypingStatus
-    }
-
-    @Test
     fun shouldCreateTypingStatusWhenUserStartsTyping() {
-        // todo whenThereIsNoTypingStatusForUserAndTypingEventReceiveGetTypingShouldCreateTypingStatus
+        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
+        val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val currentTimeStampInMillis = typingSent.plus(1.milliseconds)
+        val customClock = object : Clock {
+            override fun now(): Instant {
+                return currentTimeStampInMillis
+            }
+        }
+        objectUnderTest = createChannel(type, customClock)
+        assertNull(objectUnderTest.typingSent)
+
+        objectUnderTest.startTyping().async { result ->
+            assertTrue(result.isSuccess)
+            assertEquals(Unit, result.getOrNull())
+        }
+        assertEquals(currentTimeStampInMillis, objectUnderTest.typingSent)
+        verify(exactly(1)) { chat.emitEvent(any(), any()) }
     }
 
     @Test
-    fun getTypingShouldRemoveExpiredTypingIndicators() {
-        // todo
+    fun startTypingShouldNotEmitEventWhenTimeoutNotElapsed() {
+        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
+        val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val currentTimeStampInMillis = typingSent.plus(1.milliseconds)
+        val customClock = object : Clock {
+            override fun now(): Instant {
+                return currentTimeStampInMillis
+            }
+        }
+        objectUnderTest = createChannel(type, customClock)
+        objectUnderTest.typingSent = typingSent
+        assertNotNull(objectUnderTest.typingSent)
+
+        objectUnderTest.startTyping().async { result ->
+            assertTrue(result.isSuccess)
+            assertEquals(Unit, result.getOrNull())
+        }
+        assertEquals(typingSent, objectUnderTest.typingSent)
+        verify(exactly(0)) { chat.emitEvent(any(), any()) }
+    }
+
+    @Test
+    fun starTypingShouldEmitEventWhenTimeoutElapsed() {
+        every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
+        val typingSent: Instant = Instant.fromEpochMilliseconds(1234567890000)
+        val currentTimeStampInMillis = typingSent.plus(6.seconds)
+        val customClock = object : Clock {
+            override fun now(): Instant {
+                return currentTimeStampInMillis
+            }
+        }
+        objectUnderTest = createChannel(type, customClock)
+        objectUnderTest.typingSent = typingSent
+        assertNotNull(objectUnderTest.typingSent)
+
+        objectUnderTest.startTyping().async { result ->
+            assertTrue(result.isSuccess)
+            assertEquals(Unit, result.getOrNull())
+        }
+        assertEquals(currentTimeStampInMillis, objectUnderTest.typingSent)
+        verify(exactly(1)) { chat.emitEvent(any(), any()) }
     }
 
     @Test
@@ -782,7 +833,11 @@ class ChannelTest : BaseTest() {
         val channel = createChannel(ChannelType.PUBLIC)
         val expectedChannel = channel.copy(name = randomString(), description = randomString())
 
-        val newChannel = channel + PNChannelMetadata(expectedChannel.id, name = PatchValue.of(expectedChannel.name), description = PatchValue.of(expectedChannel.description))
+        val newChannel = channel + PNChannelMetadata(
+            expectedChannel.id,
+            name = PatchValue.of(expectedChannel.name),
+            description = PatchValue.of(expectedChannel.description)
+        )
 
         assertEquals(expectedChannel, newChannel)
     }
@@ -796,6 +851,73 @@ class ChannelTest : BaseTest() {
 
         val actualChannelId: String = channelIdSlot.get().toString()
         assertTrue(actualChannelId.contains(INTERNAL_MODERATION_PREFIX))
+    }
+
+    @Test
+    fun pinMessage_shouldSetTwoCustomChannelMetadata() {
+        val timetoken = 9999999L
+        val channelId = "adfjaldf"
+        val message = createMessage(timetoken = timetoken, channelId = channelId)
+        val customSlot = Capture.slot<Map<String, String>>()
+        every {
+            pubNub.setChannelMetadata(
+                channel = any(),
+                name = any(),
+                description = any(),
+                custom = capture(customSlot),
+                includeCustom = any(),
+                type = any(),
+                status = any()
+            )
+        } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.success(getPNChannelMetadataResult()))
+        }
+
+        objectUnderTest.pinMessage(message).async { result: Result<Channel> ->
+            assertTrue(result.isSuccess)
+        }
+
+        val actualCustomMetadata = customSlot.get()
+        val actualPinnedMessageTimtoken = actualCustomMetadata["pinnedMessageTimetoken"]
+        val actualPinnedMessageChannelId = actualCustomMetadata["pinnedMessageChannelID"]
+        assertEquals(timetoken.toString(), actualPinnedMessageTimtoken)
+        assertEquals(channelId, actualPinnedMessageChannelId)
+    }
+
+    @Test
+    fun unpinMessage_shouldRemoveTwoCustomChannelMetadata() {
+        val customData = mapOf(
+            "testCustom" to "custom",
+            "actualPinnedMessageTimtoken" to "9999999",
+            "actualPinnedMessageChannelId" to "adfjaldf"
+        )
+        objectUnderTest = createChannel(type = type, custom = customData)
+        val timetoken = 9999999L
+        val channelId = "adfjaldf"
+        val customSlot = Capture.slot<Map<String, String>>()
+        every {
+            pubNub.setChannelMetadata(
+                channel = any(),
+                name = any(),
+                description = any(),
+                custom = capture(customSlot),
+                includeCustom = any(),
+                type = any(),
+                status = any()
+            )
+        } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.success(getPNChannelMetadataResult()))
+        }
+
+        objectUnderTest.unpinMessage().async { result: Result<Channel> ->
+            assertTrue(result.isSuccess)
+        }
+
+        val actualCustomMetadata = customSlot.get()
+        assertFalse(actualCustomMetadata.contains("pinnedMessageTimetoken"))
+        assertFalse(actualCustomMetadata.contains("pinnedMessageChannelID"))
     }
 }
 

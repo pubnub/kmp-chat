@@ -8,7 +8,7 @@ jobs:
   tests:
     name: Integration and Unit tests
     runs-on:
-      group: Default
+      group: organization/Default
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
     name: Tests
     needs: [tests]
     runs-on:
-      group: Default
+      group: organization/Default
     steps:
       - name: Tests summary
         run: echo -e "\033[38;2;95;215;0m\033[1mAll tests successfully passed"
