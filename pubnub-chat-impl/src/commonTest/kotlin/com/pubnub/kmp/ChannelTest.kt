@@ -172,7 +172,7 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        objectUnderTest.setTypingSent(typingSent)
+        objectUnderTest.typingSent = typingSent
         objectUnderTest.startTyping().async { result ->
             // then
             assertTrue(result.isSuccess)
@@ -194,7 +194,7 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        objectUnderTest.setTypingSent(typingSent)
+        objectUnderTest.typingSent = typingSent
         objectUnderTest.startTyping().async { result ->
             // then
             assertTrue(result.isSuccess)
@@ -239,7 +239,7 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        objectUnderTest.setTypingSent(typingSent)
+        objectUnderTest.typingSent = typingSent
 
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
@@ -279,7 +279,7 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        objectUnderTest.setTypingSent(typingSent)
+        objectUnderTest.typingSent = typingSent
 
         objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
@@ -299,7 +299,7 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        objectUnderTest.setTypingSent(typingSent)
+        objectUnderTest.typingSent = typingSent
         every { chat.emitEvent(any(), any()) } returns PNPublishResult(1L).asFuture()
 
         // when
@@ -685,13 +685,13 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        assertNull(objectUnderTest.getTypingSent())
+        assertNull(objectUnderTest.typingSent)
 
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-        assertEquals(currentTimeStampInMillis, objectUnderTest.getTypingSent())
+        assertEquals(currentTimeStampInMillis, objectUnderTest.typingSent)
         verify(exactly(1)) { chat.emitEvent(any(), any()) }
     }
 
@@ -706,14 +706,14 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        objectUnderTest.setTypingSent(typingSent)
-        assertNotNull(objectUnderTest.getTypingSent())
+        objectUnderTest.typingSent = typingSent
+        assertNotNull(objectUnderTest.typingSent)
 
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-        assertEquals(typingSent, objectUnderTest.getTypingSent())
+        assertEquals(typingSent, objectUnderTest.typingSent)
         verify(exactly(0)) { chat.emitEvent(any(), any()) }
     }
 
@@ -728,14 +728,14 @@ class ChannelTest : BaseTest() {
             }
         }
         objectUnderTest = createChannel(type, customClock)
-        objectUnderTest.setTypingSent(typingSent)
-        assertNotNull(objectUnderTest.getTypingSent())
+        objectUnderTest.typingSent = typingSent
+        assertNotNull(objectUnderTest.typingSent)
 
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
             assertEquals(Unit, result.getOrNull())
         }
-        assertEquals(currentTimeStampInMillis, objectUnderTest.getTypingSent())
+        assertEquals(currentTimeStampInMillis, objectUnderTest.typingSent)
         verify(exactly(1)) { chat.emitEvent(any(), any()) }
     }
 

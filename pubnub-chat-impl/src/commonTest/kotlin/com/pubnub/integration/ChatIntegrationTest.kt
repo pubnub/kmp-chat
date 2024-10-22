@@ -586,7 +586,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val restrictionBan = Restriction(userId = userId, channelId = channelId, ban = true, reason = "rude")
         val restrictionUnban = Restriction(userId = userId, channelId = channelId, ban = false, mute = false, reason = "ok")
         pubnub.test(backgroundScope, checkAllEvents = false) {
-            var dispose: AutoCloseable? = null
             var removeListenerAndUnsubscribe: AutoCloseable? = null
             pubnub.awaitSubscribe(channels = listOf(userId)) {
                 removeListenerAndUnsubscribe = chat.listenForEvents(
@@ -608,7 +607,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             unbanned.await()
 
             removeListenerAndUnsubscribe?.close()
-            dispose?.close()
         }
     }
 

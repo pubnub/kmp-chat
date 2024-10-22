@@ -115,7 +115,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     val messageFactory: (ChatInternal, PNFetchMessageItem, channelId: String) -> M,
 ) : Channel {
     private val suggestedMemberships = mutableMapOf<String, Set<Membership>>()
-    private var typingSent: Instant? = null
+    internal var typingSent: Instant? = null
     private val sendTextRateLimiter by lazy {
         ExponentialRateLimiter(
             type?.let { typeNotNull -> chat.config.rateLimitPerChannel[typeNotNull] } ?: Duration.ZERO,
@@ -748,14 +748,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
             channelId = this.id,
             payload = EventContent.Typing(value),
         ).then { }
-    }
-
-    internal fun setTypingSent(value: Instant) {
-        typingSent = value
-    }
-
-    internal fun getTypingSent(): Instant? {
-        return typingSent
     }
 
     internal abstract fun copyWithStatusDeleted(): C
