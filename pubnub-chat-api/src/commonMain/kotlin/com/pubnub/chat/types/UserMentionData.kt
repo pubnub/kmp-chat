@@ -12,7 +12,7 @@ import com.pubnub.chat.Message
  */
 sealed class UserMentionData {
     abstract val event: Event<EventContent.Mention>
-    abstract val message: Message?
+    abstract val message: Message
     abstract val userId: String
 }
 
@@ -26,7 +26,7 @@ sealed class UserMentionData {
  */
 class ChannelMentionData(
     override val event: Event<EventContent.Mention>,
-    override val message: Message?,
+    override val message: Message,
     override val userId: String,
     val channelId: String
 ) : UserMentionData()
@@ -42,7 +42,7 @@ class ChannelMentionData(
  */
 class ThreadMentionData(
     override val event: Event<EventContent.Mention>,
-    override val message: Message?,
+    override val message: Message,
     override val userId: String,
     val parentChannelId: String,
     val threadChannelId: String
