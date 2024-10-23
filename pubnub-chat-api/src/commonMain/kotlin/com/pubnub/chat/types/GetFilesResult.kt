@@ -1,5 +1,7 @@
 package com.pubnub.chat.types
 
+import kotlin.js.JsExport
+
 /**
  * Represents the result of fetching files attached to messages on a given channel.
  *
@@ -20,6 +22,7 @@ class GetFilesResult(
  * @property id The unique identifier of the file.
  * @property url The URL where the file can be accessed or downloaded.
  */
+@JsExport
 class GetFileItem(
     val name: String,
     val id: String,

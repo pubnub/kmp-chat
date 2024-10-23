@@ -1,6 +1,7 @@
 package com.pubnub.chat.types
 
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 private const val CHANNELTYPE_DIRECT = "direct"
 private const val CHANNELTYPE_GROUP = "group"
@@ -12,6 +13,7 @@ private const val CHANNELTYPE_UNKKNOWN = "unknown"
  *
  * @property stringValue The string representation of the channel type, used for serialization.
  */
+@Serializable
 enum class ChannelType(val stringValue: String) {
     /**
      * A direct channel, used for one-on-one communication.

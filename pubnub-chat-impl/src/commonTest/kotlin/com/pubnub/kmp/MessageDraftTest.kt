@@ -5,7 +5,7 @@ import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
 import com.pubnub.chat.MentionTarget
 import com.pubnub.chat.MessageDraft
-import com.pubnub.chat.MessageDraftStateListener
+import com.pubnub.chat.MessageDraftChangeListener
 import com.pubnub.chat.MessageElement
 import com.pubnub.chat.SuggestedMention
 import com.pubnub.chat.User
@@ -14,8 +14,8 @@ import com.pubnub.chat.internal.Mention
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
-import com.pubnub.chat.internal.channelReferenceRegex
-import com.pubnub.chat.internal.userMentionRegex
+import com.pubnub.chat.internal.findChannelMentionMatches
+import com.pubnub.chat.internal.findUserMentionMatches
 import com.pubnub.test.await
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -85,17 +85,17 @@ class MessageDraftTest {
         val result = CompletableDeferred<Unit>()
         val result2 = CompletableDeferred<Unit>()
 
-        val listener = MessageDraftStateListener { _, _ ->
+        val listener = MessageDraftChangeListener { _, _ ->
             if (!result.isCompleted) {
                 result.complete(Unit)
             } else {
                 result2.complete(Unit)
             }
         }
-        draft.addMessageElementsListener(listener)
+        draft.addChangeListener(listener)
         draft.update("aaa")
         result.await()
-        draft.removeMessageElementsListener(listener)
+        draft.removeChangeListener(listener)
         draft.update("bbb")
         assertFalse { result2.isCompleted }
     }
@@ -132,7 +132,7 @@ class MessageDraftTest {
     fun insertText() {
         val draft = MessageDraftImpl(channels.first(), isTypingIndicatorTriggered = false)
         val list = mutableListOf<List<MessageElement>>()
-        draft.addMessageElementsListener { messageElements, suggestedMentions ->
+        draft.addChangeListener { messageElements, suggestedMentions ->
             list.add(messageElements)
         }
 
@@ -162,7 +162,7 @@ class MessageDraftTest {
     fun removeText() {
         val draft = MessageDraftImpl(channels.first(), isTypingIndicatorTriggered = false)
         val list = mutableListOf<List<MessageElement>>()
-        draft.addMessageElementsListener { messageElements, suggestedMentions ->
+        draft.addChangeListener { messageElements, suggestedMentions ->
             list.add(messageElements)
         }
 
@@ -194,7 +194,7 @@ class MessageDraftTest {
     fun update() {
         val draft = MessageDraftImpl(channels.first(), isTypingIndicatorTriggered = false)
         val list = mutableListOf<List<MessageElement>>()
-        draft.addMessageElementsListener { messageElements, suggestedMentions ->
+        draft.addChangeListener { messageElements, suggestedMentions ->
             list.add(messageElements)
         }
 
@@ -367,7 +367,7 @@ class MessageDraftTest {
             isTypingIndicatorTriggered = false
         )
         val result = CompletableDeferred<List<SuggestedMention>>()
-        draft.addMessageElementsListener { messageElements, suggestedMentions ->
+        draft.addChangeListener { messageElements, suggestedMentions ->
             backgroundScope.launch {
                 if (!result.isCompleted) {
                     result.complete(suggestedMentions.await())
@@ -377,10 +377,10 @@ class MessageDraftTest {
 
         draft.update("abc @exa def 123")
         val suggestion = result.await().first()
-        draft.insertSuggestedMention(suggestion, suggestion.replaceTo)
+        draft.insertSuggestedMention(suggestion, suggestion.replaceWith)
 
         assertEquals("@exa", suggestion.replaceFrom)
-        assertEquals("example User 0", suggestion.replaceTo)
+        assertEquals("example User 0", suggestion.replaceWith)
         assertEquals("example.user.0", (suggestion.target as? MentionTarget.User)?.userId)
 
         assertEquals(
@@ -393,8 +393,6 @@ class MessageDraftTest {
         )
     }
 
-    // TODO iOS fails on diacritics (ęąść..)
-    // when JS is also enabled, we'll fix all platform's regexes at the same time
     @Test
     fun test_user_mention_regexes() {
         val stringsToExpectedMatches = listOf(
@@ -412,12 +410,10 @@ class MessageDraftTest {
         )
 
         stringsToExpectedMatches.forEach {
-            assertEquals(it.second, userMentionRegex.find(it.first)!!.value)
+            assertEquals(it.second, findUserMentionMatches(it.first).first().value)
         }
     }
 
-    // TODO iOS fails on diacritics (ęąść..)
-    // when JS is also enabled, we'll fix all platform's regexes at the same time
     @Test
     fun test_channel_mention_regexes() {
         val stringsToExpectedMatches = listOf(
@@ -435,7 +431,7 @@ class MessageDraftTest {
         )
 
         stringsToExpectedMatches.forEach {
-            assertEquals(it.second, channelReferenceRegex.find(it.first)!!.value)
+            assertEquals(it.second, findChannelMentionMatches(it.first).first().value)
         }
     }
 }
