@@ -283,7 +283,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     ): PNFuture<PNPublishResult> {
         return sendTextInternal(
             text = text,
-            meta = meta,
+            meta = buildMetaForPublish(meta, quotedMessage),
             shouldStore = shouldStore,
             usePost = usePost,
             ttl = ttl,
