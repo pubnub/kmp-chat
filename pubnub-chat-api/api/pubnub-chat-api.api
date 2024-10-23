@@ -215,8 +215,8 @@ public final class com/pubnub/chat/Message$Companion {
 }
 
 public abstract interface class com/pubnub/chat/MessageDraft {
+	public abstract fun addChangeListener (Lcom/pubnub/chat/MessageDraftChangeListener;)V
 	public abstract fun addMention (IILcom/pubnub/chat/MentionTarget;)V
-	public abstract fun addMessageElementsListener (Lcom/pubnub/chat/MessageDraftStateListener;)V
 	public abstract fun getChannel ()Lcom/pubnub/chat/Channel;
 	public abstract fun getChannelLimit ()I
 	public abstract fun getFiles ()Ljava/util/List;
@@ -226,8 +226,8 @@ public abstract interface class com/pubnub/chat/MessageDraft {
 	public abstract fun insertSuggestedMention (Lcom/pubnub/chat/SuggestedMention;Ljava/lang/String;)V
 	public abstract fun insertText (ILjava/lang/String;)V
 	public abstract fun isTypingIndicatorTriggered ()Z
+	public abstract fun removeChangeListener (Lcom/pubnub/chat/MessageDraftChangeListener;)V
 	public abstract fun removeMention (I)V
-	public abstract fun removeMessageElementsListener (Lcom/pubnub/chat/MessageDraftStateListener;)V
 	public abstract fun removeText (II)V
 	public abstract fun send (Ljava/util/Map;ZZLjava/lang/Integer;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun send$default (Lcom/pubnub/chat/MessageDraft;Ljava/util/Map;ZZLjava/lang/Integer;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
@@ -237,18 +237,22 @@ public abstract interface class com/pubnub/chat/MessageDraft {
 
 public final class com/pubnub/chat/MessageDraft$UserSuggestionSource : java/lang/Enum {
 	public static final field CHANNEL Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
+	public static final field Companion Lcom/pubnub/chat/MessageDraft$UserSuggestionSource$Companion;
 	public static final field GLOBAL Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
 	public static fun values ()[Lcom/pubnub/chat/MessageDraft$UserSuggestionSource;
 }
 
-public final class com/pubnub/chat/MessageDraftKt {
-	public static final fun getSuggestionsFor (Ljava/util/List;I)Ljava/util/List;
+public final class com/pubnub/chat/MessageDraft$UserSuggestionSource$Companion {
 }
 
-public abstract interface class com/pubnub/chat/MessageDraftStateListener {
+public abstract interface class com/pubnub/chat/MessageDraftChangeListener {
 	public abstract fun onChange (Ljava/util/List;Lcom/pubnub/kmp/PNFuture;)V
+}
+
+public final class com/pubnub/chat/MessageDraftKt {
+	public static final fun getSuggestionsFor (Ljava/util/List;I)Ljava/util/List;
 }
 
 public abstract interface class com/pubnub/chat/MessageElement {
@@ -283,7 +287,7 @@ public final class com/pubnub/chat/SuggestedMention {
 	public fun <init> (ILjava/lang/String;Ljava/lang/String;Lcom/pubnub/chat/MentionTarget;)V
 	public final fun getOffset ()I
 	public final fun getReplaceFrom ()Ljava/lang/String;
-	public final fun getReplaceTo ()Ljava/lang/String;
+	public final fun getReplaceWith ()Ljava/lang/String;
 	public final fun getTarget ()Lcom/pubnub/chat/MentionTarget;
 }
 
@@ -366,12 +370,13 @@ public final class com/pubnub/chat/config/ChatConfigurationKt {
 
 public final class com/pubnub/chat/config/CustomPayloads {
 	public fun <init> ()V
-	public fun <init> (Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getDeleteMessageActionName ()Ljava/lang/String;
 	public final fun getEditMessageActionName ()Ljava/lang/String;
 	public final fun getGetMessagePublishBody ()Lkotlin/jvm/functions/Function3;
 	public final fun getGetMessageResponseBody ()Lkotlin/jvm/functions/Function3;
+	public final fun getReactionsActionName ()Ljava/lang/String;
 }
 
 public final class com/pubnub/chat/config/LogLevel : java/lang/Enum {
@@ -397,10 +402,10 @@ public final class com/pubnub/chat/config/PushNotificationsConfig {
 }
 
 public final class com/pubnub/chat/membership/MembersResponse {
-	public fun <init> (Lcom/pubnub/api/models/consumer/objects/PNPage;Lcom/pubnub/api/models/consumer/objects/PNPage;IILjava/util/Set;)V
+	public fun <init> (Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;IILjava/util/Set;)V
 	public final fun getMembers ()Ljava/util/Set;
-	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage;
-	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage;
+	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
+	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getStatus ()I
 	public final fun getTotal ()I
 }
@@ -422,18 +427,18 @@ public final class com/pubnub/chat/message/GetUnreadMessagesCounts {
 }
 
 public final class com/pubnub/chat/message/MarkAllMessageAsReadResponse {
-	public fun <init> (Ljava/util/Set;Lcom/pubnub/api/models/consumer/objects/PNPage;Lcom/pubnub/api/models/consumer/objects/PNPage;II)V
+	public fun <init> (Ljava/util/Set;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;II)V
 	public final fun getMemberships ()Ljava/util/Set;
-	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage;
-	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage;
+	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
+	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getStatus ()I
 	public final fun getTotal ()I
 }
 
 public final class com/pubnub/chat/restrictions/GetRestrictionsResponse {
-	public fun <init> (Ljava/util/Set;Lcom/pubnub/api/models/consumer/objects/PNPage;Lcom/pubnub/api/models/consumer/objects/PNPage;II)V
-	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage;
-	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage;
+	public fun <init> (Ljava/util/Set;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;II)V
+	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
+	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getRestrictions ()Ljava/util/Set;
 	public final fun getStatus ()I
 	public final fun getTotal ()I
@@ -485,6 +490,7 @@ public final class com/pubnub/chat/types/ChannelType : java/lang/Enum {
 
 public final class com/pubnub/chat/types/ChannelType$Companion {
 	public final fun from (Ljava/lang/String;)Lcom/pubnub/chat/types/ChannelType;
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/CreateDirectConversationResult {
@@ -723,10 +729,10 @@ public final class com/pubnub/chat/types/File$Companion {
 }
 
 public final class com/pubnub/chat/types/GetChannelsResponse {
-	public fun <init> (Ljava/util/Set;Lcom/pubnub/api/models/consumer/objects/PNPage;Lcom/pubnub/api/models/consumer/objects/PNPage;I)V
+	public fun <init> (Ljava/util/Set;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;I)V
 	public final fun getChannels ()Ljava/util/Set;
-	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage;
-	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage;
+	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
+	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getTotal ()I
 }
 
@@ -891,9 +897,9 @@ public abstract class com/pubnub/chat/types/UserMentionData {
 }
 
 public final class com/pubnub/chat/user/GetUsersResponse {
-	public fun <init> (Ljava/util/Set;Lcom/pubnub/api/models/consumer/objects/PNPage;Lcom/pubnub/api/models/consumer/objects/PNPage;I)V
-	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage;
-	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage;
+	public fun <init> (Ljava/util/Set;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;I)V
+	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
+	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getTotal ()I
 	public final fun getUsers ()Ljava/util/Set;
 }

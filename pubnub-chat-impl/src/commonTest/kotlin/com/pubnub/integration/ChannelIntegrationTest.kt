@@ -355,9 +355,8 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             chat.deleteUser(userId, false).await()
         } catch (_: Exception) {
         }
-        val user2 = chat.createUser(UserImpl(chat, userId)).await()
-        val deletedUser = chat.deleteUser(id = userId, soft = true).await()
-        println(deletedUser)
+        chat.createUser(UserImpl(chat, userId)).await()
+        chat.deleteUser(id = userId, soft = true).await()
 
         chat.getUsers(filter = "status=='deleted'").async { result ->
             result.onSuccess { getUsersResponse: GetUsersResponse ->

@@ -6,11 +6,12 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.MentionTarget
 import com.pubnub.chat.Message
 import com.pubnub.chat.MessageDraft
-import com.pubnub.chat.MessageDraftStateListener
+import com.pubnub.chat.MessageDraftChangeListener
 import com.pubnub.chat.MessageElement
 import com.pubnub.chat.SuggestedMention
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.error.PubNubErrorMessage
+import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.InputFile
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.awaitAll
@@ -19,9 +20,6 @@ import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import name.fraser.neil.plaintext.DiffMatchPatch
 import kotlin.math.min
-
-internal val userMentionRegex = Regex("""(?U)(?<=^|\p{Space})(@[\p{Alpha}\-]+)""")
-internal val channelReferenceRegex = Regex("""(?U)(?<=^|\p{Space})(#[\p{Alnum}\-]+)""")
 
 private const val SCHEMA_USER = "pn-user://"
 private const val SCHEMA_CHANNEL = "pn-channel://"
@@ -33,32 +31,34 @@ private const val SCHEMA_CHANNEL = "pn-channel://"
 class MessageDraftImpl(
     override val channel: Channel,
     override val userSuggestionSource: MessageDraft.UserSuggestionSource = MessageDraft.UserSuggestionSource.CHANNEL,
-    override val isTypingIndicatorTriggered: Boolean = true,
+    override val isTypingIndicatorTriggered: Boolean = channel.type != ChannelType.PUBLIC,
     override val userLimit: Int = 10,
     override val channelLimit: Int = 10
 ) : MessageDraft {
     override var quotedMessage: Message? = null
     override val files: MutableList<InputFile> = mutableListOf()
 
-    private val listeners = atomic(setOf<MessageDraftStateListener>())
+    private val listeners = atomic(setOf<MessageDraftChangeListener>())
     private val chat = channel.chat as ChatInternal
     private val mentions: MutableList<Mention> = mutableListOf()
     private val diffMatchPatch = DiffMatchPatch()
 
     private var messageText: StringBuilder = StringBuilder("")
 
-    override fun addMessageElementsListener(callback: MessageDraftStateListener) {
+    internal val value get() = messageText as CharSequence
+
+    override fun addChangeListener(listener: MessageDraftChangeListener) {
         listeners.update {
             buildSet {
                 addAll(it)
-                add(callback)
+                add(listener)
             }
         }
     }
 
-    override fun removeMessageElementsListener(callback: MessageDraftStateListener) {
+    override fun removeChangeListener(listener: MessageDraftChangeListener) {
         listeners.update {
-            it.filterNot { element -> element == callback }.toSet()
+            it.filterNot { element -> element == listener }.toSet()
         }
     }
 
@@ -144,14 +144,14 @@ class MessageDraftImpl(
         }
     }
 
-    private val MatchResult.matchStart get() = range.first
+    private val RegexMatchResult.matchStart get() = range.first
 
     private fun getSuggestedMentions(): PNFuture<List<SuggestedMention>> {
-        val allUserMentions = userMentionRegex.findAll(messageText).toList()
-        val allChannelMentions = channelReferenceRegex.findAll(messageText).toList()
+        val allUserMentions = findUserMentionMatches(messageText)
+        val allChannelMentions = findChannelMentionMatches(messageText)
 
         val userSuggestionsNeededFor = allUserMentions
-            .filter { matchResult: MatchResult ->
+            .filter { matchResult ->
                 matchResult.matchStart !in mentions
                     .filter { it.target is MentionTarget.User }
                     .map(Mention::start)
@@ -165,7 +165,7 @@ class MessageDraftImpl(
 
         val getSuggestedUsersFuture = userSuggestionsNeededFor
             .filter { matchResult -> matchResult.value.length > 3 }
-            .map { matchResult: MatchResult ->
+            .map { matchResult ->
                 getSuggestedUsers(matchResult.value.substring(1)).then {
                     it.map { user ->
                         SuggestedMention(matchResult.matchStart, matchResult.value, user.name ?: user.id, MentionTarget.User(user.id))
@@ -261,7 +261,8 @@ class MessageDraftImpl(
     }
 
     companion object {
-        private val linkRegex = Regex("""\[(?<text>(?:[^]]*?(?:\\\\)*(?:\\])*)+?)]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
+//        private val linkRegex = Regex("""\[(?<text>(?:[^]]*?(?:\\\\)*(?:\\])*)+?)]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
+        private val linkRegex = Regex("""\[(?<text>(?:[^\]]*?(?:\\\\)*(?:\\\])*)+?)\]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
 
         internal fun escapeLinkText(text: String) = text.replace("\\", "\\\\").replace("]", "\\]")
 
@@ -379,3 +380,12 @@ internal class Mention(
         return start.compareTo(other.start)
     }
 }
+
+internal expect interface RegexMatchResult {
+    val value: String
+    val range: IntRange
+}
+
+internal expect fun findUserMentionMatches(input: CharSequence): List<RegexMatchResult>
+
+internal expect fun findChannelMentionMatches(input: CharSequence): List<RegexMatchResult>

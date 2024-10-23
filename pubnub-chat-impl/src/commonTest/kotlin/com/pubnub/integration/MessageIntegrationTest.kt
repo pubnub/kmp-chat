@@ -29,6 +29,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "messageText_${randomString()}"
         val publishResult = channel01.sendText(text = messageText).await()
         val publishTimetoken = publishResult.timetoken
+        delayInMillis(200)
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
         val deletedMessage = message.delete(soft = true).await()!!
         val restoredMessage = deletedMessage.restore().await()

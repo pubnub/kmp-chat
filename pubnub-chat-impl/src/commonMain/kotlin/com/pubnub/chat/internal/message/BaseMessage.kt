@@ -30,7 +30,6 @@ import com.pubnub.chat.internal.util.logWarnAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
-import com.pubnub.chat.types.MessageActionType
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannel
@@ -93,7 +92,7 @@ abstract class BaseMessage<T : Message>(
         get() = content.files ?: emptyList()
 
     override val reactions: Map<String, List<PNFetchMessageItem.Action>>
-        get() = actions?.get(MessageActionType.REACTIONS.toString()) ?: emptyMap()
+        get() = actions?.get(chat.reactionsActionName) ?: emptyMap()
 
     override val textLinks: List<TextLink>? get() = (
         meta?.get(
@@ -209,7 +208,7 @@ abstract class BaseMessage<T : Message>(
             it.uuid == chat.currentUser.id
         }
         val messageAction =
-            PNMessageAction(MessageActionType.REACTIONS.toString(), reaction, timetoken)
+            PNMessageAction(chat.reactionsActionName, reaction, timetoken)
         val newActions = if (existingReaction != null) {
             chat.pubNub.removeMessageAction(channelId, timetoken, existingReaction.actionTimetoken.toLong())
                 .then { filterAction(actions, messageAction) }
