@@ -366,12 +366,13 @@ public final class com/pubnub/chat/config/ChatConfigurationKt {
 
 public final class com/pubnub/chat/config/CustomPayloads {
 	public fun <init> ()V
-	public fun <init> (Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getDeleteMessageActionName ()Ljava/lang/String;
 	public final fun getEditMessageActionName ()Ljava/lang/String;
 	public final fun getGetMessagePublishBody ()Lkotlin/jvm/functions/Function3;
 	public final fun getGetMessageResponseBody ()Lkotlin/jvm/functions/Function3;
+	public final fun getReactionsActionName ()Ljava/lang/String;
 }
 
 public final class com/pubnub/chat/config/LogLevel : java/lang/Enum {

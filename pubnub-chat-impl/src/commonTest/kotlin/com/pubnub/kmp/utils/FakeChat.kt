@@ -42,6 +42,9 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
+    override val reactionsActionName: String
+        get() = TODO("Not yet implemented")
+
     override val currentUser: User
         get() = TODO("Not yet implemented")
 

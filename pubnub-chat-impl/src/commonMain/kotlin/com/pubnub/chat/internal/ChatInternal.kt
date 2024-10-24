@@ -16,6 +16,7 @@ import com.pubnub.kmp.PNFuture
 interface ChatInternal : Chat {
     val editMessageActionName: String
     val deleteMessageActionName: String
+    val reactionsActionName: String
     val timerManager: TimerManager
 
     fun createUser(user: User): PNFuture<User>
