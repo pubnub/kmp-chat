@@ -208,7 +208,10 @@ abstract class BaseMessage<T : Message>(
             it.uuid == chat.currentUser.id
         }
         val messageAction =
-            PNMessageAction(chat.reactionsActionName, reaction, timetoken)
+            PNMessageAction(chat.reactionsActionName, reaction, timetoken).apply {
+                actionTimetoken = existingReaction?.actionTimetoken
+                uuid = chat.currentUser.id
+            }
         val newActions = if (existingReaction != null) {
             chat.pubNub.removeMessageAction(channelId, timetoken, existingReaction.actionTimetoken.toLong())
                 .then { filterAction(actions, messageAction) }
