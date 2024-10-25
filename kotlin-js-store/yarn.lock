@@ -850,11 +850,6 @@ whatwg-url@^5.0.0:
     tr46 "~0.0.3"
     webidl-conversions "^3.0.0"
 
-why-is-node-running@3.2.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/why-is-node-running/-/why-is-node-running-3.2.0.tgz#8dee22b5074375f53ce43667f310183a2d392d14"
-  integrity sha512-euOPfZRxdZBcD/vL0sH+NtuC/nDpdsZ/aeoq9w5sOcQtfkmhztf/JS76IiD0CJEULlSAPSMy/ZLejex5MsFCcw==
-
 workerpool@^6.5.1:
   version "6.5.1"
   resolved "https://registry.yarnpkg.com/workerpool/-/workerpool-6.5.1.tgz#060f73b39d0caf97c6db64da004cd01b4c099544"
