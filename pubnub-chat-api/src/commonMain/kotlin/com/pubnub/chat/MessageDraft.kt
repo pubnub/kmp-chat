@@ -47,19 +47,19 @@ interface MessageDraft {
     val files: MutableList<InputFile>
 
     /**
-     * Add a [MessageDraftStateListener] to listen for changes to the contents of this [MessageDraft], as well as
+     * Add a [MessageDraftChangeListener] to listen for changes to the contents of this [MessageDraft], as well as
      * to retrieve the current mention suggestions for users and channels (e.g. when the message draft contains
      * "... @name ..." or "... #chann ...")
      *
-     * @param callback the [MessageDraftStateListener] that will receive the most current message elements list and
+     * @param callback the [MessageDraftChangeListener] that will receive the most current message elements list and
      * suggestions list.
      */
-    fun addMessageElementsListener(callback: MessageDraftStateListener)
+    fun addChangeListener(listener: MessageDraftChangeListener)
 
     /**
-     * Remove the given [MessageDraftStateListener] from active listeners.
+     * Remove the given [MessageDraftChangeListener] from active listeners.
      */
-    fun removeMessageElementsListener(callback: MessageDraftStateListener)
+    fun removeChangeListener(listener: MessageDraftChangeListener)
 
     /**
      * Insert some text into the [MessageDraft] text at the given offset.
@@ -84,8 +84,8 @@ interface MessageDraft {
      * The [SuggestedMention] must be up to date with the message text, that is: [SuggestedMention.replaceFrom] must
      * match the message draft at position [SuggestedMention.replaceFrom], otherwise an exception will be thrown.
      *
-     * @param mention a [SuggestedMention] that can be obtained from [MessageDraftStateListener]
-     * @param text the text to replace [SuggestedMention.replaceFrom] with. [SuggestedMention.replaceTo] can be used for example.
+     * @param mention a [SuggestedMention] that can be obtained from [MessageDraftChangeListener]
+     * @param text the text to replace [SuggestedMention.replaceFrom] with. [SuggestedMention.replaceWith] can be used for example.
      */
     fun insertSuggestedMention(mention: SuggestedMention, text: String)
 
@@ -108,10 +108,9 @@ interface MessageDraft {
     /**
      * Update the whole message draft text with a new value.
      *
-     * Internally [MessageDraft] will try to calculate the most
-     * optimal set of insertions and removals that will convert the current text to the provided [text], in order to
-     * preserve any mentions. This is a best effort operation, and if any mention text is found to be modified,
-     * the mention will be invalidated and removed.
+     * Internally [MessageDraft] will try to calculate the optimal set of insertions and removals that will convert the
+     * current text to the provided [text], in order to preserve any mentions. This is a best effort operation, and if
+     * any mention text is found to be modified, the mention will be invalidated and removed.
      */
     fun update(text: String)
 
@@ -148,7 +147,13 @@ interface MessageDraft {
         /**
          * Search only for users that are members of this channel.
          */
-        CHANNEL
+        CHANNEL;
+
+        companion object {
+            internal fun from(lowercaseString: String): UserSuggestionSource {
+                return entries.first { it.name.lowercase() == lowercaseString }
+            }
+        }
     }
 }
 
@@ -193,22 +198,22 @@ sealed interface MessageElement {
 }
 
 /**
- * A potential mention suggestion received from [MessageDraftStateListener].
+ * A potential mention suggestion received from [MessageDraftChangeListener].
  *
  * It can be used with [MessageDraft.insertSuggestedMention] to accept the suggestion and attach a mention to a message draft.
  *
  * @param offset the offset where the mention starts
  * @param replaceFrom the original text at the [offset] in the message draft text
- * @param replaceTo the suggested replacement for the [replaceFrom] text, e.g. the user's full name
+ * @param replaceWith the suggested replacement for the [replaceFrom] text, e.g. the user's full name
  * @param target the target of the mention, such as a user, channel or URL
  */
-class SuggestedMention(val offset: Int, val replaceFrom: String, val replaceTo: String, val target: MentionTarget)
+class SuggestedMention(val offset: Int, val replaceFrom: String, val replaceWith: String, val target: MentionTarget)
 
 /**
- * A listener that can be used with [MessageDraft.addMessageElementsListener] to listen for changes to the message draft
+ * A listener that can be used with [MessageDraft.addChangeListener] to listen for changes to the message draft
  * text and get current mention suggestions.
  */
-fun interface MessageDraftStateListener {
+fun interface MessageDraftChangeListener {
     fun onChange(messageElements: List<MessageElement>, suggestedMentions: PNFuture<List<SuggestedMention>>)
 }
 
@@ -217,8 +222,6 @@ fun interface MessageDraftStateListener {
  *
  * @param position the cursor position in the message draft text
  */
-fun List<SuggestedMention>.getSuggestionsFor(position: Int): List<SuggestedMention> =
-    filter { it.offset <= position }
-        .filter { suggestedMention ->
-            position in suggestedMention.offset..(suggestedMention.offset + suggestedMention.replaceFrom.length)
-        }
+fun List<SuggestedMention>.getSuggestionsFor(position: Int): List<SuggestedMention> = filter { suggestedMention ->
+    position in suggestedMention.offset..(suggestedMention.offset + suggestedMention.replaceFrom.length)
+}

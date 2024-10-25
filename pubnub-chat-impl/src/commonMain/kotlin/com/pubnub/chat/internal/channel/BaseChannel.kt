@@ -333,7 +333,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
-    private fun sendFilesForPublish(files: List<InputFile>?) =
+    private fun sendFilesForPublish(files: List<InputFile>?): PNFuture<List<File>> =
         (files ?: emptyList()).map { file ->
             chat.pubNub.sendFile(id, file.name, file.source, shouldStore = false).thenAsync { sendFileResult ->
                 chat.pubNub.getFileUrl(id, sendFileResult.file.name, sendFileResult.file.id).then {

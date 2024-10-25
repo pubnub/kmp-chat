@@ -124,6 +124,8 @@ class ChatImpl(
         ?: MessageActionType.EDITED.toString(),
     override val deleteMessageActionName: String = config.customPayloads?.deleteMessageActionName
         ?: MessageActionType.DELETED.toString(),
+    override val reactionsActionName: String = config.customPayloads?.reactionsActionName
+        ?: MessageActionType.REACTIONS.toString(),
     override val timerManager: TimerManager = createTimerManager()
 ) : ChatInternal {
     override var currentUser: User =
@@ -982,6 +984,9 @@ class ChatImpl(
 
                     BaseChannel.getMessage(chat = this, channelId = mentionChannelId, timetoken = mentionTimetoken)
                         .then { message: Message? ->
+                            if (message == null) {
+                                return@then null
+                            }
                             if (mentionEvent.payload.parentChannel == null) {
                                 ChannelMentionData(
                                     event = mentionEvent,
@@ -1000,9 +1005,11 @@ class ChatImpl(
                             }
                         }
                 }.awaitAll()
-        }.then { userMentionDataList: List<UserMentionData> ->
-            GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList.toSet(), isMore = isMore)
         }
+            .then { it.filterNotNull() }
+            .then { userMentionDataList: List<UserMentionData> ->
+                GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList.toSet(), isMore = isMore)
+            }
     }
 
     override fun destroy() {

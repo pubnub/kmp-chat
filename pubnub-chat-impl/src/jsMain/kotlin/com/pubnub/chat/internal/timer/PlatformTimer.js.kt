@@ -1,31 +1,54 @@
 package com.pubnub.chat.internal.timer
 
-import kotlinx.browser.window
 import kotlin.time.Duration
 
 actual class PlatformTimer(
-    private val intervalId: Int? = null,
-    private val timeoutId: Int? = null
+    private val timerId: Int,
+    private val isInterval: Boolean,
+    private val onCancel: () -> Unit = {}
 ) {
-    actual companion object {
-        actual fun runPeriodically(period: Duration, action: () -> Unit): PlatformTimer {
-            val intervalId = setInterval({
-                action()
-            }, period.inWholeMilliseconds.toInt())
-            return PlatformTimer(intervalId = intervalId)
+    actual fun cancel() {
+        onCancel()
+        if (isInterval) {
+            clearInterval(timerId)
+        } else {
+            clearTimeout(timerId)
         }
+    }
+}
 
-        actual fun runWithDelay(delay: Duration, action: () -> Unit): PlatformTimer {
-            val timeoutId = setTimeout({
-                action()
-            }, delay.inWholeMilliseconds.toInt())
-            return PlatformTimer(timeoutId = timeoutId)
+class TimerManagerImpl : TimerManager {
+    private val timers = mutableMapOf<Int, PlatformTimer>()
+    private var counter = 0
+
+    override fun runPeriodically(period: Duration, action: () -> Unit): PlatformTimer {
+        val count = counter++
+        val intervalId = setInterval({
+            action()
+        }, period.inWholeMilliseconds.toInt())
+
+        return PlatformTimer(intervalId, true, onCancel = {
+            timers.remove(count)
+        }).also { timer ->
+            timers[count] = timer
         }
     }
 
-    actual fun cancel() {
-        intervalId?.let { window.clearInterval(it) }
-        timeoutId?.let { window.clearTimeout(it) }
+    override fun runWithDelay(delay: Duration, action: () -> Unit): PlatformTimer {
+        val count = counter++
+        val timeoutId = setTimeout({
+            action()
+            timers.remove(count)
+        }, delay.inWholeMilliseconds.toInt())
+        return PlatformTimer(timeoutId, false, onCancel = {
+            timers.remove(count)
+        }).also { timer ->
+            timers[count] = timer
+        }
+    }
+
+    override fun destroy() {
+        timers.map { it.value }.forEach { it.cancel() }
     }
 }
 
@@ -40,3 +63,11 @@ external fun setInterval(
     timeout: Int = definedExternally,
     vararg arguments: Any?
 ): Int
+
+external fun clearInterval(intervalId: Int?)
+
+external fun clearTimeout(intervalId: Int?)
+
+actual fun createTimerManager(): TimerManager {
+    return TimerManagerImpl()
+}

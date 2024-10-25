@@ -116,14 +116,21 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
 
     @AfterTest
     fun afterTest() = runTest {
-        pubnub.removeUUIDMetadata(someUser.id).await()
-        pubnubPamServer.removeUUIDMetadata(userPamServer.id).await()
-        pubnubPamServer.removeUUIDMetadata(userPamClient.id).await()
-        pubnub.removeChannelMetadata(channel01.id).await()
-        pubnub.removeChannelMetadata(channel01Chat02.id).await()
-        pubnub.removeChannelMetadata(channel02.id).await()
-        pubnub.removeChannelMetadata(threadChannel.id).await()
-        pubnub.removeChannelMetadata(channelPam.id).await()
+        try {
+            pubnub.removeUUIDMetadata(someUser.id).await()
+            pubnubPamServer.removeUUIDMetadata(userPamServer.id).await()
+            pubnubPamServer.removeUUIDMetadata(userPamClient.id).await()
+            pubnub.removeChannelMetadata(channel01.id).await()
+            pubnub.removeChannelMetadata(channel01Chat02.id).await()
+            pubnub.removeChannelMetadata(channel02.id).await()
+            pubnub.removeChannelMetadata(threadChannel.id).await()
+            pubnub.removeChannelMetadata(channelPam.id).await()
+        } finally {
+            chat.destroy()
+            chat02.destroy()
+            chatPamClient.destroy()
+            chatPamServer.destroy()
+        }
     }
 
     internal suspend fun delayInMillis(timeMillis: Long) {
