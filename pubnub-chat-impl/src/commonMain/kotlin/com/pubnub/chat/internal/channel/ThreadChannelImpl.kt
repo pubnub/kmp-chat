@@ -75,7 +75,7 @@ data class ThreadChannelImpl(
         }
     }
 
-    override fun delete(soft: Boolean): PNFuture<Channel> {
+    override fun delete(soft: Boolean): PNFuture<Channel?> {
         return chat.removeThreadChannel(chat, parentMessage, soft).then { it.second }
     }
 

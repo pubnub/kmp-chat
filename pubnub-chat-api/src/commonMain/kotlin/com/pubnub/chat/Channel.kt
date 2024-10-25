@@ -105,10 +105,10 @@ interface Channel {
      * @param soft Decide if you want to permanently remove channel metadata. The channel metadata gets permanently
      *             deleted from the App Context storage by default. If you set this parameter to true, the Channel object
      *             gets the deleted status, and you can still restore/get its data.
-     * @return For hard delete, the method returns [PNFuture] with the last version of the [Channel] object before it was permanently deleted.
+     * @return For hard delete, the method returns [PNFuture] without a value (`null`).
      *         For soft delete, [PNFuture] containing an updated [Channel] instance with the status field set to "deleted".
      */
-    fun delete(soft: Boolean = false): PNFuture<Channel>
+    fun delete(soft: Boolean = false): PNFuture<Channel?>
 
     /**
      * Forwards message to existing [Channel]

@@ -9,6 +9,7 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
+import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
@@ -201,7 +202,7 @@ abstract class BaseMessage<T : Message>(
 
     override fun createThread(): PNFuture<ThreadChannel> = ChatImpl.createThreadChannel(chat, this)
 
-    override fun removeThread() = chat.removeThreadChannel(chat, this)
+    override fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> = chat.removeThreadChannel(chat, this)
 
     override fun toggleReaction(reaction: String): PNFuture<Message> {
         val existingReaction = reactions[reaction]?.find {

@@ -130,7 +130,7 @@ interface Message {
      *
      * @param soft Decide if you want to permanently remove message data. By default, the message data gets permanently deleted from Message Persistence. If you set this parameter to true, the Message object gets the deleted status and you can still restore/get its data.
      * @param preserveFiles Define if you want to keep the files attached to the message or remove them.
-     * @return For hard delete, the method returns the last version of the Message object before it was permanently deleted. For soft delete, an updated message instance with an added deleted action type.
+     * @return For hard delete, the method returns `PNFuture` without a value (`null`). For soft delete, a `PNFuture` with an updated message instance with an added deleted action type.
      */
     fun delete(soft: Boolean = false, preserveFiles: Boolean = false): PNFuture<Message?>
 
@@ -178,7 +178,7 @@ interface Message {
      *
      * @return A pair of values containing an object with details about the result of the remove message action (indicating whether the message was successfully removed and potentially including additional metadata or information about the removal) and the updated channel object after the removal of the thread.
      */
-    fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel>> // todo add test
+    fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> // todo add test
 
     /**
      * Add or remove a reaction to a message.

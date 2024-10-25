@@ -25,7 +25,7 @@ interface ChatInternal : Chat {
         chat: Chat,
         message: Message,
         soft: Boolean = false
-    ): PNFuture<Pair<PNRemoveMessageActionResult, Channel>>
+    ): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>>
 
     fun restoreThreadChannel(message: Message): PNFuture<PNMessageAction?>
 

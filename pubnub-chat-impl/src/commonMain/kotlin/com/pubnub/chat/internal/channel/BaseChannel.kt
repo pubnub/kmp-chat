@@ -137,7 +137,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return chat.updateChannel(id, name, custom, description, status, type)
     }
 
-    override fun delete(soft: Boolean): PNFuture<Channel> {
+    override fun delete(soft: Boolean): PNFuture<Channel?> {
         return chat.deleteChannel(id, soft)
     }
 

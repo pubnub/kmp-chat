@@ -148,9 +148,10 @@ interface Chat {
      * from the App Context storage by default. If you set this parameter to true, the User object gets the deleted
      * status, and you can still restore/get their metadata.
      *
-     * @return [PNFuture] containing [User] object.
+     * @return For hard delete, the method returns [PNFuture] without a value (`null`).
+     * For soft delete, [PNFuture] containing an updated [User] instance with the status field set to "deleted".
      */
-    fun deleteUser(id: String, soft: Boolean = false): PNFuture<User>
+    fun deleteUser(id: String, soft: Boolean = false): PNFuture<User?>
 
     /**
      * Retrieves list of [Channel.id] where a given user is present.
@@ -228,10 +229,10 @@ interface Chat {
      * deleted from the App Context storage by default. If you set this parameter to true, the Channel object
      * gets the deleted status, and you can still restore/get its data.
      *
-     * @return For hard delete, the method returns [PNFuture] with the last version of the [Channel] object before it was permanently deleted.
+     * @return For hard delete, the method returns [PNFuture] without a value (`null`).
      *         For soft delete, [PNFuture] containing an updated [Channel] instance with the status field set to "deleted".
      */
-    fun deleteChannel(id: String, soft: Boolean = false): PNFuture<Channel>
+    fun deleteChannel(id: String, soft: Boolean = false): PNFuture<Channel?>
 
     /**
      * Returns a list of [User.id] present on the given [Channel].
