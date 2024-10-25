@@ -50,13 +50,13 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_FIND_CHANNEL_WITH_ID
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_ID_ALREADY_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_ID_IS_REQUIRED
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_NOT_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_NOT_FOUND
 import com.pubnub.chat.internal.error.PubNubErrorMessage.COUNT_SHOULD_NOT_EXCEED_100
 import com.pubnub.chat.internal.error.PubNubErrorMessage.DEVICE_TOKEN_HAS_TO_BE_DEFINED_IN_CHAT_PUSHNOTIFICATIONS_CONFIG
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_CHANNEL_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_USER_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_FORWARD_MESSAGE
-import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_CHANNEL_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ID_IS_REQUIRED
@@ -229,7 +229,7 @@ class ChatImpl(
         chat: Chat,
         message: Message,
         soft: Boolean
-    ): PNFuture<Pair<PNRemoveMessageActionResult, Channel>> {
+    ): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> {
         if (!message.hasThread) {
             return PubNubException(THERE_IS_NO_THREAD_TO_BE_DELETED).logErrorAndReturnException(log).asFuture()
         }
@@ -321,19 +321,20 @@ class ChatImpl(
         }
     }
 
-    override fun deleteUser(id: String, soft: Boolean): PNFuture<User> {
+    override fun deleteUser(id: String, soft: Boolean): PNFuture<User?> {
         if (!isValidId(id)) {
             return PubNubException(ID_IS_REQUIRED).logErrorAndReturnException(log).asFuture()
         }
 
-        return getUser(id).thenAsync { user: User? ->
-            user?.let { notNullUser ->
-                if (soft) {
-                    performSoftUserDelete(notNullUser)
-                } else {
-                    performUserDelete(notNullUser)
+        return if (soft) {
+            getUser(id).thenAsync { user: User? ->
+                if (user == null) {
+                    log.pnError(USER_NOT_EXIST)
                 }
-            } ?: log.pnError(USER_NOT_EXIST)
+                performSoftUserDelete(user)
+            }
+        } else {
+            performUserDelete(id).then { null }
         }
     }
 
@@ -454,17 +455,20 @@ class ChatImpl(
         }
     }
 
-    override fun deleteChannel(id: String, soft: Boolean): PNFuture<Channel> {
+    override fun deleteChannel(id: String, soft: Boolean): PNFuture<Channel?> {
         if (!isValidId(id)) {
             return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
 
-        return getChannelData(id).thenAsync { channel: Channel ->
-            if (soft) {
+        return if (soft) {
+            getChannel(id).thenAsync { channel ->
+                if (channel == null) {
+                    log.pnError(CHANNEL_NOT_EXIST)
+                }
                 performSoftChannelDelete(channel)
-            } else {
-                performChannelDelete(channel)
             }
+        } else {
+            performChannelDelete(id).then { null }
         }
     }
 
@@ -1036,15 +1040,6 @@ class ChatImpl(
         return id.isNotEmpty()
     }
 
-    private fun getChannelData(id: String): PNFuture<Channel> {
-        return pubNub.getChannelMetadata(channel = id, includeCustom = false)
-            .then { pnChannelMetadataResult: PNChannelMetadataResult ->
-                ChannelImpl.fromDTO(this, pnChannelMetadataResult.data)
-            }.catch { exception ->
-                Result.failure(PubNubException(FAILED_TO_RETRIEVE_CHANNEL_DATA, exception))
-            }
-    }
-
     private fun performSoftUserDelete(user: User): PNFuture<User> {
         val updatedUser = (user as UserImpl).copy(status = DELETED)
         return pubNub.setUUIDMetadata(
@@ -1062,8 +1057,8 @@ class ChatImpl(
         }
     }
 
-    private fun performUserDelete(user: User): PNFuture<User> =
-        pubNub.removeUUIDMetadata(uuid = user.id).then { user }
+    private fun performUserDelete(userId: String): PNFuture<Unit> =
+        pubNub.removeUUIDMetadata(uuid = userId).then { }
 
     private fun performSoftChannelDelete(channel: Channel): PNFuture<Channel> {
         val updatedChannel = (channel as BaseChannel<*, *>).copyWithStatusDeleted()
@@ -1082,8 +1077,8 @@ class ChatImpl(
         }
     }
 
-    private fun performChannelDelete(channel: Channel) =
-        pubNub.removeChannelMetadata(channel = channel.id).then { channel }
+    private fun performChannelDelete(channelId: String): PNFuture<Unit> =
+        pubNub.removeChannelMetadata(channel = channelId).then { }
 
     private fun setChannelMetadata(
         id: String,

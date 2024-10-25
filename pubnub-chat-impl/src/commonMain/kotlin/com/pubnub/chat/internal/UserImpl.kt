@@ -80,7 +80,7 @@ data class UserImpl(
         )
     }
 
-    override fun delete(soft: Boolean): PNFuture<User> {
+    override fun delete(soft: Boolean): PNFuture<User?> {
         return chat.deleteUser(id, soft)
     }
 

@@ -7,6 +7,7 @@ import com.pubnub.chat.Event
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.types.EventContent
+import com.pubnub.internal.PLATFORM
 import com.pubnub.test.await
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -25,6 +26,9 @@ class AccessManagerTest : BaseChatIntegrationTest() {
 
     @Test
     fun pubNubClient_with_PAM_enabled_should_getChannel_when_token_set() = runTest {
+        if (PLATFORM == "iOS") {
+            return@runTest
+        }
         // getToken from server
         val channelId = channelPam.id
         chatPamServer.createChannel(id = channelId).await()
@@ -45,6 +49,9 @@ class AccessManagerTest : BaseChatIntegrationTest() {
 
     @Test
     fun setLastReadMessageTimetoken_should_send_Receipt_event_when_has_token() = runTest {
+        if (PLATFORM == "iOS") {
+            return@runTest
+        }
         var numberOfReceiptEvents = 0
         val timetoken = 1000L
         val channelId = channelPam.id

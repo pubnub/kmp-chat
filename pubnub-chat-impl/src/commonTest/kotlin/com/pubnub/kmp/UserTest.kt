@@ -83,7 +83,7 @@ class UserTest {
         val chat = object : FakeChat(chatConfig, pubNub) {
             var soft: Boolean? = null
 
-            override fun deleteUser(id: String, soft: Boolean): PNFuture<User> {
+            override fun deleteUser(id: String, soft: Boolean): PNFuture<User?> {
                 this.soft = soft
                 return objectUnderTest.asFuture()
             }
@@ -105,7 +105,7 @@ class UserTest {
             var softDeleted: Boolean? = null
             var deletedUserId: String? = null
 
-            override fun deleteUser(id: String, soft: Boolean): PNFuture<User> {
+            override fun deleteUser(id: String, soft: Boolean): PNFuture<User?> {
                 this.softDeleted = soft
                 this.deletedUserId = id
                 return objectUnderTest.asFuture()

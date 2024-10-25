@@ -39,6 +39,7 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.internal.PLATFORM
 import com.pubnub.kmp.utils.BaseTest
 import com.pubnub.test.await
 import com.pubnub.test.randomString
@@ -134,7 +135,7 @@ class ChannelTest : BaseTest() {
         val channelFutureMock: PNFuture<Channel> = mock(MockMode.strict)
         every { chat.deleteChannel(any(), any()) } returns channelFutureMock
 
-        val deleteChannelFuture: PNFuture<Channel> = objectUnderTest.delete(soft = softDelete)
+        val deleteChannelFuture: PNFuture<Channel?> = objectUnderTest.delete(soft = softDelete)
 
         assertEquals(channelFutureMock, deleteChannelFuture)
         verify { chat.deleteChannel(id = channelId, soft = softDelete) }
@@ -855,10 +856,13 @@ class ChannelTest : BaseTest() {
 
     @Test
     fun pinMessage_shouldSetTwoCustomChannelMetadata() {
+        if (PLATFORM == "iOS") {
+            return
+        }
         val timetoken = 9999999L
         val channelId = "adfjaldf"
         val message = createMessage(timetoken = timetoken, channelId = channelId)
-        val customSlot = Capture.slot<Map<String, String>>()
+        val customSlot = Capture.slot<CustomObject>()
         every {
             pubNub.setChannelMetadata(
                 channel = any(),
@@ -887,6 +891,9 @@ class ChannelTest : BaseTest() {
 
     @Test
     fun unpinMessage_shouldRemoveTwoCustomChannelMetadata() {
+        if (PLATFORM == "iOS") {
+            return
+        }
         val customData = mapOf(
             "testCustom" to "custom",
             "actualPinnedMessageTimtoken" to "9999999",

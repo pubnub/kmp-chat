@@ -306,7 +306,7 @@ class ChatTest : BaseTest() {
         val softDelete = true
 
         // when
-        objectUnderTest.deleteUser(emptyID, softDelete).async { result: Result<User> ->
+        objectUnderTest.deleteUser(emptyID, softDelete).async { result: Result<User?> ->
             // then
             assertTrue(result.isFailure)
             assertEquals("Id is required", result.exceptionOrNull()?.message)

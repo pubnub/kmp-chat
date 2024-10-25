@@ -118,8 +118,10 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     fun afterTest() = runTest {
         try {
             pubnub.removeUUIDMetadata(someUser.id).await()
-            pubnubPamServer.removeUUIDMetadata(userPamServer.id).await()
-            pubnubPamServer.removeUUIDMetadata(userPamClient.id).await()
+            if (PLATFORM != "iOS") {
+                pubnubPamServer.removeUUIDMetadata(userPamServer.id).await()
+                pubnubPamServer.removeUUIDMetadata(userPamClient.id).await()
+            }
             pubnub.removeChannelMetadata(channel01.id).await()
             pubnub.removeChannelMetadata(channel01Chat02.id).await()
             pubnub.removeChannelMetadata(channel02.id).await()

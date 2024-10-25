@@ -102,10 +102,10 @@ interface User {
      * Deletes the user. If soft deletion is enabled, the user's data is retained but marked as inactive.
      *
      * @param soft If true, the user is soft deleted, retaining their data but making them inactive.
-     * @return For hard delete, the method returns [PNFuture] with the last version of the [User] object before it was permanently deleted.
+     * @return For hard delete, the method returns [PNFuture] without a value (`null`).
      * For soft delete, [PNFuture] containing an updated [User] instance with the status field set to "deleted".
      */
-    fun delete(soft: Boolean = false): PNFuture<User>
+    fun delete(soft: Boolean = false): PNFuture<User?>
 
     /**
      * Retrieves a list of channels where the user is currently present.
