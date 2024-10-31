@@ -11,6 +11,7 @@ public final class com/pubnub/chat/MediatorsKt {
 }
 
 public final class com/pubnub/chat/Mediators_jvmKt {
-	public static final fun init (Lcom/pubnub/chat/Chat$Companion;Lcom/pubnub/chat/config/ChatConfiguration;Lcom/pubnub/api/v2/PNConfiguration;)Lcom/pubnub/kmp/PNFuture;
+	public static final fun init (Lcom/pubnub/chat/Chat$Companion;Lcom/pubnub/chat/config/ChatConfiguration;Lcom/pubnub/api/v2/PNConfiguration;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun init$default (Lcom/pubnub/chat/Chat$Companion;Lcom/pubnub/chat/config/ChatConfiguration;Lcom/pubnub/api/v2/PNConfiguration;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 }
 
