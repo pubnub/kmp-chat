@@ -7,7 +7,6 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
 import com.pubnub.chat.User
@@ -323,7 +322,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun shouldReturnNoChannelSuggestions_whenNoDataInCacheAndNoChannelsInChat() = runTest {
-        val channelSuggestions: Set<Channel> = chat.getChannelSuggestions("sas#las").await()
+        val channelSuggestions = chat.getChannelSuggestions("sas#las").await()
         assertEquals(0, channelSuggestions.size)
     }
 
@@ -333,7 +332,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             val channelName = "channelName_${channel01.id}"
             chat.createChannel(id = channel01.id, name = channelName).await()
 
-            val channelSuggestions: Set<Channel> = chat.getChannelSuggestions(channelName).await()
+            val channelSuggestions = chat.getChannelSuggestions(channelName).await()
 
             assertEquals(1, channelSuggestions.size)
             assertEquals(channel01.id, channelSuggestions.first().id)

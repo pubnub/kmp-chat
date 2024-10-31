@@ -132,8 +132,8 @@ class ChatImpl(
         UserImpl(this, pubNub.configuration.userId.value, name = pubNub.configuration.userId.value)
         private set
 
-    private val suggestedChannelsCache: MutableMap<String, Set<Channel>> = mutableMapOf()
-    private val suggestedUsersCache: MutableMap<String, Set<User>> = mutableMapOf()
+    private val suggestedChannelsCache: MutableMap<String, List<Channel>> = mutableMapOf()
+    private val suggestedUsersCache: MutableMap<String, List<User>> = mutableMapOf()
 
     private var lastSavedActivityInterval: PlatformTimer? = null
     private var runWithDelayTimer: PlatformTimer? = null
@@ -284,9 +284,9 @@ class ChatImpl(
             includeCount = true,
             includeCustom = true
         ).then { pnUUIDMetadataArrayResult: PNUUIDMetadataArrayResult ->
-            val users: MutableSet<User> = pnUUIDMetadataArrayResult.data.map { pnUUIDMetadata ->
+            val users = pnUUIDMetadataArrayResult.data.map { pnUUIDMetadata ->
                 UserImpl.fromDTO(this, pnUUIDMetadata)
-            }.toMutableSet()
+            }
             GetUsersResponse(
                 users = users,
                 next = pnUUIDMetadataArrayResult.next,
@@ -404,9 +404,9 @@ class ChatImpl(
             includeCount = true,
             includeCustom = true
         ).then { pnChannelMetadataArrayResult ->
-            val channels: MutableSet<Channel> = pnChannelMetadataArrayResult.data.map { pnChannelMetadata ->
+            val channels = pnChannelMetadataArrayResult.data.map { pnChannelMetadata ->
                 ChannelImpl.fromDTO(this, pnChannelMetadata)
-            }.toMutableSet()
+            }
             GetChannelsResponse(
                 channels = channels,
                 next = pnChannelMetadataArrayResult.next,
@@ -793,12 +793,12 @@ class ChatImpl(
         page: PNPage?,
         filter: String?,
         sort: Collection<PNSortKey<PNMembershipKey>>
-    ): PNFuture<Set<GetUnreadMessagesCounts>> {
+    ): PNFuture<List<GetUnreadMessagesCounts>> {
         return currentUser.getMemberships(limit = limit, page = page, filter = filter, sort = sort)
             .thenAsync { membershipsResponse: MembershipsResponse ->
                 val memberships = membershipsResponse.memberships
                 if (memberships.isEmpty()) {
-                    return@thenAsync emptySet<GetUnreadMessagesCounts>().asFuture()
+                    return@thenAsync emptyList<GetUnreadMessagesCounts>().asFuture()
                 }
                 val channels = memberships.map { membership -> membership.channel.id }
                 val channelsTimetoken =
@@ -816,7 +816,7 @@ class ChatImpl(
                                     count = messageCount
                                 )
                             }
-                        unreadMessageCounts.filter { unreadMessageCount -> unreadMessageCount.count > 0 }.toSet()
+                        unreadMessageCounts.filter { unreadMessageCount -> unreadMessageCount.count > 0 }
                     }
             }
     }
@@ -831,7 +831,7 @@ class ChatImpl(
             .thenAsync { userMembershipsResponse: MembershipsResponse ->
                 if (userMembershipsResponse.memberships.isEmpty()) {
                     return@thenAsync MarkAllMessageAsReadResponse(
-                        emptySet(),
+                        emptyList(),
                         null,
                         null,
                         0,
@@ -879,26 +879,26 @@ class ChatImpl(
                                     )
                                 }
                             emitEventFutures.awaitAll()
-                        }.then { setMembershipsResponse: PNChannelMembershipArrayResult ->
+                        }.then { membershipResponse: PNChannelMembershipArrayResult ->
                             MarkAllMessageAsReadResponse(
-                                memberships = setMembershipsResponse.data.map { membership: PNChannelMembership ->
+                                memberships = membershipResponse.data.map { membership: PNChannelMembership ->
                                     MembershipImpl.fromMembershipDTO(
                                         this,
                                         membership,
                                         currentUser
                                     )
-                                }.toSet(),
-                                next = setMembershipsResponse.next,
-                                prev = setMembershipsResponse.prev,
-                                total = setMembershipsResponse.totalCount ?: 0,
-                                status = setMembershipsResponse.status
+                                },
+                                next = membershipResponse.next,
+                                prev = membershipResponse.prev,
+                                total = membershipResponse.totalCount ?: 0,
+                                status = membershipResponse.status
                             )
                         }
                     }
             }
     }
 
-    override fun getChannelSuggestions(text: String, limit: Int): PNFuture<Set<Channel>> {
+    override fun getChannelSuggestions(text: String, limit: Int): PNFuture<List<Channel>> {
         val cacheKey: String = text
 
         suggestedChannelsCache[cacheKey]?.let { nonNullChannels ->
@@ -911,14 +911,13 @@ class ChatImpl(
         }
     }
 
-    override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<User>> {
-        val cacheKey = text
-        suggestedUsersCache[cacheKey]?.let { nonNullUser ->
+    override fun getUserSuggestions(text: String, limit: Int): PNFuture<List<User>> {
+        suggestedUsersCache[text]?.let { nonNullUser ->
             return nonNullUser.asFuture()
         }
 
-        return getUsers(filter = "name LIKE '$cacheKey*'", limit = limit).then { getUsersResponse ->
-            suggestedUsersCache[cacheKey] = getUsersResponse.users
+        return getUsers(filter = "name LIKE '$text*'", limit = limit).then { getUsersResponse ->
+            suggestedUsersCache[text] = getUsersResponse.users
             getUsersResponse.users
         }
     }
@@ -952,14 +951,15 @@ class ChatImpl(
         ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
             val pnFetchMessageItems: List<PNFetchMessageItem> =
                 pnFetchMessagesResult.channelsUrlDecoded[channelId] ?: emptyList()
-            val events: Set<Event<EventContent>> =
-                pnFetchMessageItems.map { pnFetchMessageItem: PNFetchMessageItem ->
-                    EventImpl.fromDTO(chat = this, channelId = channelId, pnFetchMessageItem = pnFetchMessageItem)
-                }.toSet()
+            val events = pnFetchMessageItems.map { pnFetchMessageItem: PNFetchMessageItem ->
+                EventImpl.fromDTO(
+                    chat = this,
+                    channelId = channelId,
+                    pnFetchMessageItem = pnFetchMessageItem
+                )
+            }
 
-            val isMore: Boolean = (count == pnFetchMessageItems.size)
-
-            GetEventsHistoryResult(events = events, isMore = isMore)
+            GetEventsHistoryResult(events = events, isMore = (count == pnFetchMessageItems.size))
         }
     }
 
@@ -1012,7 +1012,7 @@ class ChatImpl(
         }
             .then { it.filterNotNull() }
             .then { userMentionDataList: List<UserMentionData> ->
-                GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList.toSet(), isMore = isMore)
+                GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList, isMore = isMore)
             }
     }
 

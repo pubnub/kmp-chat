@@ -10,12 +10,12 @@ import com.pubnub.chat.Membership
  * @property prev The pagination token for fetching the previous page of results, if available.
  * @property total The total number of members that match the query.
  * @property status The HTTP status code of the operation, indicating success or failure.
- * @property members A set of [Membership] objects representing the members of the channel.
+ * @property members A list of [Membership] objects representing the members of the channel.
  */
 class MembersResponse(
     val next: PNPage.PNNext?,
     val prev: PNPage.PNPrev?,
     val total: Int,
     val status: Int,
-    val members: Set<Membership>
+    val members: List<Membership>
 )

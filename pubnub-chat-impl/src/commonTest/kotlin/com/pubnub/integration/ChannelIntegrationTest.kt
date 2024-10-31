@@ -5,7 +5,6 @@ import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
-import com.pubnub.chat.Membership
 import com.pubnub.chat.MentionTarget
 import com.pubnub.chat.Message
 import com.pubnub.chat.MessageElement
@@ -332,7 +331,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         channel01.invite(someUser).await()
 
         // when no data in cache
-        val userSuggestionsMemberships: Set<Membership> = channel01.getUserSuggestions(userName).await()
+        val userSuggestionsMemberships = channel01.getUserSuggestions(userName).await()
 
         // then
         assertEquals(1, userSuggestionsMemberships.size)
@@ -340,7 +339,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(userName, userSuggestionsMemberships.first().user.name)
 
         // when data in cache
-        val userSuggestionsMembershipsFromCache: Set<Membership> = channel01.getUserSuggestions(userName).await()
+        val userSuggestionsMembershipsFromCache = channel01.getUserSuggestions(userName).await()
 
         // then
         assertEquals(1, userSuggestionsMembershipsFromCache.size)

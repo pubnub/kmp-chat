@@ -114,7 +114,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     val channelFactory: (ChatInternal, PNChannelMetadata) -> C,
     val messageFactory: (ChatInternal, PNFetchMessageItem, channelId: String) -> M,
 ) : Channel {
-    private val suggestedMemberships = mutableMapOf<String, Set<Membership>>()
+    private val suggestedMemberships = mutableMapOf<String, List<Membership>>()
     internal var typingSent: Instant? = null
     private val sendTextRateLimiter by lazy {
         ExponentialRateLimiter(
@@ -440,7 +440,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 it.status,
                 it.data.map {
                     MembershipImpl.fromChannelMemberDTO(chat, it, this)
-                }.toSet()
+                }
             )
         }
     }
@@ -552,7 +552,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         ).then { pnMemberArrayResult: PNMemberArrayResult ->
             val restrictions = pnMemberArrayResult.data.map { pnMember ->
                 RestrictionImpl.fromMemberDTO(id, pnMember)
-            }.toSet()
+            }
             GetRestrictionsResponse(
                 restrictions = restrictions,
                 next = pnMemberArrayResult.next,
@@ -677,7 +677,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
-    override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<Membership>> {
+    override fun getUserSuggestions(text: String, limit: Int): PNFuture<List<Membership>> {
         suggestedMemberships[text]?.let { nonNullMemberships ->
             return nonNullMemberships.asFuture()
         }

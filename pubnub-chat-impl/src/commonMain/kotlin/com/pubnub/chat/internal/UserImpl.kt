@@ -116,7 +116,7 @@ data class UserImpl(
                 prev = pnChannelMembershipArrayResult.prev,
                 total = pnChannelMembershipArrayResult.totalCount ?: 0,
                 status = pnChannelMembershipArrayResult.status,
-                memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this).toSet()
+                memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this)
             )
         }.catch { exception ->
             Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA, exception))
@@ -160,7 +160,7 @@ data class UserImpl(
         ).then { pnChannelMembershipArrayResult: PNChannelMembershipArrayResult ->
             val restrictions = pnChannelMembershipArrayResult.data.map { pnChannelMembership ->
                 RestrictionImpl.fromChannelMembershipDTO(id, pnChannelMembership)
-            }.toSet()
+            }
 
             GetRestrictionsResponse(
                 restrictions = restrictions,

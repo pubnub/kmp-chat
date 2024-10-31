@@ -52,31 +52,31 @@ class MessageDraftTest {
     }.toList()
 
     init {
-        every { chat.getUserSuggestions("exa", any()) } returns users.filter { it.name!!.startsWith("exa") }.toSet()
+        every { chat.getUserSuggestions("exa", any()) } returns users.filter { it.name!!.startsWith("exa") }
             .asFuture()
-        every { chat.getUserSuggestions("exam", any()) } returns users.filter { it.name!!.startsWith("exam") }.toSet()
+        every { chat.getUserSuggestions("exam", any()) } returns users.filter { it.name!!.startsWith("exam") }
             .asFuture()
-        every { chat.getUserSuggestions("examp", any()) } returns users.filter { it.name!!.startsWith("examp") }.toSet()
+        every { chat.getUserSuggestions("examp", any()) } returns users.filter { it.name!!.startsWith("examp") }
             .asFuture()
-        every { chat.getUserSuggestions("sam", any()) } returns users.filter { it.name!!.startsWith("sam") }.toSet()
+        every { chat.getUserSuggestions("sam", any()) } returns users.filter { it.name!!.startsWith("sam") }
             .asFuture()
-        every { chat.getUserSuggestions("samp", any()) } returns users.filter { it.name!!.startsWith("samp") }.toSet()
+        every { chat.getUserSuggestions("samp", any()) } returns users.filter { it.name!!.startsWith("samp") }
             .asFuture()
-        every { chat.getUserSuggestions("sampl", any()) } returns users.filter { it.name!!.startsWith("sampl") }.toSet()
+        every { chat.getUserSuggestions("sampl", any()) } returns users.filter { it.name!!.startsWith("sampl") }
             .asFuture()
 
         every { chat.getChannelSuggestions("exa", any()) } returns channels.filter { it.name!!.startsWith("exa") }
-            .toSet().asFuture()
+            .asFuture()
         every { chat.getChannelSuggestions("exam", any()) } returns channels.filter { it.name!!.startsWith("exam") }
-            .toSet().asFuture()
+            .asFuture()
         every { chat.getChannelSuggestions("examp", any()) } returns channels.filter { it.name!!.startsWith("examp") }
-            .toSet().asFuture()
+            .asFuture()
         every { chat.getChannelSuggestions("sam", any()) } returns channels.filter { it.name!!.startsWith("sam") }
-            .toSet().asFuture()
+            .asFuture()
         every { chat.getChannelSuggestions("samp", any()) } returns channels.filter { it.name!!.startsWith("samp") }
-            .toSet().asFuture()
+            .asFuture()
         every { chat.getChannelSuggestions("sampl", any()) } returns channels.filter { it.name!!.startsWith("sampl") }
-            .toSet().asFuture()
+            .asFuture()
     }
 
     @Test

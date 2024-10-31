@@ -494,9 +494,9 @@ interface Channel {
      * @param text at least a 3-letter string typed in after @ with the user name you want to mention.
      * @param limit maximum number of returned usernames that match the typed 3-letter suggestion. The default value is set to 10, and the maximum is 100.
      *
-     * @return [PNFuture] containing set of [Membership]
+     * @return [PNFuture] containing list of [Membership]
      */
-    fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<Set<Membership>>
+    fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<List<Membership>>
 
     /**
      * Fetches a list of reported message events for [Channel] within optional time and count constraints.

@@ -968,7 +968,7 @@ class ChatTest : BaseTest() {
             callback.accept(Result.success(resultWithEmptyData))
         }
 
-        objectUnderTest.getUnreadMessagesCounts().async { result: Result<Set<GetUnreadMessagesCounts>> ->
+        objectUnderTest.getUnreadMessagesCounts().async { result: Result<List<GetUnreadMessagesCounts>> ->
             assertTrue(result.isSuccess)
             assertTrue(result.getOrNull()?.isEmpty()!!)
         }
@@ -1284,7 +1284,7 @@ class ChatTest : BaseTest() {
             callback.accept(Result.success(PNMessageCountResult(mapOf(channelId to numberOfMessagesUnread))))
         }
 
-        objectUnderTest.getUnreadMessagesCounts().async { result: Result<Set<GetUnreadMessagesCounts>> ->
+        objectUnderTest.getUnreadMessagesCounts().async { result: Result<List<GetUnreadMessagesCounts>> ->
             assertTrue(result.isSuccess)
             assertFalse(result.getOrNull()?.isEmpty()!!)
             val messageCountForChannel: GetUnreadMessagesCounts = result.getOrNull()?.first()!!

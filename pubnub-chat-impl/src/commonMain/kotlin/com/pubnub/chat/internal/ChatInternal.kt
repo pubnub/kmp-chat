@@ -51,7 +51,7 @@ interface ChatInternal : Chat {
      *
      * @return [PNFuture] containing set of [Channel]
      */
-    fun getChannelSuggestions(text: String, limit: Int = 10): PNFuture<Set<Channel>>
+    fun getChannelSuggestions(text: String, limit: Int = 10): PNFuture<List<Channel>>
 
     /**
      * Returns all suggested users that match the provided 3-letter string.
@@ -62,5 +62,5 @@ interface ChatInternal : Chat {
      *
      * @return [PNFuture] containing set of [User]
      */
-    fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<Set<User>>
+    fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<List<User>>
 }
