@@ -402,8 +402,8 @@ public final class com/pubnub/chat/config/PushNotificationsConfig {
 }
 
 public final class com/pubnub/chat/membership/MembersResponse {
-	public fun <init> (Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;IILjava/util/Set;)V
-	public final fun getMembers ()Ljava/util/Set;
+	public fun <init> (Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;IILjava/util/List;)V
+	public final fun getMembers ()Ljava/util/List;
 	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
 	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getStatus ()I
@@ -411,8 +411,8 @@ public final class com/pubnub/chat/membership/MembersResponse {
 }
 
 public final class com/pubnub/chat/membership/MembershipsResponse {
-	public fun <init> (Lcom/pubnub/api/models/consumer/objects/PNPage;Lcom/pubnub/api/models/consumer/objects/PNPage;IILjava/util/Set;)V
-	public final fun getMemberships ()Ljava/util/Set;
+	public fun <init> (Lcom/pubnub/api/models/consumer/objects/PNPage;Lcom/pubnub/api/models/consumer/objects/PNPage;IILjava/util/List;)V
+	public final fun getMemberships ()Ljava/util/List;
 	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage;
 	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage;
 	public final fun getStatus ()I
@@ -427,8 +427,8 @@ public final class com/pubnub/chat/message/GetUnreadMessagesCounts {
 }
 
 public final class com/pubnub/chat/message/MarkAllMessageAsReadResponse {
-	public fun <init> (Ljava/util/Set;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;II)V
-	public final fun getMemberships ()Ljava/util/Set;
+	public fun <init> (Ljava/util/List;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;II)V
+	public final fun getMemberships ()Ljava/util/List;
 	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
 	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getStatus ()I
@@ -436,10 +436,10 @@ public final class com/pubnub/chat/message/MarkAllMessageAsReadResponse {
 }
 
 public final class com/pubnub/chat/restrictions/GetRestrictionsResponse {
-	public fun <init> (Ljava/util/Set;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;II)V
+	public fun <init> (Ljava/util/List;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;II)V
 	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
 	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
-	public final fun getRestrictions ()Ljava/util/Set;
+	public final fun getRestrictions ()Ljava/util/List;
 	public final fun getStatus ()I
 	public final fun getTotal ()I
 }
@@ -729,22 +729,22 @@ public final class com/pubnub/chat/types/File$Companion {
 }
 
 public final class com/pubnub/chat/types/GetChannelsResponse {
-	public fun <init> (Ljava/util/Set;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;I)V
-	public final fun getChannels ()Ljava/util/Set;
+	public fun <init> (Ljava/util/List;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;I)V
+	public final fun getChannels ()Ljava/util/List;
 	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
 	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getTotal ()I
 }
 
 public final class com/pubnub/chat/types/GetCurrentUserMentionsResult {
-	public fun <init> (Ljava/util/Set;Z)V
-	public final fun getEnhancedMentionsData ()Ljava/util/Set;
+	public fun <init> (Ljava/util/List;Z)V
+	public final fun getEnhancedMentionsData ()Ljava/util/List;
 	public final fun isMore ()Z
 }
 
 public final class com/pubnub/chat/types/GetEventsHistoryResult {
-	public fun <init> (Ljava/util/Set;Z)V
-	public final fun getEvents ()Ljava/util/Set;
+	public fun <init> (Ljava/util/List;Z)V
+	public final fun getEvents ()Ljava/util/List;
 	public final fun isMore ()Z
 }
 
@@ -897,10 +897,10 @@ public abstract class com/pubnub/chat/types/UserMentionData {
 }
 
 public final class com/pubnub/chat/user/GetUsersResponse {
-	public fun <init> (Ljava/util/Set;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;I)V
+	public fun <init> (Ljava/util/List;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;I)V
 	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
 	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getTotal ()I
-	public final fun getUsers ()Ljava/util/Set;
+	public final fun getUsers ()Ljava/util/List;
 }
 

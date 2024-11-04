@@ -252,7 +252,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         page: PNPage?,
         filter: String?,
         sort: Collection<PNSortKey<PNMembershipKey>>,
-    ): PNFuture<Set<GetUnreadMessagesCounts>> {
+    ): PNFuture<List<GetUnreadMessagesCounts>> {
         TODO("Not yet implemented")
     }
 
@@ -265,11 +265,11 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun getChannelSuggestions(text: String, limit: Int): PNFuture<Set<Channel>> {
+    override fun getChannelSuggestions(text: String, limit: Int): PNFuture<List<Channel>> {
         TODO("Not yet implemented")
     }
 
-    override fun getUserSuggestions(text: String, limit: Int): PNFuture<Set<User>> {
+    override fun getUserSuggestions(text: String, limit: Int): PNFuture<List<User>> {
         TODO("Not yet implemented")
     }
 

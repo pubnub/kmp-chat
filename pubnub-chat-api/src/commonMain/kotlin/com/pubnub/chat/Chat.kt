@@ -402,14 +402,14 @@ interface Chat {
      * @param filter Expression used to filter the results. Returns only these channels whose properties satisfy the given expression are returned.
      * @param sort A collection to specify the sort order. Available options are id, name, and updated. Use asc or desc.
      *
-     * @return [PNFuture] containing set of [GetUnreadMessagesCounts]
+     * @return [PNFuture] containing list of [GetUnreadMessagesCounts]
      */
     fun getUnreadMessagesCounts(
         limit: Int? = null,
         page: PNPage? = null,
         filter: String? = null,
         sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
-    ): PNFuture<Set<GetUnreadMessagesCounts>>
+    ): PNFuture<List<GetUnreadMessagesCounts>>
 
     /**
      * Allows you to mark as read all messages you didn't read on all joined channels.
