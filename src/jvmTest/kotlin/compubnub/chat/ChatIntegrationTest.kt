@@ -68,7 +68,7 @@ class ChatIntegrationTest : BaseIntegrationTest() {
     }
 
     @Test
-    fun conInitializeChatWithCustomPayloadAndCustomActions() {
+    fun canInitializeChatWithCustomPayloadAndCustomActions() {
         var chat: Chat
         val customPayloads: CustomPayloads = CustomPayloads(
             getMessagePublishBody = { content, channelId, defaultMessagePublishBody ->
