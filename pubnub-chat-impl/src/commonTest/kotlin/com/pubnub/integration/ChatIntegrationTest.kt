@@ -4,6 +4,8 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.access_manager.v3.ChannelGrant
+import com.pubnub.api.models.consumer.access_manager.v3.UUIDGrant
 import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.v2.callbacks.Result
@@ -33,6 +35,7 @@ import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.ThreadMentionData
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.createCustomObject
+import com.pubnub.kmp.createPubNub
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
@@ -51,6 +54,31 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 class ChatIntegrationTest : BaseChatIntegrationTest() {
+    @Test
+    fun initializeShouldThrow403WhenPamEnableAndNoToken() = runTest {
+        val exception = assertFailsWith<PubNubException> {
+            chatPamClient.initialize().await()
+        }
+
+        assertEquals(403, exception.statusCode)
+    }
+
+    @Test
+    fun initializeShouldPassWhenPamEnableAndTokenProvided() = runTest {
+        pubnubPamClient = createPubNub(configPamClient)
+        val token = chatPamServer.pubNub.grantToken(
+            ttl = 1,
+            channels = listOf(ChannelGrant.name(get = true, name = "any", read = true, write = true, manage = true)), // get = true
+            uuids = listOf(UUIDGrant.id(id = pubnubPamClient.configuration.userId.value, get = true, update = true)) // this is important
+        ).await().token
+
+        pubnubPamClient.setToken(token)
+        chatPamClient = ChatImpl(ChatConfiguration(), pubnubPamClient)
+        val initializeChat = chatPamClient.initialize().await()
+
+        assertEquals(token, initializeChat.pubNub.getToken())
+    }
+
     @Test
     fun createUser() = runTest {
         val user = chat.createUser(someUser).await()

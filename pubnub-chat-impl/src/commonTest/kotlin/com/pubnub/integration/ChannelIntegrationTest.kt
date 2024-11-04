@@ -504,7 +504,12 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val mentionedUsers =
             mapOf<Int, MessageMentionedUser>(mentionedPosition to MessageMentionedUser("user01Id", "user01Name"))
         val referencedChannels =
-            mapOf<Int, MessageReferencedChannel>(referencedPosition to MessageReferencedChannel(id = "channel01Id", name = "channel01Name"))
+            mapOf<Int, MessageReferencedChannel>(
+                referencedPosition to MessageReferencedChannel(
+                    id = "channel01Id",
+                    name = "channel01Name"
+                )
+            )
         val tt = channel01.sendText(
             text = messageText,
             ttl = 60,
@@ -642,22 +647,23 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             var streamMessageReportsCloseable: AutoCloseable? = null
 
             pubnub.awaitSubscribe(listOf("PUBNUB_INTERNAL_MODERATION_${channel01.id}")) {
-                streamMessageReportsCloseable = channel01.streamMessageReports { reportEvent: Event<EventContent.Report> ->
-                    try {
-                        // we need to have try/catch here because assertion error will not cause test to fail
-                        numberOfReports.incrementAndGet()
-                        val reportReason = reportEvent.payload.reason
-                        assertTrue(reportReason == reason01 || reportReason == reason02)
-                        assertEquals(messageText, reportEvent.payload.text)
-                        assertTrue(reportEvent.payload.reportedMessageChannelId?.contains(INTERNAL_MODERATION_PREFIX)!!)
-                        assertTrue(reportEvent.channelId.contains(INTERNAL_MODERATION_PREFIX))
-                        if (numberOfReports.value == 2) {
-                            assertionErrorInCallback.complete(null)
+                streamMessageReportsCloseable =
+                    channel01.streamMessageReports { reportEvent: Event<EventContent.Report> ->
+                        try {
+                            // we need to have try/catch here because assertion error will not cause test to fail
+                            numberOfReports.incrementAndGet()
+                            val reportReason = reportEvent.payload.reason
+                            assertTrue(reportReason == reason01 || reportReason == reason02)
+                            assertEquals(messageText, reportEvent.payload.text)
+                            assertTrue(reportEvent.payload.reportedMessageChannelId?.contains(INTERNAL_MODERATION_PREFIX)!!)
+                            assertTrue(reportEvent.channelId.contains(INTERNAL_MODERATION_PREFIX))
+                            if (numberOfReports.value == 2) {
+                                assertionErrorInCallback.complete(null)
+                            }
+                        } catch (e: AssertionError) {
+                            assertionErrorInCallback.complete(e)
                         }
-                    } catch (e: AssertionError) {
-                        assertionErrorInCallback.complete(e)
                     }
-                }
             }
 
             // report messages
@@ -745,7 +751,10 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             val elements = MessageDraftImpl.getMessageElements(message.await().text)
 
             assertEquals(
-                listOf(MessageElement.PlainText("Some text with a "), MessageElement.Link("mention", MentionTarget.User("someUser"))),
+                listOf(
+                    MessageElement.PlainText("Some text with a "),
+                    MessageElement.Link("mention", MentionTarget.User("someUser"))
+                ),
                 elements
             )
         }
