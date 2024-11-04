@@ -15,7 +15,7 @@ let package = Package(
     .binaryTarget(
       name: "PubNubChatRemoteBinaryPackage",
       url: "https://github.com/pubnub/kmp-chat/releases/download/0.8.3-dev/PubNubChat.xcframework.zip",
-      checksum: "c81df7f9514d39e6fd1813dee9c6ef966b4bcf62f21ad670f7a8e29bc92d4cc9"
+      checksum: "4b0154602aae95f77d26e054dcc5b360bac8a0a6c8fe6e1da9d9aadaafc5f050"
     )
   ]
 )
