@@ -879,19 +879,19 @@ class ChatImpl(
                                     )
                                 }
                             emitEventFutures.awaitAll()
-                        }.then { membershipResponse: PNChannelMembershipArrayResult ->
+                        }.then { setMembershipsResponse: PNChannelMembershipArrayResult ->
                             MarkAllMessageAsReadResponse(
-                                memberships = membershipResponse.data.map { membership: PNChannelMembership ->
+                                memberships = setMembershipsResponse.data.map { membership: PNChannelMembership ->
                                     MembershipImpl.fromMembershipDTO(
                                         this,
                                         membership,
                                         currentUser
                                     )
                                 },
-                                next = membershipResponse.next,
-                                prev = membershipResponse.prev,
-                                total = membershipResponse.totalCount ?: 0,
-                                status = membershipResponse.status
+                                next = setMembershipsResponse.next,
+                                prev = setMembershipsResponse.prev,
+                                total = setMembershipsResponse.totalCount ?: 0,
+                                status = setMembershipsResponse.status
                             )
                         }
                     }
