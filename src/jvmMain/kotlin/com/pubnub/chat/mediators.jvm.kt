@@ -14,6 +14,8 @@ import com.pubnub.kmp.PNFuture
  * @param chatConfiguration The configuration for initializing the [Chat] instance.
  * @param pubNubConfiguration The base PubNub configuration to be used.
  * @param token Optional authentication token for the PubNub client. Should be provided when AccessManager is enabled on PubNub keys.
+ * You can generate it using [PubNub.grantToken] method using server PubNub(pubnub initialize with secretKey).
+ * When initializing Chat as server Chat(PNConfiguration contain secretKey) token in not needed.
  * @return A [PNFuture] containing the initialized [Chat] instance.
  */
 fun Chat.Companion.init(chatConfiguration: ChatConfiguration, pubNubConfiguration: PNConfiguration, token: String? = null): PNFuture<Chat> {
