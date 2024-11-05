@@ -97,7 +97,7 @@ class ChannelTest : BaseTest() {
         every { chat.pubNub } returns pubNub
         val timerManager = createTimerManager()
         every { chat.timerManager } returns timerManager
-        every { pubNub.configuration } returns createPNConfiguration(UserId("demo"), "demo", "demo")
+        every { pubNub.configuration } returns createPNConfiguration(UserId("demo"), "demo", "demo", authToken = null)
         objectUnderTest = createChannel(type)
     }
 
