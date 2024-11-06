@@ -62,6 +62,7 @@ jobs:
         with:
           token: ${{ secrets.GH_TOKEN }}
           prepend-product-to-tag: true
+          last-service: true
 #      - name: Update Pages
 #        uses: ./.github/.release/actions/actions/services/github-pages
 #        with:
