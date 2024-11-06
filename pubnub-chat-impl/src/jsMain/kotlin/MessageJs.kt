@@ -26,7 +26,7 @@ open class MessageJs internal constructor(internal val message: Message) {
             }.toTypedArray()
         }.toJsMap()
     }?.toJsMap()
-    val meta get() = message.meta?.toJsMap()
+    val meta get() = message.meta?.toJsMap() // todo recursive?
 
     /*get mentionedUsers(): any;
     get referencedChannels(): any;
@@ -87,7 +87,7 @@ open class MessageJs internal constructor(internal val message: Message) {
 
     fun report(reason: String): Promise<PubNub.SignalResponse> {
         return message.report(reason).then { result ->
-            createJsObject<PubNub.SignalResponse> { timetoken = result.timetoken.toDouble() }
+            createJsObject<PubNub.SignalResponse> { timetoken = result.timetoken.toString() }
         }.asPromise()
     }
 

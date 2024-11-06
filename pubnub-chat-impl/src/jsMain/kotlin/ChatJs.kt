@@ -6,7 +6,6 @@ import com.pubnub.chat.Chat
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.serialization.PNDataEncoder
-import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelMentionData
 import com.pubnub.chat.types.ChannelType
@@ -37,7 +36,7 @@ class ChatJs internal constructor(val chat: Chat, val config: ChatConfig) {
             channel,
             PNDataEncoder.decode(createJsonElement(payload))
         ).then { result ->
-            createJsObject<PubNub.SignalResponse> { timetoken = result.timetoken.toDouble() }
+            createJsObject<PubNub.SignalResponse> { timetoken = result.timetoken.toString() }
         }.asPromise()
     }
 
@@ -309,7 +308,7 @@ class ChatJs internal constructor(val chat: Chat, val config: ChatConfig) {
             params.page?.toKmp(),
             params.filter,
             extractSortKeys(params.sort)
-        ).then { result: Set<GetUnreadMessagesCounts> ->
+        ).then { result ->
             result.map { unreadMessagesCount ->
                 createJsObject<GetUnreadMessagesCountsJs> {
                     this.channel = unreadMessagesCount.channel.asJs()
@@ -376,6 +375,5 @@ class ChatJs internal constructor(val chat: Chat, val config: ChatConfig) {
     }
 }
 
-
 @JsExport
-val INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_";
+val INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_"

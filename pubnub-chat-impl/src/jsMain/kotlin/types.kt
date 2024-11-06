@@ -154,7 +154,7 @@ interface HistoryResponseJs {
 }
 
 @JsExport
-@JsName("GetRestrictionsResponseJs")
+@JsName("GetRestrictionsResponse")
 interface GetRestrictionsResponseJs {
     var page: PubNub.MetadataPage
     var total: Int

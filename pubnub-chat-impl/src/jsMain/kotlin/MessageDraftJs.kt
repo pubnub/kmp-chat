@@ -50,7 +50,7 @@ class MessageDraftJs internal constructor(
 
     fun getMessagePreview(): Array<MessageElementJs> {
         return messageDraft.getMessageElements().map { element ->
-            when(element) {
+            when (element) {
                 is MessageElement.Link -> when (val target = element.target) {
                     is MentionTarget.Channel -> createJsObject<MessageElementJs.Channel> {
                         this.type = "channelReference"
@@ -101,21 +101,22 @@ class MessageDraftJs internal constructor(
 external interface MessageElementJs {
     var type: String
 
-    interface Text: MessageElementJs {
+    interface Text : MessageElementJs {
         var text: String
     }
-    interface User: MessageElementJs {
+
+    interface User : MessageElementJs {
         var name: String
         var id: String
     }
-    interface Link: MessageElementJs {
+
+    interface Link : MessageElementJs {
         var text: String
         var link: String
     }
-    interface Channel: MessageElementJs {
+
+    interface Channel : MessageElementJs {
         var name: String
         var id: String
     }
 }
-
-

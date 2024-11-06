@@ -23,7 +23,7 @@ class UserJs internal constructor(internal val user: User) : UserFields {
     override val profileUrl get() = user.profileUrl
     override val email get() = user.email
     override val custom: Any?
-        get() = user.custom?.toJsMap()?.asDynamic() // TODO need to convert map values recursively?
+        get() = user.custom?.toJsMap() // TODO need to convert map values recursively?
     override val status get() = user.status
     override val type get() = user.type
     val updated get() = user.updated

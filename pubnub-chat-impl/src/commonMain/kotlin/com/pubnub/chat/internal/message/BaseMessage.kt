@@ -2,7 +2,6 @@ package com.pubnub.chat.internal.message
 
 import co.touchlab.kermit.Logger
 import com.pubnub.api.JsonElement
-import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
 import com.pubnub.api.decode
 import com.pubnub.api.endpoints.message_actions.RemoveMessageAction
@@ -28,7 +27,6 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_STREAM_MESSAGE_U
 import com.pubnub.chat.internal.error.PubNubErrorMessage.KEY_IS_NOT_VALID_INTEGER
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_MESSAGE_HAS_NOT_BEEN_DELETED
 import com.pubnub.chat.internal.serialization.PNDataEncoder
-import com.pubnub.chat.internal.util.logWarnAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File

@@ -1,6 +1,5 @@
 import com.pubnub.api.JsonElement
 import com.pubnub.api.createJsonElement
-import com.pubnub.api.decode
 import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.objects.PNKey
@@ -103,9 +102,9 @@ internal fun CustomPayloadsJs?.toKmp(): CustomPayloads {
                 return PNDataEncoder.decode(createJsonElement(mrb(messageDTOparams)))
             }
         },
-        editMessageActionName,
-        deleteMessageActionName,
-        reactionsActionName
+        editMessageActionName = editMessageActionName,
+        deleteMessageActionName = deleteMessageActionName,
+        reactionsActionName = reactionsActionName
     )
 }
 
@@ -135,9 +134,9 @@ internal fun Restriction.asJs(): RestrictionJs {
 internal fun PubNub.MetadataPage?.toKmp() =
     this?.next?.let { PNPage.PNNext(it) } ?: this?.prev?.let { PNPage.PNPrev(it) }
 
-internal fun MetadataPage(next: PNPage.PNNext?, prev: PNPage.PNPrev?) = object : PubNub.MetadataPage {
-    override var next: String? = next?.pageHash
-    override var prev: String? = prev?.pageHash
+internal fun MetadataPage(next: PNPage.PNNext?, prev: PNPage.PNPrev?) = createJsObject<PubNub.MetadataPage> {
+    this.next = next?.pageHash ?: undefined
+    this.prev = prev?.pageHash ?: undefined
 }
 
 internal fun convertToCustomObject(custom: Any?) = custom?.let {

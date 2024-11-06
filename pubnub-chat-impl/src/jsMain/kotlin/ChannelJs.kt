@@ -26,7 +26,7 @@ import kotlin.js.json
 open class ChannelJs internal constructor(internal val channel: Channel) : ChannelFields {
     override val id: String get() = channel.id
     override val name: String? get() = channel.name
-    override val custom: Any? get() = channel.custom?.toJsObject()
+    override val custom: Any? get() = channel.custom?.toJsMap() // todo recursive?
     override val description: String? get() = channel.description
     override val updated: String? get() = channel.updated
     override val status: String? get() = channel.status
@@ -79,7 +79,7 @@ open class ChannelJs internal constructor(internal val channel: Channel) : Chann
             (options?.message as? MessageJs)?.message,
             files
         ).then { result ->
-            createJsObject<PubNub.SignalResponse> { timetoken = result.timetoken.toDouble() }
+            createJsObject<PubNub.SignalResponse> { timetoken = result.timetoken.toString() }
         }.asPromise()
     }
 
@@ -138,7 +138,7 @@ open class ChannelJs internal constructor(internal val channel: Channel) : Chann
     }
 
     fun getMessage(timetoken: String): Promise<MessageJs> {
-        return channel.getMessage(timetoken.toLong()).then { it!!.asJs() }.asPromise()
+        return channel.getMessage(timetoken.tryLong()!!).then { it!!.asJs() }.asPromise()
     }
 
     fun join(callback: (MessageJs) -> Unit, params: PubNub.SetMembershipsParameters?): Promise<Any> {

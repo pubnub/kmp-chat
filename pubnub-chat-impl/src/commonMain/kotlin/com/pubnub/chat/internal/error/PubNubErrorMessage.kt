@@ -25,8 +25,6 @@ internal object PubNubErrorMessage {
         "Channel invites are not supported in Public chats."
     internal const val MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY =
         "Moderation restrictions can only be set by clients initialized with a Secret Key."
-    internal const val STORE_USER_ACTIVITY_INTERVAL_IS_FALSE =
-        "storeUserActivityTimestamps config property is set to false so can not provide info about user being active"
     internal const val STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN =
         "storeUserActivityInterval must be at least 60000ms"
     internal const val APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2 =

@@ -27,12 +27,14 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MessageIntegrationTest : BaseChatIntegrationTest() {
-
     @Test
     fun sendingFiles() = runTest {
-        val tt = channel01.sendText("message", files = listOf(
-            InputFile("name.txt", "text/plain", generateFileContent())
-        )).await()
+        val tt = channel01.sendText(
+            "message",
+            files = listOf(
+                InputFile("name.txt", "text/plain", generateFileContent())
+            )
+        ).await()
 
         delayInMillis(250)
         val message: Message = channel01.getMessage(tt.timetoken).await()!!

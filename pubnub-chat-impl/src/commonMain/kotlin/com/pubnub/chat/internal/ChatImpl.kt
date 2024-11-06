@@ -419,7 +419,7 @@ class ChatImpl(
         if (!isValidId(channelId)) {
             return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
-        return pubNub.getChannelMetadata(channel = channelId)
+        return pubNub.getChannelMetadata(channel = channelId, includeCustom = true)
             .then { pnChannelMetadataResult: PNChannelMetadataResult ->
                 ChannelImpl.fromDTO(this, pnChannelMetadataResult.data)
             }.catch { exception ->
@@ -1245,6 +1245,5 @@ class ChatImpl(
         }
     }
 }
-
 
 internal expect fun generateRandomUuid(): String
