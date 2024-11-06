@@ -1,11 +1,11 @@
 package compubnub.chat
 
-import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.asList
 import com.pubnub.api.asMap
 import com.pubnub.api.asString
+import com.pubnub.api.enums.PNLogVerbosity
 import com.pubnub.api.models.consumer.access_manager.v3.ChannelGrant
 import com.pubnub.api.models.consumer.access_manager.v3.UUIDGrant
 import com.pubnub.api.v2.PNConfiguration
@@ -18,7 +18,9 @@ import com.pubnub.chat.init
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.test.BaseIntegrationTest
+import com.pubnub.test.Keys
 import com.pubnub.test.await
+import com.pubnub.test.randomString
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -51,8 +53,7 @@ class ChatIntegrationTest : BaseIntegrationTest() {
 
     @Test
     fun canInitializeChatWhenPamEnableAndTokenSet() = runTest {
-        val clientPubNub = PubNub.create(configPamClient)
-        val clientUserId = clientPubNub.configuration.userId.value
+        val clientUserId = randomString()
 
         val serverChat = Chat.init(ChatConfiguration(), configPamServer).await()
         val token = serverChat.pubNub.grantToken(
@@ -61,7 +62,13 @@ class ChatIntegrationTest : BaseIntegrationTest() {
             uuids = listOf(UUIDGrant.id(id = clientUserId, get = true, update = true)) // this is important
         ).await().token
 
-        val clientChat = Chat.init(ChatConfiguration(), configPamClient, token).await()
+        val configPamClient: PNConfiguration = PNConfiguration.builder(UserId(clientUserId), Keys.pamSubKey) {
+            publishKey = Keys.pamPubKey
+            logVerbosity = PNLogVerbosity.BODY
+            authToken = token
+        }.build()
+
+        val clientChat = Chat.init(ChatConfiguration(), configPamClient).await()
 
         assertEquals(clientUserId, clientChat.currentUser.id)
         assertEquals(clientChat.pubNub.getToken(), token)

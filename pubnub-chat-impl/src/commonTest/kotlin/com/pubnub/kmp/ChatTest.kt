@@ -131,7 +131,7 @@ class ChatTest : BaseTest() {
 
     @BeforeTest
     fun setUp() {
-        pnConfiguration = createPNConfiguration(UserId(userId), subscribeKey, publishKey)
+        pnConfiguration = createPNConfiguration(UserId(userId), subscribeKey, publishKey, authToken = null)
         every { pubnub.configuration } returns pnConfiguration
         chatConfig = ChatConfiguration(
             typingTimeout = 2000.milliseconds
