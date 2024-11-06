@@ -357,14 +357,10 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         chat.createUser(UserImpl(chat, userId)).await()
         chat.deleteUser(id = userId, soft = true).await()
 
-        chat.getUsers(filter = "status=='deleted'").async { result ->
-            result.onSuccess { getUsersResponse: GetUsersResponse ->
-                assertEquals(userId, getUsersResponse.users.first().id)
-                assertEquals("deleted", getUsersResponse.users.first().status)
-            }.onFailure { e: PubNubException ->
-                throw IllegalStateException(e)
-            }
-        }
+        val getUsersResponse = chat.getUsers(filter = "id == '${userId}' && status=='deleted'").await()
+        assertEquals(userId, getUsersResponse.users.first().id)
+
+        assertEquals("deleted", getUsersResponse.users.first().status)
 
         // clean
         try {
