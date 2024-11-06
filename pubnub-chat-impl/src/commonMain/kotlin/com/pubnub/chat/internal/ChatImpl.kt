@@ -537,7 +537,7 @@ class ChatImpl(
     ): PNFuture<CreateDirectConversationResult> {
         val user = this.currentUser
         val sortedUsers = listOf(invitedUser.id, user.id).sorted()
-        val finalChannelId = channelId ?: "direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
+        val finalChannelId = channelId ?: "direct.${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}"
 
         return getChannel(finalChannelId).thenAsync { channel ->
             channel?.asFuture() ?: createChannel(

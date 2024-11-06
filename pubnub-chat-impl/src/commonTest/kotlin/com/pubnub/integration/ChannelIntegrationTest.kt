@@ -99,16 +99,19 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun streamPresence() = runTest {
         val completable = CompletableDeferred<Collection<String>>()
-        val closeable = channel01.connect {}
-
-        channel01.streamPresence {
-            if (it.isNotEmpty()) {
-                completable.complete(it)
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var closeable: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                channel01.streamPresence {
+                    if (it.isNotEmpty()) {
+                        completable.complete(it)
+                    }
+                }
+                closeable = channel01.connect {}
             }
+            assertEquals(setOf(someUser.id), completable.await())
+            closeable?.close()
         }
-
-        assertEquals(setOf(someUser.id), completable.await())
-        closeable.close()
     }
 
     @Test
