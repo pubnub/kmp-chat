@@ -1,6 +1,5 @@
 package com.pubnub.integration
 
-import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.Channel
@@ -21,7 +20,6 @@ import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
-import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
@@ -357,9 +355,9 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         chat.createUser(UserImpl(chat, userId)).await()
         chat.deleteUser(id = userId, soft = true).await()
 
-        val getUsersResponse = chat.getUsers(filter = "id == '${userId}' && status=='deleted'").await()
-        assertEquals(userId, getUsersResponse.users.first().id)
+        val getUsersResponse = chat.getUsers(filter = "id == '$userId' && status=='deleted'").await()
 
+        assertEquals(userId, getUsersResponse.users.first().id)
         assertEquals("deleted", getUsersResponse.users.first().status)
 
         // clean
