@@ -134,7 +134,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // then
         val sortedUsers = listOf(chat.currentUser.id, someUser.id).sorted()
-        assertEquals("direct${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}", result.channel.id)
+        assertEquals("direct.${cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")}", result.channel.id)
 
         assertEquals(
             chat.currentUser.asImpl().copy(updated = null, lastActiveTimestamp = null),
