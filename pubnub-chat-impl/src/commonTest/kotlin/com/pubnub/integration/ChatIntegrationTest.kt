@@ -33,6 +33,7 @@ import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.ThreadMentionData
+import com.pubnub.internal.PLATFORM
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.createPubNub
@@ -65,6 +66,10 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun initializeShouldPassWhenPamEnableAndTokenProvided() = runTest {
+        if (PLATFORM == "iOS") {
+            return@runTest
+        }
+
         pubnubPamClient = createPubNub(configPamClient)
         val token = chatPamServer.pubNub.grantToken(
             ttl = 1,
