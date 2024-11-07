@@ -683,8 +683,9 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val completableStatus = CompletableDeferred<String?>()
 
         pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id)) {
-                channel01.streamUpdates { channel: Channel? ->
+                dispose = channel01.streamUpdates { channel: Channel? ->
                     completableDescription.complete(channel?.description)
                     completableStatus.complete(channel?.status)
                 }
@@ -692,6 +693,8 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             channel01.update(description = expectedDescription, status = expectedStatus).await()
             assertEquals(expectedDescription, completableDescription.await())
             assertEquals(expectedStatus, completableStatus.await())
+
+            dispose?.close()
         }
     }
 

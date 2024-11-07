@@ -21,6 +21,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MessageIntegrationTest : BaseChatIntegrationTest() {
@@ -66,6 +67,32 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
                 .contains("${MESSAGE_THREAD_ID_PREFIX}_${channel01.id}")
         )
         assertEquals(2, restoredMessage.actions!!.size)
+    }
+
+    @Test
+    fun createMessageWithThreadThenDeleteThread() = runTest {
+        // create message with thread
+        val messageText = "messageText_${randomString()}"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = pnPublishResult.timetoken
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
+        println("-=message.timetoken: ${message.timetoken}")
+        val threadChannel: ThreadChannel = message.createThread().await()
+        println(threadChannel)
+        // we need to call sendText because addMessageAction is called in sendText that stores details about thread
+        threadChannel.sendText("message in thread_${randomString()}").await()
+
+        // we need to call getMessage to get message with indication that it hasThread
+        val messageWithThread: Message = channel01.getMessage(publishTimetoken).await()!!
+
+        assertTrue(messageWithThread.hasThread)
+
+        messageWithThread.removeThread().await()
+
+        // we need to call getMessage to get message with indication that it has no Thread
+        val messageWithNoThread: Message = channel01.getMessage(publishTimetoken).await()!!
+
+        assertFalse(messageWithNoThread.hasThread)
     }
 
     @Test
@@ -140,6 +167,19 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
             expectedUpdates.map { it.map { Triple(it.timetoken, it.text, it.deleted) } },
             actualUpdates.map { it.map { Triple(it.timetoken, it.text, it.deleted) } }
         )
+    }
+
+    @Test
+    fun addReactionToMessageThenCheckIfPresent() = runTest {
+        val reactionValue = "wow"
+        val messageText = "messageText_${randomString()}"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = pnPublishResult.timetoken
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
+
+        val messageWithReaction = message.toggleReaction(reactionValue).await()
+
+        assertTrue(messageWithReaction.hasUserReaction(reactionValue))
     }
 
     @Test

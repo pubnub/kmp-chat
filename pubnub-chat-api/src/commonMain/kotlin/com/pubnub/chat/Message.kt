@@ -113,7 +113,7 @@ interface Message {
      * @param reaction Specific emoji added to the message.
      * @return Specifies if the current user added a given emoji to the message or not.
      */
-    fun hasUserReaction(reaction: String): Boolean // todo add test
+    fun hasUserReaction(reaction: String): Boolean
 
     /**
      * Changes the content of the existing message to a new one.
@@ -171,14 +171,12 @@ interface Message {
      */
     fun createThread(): PNFuture<ThreadChannel>
 
-    // todo do we have test for this?
-
     /**
      * Removes a thread (channel) for a selected message.
      *
      * @return A pair of values containing an object with details about the result of the remove message action (indicating whether the message was successfully removed and potentially including additional metadata or information about the removal) and the updated channel object after the removal of the thread.
      */
-    fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> // todo add test
+    fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>>
 
     /**
      * Add or remove a reaction to a message.
@@ -198,7 +196,7 @@ interface Message {
      * @param callback Function that takes a single Message object. It defines the custom behavior to be executed when detecting message or message reaction changes.
      * @return Interface that lets you stop receiving message-related updates by invoking the close() method
      */
-    fun <T : Message> streamUpdates(callback: (message: T) -> Unit): AutoCloseable // todo add test
+    fun <T : Message> streamUpdates(callback: (message: T) -> Unit): AutoCloseable
 
     /**
      * If you delete a message, you can restore its content together with the attached files using the restore() method.
