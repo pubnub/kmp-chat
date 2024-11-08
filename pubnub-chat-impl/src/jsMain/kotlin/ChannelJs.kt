@@ -206,7 +206,8 @@ open class ChannelJs internal constructor(internal val channel: Channel) : Chann
                 } ?: MessageDraft.UserSuggestionSource.CHANNEL,
                 config?.isTypingIndicatorTriggered ?: (channel.type != ChannelType.PUBLIC),
                 config?.userLimit ?: 10,
-                config?.channelLimit ?: 10
+                config?.channelLimit ?: 10,
+                formatV2 = false
             ),
             config
         )

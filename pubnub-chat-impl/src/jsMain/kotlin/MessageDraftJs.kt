@@ -24,6 +24,22 @@ class MessageDraftJs internal constructor(
         }
     var files: Any? = null
 
+    fun addReferencedChannel(channel: ChannelJs, channelNameOccurrenceIndex: Int) {
+        messageDraft.addReferencedChannel(channel.channel, channelNameOccurrenceIndex)
+    }
+
+    fun removeReferencedChannel(channelNameOccurrenceIndex: Int) {
+        messageDraft.removeReferencedChannel(channelNameOccurrenceIndex)
+    }
+
+    fun addMentionedUser(user: UserJs, nameOccurrenceIndex: Int) {
+        messageDraft.addMentionedUser(user.user, nameOccurrenceIndex)
+    }
+
+    fun removeMentionedUser(nameOccurrenceIndex: Int) {
+        messageDraft.removeMentionedUser(nameOccurrenceIndex)
+    }
+
     fun onChange(text: String) {
         messageDraft.update(text)
     }
@@ -52,25 +68,33 @@ class MessageDraftJs internal constructor(
         return messageDraft.getMessageElements().map { element ->
             when (element) {
                 is MessageElement.Link -> when (val target = element.target) {
-                    is MentionTarget.Channel -> createJsObject<MessageElementJs.Channel> {
+                    is MentionTarget.Channel -> createJsObject<MessageElementJs> {
                         this.type = "channelReference"
-                        this.name = element.text
-                        this.id = target.channelId
+                        this.content = createJsObject<MessageElementPayloadJs.Channel> {
+                            this.name = element.text.substring(1)
+                            this.id = target.channelId
+                        }
                     }
-                    is MentionTarget.Url -> createJsObject<MessageElementJs.Link> {
+                    is MentionTarget.Url -> createJsObject<MessageElementJs> {
                         this.type = "textLink"
-                        this.text = element.text
-                        this.link = target.url
+                        this.content = createJsObject<MessageElementPayloadJs.Link> {
+                            this.text = element.text
+                            this.link = target.url
+                        }
                     }
-                    is MentionTarget.User -> createJsObject<MessageElementJs.User> {
+                    is MentionTarget.User -> createJsObject<MessageElementJs> {
                         this.type = "mention"
-                        this.name = element.text
-                        this.id = target.userId
+                        this.content = createJsObject<MessageElementPayloadJs.User> {
+                            this.name = element.text.substring(1)
+                            this.id = target.userId
+                        }
                     }
                 }
-                is MessageElement.PlainText -> createJsObject<MessageElementJs.Text> {
+                is MessageElement.PlainText -> createJsObject<MessageElementJs> {
                     this.type = "text"
-                    this.text = element.text
+                    this.content = createJsObject<MessageElementPayloadJs.Text> {
+                        this.text = element.text
+                    }
                 }
             }
         }.toTypedArray()
@@ -100,22 +124,25 @@ class MessageDraftJs internal constructor(
 
 external interface MessageElementJs {
     var type: String
+    var content: MessageElementPayloadJs
+}
 
-    interface Text : MessageElementJs {
+external interface MessageElementPayloadJs {
+    interface Text : MessageElementPayloadJs {
         var text: String
     }
 
-    interface User : MessageElementJs {
+    interface User : MessageElementPayloadJs {
         var name: String
         var id: String
     }
 
-    interface Link : MessageElementJs {
+    interface Link : MessageElementPayloadJs {
         var text: String
         var link: String
     }
 
-    interface Channel : MessageElementJs {
+    interface Channel : MessageElementPayloadJs {
         var name: String
         var id: String
     }

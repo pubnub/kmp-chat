@@ -1,6 +1,5 @@
 package com.pubnub.chat.internal
 
-import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.chat.Channel
 import com.pubnub.chat.MentionTarget
@@ -11,14 +10,19 @@ import com.pubnub.chat.MessageElement
 import com.pubnub.chat.SuggestedMention
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.error.PubNubErrorMessage
+import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.InputFile
+import com.pubnub.chat.types.MessageMentionedUser
+import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.then
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import name.fraser.neil.plaintext.DiffMatchPatch
+import org.lighthousegames.logging.logging
 import kotlin.math.min
 
 private const val SCHEMA_USER = "pn-user://"
@@ -33,9 +37,16 @@ class MessageDraftImpl(
     override val userSuggestionSource: MessageDraft.UserSuggestionSource = MessageDraft.UserSuggestionSource.CHANNEL,
     override val isTypingIndicatorTriggered: Boolean = channel.type != ChannelType.PUBLIC,
     override val userLimit: Int = 10,
-    override val channelLimit: Int = 10
+    override val channelLimit: Int = 10,
+    val formatV2: Boolean = true
 ) : MessageDraft {
     override var quotedMessage: Message? = null
+        set(value) {
+            if (value != null && value.channelId != this.channel.id) {
+                log.pnError(PubNubErrorMessage.CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS)
+            }
+            field = value
+        }
     override val files: MutableList<InputFile> = mutableListOf()
 
     private val listeners = atomic(setOf<MessageDraftChangeListener>())
@@ -46,6 +57,10 @@ class MessageDraftImpl(
     private var messageText: StringBuilder = StringBuilder("")
 
     internal val value get() = messageText as CharSequence
+
+    // legacy mentions
+    private val referencedChannels: MutableMap<Int, MessageReferencedChannel> = mutableMapOf()
+    private val mentionedUsers: MutableMap<Int, MessageMentionedUser> = mutableMapOf()
 
     override fun addChangeListener(listener: MessageDraftChangeListener) {
         listeners.update {
@@ -76,7 +91,7 @@ class MessageDraftImpl(
 
     override fun insertSuggestedMention(mention: SuggestedMention, text: String) {
         if (messageText.substring(mention.offset, mention.offset + mention.replaceFrom.length) != mention.replaceFrom) {
-            throw PubNubException(PubNubErrorMessage.MENTION_SUGGESTION_INVALID)
+            log.pnError(PubNubErrorMessage.MENTION_SUGGESTION_INVALID)
         }
         removeTextInternal(mention.offset, mention.replaceFrom.length)
         insertTextInternal(mention.offset, text)
@@ -121,16 +136,92 @@ class MessageDraftImpl(
         shouldStore: Boolean,
         usePost: Boolean,
         ttl: Int?
-    ): PNFuture<PNPublishResult> = channel.sendText(
-        text = render(getMessageElements()),
-        meta = meta,
-        shouldStore = shouldStore,
-        usePost = usePost,
-        ttl = ttl,
-        quotedMessage = quotedMessage,
-        files = files,
-        usersToMention = mentions.mapNotNull { it.target as? MentionTarget.User }.map { it.userId }
-    )
+    ): PNFuture<PNPublishResult> {
+        if (formatV2) {
+            return channel.sendText(
+                text = render(getMessageElements()),
+                meta = meta,
+                shouldStore = shouldStore,
+                usePost = usePost,
+                ttl = ttl,
+                quotedMessage = quotedMessage,
+                files = files,
+                usersToMention = mentions.mapNotNull { it.target as? MentionTarget.User }.map { it.userId }
+            )
+        } else {
+            return channel.sendText(
+                text = render(getMessageElements()),
+                meta = meta,
+                shouldStore = shouldStore,
+                usePost = usePost,
+                ttl = ttl,
+                quotedMessage = quotedMessage,
+                files = files,
+                mentionedUsers = mentionedUsers,
+                referencedChannels = referencedChannels,
+                textLinks = mentions
+                    .filter { it.target is MentionTarget.Url }
+                    .map {
+                        TextLink(it.start, it.endExclusive, (it.target as MentionTarget.Url).url)
+                    }
+            )
+        }
+    }
+
+    internal fun addReferencedChannel(channel: Channel, channelNameOccurrenceIndex: Int) {
+        checkFormatV2()
+        val allChannelMentions = findChannelMentionMatches(messageText)
+        if (channelNameOccurrenceIndex >= allChannelMentions.size) {
+            println(allChannelMentions)
+            log.pnError("This channel does not appear in the text")
+        }
+        val match = allChannelMentions[channelNameOccurrenceIndex]
+        removeTextInternal(match.matchStart, match.value.length)
+        insertTextInternal(match.matchStart, "#" + channel.name!!)
+        referencedChannels[channelNameOccurrenceIndex] = MessageReferencedChannel(channel.id, channel.name!!)
+        fireMessageElementsChanged()
+    }
+
+    internal fun removeReferencedChannel(channelNameOccurrenceIndex: Int) {
+        checkFormatV2()
+        if (channelNameOccurrenceIndex in referencedChannels.keys) {
+            referencedChannels.remove(channelNameOccurrenceIndex)
+            return
+        }
+        log.warn { "This is noop. There is no channel reference occurrence at this index" }
+    }
+
+    internal fun addMentionedUser(user: User, nameOccurrenceIndex: Int) {
+        println("before $messageText")
+        checkFormatV2()
+        val allUserMentions = findUserMentionMatches(messageText)
+        if (nameOccurrenceIndex >= allUserMentions.size) {
+            println(messageText)
+            allUserMentions.forEach { println("${it.matchStart} ${it.value}") }
+            log.pnError("This user does not appear in the text")
+        }
+        val match = allUserMentions[nameOccurrenceIndex]
+        removeTextInternal(match.matchStart, match.value.length)
+        insertTextInternal(match.matchStart, "@" + user.name!!)
+        mentionedUsers[nameOccurrenceIndex] = MessageMentionedUser(user.id, user.name!!)
+        println("after $messageText")
+        fireMessageElementsChanged()
+    }
+
+    internal fun removeMentionedUser(nameOccurrenceIndex: Int) {
+        checkFormatV2()
+        if (nameOccurrenceIndex in mentionedUsers.keys) {
+            mentionedUsers.remove(nameOccurrenceIndex)
+            return
+        }
+        log.warn { "This is noop. There is no mention occurrence at this index" }
+    }
+
+    private fun checkFormatV2() {
+        if (formatV2) {
+            log.pnError("Cannot use legacy mentions and references with MessageDraft v2. Use addMention or insertSuggestedMention instead.")
+        }
+    }
 
     private fun fireMessageElementsChanged() {
         val listeners = listeners.value
@@ -243,8 +334,27 @@ class MessageDraftImpl(
         mentions.add(mention)
     }
 
-    internal fun getMessageElements(): List<MessageElement> =
-        getMessageElements(messageText, mentions)
+    internal fun getMessageElements(): List<MessageElement> {
+        return if (formatV2) {
+            getMessageElements(messageText, mentions)
+        } else {
+            getMessageElements(
+                messageText,
+                buildList {
+                    val allChannelReferences = findChannelMentionMatches(messageText)
+                    referencedChannels.forEach { (key, channel) ->
+                        val match = allChannelReferences[key]
+                        add(Mention(match.matchStart, channel.name.length + 1, MentionTarget.Channel(channel.id)))
+                    }
+                    val allUserMentions = findUserMentionMatches(messageText)
+                    mentionedUsers.forEach { (key, user) ->
+                        val match = allUserMentions[key]
+                        add(Mention(match.matchStart, user.name.length + 1, MentionTarget.User(user.id)))
+                    }
+                }
+            )
+        }
+    }
 
     private fun getSuggestedUsers(searchText: String): PNFuture<Collection<User>> {
         return if (userSuggestionSource == MessageDraft.UserSuggestionSource.CHANNEL) {
@@ -261,7 +371,8 @@ class MessageDraftImpl(
     }
 
     companion object {
-//        private val linkRegex = Regex("""\[(?<text>(?:[^]]*?(?:\\\\)*(?:\\])*)+?)]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
+        private val log = logging()
+
         private val linkRegex = Regex("""\[(?<text>(?:[^\]]*?(?:\\\\)*(?:\\\])*)+?)\]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
 
         internal fun escapeLinkText(text: String) = text.replace("\\", "\\\\").replace("]", "\\]")
