@@ -1168,7 +1168,7 @@ class ChatTest : BaseTest() {
     fun whenCreatingPublicConversationWithChannelIdShouldUseIt() {
         val channelId = id
         //
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(pnException404))
         }
