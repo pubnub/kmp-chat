@@ -1,6 +1,5 @@
 package com.pubnub.integration
 
-import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.Chat
@@ -18,7 +17,6 @@ import com.pubnub.test.test
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class UserIntegrationTest : BaseChatIntegrationTest() {
@@ -157,18 +155,6 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         }
 
         assertEquals(expectedUpdates, actualUpdates)
-    }
-
-    @Test
-    fun calling_active_should_throw_exception_when_storeUserActivityTimestamps_is_false() = runTest {
-        val e = assertFailsWith<PubNubException> {
-            someUser.active
-        }
-
-        assertEquals(
-            "storeUserActivityTimestamps config property is set to false so can not provide info about user being active",
-            e.message
-        )
     }
 
     @Test

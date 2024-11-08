@@ -431,7 +431,7 @@ class ChatTest : BaseTest() {
 
     @Test
     fun shouldResultErrorWhenSetChannelMetadataResultError() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.success(getPNChannelMetadataResult()))
         }
@@ -460,7 +460,7 @@ class ChatTest : BaseTest() {
 
     @Test
     fun shouldResultErrorWhenUpdatingChannelThatDoesNotExist() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(pnException404))
         }
@@ -496,7 +496,7 @@ class ChatTest : BaseTest() {
         val updatedType = ChannelType.GROUP.stringValue
         val updatedStatus = "updatedStatus"
 
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.success(getPNChannelMetadataResult()))
         }
@@ -704,7 +704,7 @@ class ChatTest : BaseTest() {
 
     @Test
     fun whenChannelNotFoundShouldReturnProperMessage() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(pnException404))
         }
@@ -717,7 +717,7 @@ class ChatTest : BaseTest() {
 
     @Test
     fun getChannelShouldResultSuccessWhenChannelExists() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(
                 Result.success(
@@ -746,7 +746,7 @@ class ChatTest : BaseTest() {
 
     @Test
     fun createChannelShouldResultFailureWhenChannelExists() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.success(getPNChannelMetadataResult()))
         }
@@ -759,7 +759,7 @@ class ChatTest : BaseTest() {
 
     @Test
     fun createChannelShouldResultSuccessWhenChannelDoesNotExist() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(pnException404))
         }
@@ -1211,7 +1211,7 @@ class ChatTest : BaseTest() {
     @OptIn(ExperimentalUuidApi::class)
     @Test
     fun whenCreatingPublicConversationWithoutChannelIdShouldGenerateIt() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(pnException404))
         }

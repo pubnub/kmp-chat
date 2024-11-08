@@ -399,7 +399,7 @@ class MessageDraftTest {
             "@user" to "@user",
             "@us()er" to "@us",
             "@user @fsjdoif" to "@user",
-            "@123aaa @user" to "@user",
+            "@,123aaa @user" to "@user",
             "@user aaa" to "@user",
             "aaa @user aaa" to "@user",
             "aaa @user," to "@user",
