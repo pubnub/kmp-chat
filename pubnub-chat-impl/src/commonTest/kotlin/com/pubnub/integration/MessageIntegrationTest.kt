@@ -80,7 +80,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         // we need to call sendText because addMessageAction is called in sendText that stores details about thread
         threadChannel.sendText("message in thread_${randomString()}").await()
 
-        delayInMillis(150)
+        delayInMillis(1000)
         // we need to call getMessage to get message with indication that it hasThread
         val messageWithThread: Message = channel01.getMessage(publishTimetoken).await()!!
 
