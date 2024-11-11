@@ -76,12 +76,11 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val publishTimetoken = pnPublishResult.timetoken
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
-        println("-=message.timetoken: ${message.timetoken}")
         val threadChannel: ThreadChannel = message.createThread().await()
-        println(threadChannel)
         // we need to call sendText because addMessageAction is called in sendText that stores details about thread
         threadChannel.sendText("message in thread_${randomString()}").await()
 
+        delayInMillis(150)
         // we need to call getMessage to get message with indication that it hasThread
         val messageWithThread: Message = channel01.getMessage(publishTimetoken).await()!!
 
@@ -180,6 +179,11 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val messageWithReaction = message.toggleReaction(reactionValue).await()
 
         assertTrue(messageWithReaction.hasUserReaction(reactionValue))
+
+        delayInMillis(1000)
+        val messageWithReactionFromHistory: Message = channel01.getHistory(publishTimetoken + 1, publishTimetoken).await().messages.first()
+
+        assertTrue(messageWithReactionFromHistory.hasUserReaction(reactionValue))
     }
 
     @Test
@@ -195,7 +199,6 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
                 removeListenerAndUnsubscribe = chat.listenForEvents<EventContent.Report>(
                     channelId = channelId,
                     callback = { event: Event<EventContent.Report> ->
-                        println("-= in listenForEvents")
                         try {
                             // we need to have try/catch here because assertion error will not cause test to fail
                             assertEquals(reason, event.payload.reason)
