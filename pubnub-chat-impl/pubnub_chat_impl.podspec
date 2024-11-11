@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name                     = 'pubnub_chat_impl'
-    spec.version                  = '0.8.1-DEV'
+    spec.version                  = '0.9.0'
     spec.homepage                 = 'Link to a Kotlin/Native module homepage'
     spec.source                   = { :http=> ''}
     spec.authors                  = ''

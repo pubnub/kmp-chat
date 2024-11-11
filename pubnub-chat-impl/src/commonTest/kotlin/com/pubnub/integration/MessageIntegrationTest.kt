@@ -21,6 +21,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MessageIntegrationTest : BaseChatIntegrationTest() {
@@ -66,6 +67,31 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
                 .contains("${MESSAGE_THREAD_ID_PREFIX}_${channel01.id}")
         )
         assertEquals(2, restoredMessage.actions!!.size)
+    }
+
+    @Test
+    fun createMessageWithThreadThenDeleteThread() = runTest {
+        // create message with thread
+        val messageText = "messageText_${randomString()}"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = pnPublishResult.timetoken
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
+        val threadChannel: ThreadChannel = message.createThread().await()
+        // we need to call sendText because addMessageAction is called in sendText that stores details about thread
+        threadChannel.sendText("message in thread_${randomString()}").await()
+
+        delayInMillis(1500)
+        // we need to call getMessage to get message with indication that it hasThread
+        val messageWithThread: Message = channel01.getMessage(publishTimetoken).await()!!
+
+        assertTrue(messageWithThread.hasThread)
+
+        messageWithThread.removeThread().await()
+
+        // we need to call getMessage to get message with indication that it has no Thread
+        val messageWithNoThread: Message = channel01.getMessage(publishTimetoken).await()!!
+
+        assertFalse(messageWithNoThread.hasThread)
     }
 
     @Test
@@ -143,6 +169,24 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun addReactionToMessageThenCheckIfPresent() = runTest {
+        val reactionValue = "wow"
+        val messageText = "messageText_${randomString()}"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = pnPublishResult.timetoken
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
+
+        val messageWithReaction = message.toggleReaction(reactionValue).await()
+
+        assertTrue(messageWithReaction.hasUserReaction(reactionValue))
+
+        delayInMillis(1000)
+        val messageWithReactionFromHistory: Message = channel01.getHistory(publishTimetoken + 1, publishTimetoken).await().messages.first()
+
+        assertTrue(messageWithReactionFromHistory.hasUserReaction(reactionValue))
+    }
+
+    @Test
     fun adminCanSubscribeToInternalChannelRelatedToReportsForSpecificChannelAndCanGetReportedMessageEvent() = runTest {
         val pnPublishResult = channel01.sendText("message1").await()
         val timetoken = pnPublishResult.timetoken
@@ -155,7 +199,6 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
                 removeListenerAndUnsubscribe = chat.listenForEvents<EventContent.Report>(
                     channelId = channelId,
                     callback = { event: Event<EventContent.Report> ->
-                        println("-= in listenForEvents")
                         try {
                             // we need to have try/catch here because assertion error will not cause test to fail
                             assertEquals(reason, event.payload.reason)

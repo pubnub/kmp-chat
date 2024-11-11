@@ -467,7 +467,7 @@ interface Channel {
      *
      * @return [PNFuture] containing [GetFilesResult]
      */
-    fun getFiles(limit: Int = 100, next: String? = null): PNFuture<GetFilesResult> // todo add tests for this
+    fun getFiles(limit: Int = 100, next: String? = null): PNFuture<GetFilesResult>
 
     /**
      * Delete sent files or files from published messages.
@@ -477,7 +477,7 @@ interface Channel {
      *
      * @return [PNFuture] containing [PNDeleteFileResult]
      */
-    fun deleteFile(id: String, name: String): PNFuture<PNDeleteFileResult> // todo add tests for this
+    fun deleteFile(id: String, name: String): PNFuture<PNDeleteFileResult>
 
     /**
      * Enables real-time tracking of users connecting to or disconnecting from a [Channel].

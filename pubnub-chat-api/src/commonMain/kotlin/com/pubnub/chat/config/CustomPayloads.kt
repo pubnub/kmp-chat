@@ -52,5 +52,10 @@ class CustomPayloads(
      *
      */
     val deleteMessageActionName: String? = null,
+    /**
+     * A type of action you want to be added to your Message object whenever a reaction is added to a published message, like "reacted".
+     *
+     * The default message action used by Chat SDK is "reactions".
+     */
     val reactionsActionName: String? = null
 )
