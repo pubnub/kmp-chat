@@ -18,10 +18,7 @@ class MessageDraftJs internal constructor(
     val config: MessageDraftConfig?,
 ) {
     val value: String get() = messageDraft.value.toString()
-    var quotedMessage: MessageJs? get() = messageDraft.quotedMessage?.asJs()
-        set(value) {
-            messageDraft.quotedMessage = value?.message
-        }
+    var quotedMessage: MessageJs? = null
     var files: Any? = null
 
     fun addReferencedChannel(channel: ChannelJs, channelNameOccurrenceIndex: Int) {
@@ -110,6 +107,7 @@ class MessageDraftJs internal constructor(
             val name = file.name
             messageDraft.files.add(InputFile(name ?: "", type ?: "", UploadableImpl(file)))
         }
+        messageDraft.quotedMessage = quotedMessage?.message
 
         return messageDraft.send(
             options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),

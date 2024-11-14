@@ -3,6 +3,9 @@
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.MessageMentionedUser
+import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
 import com.pubnub.kmp.toJsMap
@@ -28,9 +31,11 @@ open class MessageJs internal constructor(internal val message: Message) {
     }?.toJsMap()
     val meta get() = message.meta?.toJsMap() // todo recursive?
 
-    /*get mentionedUsers(): any;
-    get referencedChannels(): any;
-    get textLinks(): any;*/
+    val mentionedUsers: JsMap<MessageMentionedUser>?
+        get() = message.mentionedUsers?.mapKeys { it.key.toString() }?.toJsMap()
+    val referencedChannels: JsMap<MessageReferencedChannel>?
+        get() = message.referencedChannels?.mapKeys { it.key.toString() }?.toJsMap()
+    val textLinks get() = message.textLinks?.toTypedArray()
     val type by message::type
     val quotedMessage: QuotedMessageJs? get() = message.quotedMessage?.toJs()
     val files get() = message.files.toTypedArray()

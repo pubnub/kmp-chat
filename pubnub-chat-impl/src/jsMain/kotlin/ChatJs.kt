@@ -2,7 +2,6 @@
 
 import com.pubnub.api.PubNubImpl
 import com.pubnub.api.createJsonElement
-import com.pubnub.chat.Chat
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.serialization.PNDataEncoder
@@ -22,7 +21,7 @@ import kotlin.js.json
 
 @JsExport
 @JsName("Chat")
-class ChatJs internal constructor(val chat: Chat, val config: ChatConfig) {
+class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig) {
     val currentUser: UserJs get() = chat.currentUser.asJs()
 
     val sdk: PubNub get() = (chat.pubNub as PubNubImpl).jsPubNub
@@ -302,12 +301,12 @@ class ChatJs internal constructor(val chat: Chat, val config: ChatConfig) {
         }.asPromise()
     }
 
-    fun getUnreadMessagesCounts(params: PubNub.GetMembershipsParametersv2): Promise<Array<GetUnreadMessagesCountsJs>> {
+    fun getUnreadMessagesCounts(params: PubNub.GetMembershipsParametersv2?): Promise<Array<GetUnreadMessagesCountsJs>> {
         return chat.getUnreadMessagesCounts(
-            params.limit?.toInt(),
-            params.page?.toKmp(),
-            params.filter,
-            extractSortKeys(params.sort)
+            params?.limit?.toInt(),
+            params?.page?.toKmp(),
+            params?.filter,
+            extractSortKeys(params?.sort)
         ).then { result ->
             result.map { unreadMessagesCount ->
                 createJsObject<GetUnreadMessagesCountsJs> {
@@ -365,11 +364,18 @@ class ChatJs internal constructor(val chat: Chat, val config: ChatConfig) {
         return json("config" to config, "currentUser" to currentUser)
     }
 
+    fun getUserSuggestions(text: String, options: dynamic?): Promise<Array<UserJs>> {
+        val limit = options?.limit as? Number
+        return chat.getUserSuggestions(text.substring(1), limit?.toInt() ?: 10).then { users ->
+            users.map { it.asJs() }.toTypedArray()
+        }.asPromise()
+    }
+
     companion object {
         @JsStatic
         fun init(config: ChatConstructor): Promise<ChatJs> {
             return ChatImpl(config.toChatConfiguration(), PubNubImpl(PubNub(config))).initialize().then {
-                ChatJs(it, config)
+                ChatJs(it as ChatInternal, config)
             }.asPromise()
         }
     }

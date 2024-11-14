@@ -1,7 +1,6 @@
 @file:OptIn(ExperimentalJsExport::class, ExperimentalJsStatic::class)
 
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Message
 import com.pubnub.chat.MessageDraft
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.channel.BaseChannel
@@ -132,7 +131,7 @@ open class ChannelJs internal constructor(internal val channel: Channel) : Chann
         ).then { result ->
             createJsObject<HistoryResponseJs> {
                 this.isMore = result.isMore
-                this.messages = result.messages.map(Message::asJs).toTypedArray()
+                this.messages = result.messages.map { it.asJs() }.toTypedArray()
             }
         }.asPromise()
     }

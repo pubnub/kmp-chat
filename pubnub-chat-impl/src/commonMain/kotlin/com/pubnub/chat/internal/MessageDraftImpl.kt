@@ -150,7 +150,7 @@ class MessageDraftImpl(
             )
         } else {
             return channel.sendText(
-                text = render(getMessageElements()),
+                text = messageText.toString(),
                 meta = meta,
                 shouldStore = shouldStore,
                 usePost = usePost,
@@ -192,7 +192,6 @@ class MessageDraftImpl(
     }
 
     internal fun addMentionedUser(user: User, nameOccurrenceIndex: Int) {
-        println("before $messageText")
         checkFormatV2()
         val allUserMentions = findUserMentionMatches(messageText)
         if (nameOccurrenceIndex >= allUserMentions.size) {
@@ -204,7 +203,6 @@ class MessageDraftImpl(
         removeTextInternal(match.matchStart, match.value.length)
         insertTextInternal(match.matchStart, "@" + user.name!!)
         mentionedUsers[nameOccurrenceIndex] = MessageMentionedUser(user.id, user.name!!)
-        println("after $messageText")
         fireMessageElementsChanged()
     }
 
