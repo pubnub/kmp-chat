@@ -1,9 +1,9 @@
 package com.pubnub.chat.internal.util
 
+import co.touchlab.kermit.Logger
 import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
-import org.lighthousegames.logging.KmLog
 
 // internal fun getPhraseToLookFor(text: String, separator: String): String? {
 //    val lastAtIndex = text.lastIndexOf(separator)
@@ -31,16 +31,16 @@ internal val PNFetchMessagesResult.channelsUrlDecoded: Map<String, List<PNFetchM
         )
     }
 
-inline fun PubNubException.logErrorAndReturnException(log: KmLog): PubNubException = this.apply {
-    log.error(err = this, msg = { this.message.orEmpty() })
+inline fun PubNubException.logErrorAndReturnException(log: Logger): PubNubException = this.apply {
+    log.e(throwable = this) { this.message.orEmpty() }
 }
 
-inline fun PubNubException.logWarnAndReturnException(log: KmLog): PubNubException = this.apply {
-    log.warn(err = this, msg = { this.message.orEmpty() })
+inline fun PubNubException.logWarnAndReturnException(log: Logger): PubNubException = this.apply {
+    log.w(throwable = this) { this.message.orEmpty() }
 }
 
-inline fun KmLog.pnError(message: String): Nothing = throw PubNubException(message).logErrorAndReturnException(this)
+inline fun Logger.pnError(message: String): Nothing = throw PubNubException(message).logErrorAndReturnException(this)
 
-inline fun KmLog.logErrorAndReturnException(message: String): PubNubException {
+inline fun Logger.logErrorAndReturnException(message: String): PubNubException {
     return PubNubException(message).logErrorAndReturnException(this)
 }

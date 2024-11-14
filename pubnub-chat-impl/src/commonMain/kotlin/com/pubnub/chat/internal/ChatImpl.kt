@@ -1,5 +1,6 @@
 package com.pubnub.chat.internal
 
+import co.touchlab.kermit.Logger
 import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
@@ -110,8 +111,6 @@ import com.pubnub.kmp.thenAsync
 import encodeForSending
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import org.lighthousegames.logging.KmLogging
-import org.lighthousegames.logging.logging
 import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
@@ -139,7 +138,7 @@ class ChatImpl(
     private var runWithDelayTimer: PlatformTimer? = null
 
     init {
-        KmLogging.setLogLevel(mapLogLevelFromConfigToKmLogging())
+        Logger.setMinSeverity(mapLogLevelFromConfigToKmLogging())
 
         if (config.storeUserActivityInterval < 60.seconds) {
             log.pnError(STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN)
@@ -669,7 +668,7 @@ class ChatImpl(
                 )
                 callback(event)
             } catch (e: Exception) {
-                log.e(e, msg = { e.message })
+                log.e(throwable = e) { e.message.orEmpty() }
             }
         }
         val method = type.getEmitMethod() ?: customMethod
@@ -1131,7 +1130,7 @@ class ChatImpl(
     }
 
     companion object {
-        private val log = logging()
+        private val log = Logger.withTag("ChatImpl")
 
         internal fun pinOrUnpinMessageToChannel(
             pubNub: PubNub,
@@ -1210,7 +1209,7 @@ class ChatImpl(
                 timerManager.runPeriodically(config.storeUserActivityInterval) {
                     saveTimeStampFunc().async { result: Result<Unit> ->
                         result.onFailure { e ->
-                            log.error(err = e, msg = { e.message })
+                            log.e(throwable = e) { e.message.orEmpty() }
                         }
                     }
                 }
@@ -1239,14 +1238,14 @@ class ChatImpl(
         }
     }
 
-    private fun mapLogLevelFromConfigToKmLogging(): org.lighthousegames.logging.LogLevel {
+    private fun mapLogLevelFromConfigToKmLogging(): co.touchlab.kermit.Severity {
         return when (config.logLevel) {
-            LogLevel.OFF -> org.lighthousegames.logging.LogLevel.Off
-            LogLevel.ERROR -> org.lighthousegames.logging.LogLevel.Error
-            LogLevel.WARN -> org.lighthousegames.logging.LogLevel.Warn
-            LogLevel.INFO -> org.lighthousegames.logging.LogLevel.Info
-            LogLevel.DEBUG -> org.lighthousegames.logging.LogLevel.Debug
-            LogLevel.VERBOSE -> org.lighthousegames.logging.LogLevel.Verbose
+            LogLevel.OFF -> co.touchlab.kermit.Severity.Assert
+            LogLevel.ERROR -> co.touchlab.kermit.Severity.Error
+            LogLevel.WARN -> co.touchlab.kermit.Severity.Warn
+            LogLevel.INFO -> co.touchlab.kermit.Severity.Info
+            LogLevel.DEBUG -> co.touchlab.kermit.Severity.Debug
+            LogLevel.VERBOSE -> co.touchlab.kermit.Severity.Verbose
         }
     }
 }

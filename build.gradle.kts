@@ -33,7 +33,7 @@ kotlin {
         }
 
         if (enableAnyIosTarget) {
-            val iosMain by getting {
+            val appleMain by getting {
                 dependencies {
                     api(project(":pubnub-chat-impl"))
                 }

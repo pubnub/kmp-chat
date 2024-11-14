@@ -1,5 +1,6 @@
 package com.pubnub.chat.internal.channel
 
+import co.touchlab.kermit.Logger
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
@@ -25,7 +26,6 @@ import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import kotlinx.datetime.Clock
-import org.lighthousegames.logging.logging
 
 data class ThreadChannelImpl(
     override val parentMessage: Message,
@@ -166,7 +166,7 @@ data class ThreadChannelImpl(
     }
 
     companion object {
-        private val log = logging()
+        private val log = Logger.withTag("ThreadChannelImpl")
 
         internal fun fromDTO(chat: ChatInternal, parentMessage: Message, channel: PNChannelMetadata): ThreadChannel {
             return ThreadChannelImpl(

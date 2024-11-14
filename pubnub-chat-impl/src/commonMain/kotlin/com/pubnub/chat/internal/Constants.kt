@@ -1,15 +1,15 @@
 package com.pubnub.chat.internal
 
+import co.touchlab.kermit.Logger
 import com.pubnub.api.JsonElement
 import com.pubnub.api.asString
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_CALLING_DEFAULT_GET_MESSAGE_RESPONSE_BODY
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
-import org.lighthousegames.logging.logging
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-private val log = logging(tag = "DefaultGetMessage")
+private val log = Logger.withTag("DefaultGetMessage")
 
 internal const val DELETED = "deleted"
 internal const val ORIGINAL_PUBLISHER = "originalPublisher"
