@@ -30,7 +30,6 @@ import com.pubnub.api.models.consumer.history.PNMessageCountResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
-import com.pubnub.api.models.consumer.objects.member.MemberInput
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
@@ -88,13 +87,13 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-class ChatTest : BaseTest() {
-    private lateinit var objectUnderTest: ChatImpl
+open class ChatTest : BaseTest() {
+    internal lateinit var objectUnderTest: ChatImpl
     private val chatMock: ChatInternal = mock(MockMode.strict)
-    private val pubnub: PubNub = mock(MockMode.strict)
-    private val timerManager: TimerManager = mock(MockMode.strict)
-    private lateinit var pnConfiguration: PNConfiguration
-    private lateinit var chatConfig: ChatConfiguration
+    internal val pubnub: PubNub = mock(MockMode.strict)
+    internal val timerManager: TimerManager = mock(MockMode.strict)
+    internal lateinit var pnConfiguration: PNConfiguration
+    internal lateinit var chatConfig: ChatConfiguration
     private val setUUIDMetadataEndpoint: SetUUIDMetadata = mock(MockMode.strict)
     private val setChannelMetadataEndpoint: SetChannelMetadata = mock(MockMode.strict)
     private val getUUIDMetadataEndpoint: GetUUIDMetadata = mock(MockMode.strict)
@@ -103,7 +102,7 @@ class ChatTest : BaseTest() {
     private val getChannelMetadataEndpoint: GetChannelMetadata = mock(MockMode.strict)
     private val removeUUIDMetadataEndpoint: RemoveUUIDMetadata = mock(MockMode.strict)
     private val removeChannelMetadataEndpoint: RemoveChannelMetadata = mock(MockMode.strict)
-    private val publishEndpoint: Publish = mock(MockMode.strict)
+    internal val publishEndpoint: Publish = mock(MockMode.strict)
     private val signalEndpoint: Signal = mock(MockMode.strict)
     private val name = "testName"
     private val externalId = "testExternalId"
@@ -115,13 +114,13 @@ class ChatTest : BaseTest() {
     private val typeAsString = "direct"
     private val updated = "timeStamp"
     private val callback: (Result<User>) -> Unit = { }
-    private val userId = "myUserId"
-    private val subscribeKey = "mySubscribeKey"
-    private val publishKey = "myPublishKey"
+    internal val userId = "myUserId"
+    internal val subscribeKey = "mySubscribeKey"
+    internal val publishKey = "myPublishKey"
     private val description = "testDescription"
-    private val channelId = "myChannelId"
-    private val manageChannelMembersEndpoint: ManageChannelMembers = mock(mode = MockMode.strict)
-    private val timetoken: Long = 123457
+    internal val channelId = "myChannelId"
+    internal val manageChannelMembersEndpoint: ManageChannelMembers = mock(mode = MockMode.strict)
+    internal val timetoken: Long = 123457
     private val pnException404 = PubNubException(statusCode = 404, errorMessage = "Requested object was not found.")
     private val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
     private val listPushProvisions: ListPushProvisions = mock(MockMode.strict)
@@ -1348,65 +1347,6 @@ class ChatTest : BaseTest() {
         val actualRestrictedUserId: String = userIdsSlot.get()[0]
         val actualModerationEventChannelId = userIdSlot.get()
         assertEquals(restrictedUserId, actualRestrictedUserId)
-        assertEquals("PUBNUB_INTERNAL_MODERATION_$restrictedChannelId", actualRestrictedChannelId)
-        assertEquals(restrictedUserId, actualModerationEventChannelId)
-    }
-
-    @Test
-    fun shouldAddRestrictionWhenBanIsTrue() {
-        val restrictedUserId = userId
-        val restrictedChannelId = channelId
-        val ban = true
-        val mute = false
-        val reason = "He rehabilitated"
-        val pnMemberArrayResult = PNMemberArrayResult(
-            status = 200,
-            data = listOf(PNMember(PNUUIDMetadata(id = userId), null, "", "", null)),
-            1,
-            null,
-            null
-        )
-        val channelIdSlot = Capture.slot<String>()
-        val userIdsSlot = Capture.slot<List<MemberInput>>()
-        val userIdSlot = Capture.slot<String>()
-        val encodedMessageSlot = Capture.slot<Map<String, Any>>()
-        val restriction = Restriction(
-            userId = restrictedUserId,
-            channelId = restrictedChannelId,
-            ban = ban,
-            mute = mute,
-            reason = reason
-        )
-        every {
-            pubnub.setChannelMembers(
-                channel = capture(channelIdSlot),
-                uuids = capture(userIdsSlot)
-            )
-        } returns manageChannelMembersEndpoint
-        every { manageChannelMembersEndpoint.async(any()) } calls { (callback: Consumer<Result<PNMemberArrayResult>>) ->
-            callback.accept(Result.success(pnMemberArrayResult))
-        }
-        every {
-            pubnub.publish(
-                channel = capture(userIdSlot),
-                message = capture(encodedMessageSlot)
-            )
-        } returns publishEndpoint
-        every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
-            callback1.accept(Result.success(PNPublishResult(timetoken)))
-        }
-
-        objectUnderTest.setRestrictions(restriction).async { result: Result<Unit> ->
-            assertTrue(result.isSuccess)
-        }
-
-        val actualRestrictedChannelId: String = channelIdSlot.get()
-        val actualRestriction = userIdsSlot.get()[0].custom as Map<String, String>
-        val actualModerationEventChannelId = userIdSlot.get()
-        val actualEncodedMessageSlot = encodedMessageSlot.get()
-        assertTrue(actualRestriction["ban"] as Boolean)
-        assertEquals(reason, actualRestriction["reason"])
-        assertEquals("banned", actualEncodedMessageSlot.get("restriction"))
         assertEquals("PUBNUB_INTERNAL_MODERATION_$restrictedChannelId", actualRestrictedChannelId)
         assertEquals(restrictedUserId, actualModerationEventChannelId)
     }
