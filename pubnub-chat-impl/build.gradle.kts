@@ -22,7 +22,7 @@ kotlin {
                 implementation(libs.kotlinx.datetime)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.atomicfu)
-                implementation("co.touchlab:kermit:2.0.4")
+                implementation(libs.touchlab.kermit)
             }
         }
 
