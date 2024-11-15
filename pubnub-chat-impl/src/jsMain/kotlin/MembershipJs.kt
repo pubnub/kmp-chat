@@ -10,9 +10,9 @@ import kotlin.js.json
 
 @JsExport
 @JsName("Membership")
-class MembershipJs internal constructor(val membership: Membership) {
-    val channel: ChannelJs get() = membership.channel.asJs()
-    val user: UserJs get() = membership.user.asJs()
+class MembershipJs internal constructor(internal val membership: Membership, internal val chatJs: ChatJs) {
+    val channel: ChannelJs get() = membership.channel.asJs(chatJs)
+    val user: UserJs get() = membership.user.asJs(chatJs)
     val custom get() = membership.custom?.toJsMap() // todo recursive?
     val updated by membership::updated
     val eTag by membership::eTag
@@ -21,7 +21,7 @@ class MembershipJs internal constructor(val membership: Membership) {
 
     fun update(custom: dynamic): Promise<MembershipJs> {
         return membership.update(convertToCustomObject(custom?.custom))
-            .then { it.asJs() }
+            .then { it.asJs(chatJs) }
             .asPromise()
     }
 
@@ -32,11 +32,11 @@ class MembershipJs internal constructor(val membership: Membership) {
     }
 
     fun setLastReadMessage(message: MessageJs): Promise<MembershipJs> {
-        return membership.setLastReadMessage(message.message).then { it.asJs() }.asPromise()
+        return membership.setLastReadMessage(message.message).then { it.asJs(chatJs) }.asPromise()
     }
 
     fun setLastReadMessageTimetoken(timetoken: String): Promise<MembershipJs> {
-        return membership.setLastReadMessageTimetoken(timetoken.toLong()).then { it.asJs() }.asPromise()
+        return membership.setLastReadMessageTimetoken(timetoken.toLong()).then { it.asJs(chatJs) }.asPromise()
     }
 
     fun getUnreadMessagesCount(): Promise<Any> {
@@ -59,8 +59,9 @@ class MembershipJs internal constructor(val membership: Membership) {
     companion object {
         @JsStatic
         fun streamUpdatesOn(memberships: Array<MembershipJs>, callback: (Array<MembershipJs>) -> Unit): () -> Unit {
+            val chatJs = memberships.first().chatJs
             return MembershipImpl.streamUpdatesOn(memberships.map { it.membership }) {
-                callback(it.map { it.asJs() }.toTypedArray())
+                callback(it.map { it.asJs(chatJs) }.toTypedArray())
             }.let {
                 it::close
             }
@@ -68,4 +69,4 @@ class MembershipJs internal constructor(val membership: Membership) {
     }
 }
 
-internal fun Membership.asJs() = MembershipJs(this)
+internal fun Membership.asJs(chat: ChatJs) = MembershipJs(this, chat)

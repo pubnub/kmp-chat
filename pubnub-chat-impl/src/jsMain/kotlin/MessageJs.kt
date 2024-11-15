@@ -13,7 +13,7 @@ import kotlin.js.Promise
 
 @JsExport
 @JsName("Message")
-open class MessageJs internal constructor(internal val message: Message) {
+open class MessageJs internal constructor(internal val message: Message, internal val chatJs: ChatJs) {
     val hasThread by message::hasThread
     val timetoken: String get() = message.timetoken.toString()
     val content get() = (message.content as EventContent).toJsObject()
@@ -52,24 +52,24 @@ open class MessageJs internal constructor(internal val message: Message) {
         }.toJsMap()
 
     fun streamUpdates(callback: (MessageJs?) -> Unit): () -> Unit {
-        return message.streamUpdates<Message> { it.asJs() }::close
+        return message.streamUpdates<Message> { it.asJs(chatJs) }::close
     }
 
 //    fun getMessageElements() TODO
 
     fun editText(newText: String): Promise<MessageJs> {
-        return message.editText(newText).then { it.asJs() }.asPromise()
+        return message.editText(newText).then { it.asJs(chatJs) }.asPromise()
     }
 
     fun delete(params: DeleteParameters?): Promise<Any> {
         return message.delete(params?.soft ?: false, params?.asDynamic()?.preserveFiles ?: false)
             .then {
-                it?.asJs() ?: true
+                it?.asJs(chatJs) ?: true
             }.asPromise()
     }
 
     fun restore(): Promise<MessageJs> {
-        return message.restore().then { it.asJs() }.asPromise()
+        return message.restore().then { it.asJs(chatJs) }.asPromise()
     }
 
     fun hasUserReaction(reaction: String): Boolean {
@@ -77,7 +77,7 @@ open class MessageJs internal constructor(internal val message: Message) {
     }
 
     fun toggleReaction(reaction: String): Promise<MessageJs> {
-        return message.toggleReaction(reaction).then { it.asJs() }.asPromise()
+        return message.toggleReaction(reaction).then { it.asJs(chatJs) }.asPromise()
     }
 
     fun forward(channelId: String): Promise<PubNub.PublishResponse> {
@@ -87,7 +87,7 @@ open class MessageJs internal constructor(internal val message: Message) {
     }
 
     fun pin(): Promise<Any> {
-        return message.pin().then { it.asJs() }.asPromise()
+        return message.pin().then { it.asJs(chatJs) }.asPromise()
     }
 
     fun report(reason: String): Promise<PubNub.SignalResponse> {
@@ -97,18 +97,18 @@ open class MessageJs internal constructor(internal val message: Message) {
     }
 
     fun getThread(): Promise<ThreadChannelJs> {
-        return message.getThread().then { it.asJs() }.asPromise()
+        return message.getThread().then { it.asJs(chatJs) }.asPromise()
     }
 
     fun createThread(): Promise<ThreadChannelJs> {
-        return message.createThread().then { it.asJs() }.asPromise()
+        return message.createThread().then { it.asJs(chatJs) }.asPromise()
     }
 
     fun removeThread(): Promise<Array<Any>> {
         return message.removeThread().then {
             arrayOf(
                 Any(),
-                it.second?.asJs() ?: true
+                it.second?.asJs(chatJs) ?: true
             )
         }.asPromise()
     }
@@ -116,11 +116,12 @@ open class MessageJs internal constructor(internal val message: Message) {
     companion object {
         @JsStatic
         fun streamUpdatesOn(messages: Array<MessageJs>, callback: (Array<MessageJs>) -> Unit): () -> Unit {
+            val chatJs = messages.first().chatJs
             return BaseMessage.streamUpdatesOn(messages.map { it.message }) { kmpMessages ->
-                callback(kmpMessages.map { kmpMessage -> kmpMessage.asJs() }.toTypedArray())
+                callback(kmpMessages.map { kmpMessage -> kmpMessage.asJs(chatJs) }.toTypedArray())
             }::close
         }
     }
 }
 
-internal fun Message.asJs() = MessageJs(this)
+internal fun Message.asJs(chat: ChatJs) = MessageJs(this, chat)

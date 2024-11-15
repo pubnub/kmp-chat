@@ -22,7 +22,7 @@ import kotlin.js.json
 @JsExport
 @JsName("Chat")
 class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig) {
-    val currentUser: UserJs get() = chat.currentUser.asJs()
+    val currentUser: UserJs get() = chat.currentUser.asJs(this@ChatJs)
 
     val sdk: PubNub get() = (chat.pubNub as PubNubImpl).jsPubNub
 
@@ -80,7 +80,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     }
 
     fun getUser(id: String): Promise<UserJs?> {
-        return chat.getUser(id).then { it?.asJs() }.asPromise()
+        return chat.getUser(id).then { it?.asJs(this@ChatJs) }.asPromise()
     }
 
     fun createUser(id: String, data: UserFields): Promise<UserJs> {
@@ -93,7 +93,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             convertToCustomObject(data.custom),
             data.status,
             data.type
-        ).then { it.asJs() }.asPromise()
+        ).then { it.asJs(this@ChatJs) }.asPromise()
     }
 
     fun updateUser(id: String, data: UserFields): Promise<UserJs> {
@@ -106,11 +106,11 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             convertToCustomObject(data.custom),
             data.status,
             data.type
-        ).then { it.asJs() }.asPromise()
+        ).then { it.asJs(this@ChatJs) }.asPromise()
     }
 
     fun deleteUser(id: String, params: DeleteParameters?): Promise<Any> {
-        return chat.deleteUser(id, params?.soft ?: false).then { it?.asJs() ?: true }.asPromise()
+        return chat.deleteUser(id, params?.soft ?: false).then { it?.asJs(this@ChatJs) ?: true }.asPromise()
     }
 
     fun getUsers(params: PubNub.GetAllMetadataParameters?): Promise<GetUsersResponseJs> {
@@ -121,7 +121,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             params?.page?.toKmp()
         ).then { result ->
             createJsObject<GetUsersResponseJs> {
-                this.users = result.users.map { it.asJs() }.toTypedArray()
+                this.users = result.users.map { it.asJs(this@ChatJs) }.toTypedArray()
                 this.page = MetadataPage(result.next, result.prev)
                 this.total = result.total
             }
@@ -129,7 +129,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     }
 
     fun getChannel(id: String): Promise<ChannelJs?> {
-        return chat.getChannel(id).then { it?.asJs() }.asPromise()
+        return chat.getChannel(id).then { it?.asJs(this) }.asPromise()
     }
 
     fun updateChannel(id: String, data: ChannelFields): Promise<ChannelJs> {
@@ -140,7 +140,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             data.description,
             data.status,
             ChannelType.from(data.type)
-        ).then { it.asJs() }.asPromise()
+        ).then { it.asJs(this@ChatJs) }.asPromise()
     }
 
     fun getChannels(params: PubNub.GetAllMetadataParameters?): Promise<GetChannelsResponseJs> {
@@ -151,7 +151,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             params?.page?.toKmp()
         ).then { result ->
             createJsObject<GetChannelsResponseJs> {
-                this.users = result.channels.map { it.asJs() }.toTypedArray()
+                this.users = result.channels.map { it.asJs(this@ChatJs) }.toTypedArray()
                 this.page = MetadataPage(result.next, result.prev)
                 this.total = result.total
             }
@@ -159,7 +159,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     }
 
     fun deleteChannel(id: String, params: DeleteParameters?): Promise<Any> {
-        return chat.deleteChannel(id, params?.soft ?: false).then { it?.asJs() ?: true }.asPromise()
+        return chat.deleteChannel(id, params?.soft ?: false).then { it?.asJs(this@ChatJs) ?: true }.asPromise()
     }
 
     // internal
@@ -171,7 +171,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             convertToCustomObject(data?.custom), // TODO
             ChannelType.from(data?.type),
             data?.status
-        ).then { it.asJs() }.asPromise()
+        ).then { it.asJs(this@ChatJs) }.asPromise()
     }
 
     // internal
@@ -187,7 +187,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             data?.description,
             convertToCustomObject(data?.custom), // TODO
             data?.status
-        ).then { it.asJs() }.asPromise()
+        ).then { it.asJs(this@ChatJs) }.asPromise()
     }
 
     fun createDirectConversation(params: dynamic): Promise<CreateDirectConversationResultJs> {
@@ -285,7 +285,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
                             this.userId = it.userId
                             this.channelId = it.channelId
                             this.event = it.event.toJs(this@ChatJs)
-                            this.message = it.message.asJs()
+                            this.message = it.message.asJs(this@ChatJs)
                         }
 
                         is ThreadMentionData -> createJsObject<ThreadMentionDataJs> {
@@ -293,7 +293,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
                             this.parentChannelId = it.parentChannelId
                             this.threadChannelId = it.threadChannelId
                             this.event = it.event.toJs(this@ChatJs)
-                            this.message = it.message.asJs()
+                            this.message = it.message.asJs(this@ChatJs)
                         }
                     }
                 }.toTypedArray()
@@ -310,8 +310,8 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         ).then { result ->
             result.map { unreadMessagesCount ->
                 createJsObject<GetUnreadMessagesCountsJs> {
-                    this.channel = unreadMessagesCount.channel.asJs()
-                    this.membership = unreadMessagesCount.membership.asJs()
+                    this.channel = unreadMessagesCount.channel.asJs(this@ChatJs)
+                    this.membership = unreadMessagesCount.membership.asJs(this@ChatJs)
                     this.count = unreadMessagesCount.count.toDouble()
                 }
             }.toTypedArray()
@@ -329,7 +329,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
                 this.page = MetadataPage(result.next, result.prev)
                 this.total = result.total
                 this.status = result.status
-                this.memberships = result.memberships.map { it.asJs() }.toTypedArray()
+                this.memberships = result.memberships.map { it.asJs(this@ChatJs) }.toTypedArray()
             }
         }.asPromise()
     }
@@ -348,26 +348,37 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
 
     private fun CreateDirectConversationResult.toJs() =
         createJsObject<CreateDirectConversationResultJs> {
-            this.channel = this@toJs.channel.asJs()
-            this.hostMembership = this@toJs.hostMembership.asJs()
-            this.inviteeMembership = this@toJs.inviteeMembership.asJs()
+            this.channel = this@toJs.channel.asJs(this@ChatJs)
+            this.hostMembership = this@toJs.hostMembership.asJs(this@ChatJs)
+            this.inviteeMembership = this@toJs.inviteeMembership.asJs(this@ChatJs)
         }
 
     private fun CreateGroupConversationResult.toJs() =
         createJsObject<CreateGroupConversationResultJs> {
-            this.channel = this@toJs.channel.asJs()
-            this.hostMembership = this@toJs.hostMembership.asJs()
-            this.inviteesMemberships = this@toJs.inviteeMemberships.map { it.asJs() }.toTypedArray()
+            this.channel = this@toJs.channel.asJs(this@ChatJs)
+            this.hostMembership = this@toJs.hostMembership.asJs(this@ChatJs)
+            this.inviteesMemberships = this@toJs.inviteeMemberships.map { it.asJs(this@ChatJs) }.toTypedArray()
         }
 
     fun toJSON(): Json {
         return json("config" to config, "currentUser" to currentUser)
     }
 
+    @Deprecated("Only for internal MessageDraft V1 use")
     fun getUserSuggestions(text: String, options: dynamic?): Promise<Array<UserJs>> {
         val limit = options?.limit as? Number
-        return chat.getUserSuggestions(text.substring(1), limit?.toInt() ?: 10).then { users ->
-            users.map { it.asJs() }.toTypedArray()
+        val cacheKey = MessageElementsUtils.getPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<UserJs>())
+        return chat.getUserSuggestions(cacheKey, limit?.toInt() ?: 10).then { users ->
+            users.map { it.asJs(this@ChatJs) }.toTypedArray()
+        }.asPromise()
+    }
+
+    @Deprecated("Only for internal MessageDraft V1 use")
+    fun getChannelSuggestions(text: String, options: dynamic?): Promise<Array<ChannelJs>> {
+        val limit = options?.limit as? Number
+        val cacheKey = MessageElementsUtils.getChannelPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<ChannelJs>())
+        return chat.getChannelSuggestions(cacheKey, limit?.toInt() ?: 10).then { channels ->
+            channels.map { it.asJs(this@ChatJs) }.toTypedArray()
         }.asPromise()
     }
 

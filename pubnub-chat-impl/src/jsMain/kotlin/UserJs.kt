@@ -14,7 +14,7 @@ import kotlin.js.json
 
 @JsExport
 @JsName("User")
-class UserJs internal constructor(internal val user: User) : UserFields {
+class UserJs internal constructor(internal val user: User, internal val chatJs: ChatJs) : UserFields {
     val active: Boolean get() = user.active
 
     override val id get() = user.id
@@ -39,19 +39,19 @@ class UserJs internal constructor(internal val user: User) : UserFields {
             data.status,
             data.type
         ).then {
-            UserJs(it)
+            UserJs(it, chatJs)
         }.asPromise()
     }
 
     fun delete(options: DeleteParameters?): Promise</*true | UserJs*/Any> { // TODO
         return user.delete(options?.soft ?: false).then {
-            it?.asJs() ?: true
+            it?.asJs(chatJs) ?: true
         }.asPromise()
     }
 
     fun streamUpdates(callback: (user: UserJs?) -> Unit): () -> Unit {
         val closeable = user.streamUpdates {
-            callback(it?.asJs())
+            callback(it?.asJs(chatJs))
         }
         return closeable::close
     }
@@ -83,7 +83,7 @@ class UserJs internal constructor(internal val user: User) : UserFields {
             createJsObject<MembershipsResponseJs> {
                 this.page = MetadataPage(it.next, it.prev)
                 this.total = it.total
-                this.memberships = it.memberships.map(::MembershipJs).toTypedArray()
+                this.memberships = it.memberships.map { it.asJs(chatJs) }.toTypedArray()
                 this.status = it.status
             }
         }.asPromise()
@@ -136,12 +136,13 @@ class UserJs internal constructor(internal val user: User) : UserFields {
     companion object {
         @JsStatic
         fun streamUpdatesOn(users: Array<UserJs>, callback: (users: Array<UserJs>) -> Unit): () -> Unit {
+            val chatJs = users.first().chatJs
             val closeable = UserImpl.streamUpdatesOn(users.map { jsUser -> jsUser.user }) {
-                callback(it.map { kmpUser -> UserJs(kmpUser) }.toTypedArray())
+                callback(it.map { kmpUser -> UserJs(kmpUser, chatJs) }.toTypedArray())
             }
             return closeable::close
         }
     }
 }
 
-internal fun User.asJs() = UserJs(this)
+internal fun User.asJs(chat: ChatJs) = UserJs(this, chat)

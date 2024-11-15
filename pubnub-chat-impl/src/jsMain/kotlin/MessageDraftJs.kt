@@ -21,26 +21,6 @@ class MessageDraftJs internal constructor(
     var quotedMessage: MessageJs? = null
     var files: Any? = null
 
-    fun addReferencedChannel(channel: ChannelJs, channelNameOccurrenceIndex: Int) {
-        messageDraft.addReferencedChannel(channel.channel, channelNameOccurrenceIndex)
-    }
-
-    fun removeReferencedChannel(channelNameOccurrenceIndex: Int) {
-        messageDraft.removeReferencedChannel(channelNameOccurrenceIndex)
-    }
-
-    fun addMentionedUser(user: UserJs, nameOccurrenceIndex: Int) {
-        messageDraft.addMentionedUser(user.user, nameOccurrenceIndex)
-    }
-
-    fun removeMentionedUser(nameOccurrenceIndex: Int) {
-        messageDraft.removeMentionedUser(nameOccurrenceIndex)
-    }
-
-    fun onChange(text: String) {
-        messageDraft.update(text)
-    }
-
     fun addQuote(message: MessageJs) {
         quotedMessage = message
     }

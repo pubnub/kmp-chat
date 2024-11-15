@@ -1,6 +1,9 @@
 @file:OptIn(ExperimentalJsExport::class)
 
 import com.pubnub.chat.types.GetFileItem
+import com.pubnub.chat.types.MessageMentionedUser
+import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.JsMap
 
 external interface GetEventsHistoryParams {
@@ -239,10 +242,18 @@ external interface DeleteParameters {
 
 @JsExport
 external interface MessageDraftConfig {
-    val userSuggestionSource: String?
-    val isTypingIndicatorTriggered: Boolean?
-    val userLimit: Int?
-    val channelLimit: Int?
+    var userSuggestionSource: String?
+    var isTypingIndicatorTriggered: Boolean?
+    var userLimit: Int?
+    var channelLimit: Int?
+}
+
+external interface SendTextOptionParams {
+    var mentionedUsers: JsMap<MessageMentionedUser>?
+    var referencedChannels: JsMap<MessageReferencedChannel>?
+    var textLinks: Array<TextLink>?
+    var quotedMessage: MessageJs?
+    var files: Any?
 }
 
 @JsExport

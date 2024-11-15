@@ -2,7 +2,6 @@
 
 import com.pubnub.chat.Event
 import com.pubnub.chat.ThreadChannel
-import com.pubnub.chat.ThreadMessage
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -12,23 +11,23 @@ import kotlin.js.Promise
 
 @JsExport
 @JsName("ThreadChannel")
-class ThreadChannelJs internal constructor(internal val threadChannel: ThreadChannel) : ChannelJs(threadChannel) {
+class ThreadChannelJs internal constructor(internal val threadChannel: ThreadChannel, chatJs: ChatJs) : ChannelJs(threadChannel, chatJs) {
     val parentChannelId by threadChannel::parentChannelId
 
     override fun pinMessage(message: MessageJs): Promise<ChannelJs> {
-        return channel.pinMessage(message.message).then { it.asJs() }.asPromise()
+        return channel.pinMessage(message.message).then { it.asJs(chatJs) }.asPromise()
     }
 
     override fun unpinMessage(): Promise<ChannelJs> {
-        return channel.unpinMessage().then { it.asJs() }.asPromise()
+        return channel.unpinMessage().then { it.asJs(chatJs) }.asPromise()
     }
 
     fun pinMessageToParentChannel(message: ThreadMessageJs): Promise<ChannelJs> {
-        return threadChannel.pinMessageToParentChannel(message.threadMessage).then { it.asJs() }.asPromise()
+        return threadChannel.pinMessageToParentChannel(message.threadMessage).then { it.asJs(chatJs) }.asPromise()
     }
 
     fun unpinMessageFromParentChannel(): Promise<ChannelJs> {
-        return threadChannel.unpinMessageFromParentChannel().then { it.asJs() }.asPromise()
+        return threadChannel.unpinMessageFromParentChannel().then { it.asJs(chatJs) }.asPromise()
     }
 
     override fun getHistory(params: dynamic): Promise<HistoryResponseJs> {
@@ -39,7 +38,7 @@ class ThreadChannelJs internal constructor(internal val threadChannel: ThreadCha
         ).then { result ->
             createJsObject<HistoryResponseJs> {
                 this.isMore = result.isMore
-                this.messages = result.messages.map(ThreadMessage::asJs).toTypedArray()
+                this.messages = result.messages.map { it.asJs(chatJs) }.toTypedArray()
             }
         }.asPromise()
     }
@@ -61,4 +60,4 @@ internal fun Event<*>.toJs(chatJs: ChatJs): EventJs {
     )
 }
 
-internal fun ThreadChannel.asJs() = ThreadChannelJs(this)
+internal fun ThreadChannel.asJs(chat: ChatJs) = ThreadChannelJs(this, chat)
