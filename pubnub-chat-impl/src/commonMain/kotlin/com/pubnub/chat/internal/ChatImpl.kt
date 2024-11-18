@@ -976,7 +976,8 @@ class ChatImpl(
         ).thenAsync { getEventsHistoryResult: GetEventsHistoryResult ->
             isMore = getEventsHistoryResult.isMore
             getEventsHistoryResult.events
-                .filterIsInstance<Event<EventContent.Mention>>()
+                .filter { it.payload is EventContent.Mention } // this performs actual filtering
+                .filterIsInstance<Event<EventContent.Mention>>() // this adjusts the type passed into map() below
                 .map { mentionEvent: Event<EventContent.Mention> ->
                     val mentionTimetoken = mentionEvent.payload.messageTimetoken
                     val mentionChannelId = mentionEvent.payload.channel
