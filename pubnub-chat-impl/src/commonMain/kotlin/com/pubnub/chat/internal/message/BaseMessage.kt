@@ -187,9 +187,9 @@ abstract class BaseMessage<T : Message>(
     }
 
     override fun report(reason: String): PNFuture<PNPublishResult> {
-        val channelId = "$INTERNAL_MODERATION_PREFIX$channelId"
+        val reportChannelId = "$INTERNAL_MODERATION_PREFIX$channelId"
         return chat.emitEvent(
-            channelId,
+            reportChannelId,
             EventContent.Report(
                 text,
                 reason,

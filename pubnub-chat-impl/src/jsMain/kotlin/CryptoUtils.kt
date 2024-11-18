@@ -28,3 +28,6 @@ external interface DecryptParams {
     val message: MessageJs
     val decryptor: (String) -> Any
 }
+
+@JsExport
+val CryptoModule = PubNub.CryptoModule

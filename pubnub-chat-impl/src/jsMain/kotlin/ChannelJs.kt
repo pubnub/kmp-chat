@@ -7,6 +7,7 @@ import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.InputFile
 import com.pubnub.kmp.JsMap
+import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.UploadableImpl
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.createJsObject
@@ -282,6 +283,19 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         val cacheKey = MessageElementsUtils.getPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<MembershipJs>())
         return channel.getUserSuggestions(cacheKey, limit?.toInt() ?: 10).then { memberships ->
             memberships.map { it.asJs(chatJs) }.toTypedArray()
+        }.asPromise()
+    }
+
+    fun getMessageReportsHistory(params: GetHistoryParams?): Promise<Any?> {
+        return this.channel.getMessageReportsHistory(
+            params?.startTimetoken?.toLong(),
+            params?.endTimetoken?.toLong(),
+            params?.count ?: 100
+        ).then { result ->
+            createJsObject<dynamic> {
+                this.events = result.events.map { it.toJs(chatJs) }.toTypedArray()
+                this.isMore = result.isMore
+            }
         }.asPromise()
     }
 

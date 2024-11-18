@@ -208,14 +208,11 @@ external interface SendTextOptionParams : PubNub.PublishParameters {
 }
 
 external interface GetHistoryParams {
-    val startTimetoken: String
-    val endTimetoken: String
-    val count: Int
+    val startTimetoken: String?
+    val endTimetoken: String?
+    val count: Int?
 }
 
 external interface GetSuggestionsParams {
     var limit: Int?
 }
-
-@JsExport
-val CryptoModule = PubNub.CryptoModule

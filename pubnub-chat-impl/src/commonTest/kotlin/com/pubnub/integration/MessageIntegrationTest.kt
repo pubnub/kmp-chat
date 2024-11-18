@@ -228,7 +228,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
                         try {
                             // we need to have try/catch here because assertion error will not cause test to fail
                             assertEquals(reason, event.payload.reason)
-                            assertEquals(channelId, event.payload.reportedMessageChannelId)
+                            assertEquals(channel01.id, event.payload.reportedMessageChannelId)
                             assertEquals(channelId, event.channelId)
                             assertEquals(someUser.id, event.payload.reportedUserId)
                             assertEquals(timetoken, event.payload.reportedMessageTimetoken)
