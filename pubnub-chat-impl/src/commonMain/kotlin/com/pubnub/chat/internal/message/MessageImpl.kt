@@ -30,6 +30,7 @@ data class MessageImpl(
         error = error
     ) {
     override fun copyWithActions(actions: Actions?): Message = copy(actions = actions)
+
     override fun copyWithContent(content: EventContent.TextMessageContent): Message = copy(content = content)
 
     companion object {

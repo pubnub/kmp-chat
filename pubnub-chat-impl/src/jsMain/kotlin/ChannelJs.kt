@@ -7,7 +7,6 @@ import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.InputFile
 import com.pubnub.kmp.JsMap
-import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.UploadableImpl
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.createJsObject

@@ -906,7 +906,6 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
     }
 
     fun removeLinkedText(positionInInput: Int) {
-
         val relevantTextLinkIndex = _textLinks.indexOfFirst { textLink ->
             range(textLink.startIndex, textLink.endIndex).contains(positionInInput)
         }

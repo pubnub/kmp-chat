@@ -41,6 +41,7 @@ data class ThreadMessageImpl(
     ),
     ThreadMessage {
     override fun copyWithActions(actions: Actions?): ThreadMessage = copy(actions = actions)
+
     override fun copyWithContent(content: EventContent.TextMessageContent): ThreadMessage = copy(content = content)
 
     companion object {

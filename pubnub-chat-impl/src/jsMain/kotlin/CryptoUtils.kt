@@ -6,7 +6,6 @@ import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
 
-
 @JsExport
 class CryptoUtils {
     companion object {
@@ -20,7 +19,6 @@ class CryptoUtils {
             return (newMessage as? ThreadMessage)?.asJs(params.chat) ?: newMessage.asJs(params.chat)
         }
     }
-
 }
 
 external interface DecryptParams {

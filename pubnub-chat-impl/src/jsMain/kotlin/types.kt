@@ -30,6 +30,7 @@ external interface UserMentionDataJs {
     val userId: String
     val message: MessageJs
 }
+
 external interface ChannelMentionDataJs : UserMentionDataJs {
     override var event: EventJs
     override var userId: String

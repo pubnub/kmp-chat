@@ -280,6 +280,7 @@ abstract class BaseMessage<T : Message>(
     }
 
     internal abstract fun copyWithActions(actions: Actions?): T
+
     internal abstract fun copyWithContent(content: EventContent.TextMessageContent): T
 
     companion object {

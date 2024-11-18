@@ -36,7 +36,7 @@ open class MessageJs internal constructor(internal val message: Message, interna
     val meta get() = message.meta?.toJsMap() // todo recursive?
     val error: String? get() {
         return if (message.error == PubNubError.CRYPTO_IS_CONFIGURED_BUT_MESSAGE_IS_NOT_ENCRYPTED) {
-             "Error while decrypting message content"
+            "Error while decrypting message content"
         } else {
             null
         }
@@ -152,7 +152,6 @@ open class MessageJs internal constructor(internal val message: Message, interna
             "error" to error
         )
     }
-
 
     companion object {
         @JsStatic
