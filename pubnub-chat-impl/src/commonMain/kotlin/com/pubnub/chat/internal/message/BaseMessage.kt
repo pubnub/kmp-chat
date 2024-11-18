@@ -2,6 +2,7 @@ package com.pubnub.chat.internal.message
 
 import co.touchlab.kermit.Logger
 import com.pubnub.api.JsonElement
+import com.pubnub.api.PubNubError
 import com.pubnub.api.asMap
 import com.pubnub.api.decode
 import com.pubnub.api.endpoints.message_actions.RemoveMessageAction
@@ -56,6 +57,7 @@ abstract class BaseMessage<T : Message>(
     override val userId: String,
     override val actions: Map<String, Map<String, List<PNFetchMessageItem.Action>>>? = null,
     private val metaInternal: JsonElement? = null,
+    override val error: PubNubError? = null,
 ) : Message {
     override val meta: Map<String, Any>? get() = metaInternal?.decode() as? Map<String, Any>
     override val quotedMessage: QuotedMessage? get() = metaInternal.extractQuotedMessage()
@@ -278,6 +280,7 @@ abstract class BaseMessage<T : Message>(
     }
 
     internal abstract fun copyWithActions(actions: Actions?): T
+    internal abstract fun copyWithContent(content: EventContent.TextMessageContent): T
 
     companion object {
         private val log = Logger.withTag("BaseMessageImpl")

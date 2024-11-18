@@ -1,5 +1,8 @@
+// This file was auto-translated from message-draft.ts and message-element-utils.ts
+
 @file:OptIn(ExperimentalJsExport::class)
 
+import com.pubnub.api.PubNubException
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.TextLink
@@ -345,11 +348,12 @@ fun range(start: Int, stop: Int, step: Int = 1): List<Int> {
 
 @JsExport
 class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs, config: MessageDraftConfig? = null) {
-    var value = ""
     private var previousValue = ""
     private val mentionedUsers: MutableMap<Int, UserJs> = mutableMapOf()
     private val referencedChannels: MutableMap<Int, ChannelJs> = mutableMapOf()
     private val _textLinks: MutableList<TextLink> = mutableListOf()
+
+    var value = ""
     val textLinks get() = _textLinks.toTypedArray()
     var quotedMessage: MessageJs? = null
     val config: MessageDraftConfig = createJsObject<MessageDraftConfig> {
@@ -670,10 +674,11 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
             )
         }
 
+        val limitOption = config.userLimit?.let { userLimit -> createJsObject<GetSuggestionsParams> { limit = userLimit } }
         val suggestedUsers = if (config.userSuggestionSource == "channel") {
-            channel.getUserSuggestions(differentReference, config.userLimit).then { it.map { it.user }.toTypedArray() }
+            channel.getUserSuggestions(differentReference, limitOption).then { it.map { it.user }.toTypedArray() }
         } else {
-            chat.getUserSuggestions(differentReference, config.userLimit)
+            chat.getUserSuggestions(differentReference, limitOption)
         }
 
         return suggestedUsers.then { users ->
@@ -702,7 +707,8 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
             )
         }
 
-        val suggestedChannels = chat.getChannelSuggestions(differentReference, config.channelLimit)
+        val limitOption = config.channelLimit?.let { channelLimit -> createJsObject<GetSuggestionsParams> { limit = channelLimit } }
+        val suggestedChannels = chat.getChannelSuggestions(differentReference, limitOption)
 
         return suggestedChannels.then { channels ->
             mapOf(
@@ -841,12 +847,12 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
 
     fun send(options: PubNub.PublishParameters?) {
         val sendTextOptions = createJsObject<SendTextOptionParams> {
-            this.files = files
+            this.files = this@MessageDraftV1Js.files
             this.mentionedUsers = transformMentionedUsersToSend()
             this.referencedChannels = transformReferencedChannelsToSend()
             this.textLinks = this@MessageDraftV1Js._textLinks.toTypedArray()
-            this.quotedMessage = quotedMessage
-        }.unsafeCast<JsMap<Any>>().combine(options?.unsafeCast<JsMap<Any>>())
+            this.quotedMessage = this@MessageDraftV1Js.quotedMessage
+        }.combine(options?.unsafeCast<JsMap<Any>>())
 
         channel.sendText(value, sendTextOptions)
     }
@@ -900,9 +906,6 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
     }
 
     fun removeLinkedText(positionInInput: Int) {
-//        if (positionInInput.isNaN()) {
-//            throw Exception("You need to insert a number")
-//        }
 
         val relevantTextLinkIndex = _textLinks.indexOfFirst { textLink ->
             range(textLink.startIndex, textLink.endIndex).contains(positionInInput)
@@ -931,7 +934,7 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
 
     fun addQuote(message: MessageJs) {
         if (message.channelId != channel.id) {
-            throw Exception("You cannot quote messages from other channels")
+            throw PubNubException("You cannot quote messages from other channels")
         }
 
         quotedMessage = message

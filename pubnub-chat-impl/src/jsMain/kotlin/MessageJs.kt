@@ -1,5 +1,6 @@
 @file:OptIn(ExperimentalJsExport::class, ExperimentalJsStatic::class)
 
+import com.pubnub.api.PubNubError
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.types.EventContent
@@ -9,7 +10,10 @@ import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
 import com.pubnub.kmp.toJsMap
+import com.pubnub.kmp.toMap
+import kotlin.js.Json
 import kotlin.js.Promise
+import kotlin.js.json
 
 @JsExport
 @JsName("Message")
@@ -30,6 +34,13 @@ open class MessageJs internal constructor(internal val message: Message, interna
         }.toJsMap()
     }?.toJsMap()
     val meta get() = message.meta?.toJsMap() // todo recursive?
+    val error: String? get() {
+        return if (message.error == PubNubError.CRYPTO_IS_CONFIGURED_BUT_MESSAGE_IS_NOT_ENCRYPTED) {
+             "Error while decrypting message content"
+        } else {
+            null
+        }
+    }
 
     val mentionedUsers: JsMap<MessageMentionedUser>?
         get() = message.mentionedUsers?.mapKeys { it.key.toString() }?.toJsMap()
@@ -55,7 +66,14 @@ open class MessageJs internal constructor(internal val message: Message, interna
         return message.streamUpdates<Message> { it.asJs(chatJs) }::close
     }
 
-//    fun getMessageElements() TODO
+    fun getMessageElements(): Array<MixedTextTypedElement> {
+        return MessageElementsUtils.getMessageElements(
+            text,
+            mentionedUsers?.toMap()?.mapKeys { it.key.toInt() } ?: emptyMap(),
+            textLinks?.toList() ?: emptyList(),
+            referencedChannels?.toMap()?.mapKeys { it.key.toInt() } ?: emptyMap(),
+        )
+    }
 
     fun editText(newText: String): Promise<MessageJs> {
         return message.editText(newText).then { it.asJs(chatJs) }.asPromise()
@@ -112,6 +130,29 @@ open class MessageJs internal constructor(internal val message: Message, interna
             )
         }.asPromise()
     }
+
+    fun toJSON(): Json {
+        return json(
+            "hasThread" to hasThread,
+            "timetoken" to timetoken,
+            "content" to content,
+            "channelId" to channelId,
+            "userId" to userId,
+            "actions" to actions,
+            "meta" to meta,
+            "mentionedUsers" to mentionedUsers,
+            "referencedChannels" to referencedChannels,
+            "textLinks" to textLinks.contentToString(),
+            "type" to type,
+            "quotedMessage" to quotedMessage,
+            "files" to files.contentToString(),
+            "text" to text,
+            "deleted" to deleted,
+            "reactions" to reactions,
+            "error" to error
+        )
+    }
+
 
     companion object {
         @JsStatic

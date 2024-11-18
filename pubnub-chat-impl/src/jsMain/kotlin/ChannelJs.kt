@@ -53,12 +53,9 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return closeable::close
     }
 
-    fun sendText(text: String, options: dynamic): Promise<Any> {
-        val publishOptions = options.unsafeCast<PubNub.PublishParameters?>()
-        val sendTextOptions = options.unsafeCast<SendTextOptionParams?>()
-
+    fun sendText(text: String, options: SendTextOptionParams?): Promise<Any> {
         @Suppress("USELESS_CAST") // cast required to be able to call "let" extension function
-        val files = (sendTextOptions?.files as? Any)?.let { files ->
+        val files = (options?.files as? Any)?.let { files ->
             val filesArray =
                 files as? Array<*> ?: arrayOf(files)
             filesArray.filterNotNull().map { file ->
@@ -67,14 +64,14 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         } ?: listOf()
         return channel.sendText(
             text = text,
-            meta = publishOptions?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
-            shouldStore = publishOptions?.storeInHistory ?: true,
-            usePost = publishOptions?.sendByPost ?: false,
-            ttl = publishOptions?.ttl?.toInt(),
-            mentionedUsers = sendTextOptions?.mentionedUsers?.toMap()?.mapKeys { it.key.toInt() },
-            referencedChannels = sendTextOptions?.referencedChannels?.toMap()?.mapKeys { it.key.toInt() },
-            textLinks = sendTextOptions?.textLinks?.toList(),
-            quotedMessage = sendTextOptions?.quotedMessage?.message,
+            meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
+            shouldStore = options?.storeInHistory ?: true,
+            usePost = options?.sendByPost ?: false,
+            ttl = options?.ttl?.toInt(),
+            mentionedUsers = options?.mentionedUsers?.toMap()?.mapKeys { it.key.toInt() },
+            referencedChannels = options?.referencedChannels?.toMap()?.mapKeys { it.key.toInt() },
+            textLinks = options?.textLinks?.toList(),
+            quotedMessage = options?.quotedMessage?.message,
             files = files
         ).then { result ->
             createJsObject<PubNub.SignalResponse> { timetoken = result.timetoken.toString() }
@@ -122,11 +119,11 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asFuture().asPromise()
     }
 
-    open fun getHistory(params: dynamic): Promise<HistoryResponseJs> {
+    open fun getHistory(params: GetHistoryParams?): Promise<HistoryResponseJs> {
         return channel.getHistory(
-            params?.startTimetoken?.toString()?.toLong(),
-            params?.endTimetoken?.toString()?.toLong(),
-            params?.count?.toString()?.toInt() ?: 25
+            params?.startTimetoken?.toLong(),
+            params?.endTimetoken?.toLong(),
+            params?.count?.toInt() ?: 25
         ).then { result ->
             createJsObject<HistoryResponseJs> {
                 this.isMore = result.isMore
@@ -191,10 +188,6 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.getPinnedMessage().then { it?.asJs(chatJs) }.asPromise()
     }
 
-    /*getUserSuggestions(text: string, options?: {
-        limit: number;
-    }): Promise<Membership[]>;*/
-
     fun createMessageDraft(config: MessageDraftConfig?): MessageDraftV1Js {
         return MessageDraftV1Js(
             chatJs,
@@ -203,8 +196,8 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         )
     }
 
-    fun createMessageDraft2(config: MessageDraftConfig?): MessageDraftJs {
-        return MessageDraftJs(
+    fun createMessageDraftV2(config: MessageDraftConfig?): MessageDraftV2Js {
+        return MessageDraftV2Js(
             MessageDraftImpl(
                 this.channel,
                 config?.userSuggestionSource?.let {
@@ -284,8 +277,8 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
     }
 
     @Deprecated("Only for internal MessageDraft V1 use")
-    fun getUserSuggestions(text: String, options: dynamic?): Promise<Array<MembershipJs>> {
-        val limit = options?.limit as? Number
+    fun getUserSuggestions(text: String, options: GetSuggestionsParams?): Promise<Array<MembershipJs>> {
+        val limit = options?.limit
         val cacheKey = MessageElementsUtils.getPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<MembershipJs>())
         return channel.getUserSuggestions(cacheKey, limit?.toInt() ?: 10).then { memberships ->
             memberships.map { it.asJs(chatJs) }.toTypedArray()

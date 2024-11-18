@@ -13,42 +13,31 @@ external interface GetEventsHistoryParams {
     val count: Number?
 }
 
-@JsExport
-@JsName("MarkAllMessageAsReadResponse")
-interface MarkAllMessageAsReadResponseJs {
+external interface MarkAllMessageAsReadResponseJs {
     var memberships: Array<MembershipJs>
     var page: PubNub.MetadataPage
     var total: Int?
     var status: Int
 }
 
-@JsExport
-@JsName("GetCurrentUserMentionsResult")
-interface GetCurrentUserMentionsResultJs {
+external interface GetCurrentUserMentionsResultJs {
     var enhancedMentionsData: Array<UserMentionDataJs>
     var isMore: Boolean
 }
 
-@JsExport
-@JsName("UserMentionData")
-interface UserMentionDataJs {
+external interface UserMentionDataJs {
     val event: EventJs
     val userId: String
     val message: MessageJs
 }
-
-@JsExport
-@JsName("ChannelMentionData")
-interface ChannelMentionDataJs : UserMentionDataJs {
+external interface ChannelMentionDataJs : UserMentionDataJs {
     override var event: EventJs
     override var userId: String
     override var message: MessageJs
     var channelId: String
 }
 
-@JsExport
-@JsName("ThreadMentionData")
-interface ThreadMentionDataJs : UserMentionDataJs {
+external interface ThreadMentionDataJs : UserMentionDataJs {
     override var event: EventJs
     override var userId: String
     override var message: MessageJs
@@ -56,47 +45,36 @@ interface ThreadMentionDataJs : UserMentionDataJs {
     var threadChannelId: String
 }
 
-@JsExport
-@JsName("GetUnreadMessagesCounts")
-interface GetUnreadMessagesCountsJs {
+external interface GetUnreadMessagesCountsJs {
     var channel: ChannelJs
     var membership: MembershipJs
     var count: Double
 }
 
-@JsExport
-@JsName("QuotedMessage")
-interface QuotedMessageJs {
+external interface QuotedMessageJs {
     var timetoken: String
     var text: String
     var userId: String
 }
 
-@JsExport
-@JsName("CreateGroupConversationResult")
-interface CreateGroupConversationResultJs {
+external interface CreateGroupConversationResultJs {
     var channel: ChannelJs
     var hostMembership: MembershipJs
     var inviteesMemberships: Array<MembershipJs>
 }
 
-@JsExport
-@JsName("CreateDirectConversationResult")
-interface CreateDirectConversationResultJs {
+external interface CreateDirectConversationResultJs {
     var channel: ChannelJs
     var hostMembership: MembershipJs
     var inviteeMembership: MembershipJs
 }
 
-@JsExport
-@JsName("GetChannelsResponse")
-interface GetChannelsResponseJs {
+external interface GetChannelsResponseJs {
     var users: Array<ChannelJs>
     var page: PubNub.MetadataPage
     var total: Int
 }
 
-@JsExport
 external interface ChannelFields {
     val id: String
     val name: String?
@@ -107,23 +85,17 @@ external interface ChannelFields {
     val type: String?
 }
 
-@JsExport
-@JsName("GetUsersResponse")
 external interface GetUsersResponseJs {
     var users: Array<UserJs>
     var page: PubNub.MetadataPage
     var total: Int
 }
 
-@JsExport
-@JsName("GetEventsHistoryResult")
 external interface GetEventsHistoryResultJs {
     var events: Array<EventJs>
     var isMore: Boolean
 }
 
-@JsExport
-@JsName("PushNotificationsConfig")
 external interface PushNotificationsConfigJs {
     val sendPushes: Boolean
     val deviceToken: String?
@@ -132,33 +104,25 @@ external interface PushNotificationsConfigJs {
     val apnsEnvironment: String
 }
 
-@JsExport
-@JsName("GetFilesResult")
-interface GetFilesResultJs {
+external interface GetFilesResultJs {
     var files: Array<GetFileItem>
     var next: String?
     var total: Int
 }
 
-@JsExport
-@JsName("MembersResponse")
-interface MembersResponseJs {
+external interface MembersResponseJs {
     var page: PubNub.MetadataPage
     var total: Int?
     var status: Int
     var members: Array<MembershipJs>
 }
 
-@JsExport
-@JsName("HistoryResponse")
-interface HistoryResponseJs {
+external interface HistoryResponseJs {
     var messages: Array<MessageJs>
     var isMore: Boolean
 }
 
-@JsExport
-@JsName("GetRestrictionsResponse")
-interface GetRestrictionsResponseJs {
+external interface GetRestrictionsResponseJs {
     var page: PubNub.MetadataPage
     var total: Int
     var status: Int
@@ -172,8 +136,6 @@ external interface RestrictionJs {
     var channelId: String?
 }
 
-@JsExport
-@JsName("MembershipResponse")
 external interface MembershipsResponseJs {
     var page: PubNub.MetadataPage
     var total: Int?
@@ -181,14 +143,11 @@ external interface MembershipsResponseJs {
     var memberships: Array<MembershipJs>
 }
 
-@JsExport
-@JsName("Page")
 external interface PageJs {
     val next: String?
     val prev: String?
 }
 
-@JsExport
 external interface UserFields {
     val id: String
     val name: String?
@@ -200,10 +159,8 @@ external interface UserFields {
     val type: String?
 }
 
-@JsExport
 external interface ChatConstructor : ChatConfig
 
-@JsExport
 external interface ChatConfig {
     val saveDebugLog: Boolean?
     val typingTimeout: Int?
@@ -216,8 +173,6 @@ external interface ChatConfig {
     val customPayloads: CustomPayloadsJs?
 }
 
-@JsExport
-@JsName("CustomPayloads")
 external interface CustomPayloadsJs {
     val getMessagePublishBody: ((JsMap<Any?>, String) -> Any)?
     val getMessageResponseBody: ((JsMap<Any?>) -> Any)?
@@ -226,8 +181,6 @@ external interface CustomPayloadsJs {
     val reactionsActionName: String?
 }
 
-@JsExport
-@JsName("RateLimitPerChannel")
 external interface RateLimitPerChannelJs {
     val direct: Int
     val group: Int
@@ -235,12 +188,10 @@ external interface RateLimitPerChannelJs {
     val unknown: Int
 }
 
-@JsExport
 external interface DeleteParameters {
     val soft: Boolean?
 }
 
-@JsExport
 external interface MessageDraftConfig {
     var userSuggestionSource: String?
     var isTypingIndicatorTriggered: Boolean?
@@ -248,12 +199,22 @@ external interface MessageDraftConfig {
     var channelLimit: Int?
 }
 
-external interface SendTextOptionParams {
+external interface SendTextOptionParams : PubNub.PublishParameters {
     var mentionedUsers: JsMap<MessageMentionedUser>?
     var referencedChannels: JsMap<MessageReferencedChannel>?
     var textLinks: Array<TextLink>?
     var quotedMessage: MessageJs?
     var files: Any?
+}
+
+external interface GetHistoryParams {
+    val startTimetoken: String
+    val endTimetoken: String
+    val count: Int
+}
+
+external interface GetSuggestionsParams {
+    var limit: Int?
 }
 
 @JsExport

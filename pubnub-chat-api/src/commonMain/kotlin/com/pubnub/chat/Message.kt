@@ -1,5 +1,6 @@
 package com.pubnub.chat
 
+import com.pubnub.api.PubNubError
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
@@ -88,6 +89,11 @@ interface Message {
      * List of reactions attached to the message.
      */
     val reactions: Map<String, List<Action>>
+
+    /**
+     * Error associated with the message, if any.
+     */
+    val error: PubNubError?
 
     /**
      * List of included text links and their position.

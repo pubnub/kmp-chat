@@ -12,8 +12,8 @@ import com.pubnub.kmp.toMap
 import kotlin.js.Promise
 
 @JsExport
-@JsName("MessageDraft")
-class MessageDraftJs internal constructor(
+@JsName("MessageDraftV2")
+class MessageDraftV2Js internal constructor(
     private val messageDraft: MessageDraftImpl,
     val config: MessageDraftConfig?,
 ) {

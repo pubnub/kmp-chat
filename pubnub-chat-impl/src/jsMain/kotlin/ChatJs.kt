@@ -238,13 +238,6 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         return chat.isPresent(userId, channelId).asPromise()
     }
 
-    /* TODO getUserSuggestions(text: string, options?: {
-        limit: number;
-    }): Promise<User[]>;
-    getChannelSuggestions(text: string, options?: {
-        limit: number;
-    }): Promise<Channel[]>; */
-
     fun registerPushChannels(channels: Array<String>): Promise<Any> {
         return chat.registerPushChannels(channels.toList()).asPromise()
     }
@@ -365,8 +358,8 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     }
 
     @Deprecated("Only for internal MessageDraft V1 use")
-    fun getUserSuggestions(text: String, options: dynamic?): Promise<Array<UserJs>> {
-        val limit = options?.limit as? Number
+    fun getUserSuggestions(text: String, options: GetSuggestionsParams?): Promise<Array<UserJs>> {
+        val limit = options?.limit
         val cacheKey = MessageElementsUtils.getPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<UserJs>())
         return chat.getUserSuggestions(cacheKey, limit?.toInt() ?: 10).then { users ->
             users.map { it.asJs(this@ChatJs) }.toTypedArray()
@@ -374,8 +367,8 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     }
 
     @Deprecated("Only for internal MessageDraft V1 use")
-    fun getChannelSuggestions(text: String, options: dynamic?): Promise<Array<ChannelJs>> {
-        val limit = options?.limit as? Number
+    fun getChannelSuggestions(text: String, options: GetSuggestionsParams?): Promise<Array<ChannelJs>> {
+        val limit = options?.limit
         val cacheKey = MessageElementsUtils.getChannelPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<ChannelJs>())
         return chat.getChannelSuggestions(cacheKey, limit?.toInt() ?: 10).then { channels ->
             channels.map { it.asJs(this@ChatJs) }.toTypedArray()

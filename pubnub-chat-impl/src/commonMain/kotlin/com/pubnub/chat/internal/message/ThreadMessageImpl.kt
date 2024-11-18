@@ -2,6 +2,7 @@ package com.pubnub.chat.internal.message
 
 import co.touchlab.kermit.Logger
 import com.pubnub.api.JsonElement
+import com.pubnub.api.PubNubError
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
@@ -27,6 +28,7 @@ data class ThreadMessageImpl(
     override val userId: String,
     override val actions: Map<String, Map<String, List<Action>>>? = null,
     val metaInternal: JsonElement? = null,
+    override val error: PubNubError? = null,
 ) : BaseMessage<ThreadMessage>(
         chat = chat,
         timetoken = timetoken,
@@ -35,9 +37,11 @@ data class ThreadMessageImpl(
         userId = userId,
         actions = actions,
         metaInternal = metaInternal,
+        error = error
     ),
     ThreadMessage {
     override fun copyWithActions(actions: Actions?): ThreadMessage = copy(actions = actions)
+    override fun copyWithContent(content: EventContent.TextMessageContent): ThreadMessage = copy(content = content)
 
     companion object {
         private val log = Logger.withTag("ThreadMessageImpl")
@@ -55,6 +59,7 @@ data class ThreadMessageImpl(
                 pnMessageResult.channel,
                 pnMessageResult.publisher!!,
                 metaInternal = pnMessageResult.userMetadata,
+                error = pnMessageResult.error
             )
         }
 
@@ -72,7 +77,8 @@ data class ThreadMessageImpl(
                 channelId = channelId,
                 userId = messageItem.uuid!!,
                 actions = messageItem.actions,
-                metaInternal = messageItem.meta
+                metaInternal = messageItem.meta,
+                error = messageItem.error
             )
         }
     }
