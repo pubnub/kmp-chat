@@ -1,5 +1,6 @@
 package com.pubnub.chat.internal.channel
 
+import co.touchlab.kermit.Logger
 import com.pubnub.api.PubNubException
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.models.consumer.PNBoundedPage
@@ -96,7 +97,6 @@ import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import org.lighthousegames.logging.logging
 import tryLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -324,7 +324,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 usersToMention?.forEach { mentionedUser ->
                     emitUserMention(mentionedUser, publishResult.timetoken, text).async {
                         it.onFailure { ex ->
-                            log.warn(err = ex, msg = { ex.message })
+                            log.w(throwable = ex) { ex.message.orEmpty() }
                         }
                     }
                 }
@@ -466,7 +466,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     }
                     callback(MessageImpl.fromDTO(chat, pnMessageResult))
                 } catch (e: Exception) {
-                    log.error(err = e, msg = { ERROR_HANDLING_ONMESSAGE_EVENT })
+                    log.e(throwable = e) { ERROR_HANDLING_ONMESSAGE_EVENT }
                 }
             },
         )
@@ -766,7 +766,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     companion object {
-        private val log = logging()
+        private val log = Logger.withTag("BaseChannel")
 
         fun <M : Message> getHistory(
             chat: ChatInternal,

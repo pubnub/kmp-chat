@@ -1,5 +1,6 @@
 package com.pubnub.chat.internal
 
+import co.touchlab.kermit.Logger
 import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
@@ -33,7 +34,6 @@ import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import org.lighthousegames.logging.logging
 import tryLong
 
 data class UserImpl(
@@ -246,7 +246,7 @@ data class UserImpl(
     }
 
     companion object {
-        private val log = logging()
+        private val log = Logger.withTag("UserImpl")
 
         internal fun fromDTO(chat: ChatInternal, user: PNUUIDMetadata): User = UserImpl(
             chat,

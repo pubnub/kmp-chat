@@ -22,7 +22,7 @@ kotlin {
                 implementation(libs.kotlinx.datetime)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.atomicfu)
-                implementation(libs.lighthousegames.logging)
+                implementation(libs.touchlab.kermit)
             }
         }
 

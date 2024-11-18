@@ -1,5 +1,6 @@
 package com.pubnub.chat.internal.message
 
+import co.touchlab.kermit.Logger
 import com.pubnub.api.JsonElement
 import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
@@ -45,7 +46,6 @@ import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import kotlinx.serialization.ExperimentalSerializationApi
-import org.lighthousegames.logging.logging
 import tryInt
 
 typealias Actions = Map<String, Map<String, List<PNFetchMessageItem.Action>>>
@@ -282,7 +282,7 @@ abstract class BaseMessage<T : Message>(
     internal abstract fun copyWithActions(actions: Actions?): T
 
     companion object {
-        private val log = logging()
+        private val log = Logger.withTag("BaseMessageImpl")
 
         fun <T : Message> streamUpdatesOn(
             messages: Collection<T>,

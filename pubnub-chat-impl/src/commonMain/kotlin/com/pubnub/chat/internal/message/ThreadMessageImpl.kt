@@ -1,5 +1,6 @@
 package com.pubnub.chat.internal.message
 
+import co.touchlab.kermit.Logger
 import com.pubnub.api.JsonElement
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
@@ -16,7 +17,6 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
-import org.lighthousegames.logging.logging
 
 data class ThreadMessageImpl(
     override val chat: ChatInternal,
@@ -40,7 +40,7 @@ data class ThreadMessageImpl(
     override fun copyWithActions(actions: Actions?): ThreadMessage = copy(actions = actions)
 
     companion object {
-        private val log = logging()
+        private val log = Logger.withTag("ThreadMessageImpl")
 
         internal fun fromDTO(chat: ChatImpl, pnMessageResult: PNMessageResult, parentChannelId: String): ThreadMessage {
             val content =

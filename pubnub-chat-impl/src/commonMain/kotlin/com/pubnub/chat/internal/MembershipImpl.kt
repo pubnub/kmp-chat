@@ -1,5 +1,6 @@
 package com.pubnub.chat.internal
 
+import co.touchlab.kermit.Logger
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
@@ -25,7 +26,6 @@ import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
-import org.lighthousegames.logging.logging
 import tryLong
 
 data class MembershipImpl(
@@ -78,7 +78,7 @@ data class MembershipImpl(
             if (canISendSignal) {
                 chat.emitEvent(channel.id, EventContent.Receipt(timetoken))
             } else {
-                log.warn { "$RECEIPT_EVENT_WAS_NOT_SENT_TO_CHANNEL${this.channel.id}" }
+                log.w("$RECEIPT_EVENT_WAS_NOT_SENT_TO_CHANNEL${this.channel.id}")
                 Unit.asFuture()
             }
         }
@@ -120,7 +120,7 @@ data class MembershipImpl(
     private fun filterThisChannel() = "channel.id == '${this.channel.id}'"
 
     companion object {
-        private val log = logging()
+        private val log = Logger.withTag("MembershipImpl")
 
         fun streamUpdatesOn(
             memberships: Collection<Membership>,

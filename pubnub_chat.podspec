@@ -8,7 +8,9 @@ Pod::Spec.new do |spec|
     spec.summary                  = 'Some description for a Kotlin/Native module'
     spec.vendored_frameworks      = 'build/cocoapods/framework/PubNubChat.framework'
     spec.libraries                = 'c++'
-    spec.ios.deployment_target    = '14'
+    spec.ios.deployment_target    = '14.0'
+    spec.osx.deployment_target    = '11.0'
+    spec.tvos.deployment_target    = '14.0'
     spec.dependency 'PubNubSwift', '8.0.1'
                 
     if !Dir.exist?('build/cocoapods/framework/PubNubChat.framework') || Dir.empty?('build/cocoapods/framework/PubNubChat.framework')
