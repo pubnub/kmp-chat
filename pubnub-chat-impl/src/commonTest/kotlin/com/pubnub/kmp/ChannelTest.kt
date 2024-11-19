@@ -200,7 +200,7 @@ class ChannelTest : BaseTest() {
         objectUnderTest.startTyping().async { result ->
             // then
             assertTrue(result.isSuccess)
-            assertEquals(null, result.getOrNull())
+            assertNotNull(result.getOrNull())
         }
 
         verify {
@@ -218,7 +218,7 @@ class ChannelTest : BaseTest() {
         // when
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(null, result.getOrNull())
+            assertNotNull(result.getOrNull())
         }
 
         // then
@@ -307,7 +307,7 @@ class ChannelTest : BaseTest() {
         // when
         objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(null, result.getOrNull())
+            assertNotNull(result.getOrNull())
         }
 
         // then
@@ -691,7 +691,7 @@ class ChannelTest : BaseTest() {
 
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(null, result.getOrNull())
+            assertNotNull(result.getOrNull())
         }
         assertEquals(currentTimeStampInMillis, objectUnderTest.typingSent)
         verify(exactly(1)) { chat.emitEvent(any(), any()) }
@@ -735,7 +735,7 @@ class ChannelTest : BaseTest() {
 
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(null, result.getOrNull())
+            assertNotNull(result.getOrNull())
         }
         assertEquals(currentTimeStampInMillis, objectUnderTest.typingSent)
         verify(exactly(1)) { chat.emitEvent(any(), any()) }

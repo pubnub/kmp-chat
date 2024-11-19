@@ -113,6 +113,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         assertTrue(messageWithThread.hasThread)
 
         messageWithThread.removeThread().await()
+        delayInMillis(250)
 
         // we need to call getMessage to get message with indication that it has no Thread
         val messageWithNoThread: Message = channel01.getMessage(publishTimetoken).await()!!
