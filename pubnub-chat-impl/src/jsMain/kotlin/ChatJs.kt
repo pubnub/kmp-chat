@@ -26,7 +26,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
 
     val sdk: PubNub get() = (chat.pubNub as PubNubImpl).jsPubNub
 
-    fun emitEvent(event: dynamic): Promise<PubNub.SignalResponse> {
+    fun emitEvent(event: dynamic): Promise<PubNub.PublishResponse> {
         val channel: String = event.channel ?: event.user
         val type = event.type
         val payload = event.payload
@@ -34,12 +34,10 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         return chat.emitEvent(
             channel,
             PNDataEncoder.decode(createJsonElement(payload))
-        ).then { result ->
-            createJsObject<PubNub.SignalResponse> { timetoken = result.timetoken.toString() }
-        }.asPromise()
+        ).then { it.toPublishResponse() }.asPromise()
     }
 
-    fun listenForEvents(event: dynamic): () -> Unit {
+    fun listenForEvents(event: ListenForEventsParams): () -> Unit {
         val klass = when (event.type) {
             "typing" -> EventContent.Typing::class
             "report" -> EventContent.Report::class
@@ -50,7 +48,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             "moderation" -> EventContent.Moderation::class
             else -> throw IllegalArgumentException("Unknown event type ${event.type}")
         }
-        val channel: String = event.channel ?: event.user
+        val channel: String = event.channel ?: event.user!!
         val method = if (event.method == "signal") {
             EmitEventMethod.SIGNAL
         } else {
@@ -109,8 +107,15 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         ).then { it.asJs(this@ChatJs) }.asPromise()
     }
 
-    fun deleteUser(id: String, params: DeleteParameters?): Promise<Any> {
-        return chat.deleteUser(id, params?.soft ?: false).then { it?.asJs(this@ChatJs) ?: true }.asPromise()
+    fun deleteUser(id: String, params: DeleteParameters?): Promise<DeleteUserResult> {
+        return chat.deleteUser(id, params?.soft ?: false)
+            .then {
+                if (it != null) {
+                    DeleteUserResult(it.asJs(this@ChatJs))
+                } else {
+                    DeleteUserResult(true)
+                }
+            }.asPromise()
     }
 
     fun getUsers(params: PubNub.GetAllMetadataParameters?): Promise<GetUsersResponseJs> {
@@ -158,13 +163,20 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         }.asPromise()
     }
 
-    fun deleteChannel(id: String, params: DeleteParameters?): Promise<Any> {
-        return chat.deleteChannel(id, params?.soft ?: false).then { it?.asJs(this@ChatJs) ?: true }.asPromise()
+    fun deleteChannel(id: String, params: DeleteParameters?): Promise<DeleteChannelResult> {
+        return chat.deleteChannel(id, params?.soft ?: false)
+            .then {
+                if (it != null) {
+                    DeleteChannelResult(it.asJs(this@ChatJs))
+                } else {
+                    DeleteChannelResult(true)
+                }
+            }.asPromise()
     }
 
     // internal
-    fun createChannel(id: String, data: dynamic): Promise<ChannelJs> {
-        return (chat as ChatInternal).createChannel(
+    fun createChannel(id: String, data: PubNub.ChannelMetadata?): Promise<ChannelJs> {
+        return chat.createChannel(
             id,
             data?.name,
             data?.description,
@@ -178,9 +190,9 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     fun getThreadId(channelId: String, messageId: String) =
         ChatImpl.getThreadId(channelId, messageId.toLong())
 
-    fun createPublicConversation(params: dynamic): Promise<ChannelJs> {
-        val channelId: String? = params.channelId
-        val data: PubNub.ChannelMetadata? = params.channelData
+    fun createPublicConversation(params: CreateChannelParams?): Promise<ChannelJs> {
+        val channelId: String? = params?.channelId
+        val data: PubNub.ChannelMetadata? = params?.channelData
         return chat.createPublicConversation(
             channelId,
             data?.name,
@@ -190,7 +202,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         ).then { it.asJs(this@ChatJs) }.asPromise()
     }
 
-    fun createDirectConversation(params: dynamic): Promise<CreateDirectConversationResultJs> {
+    fun createDirectConversation(params: CreateDirectConversationParams): Promise<CreateDirectConversationResultJs> {
         val user: UserJs = params.user
         val channelId: String? = params.channelId
         val data: PubNub.ChannelMetadata? = params.channelData
@@ -208,7 +220,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         }.asPromise()
     }
 
-    fun createGroupConversation(params: dynamic): Promise<CreateGroupConversationResultJs> {
+    fun createGroupConversation(params: CreateGroupConversationParams): Promise<CreateGroupConversationResultJs> {
         val users: Array<UserJs> = params.users
         val channelId: String? = params.channelId
         val data: PubNub.ChannelMetadata? = params.channelData
@@ -255,20 +267,12 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     }
 
     fun getCurrentUserMentions(
-        params: dynamic,
-        /*params?: {
-        startTimetoken?: string;
-        endTimetoken?: string;
-        count?: number;
-    }*/
+        params: GetHistoryParams?
     ): Promise<GetCurrentUserMentionsResultJs> {
-        val startTimetoken: String? = params.startTimetoken
-        val endTimetoken: String? = params.endTimetoken
-        val count: Number? = params.count
         return chat.getCurrentUserMentions(
-            startTimetoken?.toLong(),
-            endTimetoken?.toLong(),
-            count?.toInt() ?: 100
+            params?.startTimetoken?.toLong(),
+            params?.endTimetoken?.toLong(),
+            params?.count?.toInt() ?: 100
         ).then { result ->
             createJsObject<GetCurrentUserMentionsResultJs> {
                 this.isMore = result.isMore

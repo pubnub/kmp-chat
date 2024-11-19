@@ -45,9 +45,9 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
     fun delete(options: DeleteParameters?): Promise<DeleteUserResult> {
         return user.delete(options?.soft ?: false).then {
             if (it != null) {
-                deleteUserResultOf(it.asJs(chatJs))
+                DeleteUserResult(it.asJs(chatJs))
             } else {
-                deleteUserResultOf(true)
+                DeleteUserResult(true)
             }
         }.asPromise()
     }

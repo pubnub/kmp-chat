@@ -335,7 +335,6 @@ data class WordWithTextLink(
     val link: String,
 )
 
-@JsExport
 external interface AddLinkedTextParams {
     val text: String
     val link: String
@@ -845,7 +844,7 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
         }.toJsMap()
     }
 
-    fun send(options: PubNub.PublishParameters?) {
+    fun send(options: PubNub.PublishParameters?): Promise<Any> {
         val sendTextOptions = createJsObject<SendTextOptionParams> {
             this.files = this@MessageDraftV1Js.files
             this.mentionedUsers = transformMentionedUsersToSend()
@@ -854,7 +853,7 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
             this.quotedMessage = this@MessageDraftV1Js.quotedMessage
         }.combine(options?.unsafeCast<JsMap<Any>>())
 
-        channel.sendText(value, sendTextOptions)
+        return channel.sendText(value, sendTextOptions)
     }
 
     fun getHighlightedMention(selectionStart: Int): JsMap<Any?> {

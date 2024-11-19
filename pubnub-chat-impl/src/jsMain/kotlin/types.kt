@@ -1,10 +1,12 @@
 @file:OptIn(ExperimentalJsExport::class)
 
+import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.chat.types.GetFileItem
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.JsMap
+import com.pubnub.kmp.createJsObject
 
 external interface GetEventsHistoryParams {
     val channel: String
@@ -218,18 +220,88 @@ external interface GetSuggestionsParams {
     var limit: Int?
 }
 
-external interface DeleteUserResult {
-    interface Soft : DeleteUserResult
+external interface DeleteUserResult
 
-    interface Hard : DeleteUserResult
+@Suppress("NOTHING_TO_INLINE")
+inline fun DeleteUserResult(user: UserJs): DeleteUserResult {
+    return user.unsafeCast<DeleteUserResult>()
 }
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun deleteUserResultOf(user: UserJs): DeleteUserResult.Soft {
-    return user.unsafeCast<DeleteUserResult.Soft>()
+inline fun DeleteUserResult(boolean: Boolean): DeleteUserResult {
+    return boolean.unsafeCast<DeleteUserResult>()
+}
+
+external interface DeleteChannelResult
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun DeleteChannelResult(channel: ChannelJs): DeleteChannelResult {
+    return channel.unsafeCast<DeleteChannelResult>()
 }
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun deleteUserResultOf(boolean: Boolean): DeleteUserResult.Hard {
-    return boolean.unsafeCast<DeleteUserResult.Hard>()
+inline fun DeleteChannelResult(boolean: Boolean): DeleteChannelResult {
+    return boolean.unsafeCast<DeleteChannelResult>()
+}
+
+external interface JoinResultJs {
+    var membership: MembershipJs
+    var disconnect: () -> Unit
+}
+
+external interface DeleteFileParams {
+    val id: String
+    val name: String
+}
+
+external interface GetMessageReportsHistoryResult {
+    var events: Array<EventJs>
+    var isMore: Boolean
+}
+
+@Suppress("NOTHING_TO_INLINE")
+internal inline fun PNPublishResult.toPublishResponse(): PubNub.PublishResponse =
+    createJsObject<PubNub.PublishResponse> { timetoken = this@toPublishResponse.timetoken.toString() }
+
+external interface CreateChannelParams {
+    val channelId: String?
+    val channelData: PubNub.ChannelMetadata?
+}
+
+external interface CreateDirectConversationParams {
+    val user: UserJs
+    val channelId: String?
+    val channelData: PubNub.ChannelMetadata?
+    val membershipData: SetMembershipsParametersAndCustom?
+}
+
+external interface CreateGroupConversationParams {
+    val users: Array<UserJs>
+    val channelId: String?
+    val channelData: PubNub.ChannelMetadata?
+    val membershipData: SetMembershipsParametersAndCustom?
+}
+
+external interface SetMembershipsParametersAndCustom : PubNub.SetMembershipsParameters {
+    val custom: PubNub.CustomObject?
+}
+
+external interface ListenForEventsParams {
+    val type: String
+    val channel: String?
+    val user: String?
+    val method: String?
+    val callback: (EventJs) -> Any
+}
+
+external interface GetUnreadMessagesCountResult
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun GetUnreadMessagesCountResult(number: Int): GetUnreadMessagesCountResult {
+    return number.unsafeCast<GetUnreadMessagesCountResult>()
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun GetUnreadMessagesCountResult(boolean: Boolean): GetUnreadMessagesCountResult {
+    return boolean.unsafeCast<GetUnreadMessagesCountResult>()
 }

@@ -652,7 +652,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
                             val reportReason = reportEvent.payload.reason
                             assertTrue(reportReason == reason01 || reportReason == reason02)
                             assertEquals(messageText, reportEvent.payload.text)
-                            assertTrue(reportEvent.payload.reportedMessageChannelId?.contains(INTERNAL_MODERATION_PREFIX)!!)
+                            assertEquals(message.channelId, reportEvent.payload.reportedMessageChannelId)
                             assertTrue(reportEvent.channelId.contains(INTERNAL_MODERATION_PREFIX))
                             if (numberOfReports.value == 2) {
                                 assertionErrorInCallback.complete(null)

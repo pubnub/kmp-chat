@@ -145,7 +145,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return chat.forwardMessage(message, this.id)
     }
 
-    override fun startTyping(): PNFuture<Unit> {
+    override fun startTyping(): PNFuture<PNPublishResult?> {
         if (type == ChannelType.PUBLIC) {
             return log.logErrorAndReturnException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
@@ -153,7 +153,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
         typingSent?.let { typingSentNotNull: Instant ->
             if (!timeoutElapsed(typingTimeout - typingTimoutMargin, typingSentNotNull, now)) {
-                return Unit.asFuture()
+                return null.asFuture()
             }
         }
 
@@ -161,7 +161,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return sendTypingSignal(true)
     }
 
-    override fun stopTyping(): PNFuture<Unit> {
+    override fun stopTyping(): PNFuture<PNPublishResult?> {
         if (type == ChannelType.PUBLIC) {
             return log.logErrorAndReturnException(TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
         }
@@ -169,9 +169,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
         typingSent?.let { typingSentNotNull: Instant ->
             val now = clock.now()
             if (timeoutElapsed(typingTimeout, typingSentNotNull, now)) {
-                return Unit.asFuture()
+                return null.asFuture()
             }
-        } ?: return Unit.asFuture()
+        } ?: return null.asFuture()
 
         typingSent = null
         return sendTypingSignal(false)
@@ -743,11 +743,11 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return channelFactory(chat, toPNChannelMetadata() + update)
     }
 
-    private fun sendTypingSignal(value: Boolean): PNFuture<Unit> {
+    private fun sendTypingSignal(value: Boolean): PNFuture<PNPublishResult> {
         return chat.emitEvent(
             channelId = this.id,
             payload = EventContent.Typing(value),
-        ).then { }
+        )
     }
 
     internal abstract fun copyWithStatusDeleted(): C

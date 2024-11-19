@@ -20,12 +20,12 @@ import kotlin.js.json
 @JsExport
 @JsName("Channel")
 open class ChannelJs internal constructor(internal val channel: Channel, internal val chatJs: ChatJs) : ChannelFields {
-    override val id: String get() = channel.id
-    override val name: String? get() = channel.name
+    override val id: String by channel::id
+    override val name: String? by channel::name
     override val custom: Any? get() = channel.custom?.toJsMap()
-    override val description: String? get() = channel.description
-    override val updated: String? get() = channel.updated
-    override val status: String? get() = channel.status
+    override val description: String? by channel::description
+    override val updated: String? by channel::updated
+    override val status: String? by channel::status
     override val type: String? get() = channel.type?.stringValue
 
     fun update(data: ChannelFields): Promise<ChannelJs> {
@@ -40,9 +40,13 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
-    fun delete(options: DeleteParameters?): Promise<Any> {
+    fun delete(options: DeleteParameters?): Promise<DeleteChannelResult> {
         return channel.delete(options?.soft ?: false).then {
-            it?.asJs(chatJs) ?: true
+            if (it != null) {
+                DeleteChannelResult(it.asJs(chatJs))
+            } else {
+                DeleteChannelResult(true)
+            }
         }.asPromise()
     }
 
@@ -53,7 +57,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return closeable::close
     }
 
-    fun sendText(text: String, options: SendTextOptionParams?): Promise<Any> {
+    fun sendText(text: String, options: SendTextOptionParams?): Promise<PubNub.PublishResponse> {
         @Suppress("USELESS_CAST") // cast required to be able to call "let" extension function
         val files = (options?.files as? Any)?.let { files ->
             val filesArray =
@@ -74,22 +78,20 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
             quotedMessage = options?.quotedMessage?.message,
             files = files
         ).then { result ->
-            createJsObject<PubNub.SignalResponse> { timetoken = result.timetoken.toString() }
+            result.toPublishResponse()
         }.asPromise()
     }
 
     fun forwardMessage(message: MessageJs): Promise<PubNub.PublishResponse> {
-        return channel.forwardMessage(message.message).then { result ->
-            createJsObject<PubNub.PublishResponse> { timetoken = result.timetoken.toString() }
-        }.asPromise()
+        return channel.forwardMessage(message.message).then { it.toPublishResponse() }.asPromise()
     }
 
-    fun startTyping(): Promise<Any?> { // difference in result type
-        return channel.startTyping().then { undefined }.asPromise()
+    fun startTyping(): Promise<PubNub.PublishResponse?> {
+        return channel.startTyping().then { it?.toPublishResponse() ?: undefined }.asPromise()
     }
 
-    fun stopTyping(): Promise<Any?> { // difference in result type
-        return channel.stopTyping().then { undefined }.asPromise()
+    fun stopTyping(): Promise<PubNub.PublishResponse?> {
+        return channel.stopTyping().then { it?.toPublishResponse() ?: undefined }.asPromise()
     }
 
     fun getTyping(callback: (Array<String>) -> Unit): () -> Unit {
@@ -136,12 +138,12 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.getMessage(timetoken.tryLong()!!).then { it!!.asJs(chatJs) }.asPromise()
     }
 
-    fun join(callback: (MessageJs) -> Unit, params: PubNub.SetMembershipsParameters?): Promise<Any> {
+    fun join(callback: (MessageJs) -> Unit, params: PubNub.SetMembershipsParameters?): Promise<JoinResultJs> {
         return channel.join { callback(it.asJs(chatJs)) }.then {
-            val response = Any().asDynamic()
-            response.membership = it.membership.asJs(chatJs)
-            response.disconnect = it.disconnect?.let { autoCloseable -> autoCloseable::close } ?: {}
-            response
+            createJsObject<JoinResultJs> {
+                membership = it.membership.asJs(chatJs)
+                disconnect = it.disconnect?.let { autoCloseable -> autoCloseable::close } ?: {}
+            }
         }.asPromise()
     }
 
@@ -245,7 +247,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
-    fun deleteFile(params: dynamic): Promise<PubNub.DeleteFileResponse> {
+    fun deleteFile(params: DeleteFileParams): Promise<PubNub.DeleteFileResponse> {
         return channel.deleteFile(params.id, params.name).then {
             createJsObject<PubNub.DeleteFileResponse> {
                 this.status = it.status
@@ -285,15 +287,15 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
-    fun getMessageReportsHistory(params: GetHistoryParams?): Promise<Any?> {
+    fun getMessageReportsHistory(params: GetHistoryParams?): Promise<GetMessageReportsHistoryResult> {
         return this.channel.getMessageReportsHistory(
             params?.startTimetoken?.toLong(),
             params?.endTimetoken?.toLong(),
             params?.count ?: 100
         ).then { result ->
-            createJsObject<dynamic> {
-                this.events = result.events.map { it.toJs(chatJs) }.toTypedArray()
-                this.isMore = result.isMore
+            createJsObject<GetMessageReportsHistoryResult> {
+                events = result.events.map { it.toJs(chatJs) }.toTypedArray()
+                isMore = result.isMore
             }
         }.asPromise()
     }

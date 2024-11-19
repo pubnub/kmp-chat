@@ -8,7 +8,6 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.kmp.JsMap
-import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
 import com.pubnub.kmp.toJsMap
 import com.pubnub.kmp.toMap
@@ -100,19 +99,15 @@ open class MessageJs internal constructor(internal val message: Message, interna
     }
 
     fun forward(channelId: String): Promise<PubNub.PublishResponse> {
-        return message.forward(channelId).then { result ->
-            createJsObject<PubNub.PublishResponse> { timetoken = result.timetoken.toString() }
-        }.asPromise()
+        return message.forward(channelId).then { it.toPublishResponse() }.asPromise()
     }
 
     fun pin(): Promise<Any> {
         return message.pin().then { it.asJs(chatJs) }.asPromise()
     }
 
-    fun report(reason: String): Promise<PubNub.SignalResponse> {
-        return message.report(reason).then { result ->
-            createJsObject<PubNub.SignalResponse> { timetoken = result.timetoken.toString() }
-        }.asPromise()
+    fun report(reason: String): Promise<PubNub.PublishResponse> {
+        return message.report(reason).then { it.toPublishResponse() }.asPromise()
     }
 
     fun getThread(): Promise<ThreadChannelJs> {

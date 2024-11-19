@@ -29,7 +29,7 @@ class MessageDraftV2Js internal constructor(
         quotedMessage = null
     }
 
-    fun addLinkedText(params: dynamic) {
+    fun addLinkedText(params: AddLinkedTextParams) {
         val text: String = params.text
         val link: String = params.link
         val offset: Int = params.positionInInput
@@ -94,9 +94,7 @@ class MessageDraftV2Js internal constructor(
             options?.storeInHistory ?: true,
             options?.sendByPost ?: false,
             options?.ttl?.toInt()
-        ).then { result ->
-            createJsObject<PubNub.PublishResponse> { timetoken = result.timetoken.toString() }
-        }.asPromise()
+        ).then { it.toPublishResponse() }.asPromise()
     }
 }
 

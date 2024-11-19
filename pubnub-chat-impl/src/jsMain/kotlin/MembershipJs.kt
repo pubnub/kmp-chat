@@ -39,9 +39,13 @@ class MembershipJs internal constructor(internal val membership: Membership, int
         return membership.setLastReadMessageTimetoken(timetoken.toLong()).then { it.asJs(chatJs) }.asPromise()
     }
 
-    fun getUnreadMessagesCount(): Promise<Any> {
+    fun getUnreadMessagesCount(): Promise<GetUnreadMessagesCountResult> {
         return membership.getUnreadMessagesCount().then {
-            it?.toInt() ?: false
+            if (it != null) {
+                GetUnreadMessagesCountResult(it.toInt())
+            } else {
+                GetUnreadMessagesCountResult(false)
+            }
         }.asPromise()
     }
 
