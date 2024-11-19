@@ -1,5 +1,6 @@
 package com.pubnub.chat.internal
 
+import co.touchlab.kermit.Logger
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.chat.Channel
 import com.pubnub.chat.MentionTarget
@@ -13,15 +14,12 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.InputFile
-import com.pubnub.chat.types.MessageMentionedUser
-import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.then
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 import name.fraser.neil.plaintext.DiffMatchPatch
-import org.lighthousegames.logging.logging
 import kotlin.math.min
 
 private const val SCHEMA_USER = "pn-user://"
@@ -55,10 +53,6 @@ class MessageDraftImpl(
     private var messageText: StringBuilder = StringBuilder("")
 
     internal val value get() = messageText as CharSequence
-
-    // legacy mentions
-    private val referencedChannels: MutableMap<Int, MessageReferencedChannel> = mutableMapOf()
-    private val mentionedUsers: MutableMap<Int, MessageMentionedUser> = mutableMapOf()
 
     override fun addChangeListener(listener: MessageDraftChangeListener) {
         listeners.update {
@@ -277,7 +271,7 @@ class MessageDraftImpl(
     }
 
     companion object {
-        private val log = logging()
+        private val log = Logger.withTag("ChatImpl")
 
         private val linkRegex = Regex("""\[(?<text>(?:[^\]]*?(?:\\\\)*(?:\\\])*)+?)\]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
 

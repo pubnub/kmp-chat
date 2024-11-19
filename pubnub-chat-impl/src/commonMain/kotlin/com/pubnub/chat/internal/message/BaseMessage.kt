@@ -231,7 +231,7 @@ abstract class BaseMessage<T : Message>(
 
     override fun restore(): PNFuture<Message> {
         val deleteActions: List<PNFetchMessageItem.Action> = getDeleteActions()
-            ?: return this.also { log.warn { THIS_MESSAGE_HAS_NOT_BEEN_DELETED } }.asFuture()
+            ?: return this.also { log.w(THIS_MESSAGE_HAS_NOT_BEEN_DELETED) }.asFuture()
 
         var updatedActions: Actions? = actions?.filterNot { it.key == chat.deleteMessageActionName }
 

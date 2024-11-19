@@ -140,7 +140,7 @@ internal fun MetadataPage(next: PNPage.PNNext?, prev: PNPage.PNPrev?) = createJs
 }
 
 internal fun convertToCustomObject(custom: Any?) = custom?.let {
-    createCustomObject(custom.unsafeCast<JsMap<Any?>>().toMap()) // TODO do recursively?
+    createCustomObject(custom.unsafeCast<JsMap<Any?>>().toMap())
 }
 
 fun <T> PNFuture<T>.asPromise(): Promise<T> = Promise { resolve, reject ->

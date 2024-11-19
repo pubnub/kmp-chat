@@ -136,7 +136,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         return chat.updateChannel(
             id,
             data.name,
-            convertToCustomObject(data.custom), // TODO
+            convertToCustomObject(data.custom),
             data.description,
             data.status,
             ChannelType.from(data.type)
@@ -168,7 +168,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             id,
             data?.name,
             data?.description,
-            convertToCustomObject(data?.custom), // TODO
+            convertToCustomObject(data?.custom),
             ChannelType.from(data?.type),
             data?.status
         ).then { it.asJs(this@ChatJs) }.asPromise()
@@ -185,7 +185,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             channelId,
             data?.name,
             data?.description,
-            convertToCustomObject(data?.custom), // TODO
+            convertToCustomObject(data?.custom),
             data?.status
         ).then { it.asJs(this@ChatJs) }.asPromise()
     }
@@ -200,9 +200,9 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             channelId,
             data?.name,
             data?.description,
-            convertToCustomObject(data?.custom), // TODO
+            convertToCustomObject(data?.custom),
             data?.status,
-            convertToCustomObject(membershipCustom), // TODO
+            convertToCustomObject(membershipCustom),
         ).then { result ->
             result.toJs()
         }.asPromise()
@@ -218,9 +218,9 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             channelId,
             data?.name,
             data?.description,
-            convertToCustomObject(data?.custom), // TODO
+            convertToCustomObject(data?.custom),
             data?.status,
-            convertToCustomObject(membershipCustom), // TODO
+            convertToCustomObject(membershipCustom),
         ).then { result ->
             result.toJs()
         }.asPromise()

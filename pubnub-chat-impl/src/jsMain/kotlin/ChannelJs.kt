@@ -22,7 +22,7 @@ import kotlin.js.json
 open class ChannelJs internal constructor(internal val channel: Channel, internal val chatJs: ChatJs) : ChannelFields {
     override val id: String get() = channel.id
     override val name: String? get() = channel.name
-    override val custom: Any? get() = channel.custom?.toJsMap() // todo recursive?
+    override val custom: Any? get() = channel.custom?.toJsMap()
     override val description: String? get() = channel.description
     override val updated: String? get() = channel.updated
     override val status: String? get() = channel.status
@@ -31,7 +31,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
     fun update(data: ChannelFields): Promise<ChannelJs> {
         return channel.update(
             data.name,
-            convertToCustomObject(data.custom), // TODO
+            convertToCustomObject(data.custom),
             data.description,
             data.status,
             ChannelType.from(data.type)

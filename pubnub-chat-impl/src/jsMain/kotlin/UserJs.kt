@@ -22,8 +22,7 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
     override val externalId get() = user.externalId
     override val profileUrl get() = user.profileUrl
     override val email get() = user.email
-    override val custom: Any?
-        get() = user.custom?.toJsMap() // TODO need to convert map values recursively?
+    override val custom: Any? get() = user.custom?.toJsMap()
     override val status get() = user.status
     override val type get() = user.type
     val updated get() = user.updated
@@ -35,7 +34,7 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
             data.externalId,
             data.profileUrl,
             data.email,
-            convertToCustomObject(data.custom), // TODO
+            convertToCustomObject(data.custom),
             data.status,
             data.type
         ).then {
@@ -43,9 +42,13 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
         }.asPromise()
     }
 
-    fun delete(options: DeleteParameters?): Promise</*true | UserJs*/Any> { // TODO
+    fun delete(options: DeleteParameters?): Promise<DeleteUserResult> {
         return user.delete(options?.soft ?: false).then {
-            it?.asJs(chatJs) ?: true
+            if (it != null) {
+                deleteUserResultOf(it.asJs(chatJs))
+            } else {
+                deleteUserResultOf(true)
+            }
         }.asPromise()
     }
 

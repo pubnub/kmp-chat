@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalJsExport::class, ExperimentalJsStatic::class)
 
 import com.pubnub.api.PubNubError
+import com.pubnub.api.adjustCollectionTypes
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.types.EventContent
@@ -33,7 +34,7 @@ open class MessageJs internal constructor(internal val message: Message, interna
             }.toTypedArray()
         }.toJsMap()
     }?.toJsMap()
-    val meta get() = message.meta?.toJsMap() // todo recursive?
+    val meta get() = message.meta?.adjustCollectionTypes()
     val error: String? get() {
         return if (message.error == PubNubError.CRYPTO_IS_CONFIGURED_BUT_MESSAGE_IS_NOT_ENCRYPTED) {
             "Error while decrypting message content"

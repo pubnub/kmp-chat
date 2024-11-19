@@ -13,7 +13,7 @@ import kotlin.js.json
 class MembershipJs internal constructor(internal val membership: Membership, internal val chatJs: ChatJs) {
     val channel: ChannelJs get() = membership.channel.asJs(chatJs)
     val user: UserJs get() = membership.user.asJs(chatJs)
-    val custom get() = membership.custom?.toJsMap() // todo recursive?
+    val custom get() = membership.custom?.toJsMap()
     val updated by membership::updated
     val eTag by membership::eTag
 

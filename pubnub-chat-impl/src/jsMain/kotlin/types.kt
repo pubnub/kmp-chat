@@ -217,3 +217,19 @@ external interface GetHistoryParams {
 external interface GetSuggestionsParams {
     var limit: Int?
 }
+
+external interface DeleteUserResult {
+    interface Soft : DeleteUserResult
+
+    interface Hard : DeleteUserResult
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun deleteUserResultOf(user: UserJs): DeleteUserResult.Soft {
+    return user.unsafeCast<DeleteUserResult.Soft>()
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun deleteUserResultOf(boolean: Boolean): DeleteUserResult.Hard {
+    return boolean.unsafeCast<DeleteUserResult.Hard>()
+}
