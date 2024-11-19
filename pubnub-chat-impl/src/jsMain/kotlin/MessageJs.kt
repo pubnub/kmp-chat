@@ -123,7 +123,8 @@ open class MessageJs internal constructor(internal val message: Message, interna
         return message.removeThread().then {
             arrayOf(
                 Any(),
-                it.second?.asJs(chatJs) ?: true
+                it.second?.asJs(chatJs)?.let { channelJs -> DeleteChannelResult(channelJs) }
+                    ?: DeleteChannelResult(true)
             )
         }.asPromise()
     }

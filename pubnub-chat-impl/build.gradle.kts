@@ -15,6 +15,14 @@ plugins {
 kotlin {
     if (enableJsTarget) {
         js {
+// keep this in here for ad-hoc testing
+//            browser {
+//                testTask {
+//                    useMocha {
+//                        timeout = "15s"
+//                    }
+//                }
+//            }
             binaries.library()
         }
     }
