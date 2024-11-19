@@ -8,6 +8,7 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.kmp.JsMap
+import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
 import com.pubnub.kmp.toJsMap
 import com.pubnub.kmp.toMap
@@ -26,10 +27,10 @@ open class MessageJs internal constructor(internal val message: Message, interna
     val actions get() = message.actions?.mapValues {
         it.value.mapValues {
             it.value.map { action ->
-                val jsAction = Any().asDynamic()
-                jsAction.uuid = action.uuid
-                jsAction.actionTimetoken = action.actionTimetoken.toString()
-                jsAction
+                createJsObject<Reaction> {
+                    uuid = action.uuid
+                    actionTimetoken = action.actionTimetoken.toString()
+                }
             }.toTypedArray()
         }.toJsMap()
     }?.toJsMap()
@@ -52,13 +53,13 @@ open class MessageJs internal constructor(internal val message: Message, interna
     val files get() = message.files.toTypedArray()
     val text by message::text
     val deleted by message::deleted
-    val reactions
+    val reactions: JsMap<Array<Reaction>>
         get() = message.reactions.mapValues { mapEntry ->
             mapEntry.value.map { action ->
-                val jsAction = Any().asDynamic()
-                jsAction.uuid = action.uuid
-                jsAction.actionTimetoken = action.actionTimetoken.toString()
-                jsAction
+                createJsObject<Reaction> {
+                    uuid = action.uuid
+                    actionTimetoken = action.actionTimetoken.toString()
+                }
             }.toTypedArray()
         }.toJsMap()
 

@@ -305,3 +305,8 @@ inline fun GetUnreadMessagesCountResult(number: Int): GetUnreadMessagesCountResu
 inline fun GetUnreadMessagesCountResult(boolean: Boolean): GetUnreadMessagesCountResult {
     return boolean.unsafeCast<GetUnreadMessagesCountResult>()
 }
+
+external interface Reaction {
+    var uuid: String
+    var actionTimetoken: String
+}
