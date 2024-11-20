@@ -574,7 +574,7 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
 
     private fun getUserOrChannelReference(
         splitSymbol: String,
-        referencesObject: MutableMap<Int, out Any>,
+        referencesObject: Map<Int, Any>,
     ): UserOfChannelReference {
         val copiedObject = referencesObject.toMutableMap()
         val previousWordsStartingWithSymbol = previousValue.split(" ").filter { it.startsWith(splitSymbol) }
@@ -619,8 +619,8 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
 
         copiedObject.forEach { (key, value) ->
             val referencedName = when (value) {
-                is UserJs -> value.name!!
-                is ChannelJs -> value.name!!
+                is UserJs -> value.name.orEmpty()
+                is ChannelJs -> value.name.orEmpty()
                 else -> error("Not going to happen")
             }
 
@@ -648,12 +648,6 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
             differentReferencePosition = differentReferencePosition,
         )
     }
-
-    private class UserOfChannelReference(
-        val referencesObject: MutableMap<Int, Any>,
-        val differentReference: String?,
-        val differentReferencePosition: Int
-    )
 
     private fun parseTextToGetSuggestedUser(): Promise<JsMap<Any>> {
         val result = getUserOrChannelReference("@", mentionedUsers)
@@ -721,7 +715,7 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
         previousValue = value
         value = text
 
-        if (config.isTypingIndicatorTriggered!!) {
+        if (config.isTypingIndicatorTriggered ?: false) {
             if (value.isNotEmpty()) {
                 channel.startTyping()
             } else {
@@ -875,7 +869,7 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
             ).toJsMap()
         }
 
-        if (lastMentionedUserInText.size <= lastMentionedUser.name!!.split(" ").size) {
+        if (lastMentionedUserInText.size <= lastMentionedUser.name.orEmpty().split(" ").size) {
             return mapOf(
                 "mentionedUser" to lastMentionedUser,
                 "nameOccurrenceIndex" to onlyWordsWithAt.size - 1
@@ -942,3 +936,9 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
         quotedMessage = undefined
     }
 }
+
+private class UserOfChannelReference(
+    val referencesObject: MutableMap<Int, Any>,
+    val differentReference: String?,
+    val differentReferencePosition: Int
+)
