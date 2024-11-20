@@ -7,7 +7,7 @@ dokka = "1.9.20"
 kotlinx_datetime = "0.6.0"
 kotlinx_coroutines = "1.8.1"
 kotlinx_serialization = "1.7.1"
-pubnub = "10.1.0"
+pubnub = "10.2.0"
 
 [libraries]
 pubnub-kotlin-api = { module = "com.pubnub:pubnub-kotlin-api", version.ref = "pubnub" }
@@ -29,6 +29,14 @@ diff-match-patch = { module = "org.bitbucket.cowwoc:diff-match-patch", version =
 #junit4 = { module = "junit:junit", version = "4.13.2" }
 #coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx_coroutines"}
 #
+
+# plugins for included build
+kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+nexus-gradlePlugin = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexus" }
+vanniktech-gradlePlugin = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "vanniktech" }
+ktlint-gradlePlugin = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint" }
+dokka-gradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

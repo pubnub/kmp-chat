@@ -1,5 +1,5 @@
 pluginManagement {
-    includeBuild("pubnub-kotlin/build-logic/gradle-plugins")
+    includeBuild("build-logic/gradle-plugins")
     repositories {
         gradlePluginPortal()
         mavenCentral()
@@ -13,16 +13,12 @@ rootProject.name = "pubnub-chat"
 
 dependencyResolutionManagement {
     repositories {
-//        mavenLocal()
         mavenCentral()
+        mavenLocal()
     }
 }
 
-includeBuild("pubnub-kotlin") {
-    name = "pubnub"
-}
-
-includeBuild("pubnub-kotlin/build-logic/ktlint-custom-rules")
+includeBuild("build-logic/ktlint-custom-rules")
 
 include(":pubnub-chat-api")
 include(":pubnub-chat-impl")
