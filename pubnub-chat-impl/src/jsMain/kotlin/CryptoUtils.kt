@@ -27,5 +27,7 @@ external interface DecryptParams {
     val decryptor: (String) -> Any
 }
 
+@OptIn(ExperimentalStdlibApi::class)
 @JsExport
+@EagerInitialization
 val CryptoModule = PubNub.CryptoModule

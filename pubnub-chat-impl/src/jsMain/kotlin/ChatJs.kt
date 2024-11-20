@@ -4,6 +4,7 @@ import com.pubnub.api.PubNubImpl
 import com.pubnub.api.createJsonElement
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
+import com.pubnub.chat.internal.PUBNUB_CHAT_VERSION
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelMentionData
@@ -382,12 +383,16 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     companion object {
         @JsStatic
         fun init(config: ChatConstructor): Promise<ChatJs> {
-            return ChatImpl(config.toChatConfiguration(), PubNubImpl(PubNub(config))).initialize().then {
+            val pubnub = PubNub(config)
+            pubnub.asDynamic()._config._addPnsdkSuffix("chat-sdk", "CA-TS/$PUBNUB_CHAT_VERSION")
+            return ChatImpl(config.toChatConfiguration(), PubNubImpl(pubnub)).initialize().then {
                 ChatJs(it as ChatInternal, config)
             }.asPromise()
         }
     }
 }
 
+@OptIn(ExperimentalStdlibApi::class)
 @JsExport
+@EagerInitialization
 val INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_"

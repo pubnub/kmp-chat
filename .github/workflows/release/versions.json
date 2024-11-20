@@ -34,5 +34,19 @@
       "clearedPrefix": true,
       "clearedSuffix": false
     }
+  ],
+  "../Package.swift": [
+    {
+      "pattern": "https://github.com/pubnub/kmp-chat/releases/download/chat-(v?(\\d+\\.?){2,}([a-zA-Z0-9-]+(\\.?\\d+)?)?)",
+      "clearedPrefix": true,
+      "clearedSuffix": false
+    }
+  ],
+  "package.json": [
+    {
+      "pattern": "^\\s{2,}\"version\": \"(v?(\\d+\\.?){2,}([a-zA-Z0-9-]+(\\.?\\d+)?)?)\",$",
+      "clearedPrefix": true,
+      "clearedSuffix": false
+    }
   ]
 }
