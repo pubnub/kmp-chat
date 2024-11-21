@@ -101,6 +101,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "messageText_${randomString()}"
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val publishTimetoken = pnPublishResult.timetoken
+        delayInMillis(300)
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
         val threadChannel: ThreadChannel = message.createThread().await()
         // we need to call sendText because addMessageAction is called in sendText that stores details about thread
@@ -113,7 +114,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         assertTrue(messageWithThread.hasThread)
 
         messageWithThread.removeThread().await()
-        delayInMillis(250)
+        delayInMillis(300)
 
         // we need to call getMessage to get message with indication that it has no Thread
         val messageWithNoThread: Message = channel01.getMessage(publishTimetoken).await()!!

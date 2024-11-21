@@ -271,7 +271,7 @@ class MessageDraftImpl(
     }
 
     companion object {
-        private val log = Logger.withTag("ChatImpl")
+        private val log = Logger.withTag("MessageDraftImpl")
 
         private val linkRegex = Regex("""\[(?<text>(?:[^\]]*?(?:\\\\)*(?:\\\])*)+?)\]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
 

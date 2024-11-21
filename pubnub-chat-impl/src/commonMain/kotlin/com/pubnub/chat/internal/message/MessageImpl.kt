@@ -40,11 +40,11 @@ data class MessageImpl(
                     ?: defaultGetMessageResponseBody(pnMessageResult.message)
                     ?: EventContent.UnknownMessageFormat(pnMessageResult.message)
             return MessageImpl(
-                chat,
-                pnMessageResult.timetoken!!,
-                content,
-                pnMessageResult.channel,
-                pnMessageResult.publisher!!,
+                chat = chat,
+                timetoken = pnMessageResult.timetoken!!,
+                content = content,
+                channelId = pnMessageResult.channel,
+                userId = pnMessageResult.publisher!!,
                 metaInternal = pnMessageResult.userMetadata,
                 error = pnMessageResult.error,
             )
@@ -57,14 +57,14 @@ data class MessageImpl(
                     ?: EventContent.UnknownMessageFormat(messageItem.message)
 
             return MessageImpl(
-                chat,
-                messageItem.timetoken!!,
-                content,
-                channelId,
-                messageItem.uuid!!,
-                messageItem.actions,
-                messageItem.meta,
-                messageItem.error,
+                chat = chat,
+                timetoken = messageItem.timetoken!!,
+                content = content,
+                channelId = channelId,
+                userId = messageItem.uuid!!,
+                actions = messageItem.actions,
+                metaInternal = messageItem.meta,
+                error = messageItem.error,
             )
         }
     }
