@@ -141,7 +141,7 @@ interface Channel {
      * }
      * ```
      */
-    fun startTyping(): PNFuture<Unit>
+    fun startTyping(): PNFuture<PNPublishResult?>
 
     /**
      * Deactivates a typing indicator on a given channel.
@@ -160,7 +160,7 @@ interface Channel {
      * }
      * ```
      */
-    fun stopTyping(): PNFuture<Unit>
+    fun stopTyping(): PNFuture<PNPublishResult?>
 
     /**
      * Enables continuous tracking of typing activity within the [Channel].

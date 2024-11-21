@@ -2,7 +2,7 @@ package com.pubnub.chat.internal.message
 
 import co.touchlab.kermit.Logger
 import com.pubnub.api.JsonElement
-import com.pubnub.api.PubNubException
+import com.pubnub.api.PubNubError
 import com.pubnub.api.asMap
 import com.pubnub.api.decode
 import com.pubnub.api.endpoints.message_actions.RemoveMessageAction
@@ -28,7 +28,6 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_STREAM_MESSAGE_U
 import com.pubnub.chat.internal.error.PubNubErrorMessage.KEY_IS_NOT_VALID_INTEGER
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_MESSAGE_HAS_NOT_BEEN_DELETED
 import com.pubnub.chat.internal.serialization.PNDataEncoder
-import com.pubnub.chat.internal.util.logWarnAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
@@ -58,6 +57,7 @@ abstract class BaseMessage<T : Message>(
     override val userId: String,
     override val actions: Map<String, Map<String, List<PNFetchMessageItem.Action>>>? = null,
     private val metaInternal: JsonElement? = null,
+    override val error: PubNubError? = null,
 ) : Message {
     override val meta: Map<String, Any>? get() = metaInternal?.decode() as? Map<String, Any>
     override val quotedMessage: QuotedMessage? get() = metaInternal.extractQuotedMessage()
@@ -187,9 +187,9 @@ abstract class BaseMessage<T : Message>(
     }
 
     override fun report(reason: String): PNFuture<PNPublishResult> {
-        val channelId = "$INTERNAL_MODERATION_PREFIX$channelId"
+        val reportChannelId = "$INTERNAL_MODERATION_PREFIX$channelId"
         return chat.emitEvent(
-            channelId,
+            reportChannelId,
             EventContent.Report(
                 text,
                 reason,
@@ -214,7 +214,7 @@ abstract class BaseMessage<T : Message>(
                 uuid = chat.currentUser.id
             }
         val newActions = if (existingReaction != null) {
-            chat.pubNub.removeMessageAction(channelId, timetoken, existingReaction.actionTimetoken.toLong())
+            chat.pubNub.removeMessageAction(channelId, timetoken, existingReaction.actionTimetoken)
                 .then { filterAction(actions, messageAction) }
         } else {
             chat.pubNub.addMessageAction(channelId, messageAction)
@@ -231,7 +231,7 @@ abstract class BaseMessage<T : Message>(
 
     override fun restore(): PNFuture<Message> {
         val deleteActions: List<PNFetchMessageItem.Action> = getDeleteActions()
-            ?: return PubNubException(THIS_MESSAGE_HAS_NOT_BEEN_DELETED).logWarnAndReturnException(log).asFuture()
+            ?: return this.also { log.w(THIS_MESSAGE_HAS_NOT_BEEN_DELETED) }.asFuture()
 
         var updatedActions: Actions? = actions?.filterNot { it.key == chat.deleteMessageActionName }
 
@@ -280,6 +280,8 @@ abstract class BaseMessage<T : Message>(
     }
 
     internal abstract fun copyWithActions(actions: Actions?): T
+
+    internal abstract fun copyWithContent(content: EventContent.TextMessageContent): T
 
     companion object {
         private val log = Logger.withTag("BaseMessageImpl")

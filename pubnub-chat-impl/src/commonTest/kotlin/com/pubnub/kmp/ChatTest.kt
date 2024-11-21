@@ -65,6 +65,7 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.utils.BaseTest
+import com.pubnub.kmp.utils.get
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -430,7 +431,7 @@ class ChatTest : BaseTest() {
 
     @Test
     fun shouldResultErrorWhenSetChannelMetadataResultError() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.success(getPNChannelMetadataResult()))
         }
@@ -459,7 +460,7 @@ class ChatTest : BaseTest() {
 
     @Test
     fun shouldResultErrorWhenUpdatingChannelThatDoesNotExist() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(pnException404))
         }
@@ -495,7 +496,7 @@ class ChatTest : BaseTest() {
         val updatedType = ChannelType.GROUP.stringValue
         val updatedStatus = "updatedStatus"
 
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.success(getPNChannelMetadataResult()))
         }
@@ -703,7 +704,7 @@ class ChatTest : BaseTest() {
 
     @Test
     fun whenChannelNotFoundShouldReturnProperMessage() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(pnException404))
         }
@@ -716,7 +717,7 @@ class ChatTest : BaseTest() {
 
     @Test
     fun getChannelShouldResultSuccessWhenChannelExists() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(
                 Result.success(
@@ -745,7 +746,7 @@ class ChatTest : BaseTest() {
 
     @Test
     fun createChannelShouldResultFailureWhenChannelExists() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.success(getPNChannelMetadataResult()))
         }
@@ -758,7 +759,7 @@ class ChatTest : BaseTest() {
 
     @Test
     fun createChannelShouldResultSuccessWhenChannelDoesNotExist() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(pnException404))
         }
@@ -1167,7 +1168,7 @@ class ChatTest : BaseTest() {
     fun whenCreatingPublicConversationWithChannelIdShouldUseIt() {
         val channelId = id
         //
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(pnException404))
         }
@@ -1210,7 +1211,7 @@ class ChatTest : BaseTest() {
     @OptIn(ExperimentalUuidApi::class)
     @Test
     fun whenCreatingPublicConversationWithoutChannelIdShouldGenerateIt() {
-        every { pubnub.getChannelMetadata(any()) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.failure(pnException404))
         }
@@ -1401,12 +1402,12 @@ class ChatTest : BaseTest() {
         }
 
         val actualRestrictedChannelId: String = channelIdSlot.get()
-        val actualRestriction = userIdsSlot.get()[0].custom as Map<String, String>
+        val actualRestriction = userIdsSlot.get()[0].custom
         val actualModerationEventChannelId = userIdSlot.get()
         val actualEncodedMessageSlot = encodedMessageSlot.get()
-        assertTrue(actualRestriction["ban"] as Boolean)
-        assertEquals(reason, actualRestriction["reason"])
-        assertEquals("banned", actualEncodedMessageSlot.get("restriction"))
+        assertTrue(actualRestriction?.get("ban") as Boolean)
+        assertEquals(reason, actualRestriction.get("reason"))
+        assertEquals("banned", actualEncodedMessageSlot["restriction"])
         assertEquals("PUBNUB_INTERNAL_MODERATION_$restrictedChannelId", actualRestrictedChannelId)
         assertEquals(restrictedUserId, actualModerationEventChannelId)
     }

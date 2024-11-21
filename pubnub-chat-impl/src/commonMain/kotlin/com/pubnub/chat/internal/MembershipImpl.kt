@@ -45,7 +45,7 @@ data class MembershipImpl(
         return setLastReadMessageTimetoken(message.timetoken)
     }
 
-    override fun update(custom: CustomObject): PNFuture<Membership> {
+    override fun update(custom: CustomObject?): PNFuture<Membership> {
         return exists().thenAsync { exists ->
             if (!exists) {
                 log.pnError(NO_SUCH_MEMBERSHIP_EXISTS)

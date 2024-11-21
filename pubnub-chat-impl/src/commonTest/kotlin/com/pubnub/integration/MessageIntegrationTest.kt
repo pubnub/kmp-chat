@@ -12,7 +12,10 @@ import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.HistoryResponse
+import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageActionType
+import com.pubnub.internal.PLATFORM
+import com.pubnub.kmp.Uploadable
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
@@ -25,6 +28,29 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MessageIntegrationTest : BaseChatIntegrationTest() {
+    @Test
+    fun sendingFiles() = runTest {
+        if (PLATFORM == "iOS") { // TODO investigate why it doesn't work
+            return@runTest
+        }
+        val tt = channel01.sendText(
+            "message",
+            files = listOf(
+                InputFile("name.txt", "text/plain", generateFileContent())
+            )
+        ).await()
+
+        delayInMillis(250)
+        val message: Message = channel01.getMessage(tt.timetoken).await()!!
+        assertEquals(1, message.files.size)
+        val file = message.files.first()
+        assertEquals("text/plain", file.type)
+        assertEquals("name.txt", file.name)
+        assertTrue(file.url.startsWith("https://"))
+
+        pubnub.deleteFile(channel01.id, file.name, file.id).await()
+    }
+
     @Test
     fun createMessageThenSoftDeleteThenRestore() = runTest {
         val messageText = "messageText_${randomString()}"
@@ -75,6 +101,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "messageText_${randomString()}"
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val publishTimetoken = pnPublishResult.timetoken
+        delayInMillis(300)
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
         val threadChannel: ThreadChannel = message.createThread().await()
         // we need to call sendText because addMessageAction is called in sendText that stores details about thread
@@ -87,6 +114,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         assertTrue(messageWithThread.hasThread)
 
         messageWithThread.removeThread().await()
+        delayInMillis(300)
 
         // we need to call getMessage to get message with indication that it has no Thread
         val messageWithNoThread: Message = channel01.getMessage(publishTimetoken).await()!!
@@ -202,7 +230,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
                         try {
                             // we need to have try/catch here because assertion error will not cause test to fail
                             assertEquals(reason, event.payload.reason)
-                            assertEquals(channelId, event.payload.reportedMessageChannelId)
+                            assertEquals(channel01.id, event.payload.reportedMessageChannelId)
                             assertEquals(channelId, event.channelId)
                             assertEquals(someUser.id, event.payload.reportedUserId)
                             assertEquals(timetoken, event.payload.reportedMessageTimetoken)
@@ -237,3 +265,5 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
 private fun Message.asImpl(): MessageImpl {
     return this as MessageImpl
 }
+
+expect fun generateFileContent(): Uploadable

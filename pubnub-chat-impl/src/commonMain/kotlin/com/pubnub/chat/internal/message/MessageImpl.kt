@@ -1,6 +1,7 @@
 package com.pubnub.chat.internal.message
 
 import com.pubnub.api.JsonElement
+import com.pubnub.api.PubNubError
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
@@ -16,7 +17,8 @@ data class MessageImpl(
     override val channelId: String,
     override val userId: String,
     override val actions: Map<String, Map<String, List<Action>>>? = null,
-    val metaInternal: JsonElement? = null
+    val metaInternal: JsonElement? = null,
+    override val error: PubNubError? = null,
 ) : BaseMessage<Message>(
         chat = chat,
         timetoken = timetoken,
@@ -24,9 +26,12 @@ data class MessageImpl(
         channelId = channelId,
         userId = userId,
         actions = actions,
-        metaInternal = metaInternal
+        metaInternal = metaInternal,
+        error = error
     ) {
     override fun copyWithActions(actions: Actions?): Message = copy(actions = actions)
+
+    override fun copyWithContent(content: EventContent.TextMessageContent): Message = copy(content = content)
 
     companion object {
         internal fun fromDTO(chat: ChatInternal, pnMessageResult: PNMessageResult): Message {
@@ -35,12 +40,13 @@ data class MessageImpl(
                     ?: defaultGetMessageResponseBody(pnMessageResult.message)
                     ?: EventContent.UnknownMessageFormat(pnMessageResult.message)
             return MessageImpl(
-                chat,
-                pnMessageResult.timetoken!!,
-                content,
-                pnMessageResult.channel,
-                pnMessageResult.publisher!!,
-                metaInternal = pnMessageResult.userMetadata
+                chat = chat,
+                timetoken = pnMessageResult.timetoken!!,
+                content = content,
+                channelId = pnMessageResult.channel,
+                userId = pnMessageResult.publisher!!,
+                metaInternal = pnMessageResult.userMetadata,
+                error = pnMessageResult.error,
             )
         }
 
@@ -51,13 +57,14 @@ data class MessageImpl(
                     ?: EventContent.UnknownMessageFormat(messageItem.message)
 
             return MessageImpl(
-                chat,
-                messageItem.timetoken!!,
-                content,
-                channelId,
-                messageItem.uuid!!,
-                messageItem.actions,
-                messageItem.meta
+                chat = chat,
+                timetoken = messageItem.timetoken!!,
+                content = content,
+                channelId = channelId,
+                userId = messageItem.uuid!!,
+                actions = messageItem.actions,
+                metaInternal = messageItem.meta,
+                error = messageItem.error,
             )
         }
     }

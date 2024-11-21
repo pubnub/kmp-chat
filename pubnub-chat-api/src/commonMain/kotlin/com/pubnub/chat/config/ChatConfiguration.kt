@@ -69,7 +69,7 @@ interface ChatConfiguration {
 }
 
 fun ChatConfiguration(
-    logLevel: LogLevel = LogLevel.OFF,
+    logLevel: LogLevel = LogLevel.WARN,
     typingTimeout: Duration = 5.seconds,
     storeUserActivityInterval: Duration = 600.seconds,
     storeUserActivityTimestamps: Boolean = false,

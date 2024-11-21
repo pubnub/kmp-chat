@@ -1,6 +1,6 @@
 [versions]
 nexus = "2.0.0"
-kotlin = "2.0.20"
+kotlin = "2.0.21"
 vanniktech = "0.29.0"
 ktlint = "12.1.0"
 dokka = "1.9.20"

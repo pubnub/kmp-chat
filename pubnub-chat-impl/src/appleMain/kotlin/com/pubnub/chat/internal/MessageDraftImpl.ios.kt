@@ -10,7 +10,7 @@ import platform.Foundation.NSTextCheckingResult
 import platform.Foundation.matchesInString
 
 private val userMentionRegex = NSRegularExpression(
-    pattern = """(?<=^|\p{Space})(@[\p{Alpha}\-]+)""",
+    pattern = """(?<=^|\p{Space})(@[\p{Alpha}\-\d]+)""",
     options = 0u,
     error = null
 )

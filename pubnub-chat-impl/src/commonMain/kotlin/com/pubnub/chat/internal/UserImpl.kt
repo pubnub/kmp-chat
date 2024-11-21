@@ -19,7 +19,6 @@ import com.pubnub.chat.User
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_USER_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
-import com.pubnub.chat.internal.error.PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_IS_FALSE
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
@@ -51,9 +50,6 @@ data class UserImpl(
 ) : User {
     override val active: Boolean
         get() {
-            if (!chat.config.storeUserActivityTimestamps) {
-                log.pnError(STORE_USER_ACTIVITY_INTERVAL_IS_FALSE)
-            }
             return lastActiveTimestamp?.let { lastActiveTimestampNonNull ->
                 Clock.System.now() - Instant.fromEpochMilliseconds(lastActiveTimestampNonNull) <= chat.config.storeUserActivityInterval
             } ?: false
@@ -99,7 +95,7 @@ data class UserImpl(
         sort: Collection<PNSortKey<PNMembershipKey>>,
     ): PNFuture<MembershipsResponse> {
         val internalModerationFilter = "!(channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*')"
-        val effectiveFilter: String = filter?.let { "$internalModerationFilter && $filter" } ?: internalModerationFilter
+        val effectiveFilter: String = filter?.let { "$internalModerationFilter && ($filter)" } ?: internalModerationFilter
 
         return chat.pubNub.getMemberships(
             uuid = id,
@@ -109,6 +105,7 @@ data class UserImpl(
             sort = sort,
             includeCount = true,
             includeCustom = true,
+            includeType = true,
             includeChannelDetails = getChannelDetailsType(true)
         ).then { pnChannelMembershipArrayResult ->
             MembershipsResponse(

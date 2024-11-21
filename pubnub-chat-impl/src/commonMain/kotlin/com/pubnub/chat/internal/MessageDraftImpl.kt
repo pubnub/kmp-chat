@@ -1,6 +1,6 @@
 package com.pubnub.chat.internal
 
-import com.pubnub.api.PubNubException
+import co.touchlab.kermit.Logger
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.chat.Channel
 import com.pubnub.chat.MentionTarget
@@ -11,6 +11,7 @@ import com.pubnub.chat.MessageElement
 import com.pubnub.chat.SuggestedMention
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.error.PubNubErrorMessage
+import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.InputFile
 import com.pubnub.kmp.PNFuture
@@ -36,6 +37,12 @@ class MessageDraftImpl(
     override val channelLimit: Int = 10
 ) : MessageDraft {
     override var quotedMessage: Message? = null
+        set(value) {
+            if (value != null && value.channelId != this.channel.id) {
+                log.pnError(PubNubErrorMessage.CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS)
+            }
+            field = value
+        }
     override val files: MutableList<InputFile> = mutableListOf()
 
     private val listeners = atomic(setOf<MessageDraftChangeListener>())
@@ -76,7 +83,7 @@ class MessageDraftImpl(
 
     override fun insertSuggestedMention(mention: SuggestedMention, text: String) {
         if (messageText.substring(mention.offset, mention.offset + mention.replaceFrom.length) != mention.replaceFrom) {
-            throw PubNubException(PubNubErrorMessage.MENTION_SUGGESTION_INVALID)
+            log.pnError(PubNubErrorMessage.MENTION_SUGGESTION_INVALID)
         }
         removeTextInternal(mention.offset, mention.replaceFrom.length)
         insertTextInternal(mention.offset, text)
@@ -91,7 +98,7 @@ class MessageDraftImpl(
     }
 
     override fun removeMention(offset: Int) {
-        mentions.removeAll { it.start == offset }
+        mentions.removeAll { offset in it.start until it.endExclusive }
         fireMessageElementsChanged()
     }
 
@@ -121,16 +128,18 @@ class MessageDraftImpl(
         shouldStore: Boolean,
         usePost: Boolean,
         ttl: Int?
-    ): PNFuture<PNPublishResult> = channel.sendText(
-        text = render(getMessageElements()),
-        meta = meta,
-        shouldStore = shouldStore,
-        usePost = usePost,
-        ttl = ttl,
-        quotedMessage = quotedMessage,
-        files = files,
-        usersToMention = mentions.mapNotNull { it.target as? MentionTarget.User }.map { it.userId }
-    )
+    ): PNFuture<PNPublishResult> {
+        return channel.sendText(
+            text = render(getMessageElements()),
+            meta = meta,
+            shouldStore = shouldStore,
+            usePost = usePost,
+            ttl = ttl,
+            quotedMessage = quotedMessage,
+            files = files,
+            usersToMention = mentions.mapNotNull { it.target as? MentionTarget.User }.map { it.userId }
+        )
+    }
 
     private fun fireMessageElementsChanged() {
         val listeners = listeners.value
@@ -146,7 +155,7 @@ class MessageDraftImpl(
 
     private val RegexMatchResult.matchStart get() = range.first
 
-    private fun getSuggestedMentions(): PNFuture<List<SuggestedMention>> {
+    internal fun getSuggestedMentions(): PNFuture<List<SuggestedMention>> {
         val allUserMentions = findUserMentionMatches(messageText)
         val allChannelMentions = findChannelMentionMatches(messageText)
 
@@ -243,8 +252,9 @@ class MessageDraftImpl(
         mentions.add(mention)
     }
 
-    internal fun getMessageElements(): List<MessageElement> =
-        getMessageElements(messageText, mentions)
+    internal fun getMessageElements(): List<MessageElement> {
+        return getMessageElements(messageText, mentions)
+    }
 
     private fun getSuggestedUsers(searchText: String): PNFuture<Collection<User>> {
         return if (userSuggestionSource == MessageDraft.UserSuggestionSource.CHANNEL) {
@@ -261,7 +271,8 @@ class MessageDraftImpl(
     }
 
     companion object {
-//        private val linkRegex = Regex("""\[(?<text>(?:[^]]*?(?:\\\\)*(?:\\])*)+?)]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
+        private val log = Logger.withTag("MessageDraftImpl")
+
         private val linkRegex = Regex("""\[(?<text>(?:[^\]]*?(?:\\\\)*(?:\\\])*)+?)\]\((?<link>(?:[^)]*?(?:\\\\)*(?:\\\))*)+?)\)""")
 
         internal fun escapeLinkText(text: String) = text.replace("\\", "\\\\").replace("]", "\\]")

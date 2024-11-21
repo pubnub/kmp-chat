@@ -1,6 +1,6 @@
 package com.pubnub.chat.internal
 
-private val userMentionRegex: Regex = Regex("""(?<=^|\p{space})(@[\p{Alpha}\-]+)""")
+private val userMentionRegex: Regex = Regex("""(?<=^|\p{space})(@[\p{Alpha}\-\d]+)""")
 private val channelReferenceRegex = Regex("""(?<=^|\p{space})(#[\p{Alpha}\-\d]+)""")
 
 internal actual fun findUserMentionMatches(input: CharSequence): List<RegexMatchResult> {

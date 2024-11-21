@@ -1,5 +1,9 @@
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
 import com.pubnub.gradle.enableAnyIosTarget
 import com.pubnub.gradle.enableJsTarget
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.dsl.JsModuleKind
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension
 
 plugins {
@@ -13,6 +17,25 @@ plugins {
 }
 
 kotlin {
+    if (enableJsTarget) {
+        js {
+// keep this in here for ad-hoc testing
+//            browser {
+//                testTask {
+//                    useMocha {
+//                        timeout = "15s"
+//                    }
+//                }
+//            }
+
+            compilerOptions {
+                target.set("es2015")
+                moduleKind.set(JsModuleKind.MODULE_UMD)
+            }
+            binaries.library()
+        }
+    }
+
     sourceSets {
         val commonMain by getting {
             dependencies {

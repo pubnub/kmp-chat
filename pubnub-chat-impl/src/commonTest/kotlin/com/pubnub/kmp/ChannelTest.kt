@@ -41,6 +41,7 @@ import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.internal.PLATFORM
 import com.pubnub.kmp.utils.BaseTest
+import com.pubnub.kmp.utils.get
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import dev.mokkery.MockMode
@@ -177,7 +178,7 @@ class ChannelTest : BaseTest() {
         objectUnderTest.startTyping().async { result ->
             // then
             assertTrue(result.isSuccess)
-            assertEquals(Unit, result.getOrNull())
+            assertEquals(null, result.getOrNull())
         }
 
         verify(exactly(0)) { chat.emitEvent(any(), any()) }
@@ -199,7 +200,7 @@ class ChannelTest : BaseTest() {
         objectUnderTest.startTyping().async { result ->
             // then
             assertTrue(result.isSuccess)
-            assertEquals(Unit, result.getOrNull())
+            assertNotNull(result.getOrNull())
         }
 
         verify {
@@ -217,7 +218,7 @@ class ChannelTest : BaseTest() {
         // when
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(Unit, result.getOrNull())
+            assertNotNull(result.getOrNull())
         }
 
         // then
@@ -244,7 +245,7 @@ class ChannelTest : BaseTest() {
 
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(Unit, result.getOrNull())
+            assertEquals(null, result.getOrNull())
         }
 
         verify(exactly(0)) { chat.emitEvent(any(), any()) }
@@ -264,7 +265,7 @@ class ChannelTest : BaseTest() {
     fun whenStopTypingAlreadySentStopTypingShouldImmediatelyResultSuccess() {
         objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(Unit, result.getOrNull())
+            assertEquals(null, result.getOrNull())
         }
 
         verify(exactly(0)) { chat.emitEvent(any(), any()) }
@@ -284,7 +285,7 @@ class ChannelTest : BaseTest() {
 
         objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(Unit, result.getOrNull())
+            assertEquals(null, result.getOrNull())
         }
 
         verify(exactly(0)) { chat.emitEvent(any(), any()) }
@@ -306,7 +307,7 @@ class ChannelTest : BaseTest() {
         // when
         objectUnderTest.stopTyping().async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(Unit, result.getOrNull())
+            assertNotNull(result.getOrNull())
         }
 
         // then
@@ -690,7 +691,7 @@ class ChannelTest : BaseTest() {
 
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(Unit, result.getOrNull())
+            assertNotNull(result.getOrNull())
         }
         assertEquals(currentTimeStampInMillis, objectUnderTest.typingSent)
         verify(exactly(1)) { chat.emitEvent(any(), any()) }
@@ -712,7 +713,7 @@ class ChannelTest : BaseTest() {
 
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(Unit, result.getOrNull())
+            assertEquals(null, result.getOrNull())
         }
         assertEquals(typingSent, objectUnderTest.typingSent)
         verify(exactly(0)) { chat.emitEvent(any(), any()) }
@@ -734,7 +735,7 @@ class ChannelTest : BaseTest() {
 
         objectUnderTest.startTyping().async { result ->
             assertTrue(result.isSuccess)
-            assertEquals(Unit, result.getOrNull())
+            assertNotNull(result.getOrNull())
         }
         assertEquals(currentTimeStampInMillis, objectUnderTest.typingSent)
         verify(exactly(1)) { chat.emitEvent(any(), any()) }
@@ -883,8 +884,8 @@ class ChannelTest : BaseTest() {
         }
 
         val actualCustomMetadata = customSlot.get()
-        val actualPinnedMessageTimtoken = actualCustomMetadata["pinnedMessageTimetoken"]
-        val actualPinnedMessageChannelId = actualCustomMetadata["pinnedMessageChannelID"]
+        val actualPinnedMessageTimtoken = actualCustomMetadata.get("pinnedMessageTimetoken")
+        val actualPinnedMessageChannelId = actualCustomMetadata.get("pinnedMessageChannelID")
         assertEquals(timetoken.toString(), actualPinnedMessageTimtoken)
         assertEquals(channelId, actualPinnedMessageChannelId)
     }
@@ -902,7 +903,7 @@ class ChannelTest : BaseTest() {
         objectUnderTest = createChannel(type = type, custom = customData)
         val timetoken = 9999999L
         val channelId = "adfjaldf"
-        val customSlot = Capture.slot<Map<String, String>>()
+        val customSlot = Capture.slot<CustomObject>()
         every {
             pubNub.setChannelMetadata(
                 channel = any(),
@@ -923,8 +924,8 @@ class ChannelTest : BaseTest() {
         }
 
         val actualCustomMetadata = customSlot.get()
-        assertFalse(actualCustomMetadata.contains("pinnedMessageTimetoken"))
-        assertFalse(actualCustomMetadata.contains("pinnedMessageChannelID"))
+        assertNull(actualCustomMetadata.get("pinnedMessageTimetoken"))
+        assertNull(actualCustomMetadata.get("pinnedMessageChannelID"))
     }
 }
 

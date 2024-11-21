@@ -602,6 +602,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     fun can_getMessageReportsHistory() = runTest {
         val pnPublishResult = channel01.sendText(text = "message1").await()
         val timetoken = pnPublishResult.timetoken
+        delayInMillis(250)
         val message = channel01.getMessage(timetoken).await()!!
 
         // report messages
@@ -652,7 +653,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
                             val reportReason = reportEvent.payload.reason
                             assertTrue(reportReason == reason01 || reportReason == reason02)
                             assertEquals(messageText, reportEvent.payload.text)
-                            assertTrue(reportEvent.payload.reportedMessageChannelId?.contains(INTERNAL_MODERATION_PREFIX)!!)
+                            assertEquals(message.channelId, reportEvent.payload.reportedMessageChannelId)
                             assertTrue(reportEvent.channelId.contains(INTERNAL_MODERATION_PREFIX))
                             if (numberOfReports.value == 2) {
                                 assertionErrorInCallback.complete(null)
