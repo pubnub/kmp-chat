@@ -16,6 +16,7 @@ internal const val ORIGINAL_PUBLISHER = "originalPublisher"
 internal const val ORIGINAL_CHANNEL_ID = "originalChannelId"
 internal const val HTTP_ERROR_404 = 404
 internal const val INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_"
+internal const val INTERNAL_USER_MODERATION_CHANNEL_PREFIX = "moderation."
 internal const val PUBNUB_INTERNAL_AUTOMODERATED = "PUBNUB_INTERNAL_AUTOMODERATED"
 internal const val INTERNAL_MODERATOR_DATA_ID = "PUBNUB_INTERNAL_MODERATOR"
 internal const val INTERNAL_MODERATOR_DATA_TYPE = "internal"

@@ -15,6 +15,7 @@ import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.INTERNAL_USER_MODERATION_CHANNEL_PREFIX
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.utils.cyrb53a
@@ -621,10 +622,10 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val restrictionUnban = Restriction(userId = userId, channelId = channelId, ban = false, mute = false, reason = "ok")
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var removeListenerAndUnsubscribe: AutoCloseable? = null
-            pubnub.awaitSubscribe(channels = listOf(userId)) {
+            pubnub.awaitSubscribe(channels = listOf(INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId)) {
                 removeListenerAndUnsubscribe = chat.listenForEvents(
                     type = EventContent.Moderation::class,
-                    channelId = userId
+                    channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId
                 ) { event: Event<EventContent.Moderation> ->
                     val restrictionType: RestrictionType = event.payload.restriction
                     if (restrictionType == RestrictionType.BAN) {
