@@ -44,6 +44,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun getPinnedMessage() = runTest {
         val timetoken = channel01.sendText("Text text text").await()
+        delayInMillis(250)
         val message = channel01.getMessage(timetoken.timetoken).await()!!
 
         val updatedChannel = channel01.pinMessage(message).await()

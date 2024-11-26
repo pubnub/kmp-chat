@@ -32,7 +32,9 @@ class File(
  * This is a sealed class with different subclasses representing specific types of events.
  */
 @Serializable
-sealed class EventContent {
+sealed class EventContent(
+    @Transient val customMessageType: String? = null
+) {
     /**
      * Represents a typing event that indicates whether a user is typing.
      *
@@ -120,7 +122,7 @@ sealed class EventContent {
     @Serializable
     @SerialName("moderation")
     class Moderation(val channelId: String, val restriction: RestrictionType, val reason: String? = null) :
-        EventContent()
+        EventContent("moderation")
 
     /**
      * Represents a text message event, containing the message text and any associated files.
