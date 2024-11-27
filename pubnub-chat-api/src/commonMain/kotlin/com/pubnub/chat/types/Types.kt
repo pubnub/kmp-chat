@@ -30,9 +30,14 @@ class File(
 /**
  * Represents the content of various types of events emitted during chat operations.
  * This is a sealed class with different subclasses representing specific types of events.
+ *
+ * @property customMessageType the `customMessageType` that will be passed as a parameter into
+ * [com.pubnub.api.PubNub.publish] or [com.pubnub.api.PubNub.signal] when sending this event.
  */
 @Serializable
-sealed class EventContent {
+sealed class EventContent(
+    @Transient val customMessageType: String? = null
+) {
     /**
      * Represents a typing event that indicates whether a user is typing.
      *
@@ -120,7 +125,7 @@ sealed class EventContent {
     @Serializable
     @SerialName("moderation")
     class Moderation(val channelId: String, val restriction: RestrictionType, val reason: String? = null) :
-        EventContent()
+        EventContent(CUSTOM_MESSAGE_TYPE_MODERATED)
 
     /**
      * Represents a text message event, containing the message text and any associated files.
@@ -189,3 +194,5 @@ enum class EmitEventMethod {
      */
     PUBLISH
 }
+
+private const val CUSTOM_MESSAGE_TYPE_MODERATED = "moderated"

@@ -69,11 +69,12 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val reactionValue = "wow"
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val publishTimetoken = pnPublishResult.timetoken
+        delayInMillis(250)
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
         val threadChannel: ThreadChannel = message.createThread().await()
         // we need to call sendText because addMessageAction is called in sendText that stores details about thread
         threadChannel.sendText("message in thread_${randomString()}").await()
-
+        delayInMillis(250)
         val history: HistoryResponse<ThreadMessage> = threadChannel.getHistory().await()
 
         val messageWithThread = channel01.getMessage(publishTimetoken).await()
@@ -81,6 +82,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val deletedMessage: Message = messageWithReaction.delete(soft = true).await()!!
 
         val restoredMessage: Message = deletedMessage.restore().await()
+        delayInMillis(250)
         val restoredThread: ThreadChannel = restoredMessage.getThread().await()
         val historyAfterRestore: HistoryResponse<ThreadMessage> = restoredThread.getHistory().await()
 

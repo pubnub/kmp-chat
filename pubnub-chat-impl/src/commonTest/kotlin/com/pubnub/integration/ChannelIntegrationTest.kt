@@ -44,6 +44,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun getPinnedMessage() = runTest {
         val timetoken = channel01.sendText("Text text text").await()
+        delayInMillis(250)
         val message = channel01.getMessage(timetoken.timetoken).await()!!
 
         val updatedChannel = channel01.pinMessage(message).await()
@@ -638,6 +639,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "message1"
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val timetoken = pnPublishResult.timetoken
+        delayInMillis(250)
         val message = channel01.getMessage(timetoken).await()!!
         val assertionErrorInCallback = CompletableDeferred<AssertionError?>()
 
@@ -704,7 +706,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val channel01withChat = channel01
         val join01 = channel01withChat.join { }.await()
         val join02 = channel01Chat02.join { }.await()
-        delayInMillis(1000)
+        delayInMillis(1500)
         val whoIsPresent01: Collection<String> = channel01withChat.whoIsPresent().await()
         val whoIsPresent02: Collection<String> = channel01Chat02.whoIsPresent().await()
 

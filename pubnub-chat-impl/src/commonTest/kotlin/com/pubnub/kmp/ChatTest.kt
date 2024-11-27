@@ -56,10 +56,12 @@ import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
+import com.pubnub.chat.internal.INTERNAL_USER_MODERATION_CHANNEL_PREFIX
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.chat.restrictions.RestrictionType
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
@@ -648,6 +650,31 @@ class ChatTest : BaseTest() {
         assertEquals(channelId, originalChannelId)
         assertEquals(userId, originalPublisher)
         assertEquals(forwardedChannelId, actualForwardedChannelId)
+    }
+
+    @Test
+    fun shouldPassCustomMessageTypeOfEventContentToPublish() {
+        every { pubnub.publish(any(), any(), any(), any(), any(), any(), any(), any()) } returns publishEndpoint
+        every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
+            callback1.accept(Result.success(PNPublishResult(timetoken)))
+        }
+        val payload = EventContent.Moderation("a", RestrictionType.BAN, null)
+
+        objectUnderTest.emitEvent(
+            channelId = channelId,
+            payload = payload,
+        ).async { result ->
+            assertTrue(result.isSuccess)
+            assertEquals(timetoken, result.getOrNull()?.timetoken)
+        }
+
+        verify {
+            pubnub.publish(
+                channel = channelId,
+                message = mapOf("type" to "moderation", "channelId" to "a", "restriction" to "banned", "reason" to null),
+                customMessageType = payload.customMessageType
+            )
+        }
     }
 
     @Test
@@ -1336,7 +1363,7 @@ class ChatTest : BaseTest() {
         every { manageChannelMembersEndpoint.async(any()) } calls { (callback: Consumer<Result<PNMemberArrayResult>>) ->
             callback.accept(Result.success(pnMemberArrayResult))
         }
-        every { pubnub.publish(channel = capture(userIdSlot), message = any()) } returns publishEndpoint
+        every { pubnub.publish(channel = capture(userIdSlot), message = any(), customMessageType = "moderated") } returns publishEndpoint
         every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
@@ -1350,7 +1377,7 @@ class ChatTest : BaseTest() {
         val actualModerationEventChannelId = userIdSlot.get()
         assertEquals(restrictedUserId, actualRestrictedUserId)
         assertEquals("PUBNUB_INTERNAL_MODERATION_$restrictedChannelId", actualRestrictedChannelId)
-        assertEquals(restrictedUserId, actualModerationEventChannelId)
+        assertEquals(INTERNAL_USER_MODERATION_CHANNEL_PREFIX + restrictedUserId, actualModerationEventChannelId)
     }
 
     @Test
@@ -1390,7 +1417,8 @@ class ChatTest : BaseTest() {
         every {
             pubnub.publish(
                 channel = capture(userIdSlot),
-                message = capture(encodedMessageSlot)
+                message = capture(encodedMessageSlot),
+                customMessageType = any()
             )
         } returns publishEndpoint
         every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
@@ -1409,7 +1437,7 @@ class ChatTest : BaseTest() {
         assertEquals(reason, actualRestriction.get("reason"))
         assertEquals("banned", actualEncodedMessageSlot["restriction"])
         assertEquals("PUBNUB_INTERNAL_MODERATION_$restrictedChannelId", actualRestrictedChannelId)
-        assertEquals(restrictedUserId, actualModerationEventChannelId)
+        assertEquals(INTERNAL_USER_MODERATION_CHANNEL_PREFIX + restrictedUserId, actualModerationEventChannelId)
     }
 
     private fun createMessage(chId: String = channelId, uId: String = userId): Message {
