@@ -298,3 +298,4 @@ data class UserImpl(
 }
 
 internal val User.uuidFilterString get() = "uuid.id == '${this.id}'"
+internal val User.isInternalModerator get() = this.id == INTERNAL_MODERATOR_DATA_ID && this.type == INTERNAL_MODERATOR_DATA_TYPE

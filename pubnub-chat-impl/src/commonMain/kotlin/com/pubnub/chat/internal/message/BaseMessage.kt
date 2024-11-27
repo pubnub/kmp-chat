@@ -21,13 +21,17 @@ import com.pubnub.chat.internal.METADATA_MENTIONED_USERS
 import com.pubnub.chat.internal.METADATA_QUOTED_MESSAGE
 import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
 import com.pubnub.chat.internal.METADATA_TEXT_LINKS
+import com.pubnub.chat.internal.PUBNUB_INTERNAL_AUTOMODERATED
 import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
+import com.pubnub.chat.internal.error.PubNubErrorMessage.AUTOMODERATED_MESSAGE_CANNOT_BE_EDITED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.KEY_IS_NOT_VALID_INTEGER
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_MESSAGE_HAS_NOT_BEEN_DELETED
+import com.pubnub.chat.internal.isInternalModerator
 import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
@@ -115,6 +119,10 @@ abstract class BaseMessage<T : Message>(
 
     override fun editText(newText: String): PNFuture<Message> {
         val type = chat.editMessageActionName
+        if (this.meta?.containsKey(PUBNUB_INTERNAL_AUTOMODERATED) == true && !this.chat.currentUser.isInternalModerator) {
+            return log.logErrorAndReturnException(AUTOMODERATED_MESSAGE_CANNOT_BE_EDITED).asFuture()
+        }
+
         return chat.pubNub.addMessageAction(
             channelId,
             PNMessageAction(
@@ -375,23 +383,23 @@ abstract class BaseMessage<T : Message>(
         internal fun filterAction(actions: Actions?, action: PNMessageAction): Actions {
             return buildMap {
                 actions?.entries?.forEach { entry ->
-                    put(
-                        entry.key,
-                        buildMap {
-                            entry.value.forEach { innerEntry ->
-                                if (entry.key == action.type && innerEntry.key == action.value) {
-                                    put(
-                                        innerEntry.key,
-                                        innerEntry.value.filter {
-                                            it.actionTimetoken != action.actionTimetoken || it.uuid != action.uuid
-                                        }
-                                    )
-                                } else {
-                                    put(innerEntry.key, innerEntry.value)
+                    val actionMap = buildMap {
+                        entry.value.forEach { innerEntry ->
+                            if (entry.key == action.type && innerEntry.key == action.value) {
+                                val actionList = innerEntry.value.filter {
+                                    it.actionTimetoken != action.actionTimetoken || it.uuid != action.uuid
                                 }
+                                if (actionList.isNotEmpty()) {
+                                    put(innerEntry.key, actionList)
+                                }
+                            } else {
+                                put(innerEntry.key, innerEntry.value)
                             }
                         }
-                    )
+                    }
+                    if (actionMap.isNotEmpty()) {
+                        put(entry.key, actionMap)
+                    }
                 }
             }
         }

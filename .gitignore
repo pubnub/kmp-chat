@@ -4,6 +4,9 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+*.podspec
+node_modules
+js-chat/dist
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
