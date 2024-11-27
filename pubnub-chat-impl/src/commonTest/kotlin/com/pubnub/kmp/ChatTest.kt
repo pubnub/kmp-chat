@@ -1363,7 +1363,7 @@ class ChatTest : BaseTest() {
         every { manageChannelMembersEndpoint.async(any()) } calls { (callback: Consumer<Result<PNMemberArrayResult>>) ->
             callback.accept(Result.success(pnMemberArrayResult))
         }
-        every { pubnub.publish(channel = capture(userIdSlot), message = any(), customMessageType = "moderation") } returns publishEndpoint
+        every { pubnub.publish(channel = capture(userIdSlot), message = any(), customMessageType = "moderated") } returns publishEndpoint
         every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
             callback1.accept(Result.success(PNPublishResult(timetoken)))
         }
