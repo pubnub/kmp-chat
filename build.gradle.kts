@@ -48,7 +48,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("com.pubnub:pubnub-kotlin-test")
+                implementation(libs.pubnub.kotlin.test)
             }
         }
     }

@@ -2,6 +2,8 @@ package com.pubnub.integration
 
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.utils.Clock
+import com.pubnub.api.utils.Instant
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
 import com.pubnub.chat.MentionTarget
@@ -27,8 +29,6 @@ import com.pubnub.test.test
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -102,15 +102,17 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var closeable: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id)) {
-                channel01.streamPresence {
-                    if (it.isNotEmpty()) {
+                closeable = channel01.streamPresence {
+                    if (someUser02.id in it) {
                         completable.complete(it)
                     }
                 }
-                closeable = channel01.connect {}
             }
-            assertEquals(setOf(someUser.id), completable.await())
+
+            val closeable2 = channel01Chat02.connect {}
+            completable.await()
             closeable?.close()
+            closeable2.close()
         }
     }
 
@@ -138,13 +140,13 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun join_updates_lastReadMessageTimetoken() = runTest {
-        val then = Instant.fromEpochSeconds(chat.pubNub.time().await().timetoken / 10000000)
+        val then = Instant.fromEpochSeconds(chat.pubNub.time().await().timetoken / 10000000, 0)
         val channel = chat.createChannel(randomString()).await()
 
         val lastReadMessage: Long = channel.join().await().membership.lastReadMessageTimetoken ?: 0
 
         assertTrue(lastReadMessage > 0)
-        assertContains(then..Clock.System.now(), Instant.fromEpochSeconds(lastReadMessage / 10000000))
+        assertContains(then..Clock.System.now(), Instant.fromEpochSeconds(lastReadMessage / 10000000, 0))
     }
 
     @Test

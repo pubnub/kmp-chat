@@ -17,10 +17,12 @@
  */
 package name.fraser.neil.plaintext
 
-import kotlinx.datetime.Clock
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TimeSource
 
 /*
  * Functions for diff, match and patch.
@@ -123,11 +125,11 @@ class DiffMatchPatch(
         checklines: Boolean = true,
     ): MutableList<Diff> { // was LinkedList
         // Set a deadline by which time the diff must be complete.
-        val deadline: Long
+        val deadline: TimeSource.Monotonic.ValueTimeMark
         if (diffTimeout <= 0) {
-            deadline = Long.MAX_VALUE
+            deadline = TimeSource.Monotonic.markNow() + Duration.INFINITE
         } else {
-            deadline = Clock.System.now().toEpochMilliseconds() + (diffTimeout * 1000).toLong()
+            deadline = TimeSource.Monotonic.markNow() + (diffTimeout * 1000).toLong().milliseconds
         }
         return diff_main(text1, text2, checklines, deadline)
     }
@@ -140,13 +142,15 @@ class DiffMatchPatch(
      * @param checklines Speedup flag.  If false, then don't run a
      * line-level diff first to identify the changed areas.
      * If true, then run a faster slightly less optimal diff.
-     * @param deadline Time when the diff should be complete by.  Used
+     * @param deadline When the computation started.  Used
      * internally for recursive calls.  Users should set DiffTimeout instead.
      * @return Linked List of Diff objects.
      */
     private fun diff_main(
-        text1: String, text2: String,
-        checklines: Boolean, deadline: Long,
+        text1: String,
+        text2: String,
+        checklines: Boolean,
+        deadline: TimeSource.Monotonic.ValueTimeMark,
     ): MutableList<Diff> { // was LinkedList
         // Check for null inputs.
         var text1 = text1
@@ -197,12 +201,14 @@ class DiffMatchPatch(
      * @param checklines Speedup flag.  If false, then don't run a
      * line-level diff first to identify the changed areas.
      * If true, then run a faster slightly less optimal diff.
-     * @param deadline Time when the diff should be complete by.
+     * @param deadline When the computation started.
      * @return Linked List of Diff objects.
      */
     private fun diff_compute(
-        text1: String, text2: String,
-        checklines: Boolean, deadline: Long,
+        text1: String,
+        text2: String,
+        checklines: Boolean,
+        deadline: TimeSource.Monotonic.ValueTimeMark,
     ): MutableList<Diff> { // was LinkedList
         var diffs = mutableListOf<Diff>() // was LinkedList
 
@@ -274,12 +280,13 @@ class DiffMatchPatch(
      * This speedup can produce non-minimal diffs.
      * @param text1 Old string to be diffed.
      * @param text2 New string to be diffed.
-     * @param deadline Time when the diff should be complete by.
+     * @param deadline When the computation started.
      * @return Linked List of Diff objects.
      */
     private fun diff_lineMode(
-        text1: String, text2: String,
-        deadline: Long,
+        text1: String,
+        text2: String,
+        deadline: TimeSource.Monotonic.ValueTimeMark,
     ): MutableList<Diff> { // was LinkedList
         // Scan the text on a line-by-line basis first.
         var text1 = text1
@@ -353,12 +360,13 @@ class DiffMatchPatch(
      * See Myers 1986 paper: An O(ND) Difference Algorithm and Its Variations.
      * @param text1 Old string to be diffed.
      * @param text2 New string to be diffed.
-     * @param deadline Time at which to bail if not yet complete.
+     * @param deadline When the computation started.
      * @return LinkedList of Diff objects.
      */
     fun diff_bisect(
-        text1: String, text2: String,
-        deadline: Long,
+        text1: String,
+        text2: String,
+        deadline: TimeSource.Monotonic.ValueTimeMark,
     ): MutableList<Diff> { // was LinkedList
         // Cache the text lengths to prevent multiple calls.
         val text1_length = text1.length
@@ -386,7 +394,7 @@ class DiffMatchPatch(
         var k2end = 0
         for (d in 0 until max_d) {
             // Bail out if deadline is reached.
-            if (Clock.System.now().toEpochMilliseconds() > deadline) {
+            if (deadline.hasPassedNow()) {
                 break
             }
 
@@ -478,12 +486,14 @@ class DiffMatchPatch(
      * @param text2 New string to be diffed.
      * @param x Index of split point in text1.
      * @param y Index of split point in text2.
-     * @param deadline Time at which to bail if not yet complete.
+     * @param deadline When the computation started.
      * @return LinkedList of Diff objects.
      */
     private fun diff_bisectSplit(
-        text1: String, text2: String,
-        x: Int, y: Int, deadline: Long,
+        text1: String,
+        text2: String,
+        x: Int, y: Int,
+        deadline: TimeSource.Monotonic.ValueTimeMark,
     ): MutableList<Diff> { // was LinkedList
         val text1a: String = text1.substring(0, x)
         val text2a: String = text2.substring(0, y)

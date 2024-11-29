@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.utils.Clock
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
@@ -25,7 +26,6 @@ import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
-import kotlinx.datetime.Clock
 
 data class ThreadChannelImpl(
     override val parentMessage: Message,

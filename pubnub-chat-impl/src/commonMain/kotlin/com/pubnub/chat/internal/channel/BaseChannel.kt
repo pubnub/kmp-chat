@@ -24,6 +24,8 @@ import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteChannelMetadataEven
 import com.pubnub.api.models.consumer.pubsub.objects.PNObjectEventResult
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetChannelMetadataEventMessage
 import com.pubnub.api.models.consumer.push.payload.PushPayloadHelper
+import com.pubnub.api.utils.Clock
+import com.pubnub.api.utils.Instant
 import com.pubnub.api.utils.PatchValue
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.subscriptions.SubscriptionOptions
@@ -95,8 +97,6 @@ import encodeForSending
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.locks.reentrantLock
 import kotlinx.atomicfu.locks.withLock
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import tryLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
