@@ -40,6 +40,7 @@ import com.pubnub.kmp.createPubNub
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
+import delayForHistory
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import tryLong
@@ -234,6 +235,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             }
 
             // then
+            delayForHistory()
             val markAllMessageAsReadResponse: MarkAllMessageAsReadResponse = chat.markAllMessagesAsRead().await()
 
             // verify response contains updated "lastReadMessageTimetoken"
@@ -276,11 +278,10 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // send message
         channel01.sendText("message01In$channelId01").await()
-        delayInMillis(150) // history calls have around 130ms of cache time
-
         // join (implicitly setLastReadMessageTimetoken)
         val joinResult: JoinResult = channel01.join { }.await()
         val membership = joinResult.membership
+        delayForHistory()
         val unreadMessageCount: Long? = membership.getUnreadMessagesCount().await()
         assertEquals(0, unreadMessageCount)
 
@@ -292,10 +293,11 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(1L, unreadMessageCount02)
 
         // markAllMessagesAsRead
+        delayForHistory()
         val markAllMessageAsReadResponse: MarkAllMessageAsReadResponse = chat.markAllMessagesAsRead().await()
         val membershipWithUpgradeLastReadMessageTimetoken = markAllMessageAsReadResponse.memberships.first()
-        delayInMillis(1500)
 
+        delayForHistory()
         val unreadMessageCount03: Long? = membershipWithUpgradeLastReadMessageTimetoken.getUnreadMessagesCount().await()
         assertEquals(0, unreadMessageCount03)
 
@@ -316,7 +318,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         // send message
         channel01.sendText("message01In$channelId01").await()
         channel02.sendText("message01In$channelId02").await()
-        delayInMillis(1500) // history calls have around 130ms of cache time
+        delayForHistory()
 
         // read message count
         var unreadMessagesCounts = chat.getUnreadMessagesCounts().await()
@@ -330,10 +332,10 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(1, unreadMessagesCountsForChannel02)
 
         // markUnread
+        delayForHistory()
         chat.markAllMessagesAsRead().await()
-        delayInMillis(6000) // history calls have around 130ms of cache time
-        // todo not sure why 5s is needed here but without it test doesn't pass in most cases. What can take so long? markAllMessagesAsRead method sets Membership. Does it take so long to propagate?
 
+        delayForHistory()
         // read message count
         unreadMessagesCounts = chat.getUnreadMessagesCounts().await()
         unreadMessagesCountsForChannel01 =
@@ -452,6 +454,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         channel01.sendText("message03In$channelId01").await()
 
         // when
+        delayForHistory()
         val eventsForUser: GetEventsHistoryResult = chat.getEventsHistory(channelId = userId, count = count).await()
         val messageEvents = chat.getEventsHistory(channelId = channelId01, count = count).await()
 
@@ -479,7 +482,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // send messages with user mentions
         channel01.sendText(text = message, mentionedUsers = messageMentionedUsers).await()
-        delayInMillis(1000)
+        delayForHistory()
 
         // when
         val currentUserMentionsResult: GetCurrentUserMentionsResult = chat.getCurrentUserMentions().await()
@@ -506,7 +509,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // send messages with user mentions
         threadChannel.sendText(text = message, mentionedUsers = messageMentionedUsers).await()
-        delayInMillis(1500)
+        delayForHistory()
         // when
         val currentUserMentionsResult: GetCurrentUserMentionsResult = chat.getCurrentUserMentions().await()
 
@@ -540,7 +543,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             assertFalse(channel.getMembers().await().members.any { it.user.id == chat.currentUser.id })
             unsubscribe?.close()
         }
-        delayInMillis(1000)
+        delayForHistory()
         val eventFromHistory = chat.getEventsHistory(channel.id, tt + 1, tt).await().events.first()
         require(eventFromHistory.payload is EventContent.Custom)
         assertEquals(mapOf("abc" to "def"), (eventFromHistory.payload as EventContent.Custom).data)
@@ -591,8 +594,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
                 }
             }
 
-        delayInMillis(3000) // todo consider refactor or creating group of long running test
-
+        delayForHistory()
         val eventFromHistory = chat.getEventsHistory(channelId, tt + 1, tt).await().events.first()
         val payload: EventContent.Custom = eventFromHistory.payload as EventContent.Custom
         val customEventData = payload.data

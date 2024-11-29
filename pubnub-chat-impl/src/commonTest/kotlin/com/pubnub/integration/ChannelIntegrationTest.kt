@@ -26,6 +26,7 @@ import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
+import delayForHistory
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
@@ -44,10 +45,12 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun getPinnedMessage() = runTest {
         val timetoken = channel01.sendText("Text text text").await()
+        delayForHistory()
         val message = channel01.getMessage(timetoken.timetoken).await()!!
 
         val updatedChannel = channel01.pinMessage(message).await()
         assertEquals(timetoken.timetoken.toString(), updatedChannel.custom?.get(PINNED_MESSAGE_TIMETOKEN))
+        delayForHistory()
         val pinnedMessage = updatedChannel.getPinnedMessage().await()
 
         assertNotNull(pinnedMessage)
@@ -387,6 +390,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         val channel = chat.createDirectConversation(user2).await().channel
         channel.sendText("text1").await().timetoken
+        delayForHistory()
         chat.markAllMessagesAsRead().await()
 
         val tt = channel.sendText("text2").await().timetoken
@@ -488,8 +492,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "some text"
         val tt = channel01.sendText(text = messageText, ttl = 60).await().timetoken
 
-        delayInMillis(1000)
-
+        delayForHistory()
         val message = channel01.getMessage(tt).await()
         assertEquals(messageText, message?.text)
         assertEquals(tt, message?.timetoken)
@@ -516,8 +519,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             referencedChannels = referencedChannels
         ).await().timetoken
 
-        delayInMillis(1500)
-
+        delayForHistory()
         val message = channel01.getMessage(tt).await()
         val actualMentionedUsers: Map<Int, MessageMentionedUser>? = message?.mentionedUsers
         val actualMentionPosition = actualMentionedUsers?.keys?.first()
@@ -604,7 +606,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     fun can_getMessageReportsHistory() = runTest {
         val pnPublishResult = channel01.sendText(text = "message1").await()
         val timetoken = pnPublishResult.timetoken
-        delayInMillis(250)
+        delayForHistory()
         val message = channel01.getMessage(timetoken).await()!!
 
         // report messages
@@ -614,6 +616,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         message.report(reason02).await()
 
         // getMessageReport
+        delayForHistory()
         val eventsHistoryResult: GetEventsHistoryResult = channel01.getMessageReportsHistory().await()
         assertEquals(2, eventsHistoryResult.events.size)
 
@@ -640,6 +643,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "message1"
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val timetoken = pnPublishResult.timetoken
+        delayForHistory()
         val message = channel01.getMessage(timetoken).await()!!
         val assertionErrorInCallback = CompletableDeferred<AssertionError?>()
 
