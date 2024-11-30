@@ -31,6 +31,8 @@ import com.pubnub.api.models.consumer.pubsub.PNEvent
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushListProvisionsResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
+import com.pubnub.api.utils.Clock
+import com.pubnub.api.utils.Instant
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
@@ -109,8 +111,6 @@ import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import encodeForSending
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.seconds
 

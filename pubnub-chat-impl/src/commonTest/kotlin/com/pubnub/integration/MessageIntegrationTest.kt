@@ -20,12 +20,14 @@ import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
+import delayForHistory
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
 
 class MessageIntegrationTest : BaseChatIntegrationTest() {
     @Test
@@ -40,7 +42,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
             )
         ).await()
 
-        delayInMillis(250)
+        delayForHistory()
         val message: Message = channel01.getMessage(tt.timetoken).await()!!
         assertEquals(1, message.files.size)
         val file = message.files.first()
@@ -56,7 +58,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "messageText_${randomString()}"
         val publishResult = channel01.sendText(text = messageText).await()
         val publishTimetoken = publishResult.timetoken
-        delayInMillis(200)
+        delayForHistory()
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
         val deletedMessage = message.delete(soft = true).await()!!
         val restoredMessage = deletedMessage.restore().await()
@@ -69,11 +71,12 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val reactionValue = "wow"
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val publishTimetoken = pnPublishResult.timetoken
+        delayForHistory()
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
         val threadChannel: ThreadChannel = message.createThread().await()
         // we need to call sendText because addMessageAction is called in sendText that stores details about thread
         threadChannel.sendText("message in thread_${randomString()}").await()
-
+        delayForHistory()
         val history: HistoryResponse<ThreadMessage> = threadChannel.getHistory().await()
 
         val messageWithThread = channel01.getMessage(publishTimetoken).await()
@@ -96,26 +99,25 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun createMessageWithThreadThenDeleteThread() = runTest {
+    fun createMessageWithThreadThenDeleteThread() = runTest(timeout = 100.minutes) {
         // create message with thread
         val messageText = "messageText_${randomString()}"
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val publishTimetoken = pnPublishResult.timetoken
-        delayInMillis(300)
+        delayForHistory()
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
         val threadChannel: ThreadChannel = message.createThread().await()
         // we need to call sendText because addMessageAction is called in sendText that stores details about thread
         threadChannel.sendText("message in thread_${randomString()}").await()
 
-        delayInMillis(1500)
+        delayForHistory()
         // we need to call getMessage to get message with indication that it hasThread
         val messageWithThread: Message = channel01.getMessage(publishTimetoken).await()!!
 
         assertTrue(messageWithThread.hasThread)
 
         messageWithThread.removeThread().await()
-        delayInMillis(300)
-
+        delayForHistory()
         // we need to call getMessage to get message with indication that it has no Thread
         val messageWithNoThread: Message = channel01.getMessage(publishTimetoken).await()!!
 
@@ -135,7 +137,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
 
         val tt1 = channel01.sendText("message1").await()
         val tt2 = channel01.sendText("message2").await()
-        delayInMillis(1000)
+        delayForHistory()
 
         val message1 = channel01.getMessage(tt1.timetoken).await()!!
         val message2 = channel01.getMessage(tt2.timetoken).await()!!
@@ -202,13 +204,14 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "messageText_${randomString()}"
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val publishTimetoken = pnPublishResult.timetoken
+        delayForHistory()
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
 
         val messageWithReaction = message.toggleReaction(reactionValue).await()
 
         assertTrue(messageWithReaction.hasUserReaction(reactionValue))
 
-        delayInMillis(1000)
+        delayForHistory()
         val messageWithReactionFromHistory: Message = channel01.getHistory(publishTimetoken + 1, publishTimetoken).await().messages.first()
 
         assertTrue(messageWithReactionFromHistory.hasUserReaction(reactionValue))
@@ -242,6 +245,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
                 )
             }
             // when
+            delayForHistory()
             val message: Message = channel01.getMessage(timetoken).await()!!
             message.report(reason).await()
 

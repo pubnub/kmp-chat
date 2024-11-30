@@ -42,7 +42,6 @@ kotlin {
                 implementation(project(":pubnub-chat-api"))
                 implementation(project(":pubnub-3p-diff-match-patch"))
                 implementation(libs.pubnub.kotlin.api)
-                implementation(libs.kotlinx.datetime)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.atomicfu)
                 implementation(libs.touchlab.kermit)

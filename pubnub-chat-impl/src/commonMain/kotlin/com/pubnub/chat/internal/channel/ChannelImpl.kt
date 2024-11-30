@@ -1,13 +1,13 @@
 package com.pubnub.chat.internal.channel
 
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.utils.Clock
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.types.ChannelType
-import kotlinx.datetime.Clock
 
 data class ChannelImpl(
     override val chat: ChatInternal,

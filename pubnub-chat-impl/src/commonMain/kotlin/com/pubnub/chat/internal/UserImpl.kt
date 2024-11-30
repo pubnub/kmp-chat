@@ -11,6 +11,8 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArra
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteUUIDMetadataEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetUUIDMetadataEventMessage
+import com.pubnub.api.utils.Clock
+import com.pubnub.api.utils.Instant
 import com.pubnub.api.utils.PatchValue
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
@@ -31,8 +33,6 @@ import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.catch
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import tryLong
 
 data class UserImpl(

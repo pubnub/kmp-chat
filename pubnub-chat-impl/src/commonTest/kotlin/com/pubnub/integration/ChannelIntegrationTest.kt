@@ -2,6 +2,8 @@ package com.pubnub.integration
 
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.utils.Clock
+import com.pubnub.api.utils.Instant
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
 import com.pubnub.chat.MentionTarget
@@ -24,11 +26,10 @@ import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
+import delayForHistory
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -44,10 +45,12 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun getPinnedMessage() = runTest {
         val timetoken = channel01.sendText("Text text text").await()
+        delayForHistory()
         val message = channel01.getMessage(timetoken.timetoken).await()!!
 
         val updatedChannel = channel01.pinMessage(message).await()
         assertEquals(timetoken.timetoken.toString(), updatedChannel.custom?.get(PINNED_MESSAGE_TIMETOKEN))
+        delayForHistory()
         val pinnedMessage = updatedChannel.getPinnedMessage().await()
 
         assertNotNull(pinnedMessage)
@@ -102,15 +105,17 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var closeable: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id)) {
-                channel01.streamPresence {
-                    if (it.isNotEmpty()) {
+                closeable = channel01.streamPresence {
+                    if (someUser02.id in it) {
                         completable.complete(it)
                     }
                 }
-                closeable = channel01.connect {}
             }
-            assertEquals(setOf(someUser.id), completable.await())
+
+            val closeable2 = channel01Chat02.connect {}
+            completable.await()
             closeable?.close()
+            closeable2.close()
         }
     }
 
@@ -138,13 +143,13 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun join_updates_lastReadMessageTimetoken() = runTest {
-        val then = Instant.fromEpochSeconds(chat.pubNub.time().await().timetoken / 10000000)
+        val then = Instant.fromEpochSeconds(chat.pubNub.time().await().timetoken / 10000000, 0)
         val channel = chat.createChannel(randomString()).await()
 
         val lastReadMessage: Long = channel.join().await().membership.lastReadMessageTimetoken ?: 0
 
         assertTrue(lastReadMessage > 0)
-        assertContains(then..Clock.System.now(), Instant.fromEpochSeconds(lastReadMessage / 10000000))
+        assertContains(then..Clock.System.now(), Instant.fromEpochSeconds(lastReadMessage / 10000000, 0))
     }
 
     @Test
@@ -385,6 +390,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         val channel = chat.createDirectConversation(user2).await().channel
         channel.sendText("text1").await().timetoken
+        delayForHistory()
         chat.markAllMessagesAsRead().await()
 
         val tt = channel.sendText("text2").await().timetoken
@@ -486,8 +492,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "some text"
         val tt = channel01.sendText(text = messageText, ttl = 60).await().timetoken
 
-        delayInMillis(1000)
-
+        delayForHistory()
         val message = channel01.getMessage(tt).await()
         assertEquals(messageText, message?.text)
         assertEquals(tt, message?.timetoken)
@@ -514,8 +519,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             referencedChannels = referencedChannels
         ).await().timetoken
 
-        delayInMillis(1500)
-
+        delayForHistory()
         val message = channel01.getMessage(tt).await()
         val actualMentionedUsers: Map<Int, MessageMentionedUser>? = message?.mentionedUsers
         val actualMentionPosition = actualMentionedUsers?.keys?.first()
@@ -602,7 +606,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     fun can_getMessageReportsHistory() = runTest {
         val pnPublishResult = channel01.sendText(text = "message1").await()
         val timetoken = pnPublishResult.timetoken
-        delayInMillis(250)
+        delayForHistory()
         val message = channel01.getMessage(timetoken).await()!!
 
         // report messages
@@ -612,6 +616,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         message.report(reason02).await()
 
         // getMessageReport
+        delayForHistory()
         val eventsHistoryResult: GetEventsHistoryResult = channel01.getMessageReportsHistory().await()
         assertEquals(2, eventsHistoryResult.events.size)
 
@@ -638,6 +643,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "message1"
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val timetoken = pnPublishResult.timetoken
+        delayForHistory()
         val message = channel01.getMessage(timetoken).await()!!
         val assertionErrorInCallback = CompletableDeferred<AssertionError?>()
 

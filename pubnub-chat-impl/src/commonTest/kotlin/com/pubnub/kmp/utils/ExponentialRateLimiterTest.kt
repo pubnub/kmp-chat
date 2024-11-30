@@ -1,5 +1,7 @@
 package com.pubnub.kmp.utils
 
+import com.pubnub.api.utils.Clock
+import com.pubnub.api.utils.Instant
 import com.pubnub.chat.internal.timer.createTimerManager
 import com.pubnub.chat.internal.utils.ExponentialRateLimiter
 import com.pubnub.kmp.PNFuture
@@ -10,8 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.time.Duration

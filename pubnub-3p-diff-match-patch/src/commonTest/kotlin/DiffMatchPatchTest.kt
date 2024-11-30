@@ -17,9 +17,11 @@
  */
 package name.fraser.neil.plaintext
 
-import kotlinx.datetime.Clock
 import name.fraser.neil.plaintext.DiffMatchPatch.LinesToCharsResult
 import kotlin.test.Test
+import kotlin.time.Duration
+import kotlin.time.TimeSource
+import kotlin.time.measureTime
 
 class DiffMatchPatchTest {
     private val dmp: DiffMatchPatch = DiffMatchPatch()
@@ -851,11 +853,11 @@ class DiffMatchPatchTest {
                 EQUAL, "a"
             ), DiffMatchPatch.Diff(DELETE, "t"), DiffMatchPatch.Diff(INSERT, "p")
         )
-        assertEquals("diff_bisect: Normal.", diffs, dmp.diff_bisect(a, b, Long.MAX_VALUE))
+        assertEquals("diff_bisect: Normal.", diffs, dmp.diff_bisect(a, b, TimeSource.Monotonic.markNow() + Duration.INFINITE))
 
         // Timeout.
         diffs = diffList(DiffMatchPatch.Diff(DELETE, "cat"), DiffMatchPatch.Diff(INSERT, "map"))
-        assertEquals("diff_bisect: Timeout.", diffs, dmp.diff_bisect(a, b, 0))
+        assertEquals("diff_bisect: Timeout.", diffs, dmp.diff_bisect(a, b, TimeSource.Monotonic.markNow() - Duration.INFINITE))
     }
 
     @Test
@@ -979,15 +981,15 @@ class DiffMatchPatchTest {
             a += a
             b += b
         }
-        val startTime = Clock.System.now().toEpochMilliseconds()
-        dmp.diff_main(a, b)
-        val endTime = Clock.System.now().toEpochMilliseconds()
+        val time = measureTime {
+            dmp.diff_main(a, b)
+        }
         // Test that we took at least the timeout period.
-        assertTrue("diff_main: Timeout min.", dmp.diffTimeout * 1000 <= endTime - startTime)
+        assertTrue("diff_main: Timeout min.", dmp.diffTimeout * 1000 <= time.inWholeMilliseconds)
         // Test that we didn't take forever (be forgiving).
         // Theoretically this test could fail very occasionally if the
         // OS task swaps or locks up for a second at the wrong moment.
-        assertTrue("diff_main: Timeout max.", dmp.diffTimeout * 1000 * 2 > endTime - startTime)
+        assertTrue("diff_main: Timeout max.", dmp.diffTimeout * 1000 * 2 > time.inWholeMilliseconds)
         dmp.diffTimeout = 0f
 
         // Test the linemode speedup.

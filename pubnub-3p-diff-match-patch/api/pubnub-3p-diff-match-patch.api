@@ -3,7 +3,7 @@ public final class name/fraser/neil/plaintext/DiffMatchPatch {
 	public fun <init> ()V
 	public fun <init> (FSFIFS)V
 	public synthetic fun <init> (FSFIFSILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun diff_bisect (Ljava/lang/String;Ljava/lang/String;J)Ljava/util/List;
+	public final fun diff_bisect-UpJHN0k (Ljava/lang/String;Ljava/lang/String;J)Ljava/util/List;
 	public final fun diff_charsToLines (Ljava/util/List;Ljava/util/List;)V
 	public final fun diff_cleanupEfficiency (Ljava/util/List;)V
 	public final fun diff_cleanupMerge (Ljava/util/List;)V
