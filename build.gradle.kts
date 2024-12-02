@@ -1,7 +1,5 @@
 import com.pubnub.gradle.enableAnyIosTarget
 import com.pubnub.gradle.enableJsTarget
-import com.pubnub.gradle.tasks.GenerateVersionTask
-import org.jetbrains.kotlin.gradle.dsl.JsModuleKind
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension
 
 plugins {
@@ -62,7 +60,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(libs.pubnub.kotlin.test)
+                implementation(project(":pubnub-chat-test"))
             }
         }
     }

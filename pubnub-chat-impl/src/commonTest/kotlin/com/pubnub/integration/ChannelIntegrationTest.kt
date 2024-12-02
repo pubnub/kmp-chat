@@ -314,7 +314,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
                 }
             }
             // T = 0s: User1 starts typing
-            println("-=T ${Clock.System.now()} = 0s: user: ${channel01.chat.currentUser.id} starts typing")
+//            println("-=T ${Clock.System.now()} = 0s: user: ${channel01.chat.currentUser.id} starts typing")
             channel01.startTyping().await()
             delayInMillis(1000)
 

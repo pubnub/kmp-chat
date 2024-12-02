@@ -20,6 +20,7 @@ dependencyResolutionManagement {
 
 includeBuild("build-logic/ktlint-custom-rules")
 
-include(":pubnub-chat-api")
-include(":pubnub-chat-impl")
+include("pubnub-chat-api")
+include("pubnub-chat-impl")
+include("pubnub-chat-test")
 include("pubnub-3p-diff-match-patch")

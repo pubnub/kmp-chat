@@ -33,7 +33,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(libs.pubnub.kotlin.test)
+                implementation(project(":pubnub-chat-test"))
             }
         }
 
