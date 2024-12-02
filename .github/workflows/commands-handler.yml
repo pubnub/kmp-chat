@@ -3,9 +3,9 @@ name: Commands processor
 on:
   issue_comment:
     types: [created]
-defaults:
-  run:
-    shell: bash
+#defaults:
+#  run:
+#    shell: bash
 
 jobs:
   process:
@@ -36,11 +36,11 @@ jobs:
           ref: v1
           token: ${{ secrets.GH_TOKEN }}
           path: .github/.release/actions
-      - id: dev
-        name: dev
+      - id: dev4
+        name: dev4
         run: find . | sed -e "s/[^-][^\/]*\// |/g" -e "s/|\([^ ]\)/|-\1/"
-      - id: dev2
-        name: dev2
+      - id: dev5
+        name: dev5
         run: env
       - name: Process changelog entries
         if: steps.user-check.outputs.expected-user == 'true'
