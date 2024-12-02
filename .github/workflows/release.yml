@@ -4,13 +4,16 @@ on:
   pull_request:
     branches: [master]
     types: [closed]
+  push:
+    branches:
+      - 'wkal/js_size_optim'
 
 jobs:
   check-release:
     name: Check release required
-    if: github.event.pull_request.merged && endsWith(github.repository, '-private') != true
+    if: endsWith(github.repository, '-private') != true
     runs-on:
-      group: organization/Default
+      group: macos-gh
     outputs:
       release: ${{ steps.check.outputs.ready }}
     steps:
@@ -26,52 +29,60 @@ jobs:
         uses: ./.github/.release/actions/actions/checks/release
         with:
           token: ${{ secrets.GH_TOKEN }}
-  publish:
-    name: Publish package
-    needs: check-release
-    if: needs.check-release.outputs.release == 'true'
-    runs-on:
-      group: organization/Default
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          # This should be the same as the one specified for on.pull_request.branches
-          ref: master
-          submodules: recursive
-      - name: Checkout actions
-        uses: actions/checkout@v4
-        with:
-          repository: pubnub/client-engineering-deployment-tools
-          ref: v1
-          token: ${{ secrets.GH_TOKEN }}
-          path: .github/.release/actions
-      - name: Publish to Maven
-        uses: ./.github/.release/actions/actions/services/maven
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          nexus-username: ${{ secrets.NEXUS_USERNAME }}
-          nexus-password: ${{ secrets.NEXUS_PASSWORD }}
-          gpg-key-id: ${{ secrets.GPG_KEY_ID }}
-          gpg-key-name: ${{ secrets.GPG_KEY_NAME }}
-          gpg-key-passphrase: ${{ secrets.GPG_KEY_PASSPHRASE }}
-          maven-plugin: "new-gradle-nexus-publish"
-          prepend-product-to-tag: true
-      - name: Create Release
-        uses: ./.github/.release/actions/actions/services/github-release
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          prepend-product-to-tag: true
-          last-service: true
-#      - name: Update Pages
-#        uses: ./.github/.release/actions/actions/services/github-pages
+      - id: dev
+        name: dev
+        run: find . | sed -e "s/[^-][^\/]*\// |/g" -e "s/|\([^ ]\)/|-\1/"
+      - id: dev2
+        name: dev2
+        run: env
+#  publish:
+#    name: Publish package
+#    needs: check-release
+#    if: needs.check-release.outputs.release == 'true'
+#    runs-on:
+#      group: macos-gh
+#    steps:
+#      - name: Find which product is being released
+#        uses: actions/github-script@v6
+#        id: check-env
+#        with:
+#          result-encoding: string
+#          script: |
+#            try {
+#              const fs = require('fs')
+#              const jsonString = fs.readFileSync('./dir/file.json')
+#              var apps = JSON.parse(jsonString)
+#            } catch(err) {
+#              core.error("Error while reading or parsing the JSON")
+#              core.setFailed(err)
+#            }
+#      - name: Checkout repository
+#        uses: actions/checkout@v4
+#        with:
+#          # This should be the same as the one specified for on.pull_request.branches
+#          ref: master
+#          submodules: recursive
+#      - name: Checkout actions
+#        uses: actions/checkout@v4
+#        with:
+#          repository: pubnub/client-engineering-deployment-tools
+#          ref: v1
+#          token: ${{ secrets.GH_TOKEN }}
+#          path: .github/.release/actions
+#      - name: Publish to Maven
+#        uses: ./.github/.release/actions/actions/services/maven
 #        with:
 #          token: ${{ secrets.GH_TOKEN }}
-#          source-folder: build/dokka/gfmMultiModule
-#          jira-api-key: ${{ secrets.JIRA_API_KEY }}
+#          nexus-username: ${{ secrets.NEXUS_USERNAME }}
+#          nexus-password: ${{ secrets.NEXUS_PASSWORD }}
+#          gpg-key-id: ${{ secrets.GPG_KEY_ID }}
+#          gpg-key-name: ${{ secrets.GPG_KEY_NAME }}
+#          gpg-key-passphrase: ${{ secrets.GPG_KEY_PASSPHRASE }}
+#          maven-plugin: "new-gradle-nexus-publish"
+#          prepend-product-to-tag: true
+#      - name: Create Release
+#        uses: ./.github/.release/actions/actions/services/github-release
+#        with:
+#          token: ${{ secrets.GH_TOKEN }}
+#          prepend-product-to-tag: true
 #          last-service: true
-#      - name: Upload test reports
-#        uses: ./.github/.release/actions/actions/test-reports/upload
-#        with:
-#          token: ${{ secrets.GH_TOKEN }}
-#          acceptance-tests-workflow: Tests
