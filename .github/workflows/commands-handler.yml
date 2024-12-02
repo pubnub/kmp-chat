@@ -26,6 +26,7 @@ jobs:
         if: steps.user-check.outputs.expected-user == 'true'
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.ref }}
           token: ${{ secrets.GH_TOKEN }}
           submodules: recursive
       - name: Checkout release actions
