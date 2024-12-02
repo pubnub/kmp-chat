@@ -1,16 +1,16 @@
 [versions]
 nexus = "2.0.0"
-kotlin = "2.1.0"
+kotlin = "2.0.21"
 vanniktech = "0.29.0"
 ktlint = "12.1.0"
 dokka = "1.9.20"
-kotlinx_serialization = "1.7.1"
+kotlinx_serialization = "1.7.3"
+kotlinx_coroutines = "1.9.0"
 pubnub = "10.2.1-dev"
 
 [libraries]
 pubnub-kotlin-api = { module = "com.pubnub:pubnub-kotlin-api", version.ref = "pubnub" }
 pubnub-kotlin = { module = "com.pubnub:pubnub-kotlin", version.ref = "pubnub" }
-pubnub-kotlin-test = { module = "com.pubnub:pubnub-kotlin-test", version.ref = "pubnub" }
 kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version = "0.25.0" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx_serialization" }
 touchlab-kermit = { module = "co.touchlab:kermit", version = "2.0.4" }
@@ -19,8 +19,7 @@ touchlab-kermit = { module = "co.touchlab:kermit", version = "2.0.4" }
 #logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 #logback-core = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
 #junit4 = { module = "junit:junit", version = "4.13.2" }
-#coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx_coroutines"}
-#
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx_coroutines"}
 
 # plugins for included build
 kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -41,3 +40,4 @@ gradle-nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.r
 kotlinx-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version = "0.16.2" }
 mokkery = { id = "dev.mokkery", version = "2.4.0" }
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.3" }
+codingfeline-buildkonfig = { id = "com.codingfeline.buildkonfig", version = "0.15.1" }
