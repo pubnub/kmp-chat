@@ -14,7 +14,6 @@ rootProject.name = "pubnub-chat"
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
-        mavenLocal()
     }
 }
 
