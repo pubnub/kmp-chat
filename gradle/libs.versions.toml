@@ -1,6 +1,6 @@
 [versions]
 nexus = "2.0.0"
-kotlin = "2.0.21"
+kotlin = "2.1.0"
 vanniktech = "0.29.0"
 ktlint = "12.1.0"
 dokka = "1.9.20"
@@ -38,6 +38,6 @@ benmanes-versions = { id = "com.github.ben-manes.versions", version = "0.42.0" }
 vanniktech-maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech" }
 gradle-nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus" }
 kotlinx-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version = "0.16.2" }
-mokkery = { id = "dev.mokkery", version = "2.4.0" }
+mokkery = { id = "dev.mokkery", version = "2.6.0" }
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.3" }
 codingfeline-buildkonfig = { id = "com.codingfeline.buildkonfig", version = "0.15.1" }

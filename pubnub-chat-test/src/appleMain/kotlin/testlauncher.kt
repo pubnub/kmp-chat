@@ -11,7 +11,7 @@ import kotlin.system.exitProcess
 @OptIn(ExperimentalNativeApi::class)
 fun mainBackground(args: Array<String>) {
     val worker = Worker.start(name = "main-background")
-    worker.execute(TransferMode.SAFE, { args.freeze() }) {
+    worker.execute(TransferMode.SAFE, { args }) {
         val result = testLauncherEntryPoint(it)
         exitProcess(result)
     }

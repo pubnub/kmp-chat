@@ -1,7 +1,7 @@
 set -e
 ./gradlew -PENABLE_TARGET_IOS_ALL=true :podPublishReleaseXCFramework
 find build/cocoapods/publish/release/PubNubChat.xcframework -exec touch -t 00000000 {} +
-rm build/cocoapods/publish/release/PubNubChat.xcframework.zip
+rm -f build/cocoapods/publish/release/PubNubChat.xcframework.zip
 zip -X -vr build/cocoapods/publish/release/PubNubChat.xcframework.zip build/cocoapods/publish/release/PubNubChat.xcframework
 touch -t 00000000 build/cocoapods/publish/release/PubNubChat.xcframework.zip
 CHECKSUM=$(swift package compute-checksum /Users/wojciech.kalicinski/projects/pubnub-chat/build/cocoapods/publish/release/PubNubChat.xcframework.zip)

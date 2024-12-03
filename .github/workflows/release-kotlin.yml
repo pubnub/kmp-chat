@@ -1,9 +1,11 @@
-name: Automated product release
+name: Kotlin automated product release
 
 on:
   pull_request:
     branches: [master]
     types: [closed]
+    paths:
+      - '.pubnub.yml'
 
 jobs:
   check-release:
@@ -61,6 +63,7 @@ jobs:
         uses: ./.github/.release/actions/actions/services/github-release
         with:
           token: ${{ secrets.GH_TOKEN }}
+          artifacts-folder: build/gh_artifacts
           prepend-product-to-tag: true
           last-service: true
 #      - name: Update Pages

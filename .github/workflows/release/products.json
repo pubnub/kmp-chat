@@ -5,12 +5,6 @@
     "main": true,
     "overrideRelease": true
   },
-  "swift": {
-    "path": "./swift-chat",
-    "name": "PubNub Swift Chat SDK",
-    "main": false,
-    "overrideRelease": true
-  },
   "js": {
     "path": "./js-chat",
     "name": "PubNub JS Chat SDK",
