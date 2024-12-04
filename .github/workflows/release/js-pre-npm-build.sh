@@ -1,4 +1,4 @@
-echo "Build Chat SDK module artifacts"
+echo "Build JS Chat SDK module artifacts"
 pushd ..
 ./gradlew :jsNodeProductionLibraryDistribution
 ./gradlew :packJsPackage

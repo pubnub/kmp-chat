@@ -22,18 +22,6 @@ gradlePlugin {
             id = "pubnub.dokka"
             implementationClass = "com.pubnub.gradle.PubNubDokkaPlugin"
         }
-        register("pubnubInteg") {
-            id = "pubnub.integration-test"
-            implementationClass = "com.pubnub.gradle.PubNubIntegrationTestPlugin"
-        }
-        register("pubnubTest") {
-            id = "pubnub.test"
-            implementationClass = "com.pubnub.gradle.PubNubTestPlugin"
-        }
-        register("pubnubJavaLibrary") {
-            id = "pubnub.java-library"
-            implementationClass = "com.pubnub.gradle.PubNubJavaLibraryPlugin"
-        }
         register("pubnubKotlinLibrary") {
             id = "pubnub.kotlin-library"
             implementationClass = "com.pubnub.gradle.PubNubKotlinLibraryPlugin"

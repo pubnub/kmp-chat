@@ -1,4 +1,5 @@
 set -e
+echo "Update Swift Chat SDK checksum in Package.swift"
 ./gradlew -PENABLE_TARGET_IOS_ALL=true :podPublishReleaseXCFramework
 find build/cocoapods/publish/release/PubNubChat.xcframework -exec touch -t 00000000 {} +
 rm -f build/cocoapods/publish/release/PubNubChat.xcframework.zip
