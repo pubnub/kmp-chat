@@ -1,5 +1,5 @@
 import com.pubnub.gradle.enableAnyIosTarget
-import com.pubnub.gradle.tasks.GenerateVersionTask
+import com.pubnub.gradle.enableJsTarget
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension
 
 plugins {
@@ -15,11 +15,23 @@ plugins {
     id("pubnub.dokka")
     id("pubnub.multiplatform")
     alias(libs.plugins.kotlinx.compatibility.validator)
+    alias(libs.plugins.npm.publish)
 }
 
 nexusPublishing {
     repositories {
         sonatype()
+    }
+}
+
+npmPublish {
+    packages {
+        getByName("js") {
+            scope = "pubnub"
+            packageName = "chat"
+            types.set("index.d.ts")
+            packageJsonTemplateFile = project.layout.projectDirectory.file("js-chat/package_template.json")
+        }
     }
 }
 
@@ -48,8 +60,27 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(libs.pubnub.kotlin.test)
+                implementation(project(":pubnub-chat-test"))
             }
+        }
+    }
+
+    if (enableJsTarget) {
+        js {
+// keep this in here for ad-hoc testing
+//            browser {
+//                testTask {
+//                    useMocha {
+//                        timeout = "15s"
+//                    }
+//                }
+//            }
+
+            compilerOptions {
+                target.set("es2015")
+//                moduleKind.set(JsModuleKind.MODULE_UMD)
+            }
+            binaries.library()
         }
     }
 
@@ -66,21 +97,6 @@ kotlin {
         }
     }
 }
-
-val generateVersion =
-    tasks.register<GenerateVersionTask>("generateVersion") {
-        fileName.set("ChatVersion")
-        packageName.set("com.pubnub.chat.internal")
-        constName.set("PUBNUB_CHAT_VERSION")
-        version.set(providers.gradleProperty("VERSION_NAME"))
-        outputDirectory.set(
-            layout.buildDirectory.map {
-                it.dir("generated/sources/generateVersion")
-            },
-        )
-    }
-
-kotlin.sourceSets.getByName("commonMain").kotlin.srcDir(generateVersion)
 
 apiValidation {
     ignoredProjects += "pubnub-chat-impl"

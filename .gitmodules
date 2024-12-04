@@ -1,4 +1,0 @@
-[submodule "pubnub-kotlin"]
-	path = pubnub-kotlin
-	url = https://github.com/pubnub/kotlin.git
-	branch = master

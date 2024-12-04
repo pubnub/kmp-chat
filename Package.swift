@@ -5,7 +5,11 @@ import PackageDescription
 
 let package = Package(
   name: "PubNubChat",
-  platforms: [.iOS(.v14)],
+  platforms: [
+    .iOS(.v14),
+    .macOS(.v11),
+    .tvOS(.v14)
+  ],
   products: [
     .library(
       name: "PubNubChat",

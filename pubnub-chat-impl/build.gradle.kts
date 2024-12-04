@@ -2,8 +2,9 @@
 
 import com.pubnub.gradle.enableAnyIosTarget
 import com.pubnub.gradle.enableJsTarget
+import com.pubnub.gradle.tasks.GenerateVersionTask
+import org.gradle.kotlin.dsl.register
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.dsl.JsModuleKind
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension
 
 plugins {
@@ -17,25 +18,6 @@ plugins {
 }
 
 kotlin {
-    if (enableJsTarget) {
-        js {
-// keep this in here for ad-hoc testing
-//            browser {
-//                testTask {
-//                    useMocha {
-//                        timeout = "15s"
-//                    }
-//                }
-//            }
-
-            compilerOptions {
-                target.set("es2015")
-                moduleKind.set(JsModuleKind.MODULE_UMD)
-            }
-            binaries.library()
-        }
-    }
-
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -51,7 +33,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(libs.pubnub.kotlin.test)
+                implementation(project(":pubnub-chat-test"))
             }
         }
 
@@ -78,3 +60,18 @@ kotlin {
         }
     }
 }
+
+val generateVersion =
+    tasks.register<GenerateVersionTask>("generateVersion") {
+        fileName.set("ChatVersion")
+        packageName.set("com.pubnub.chat.internal")
+        constName.set("PUBNUB_CHAT_VERSION")
+        version.set(providers.gradleProperty("VERSION_NAME"))
+        outputDirectory.set(
+            layout.buildDirectory.map {
+                it.dir("generated/sources/generateVersion")
+            },
+        )
+    }
+
+kotlin.sourceSets.getByName("commonMain").kotlin.srcDir(generateVersion)

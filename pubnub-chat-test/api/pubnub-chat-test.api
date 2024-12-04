@@ -1,0 +1,63 @@
+public abstract class com/pubnub/test/BaseIntegrationTest {
+	public field config Lcom/pubnub/api/v2/PNConfiguration;
+	public field config02 Lcom/pubnub/api/v2/PNConfiguration;
+	public field configPamClient Lcom/pubnub/api/v2/PNConfiguration;
+	public field configPamServer Lcom/pubnub/api/v2/PNConfiguration;
+	public field pubnub Lcom/pubnub/api/PubNub;
+	public field pubnub02 Lcom/pubnub/api/PubNub;
+	public field pubnubPamClient Lcom/pubnub/api/PubNub;
+	public field pubnubPamServer Lcom/pubnub/api/PubNub;
+	public fun <init> ()V
+	public fun after ()V
+	public fun before ()V
+	public final fun getConfig ()Lcom/pubnub/api/v2/PNConfiguration;
+	public final fun getConfig02 ()Lcom/pubnub/api/v2/PNConfiguration;
+	public final fun getConfigPamClient ()Lcom/pubnub/api/v2/PNConfiguration;
+	public final fun getConfigPamServer ()Lcom/pubnub/api/v2/PNConfiguration;
+	public final fun getPubnub ()Lcom/pubnub/api/PubNub;
+	public final fun getPubnub02 ()Lcom/pubnub/api/PubNub;
+	public final fun getPubnubPamClient ()Lcom/pubnub/api/PubNub;
+	public final fun getPubnubPamServer ()Lcom/pubnub/api/PubNub;
+	public final fun setConfig (Lcom/pubnub/api/v2/PNConfiguration;)V
+	public final fun setConfig02 (Lcom/pubnub/api/v2/PNConfiguration;)V
+	public final fun setConfigPamClient (Lcom/pubnub/api/v2/PNConfiguration;)V
+	public final fun setConfigPamServer (Lcom/pubnub/api/v2/PNConfiguration;)V
+	public final fun setPubnub (Lcom/pubnub/api/PubNub;)V
+	public final fun setPubnub02 (Lcom/pubnub/api/PubNub;)V
+	public final fun setPubnubPamClient (Lcom/pubnub/api/PubNub;)V
+	public final fun setPubnubPamServer (Lcom/pubnub/api/PubNub;)V
+}
+
+public final class com/pubnub/test/BaseIntegrationTestKt {
+	public static final fun await (Lcom/pubnub/kmp/PNFuture;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun randomString ()Ljava/lang/String;
+	public static final fun test (Lcom/pubnub/api/PubNub;Lkotlinx/coroutines/CoroutineScope;ZZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun test$default (Lcom/pubnub/api/PubNub;Lkotlinx/coroutines/CoroutineScope;ZZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class com/pubnub/test/Keys {
+	public static final field INSTANCE Lcom/pubnub/test/Keys;
+	public final fun getPamPubKey ()Ljava/lang/String;
+	public final fun getPamSecKey ()Ljava/lang/String;
+	public final fun getPamSubKey ()Ljava/lang/String;
+	public final fun getPubKey ()Ljava/lang/String;
+	public final fun getSubKey ()Ljava/lang/String;
+}
+
+public final class com/pubnub/test/PubNubTest {
+	public fun <init> (Lcom/pubnub/api/PubNub;ZLkotlinx/coroutines/CoroutineScope;Z)V
+	public synthetic fun <init> (Lcom/pubnub/api/PubNub;ZLkotlinx/coroutines/CoroutineScope;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun awaitSubscribe (Lcom/pubnub/api/PubNub;Ljava/util/Collection;Ljava/util/Collection;ZLkotlin/jvm/functions/Function0;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun awaitSubscribe (Lcom/pubnub/api/v2/entities/Channel;Lcom/pubnub/api/v2/subscriptions/SubscriptionOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun awaitSubscribe$default (Lcom/pubnub/test/PubNubTest;Lcom/pubnub/api/PubNub;Ljava/util/Collection;Ljava/util/Collection;ZLkotlin/jvm/functions/Function0;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun awaitSubscribe$default (Lcom/pubnub/test/PubNubTest;Lcom/pubnub/api/v2/entities/Channel;Lcom/pubnub/api/v2/subscriptions/SubscriptionOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun awaitUnsubscribe (Lcom/pubnub/api/PubNub;Ljava/util/Collection;Ljava/util/Collection;Lkotlin/jvm/functions/Function0;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun awaitUnsubscribe$default (Lcom/pubnub/test/PubNubTest;Lcom/pubnub/api/PubNub;Ljava/util/Collection;Ljava/util/Collection;Lkotlin/jvm/functions/Function0;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun close ()V
+	public final fun nextEvent (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun nextMessage (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun nextStatus (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun skip (ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun skip$default (Lcom/pubnub/test/PubNubTest;ILkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+

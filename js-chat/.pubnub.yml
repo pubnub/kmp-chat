@@ -1,0 +1,138 @@
+---
+name: pubnub-js-chat
+version: v0.8.4
+scm: github.com/pubnub/js-chat
+schema: 1
+files:
+  - lib/dist/index.js
+changelog:
+  - date: 2024-11-26
+    version: v0.8.4
+    changes:
+      - type: feature
+        text: "Lock messages from being edited."
+      - type: feature
+        text: "Remove reactions list if everyone removed them."
+  - date: 2024-11-15
+    version: v0.8.3
+    changes:
+      - type: feature
+        text: "Add statusField for channel members."
+  - date: 2024-08-27
+    version: v0.8.2
+    changes:
+      - type: feature
+        text: "Customize message reactions."
+  - date: 2024-08-01
+    version: v0.8.1
+    changes:
+      - type: feature
+        text: "Bump JS SDK version to 8.2.7."
+  - date: 2024-07-31
+    version: v0.8.0
+    changes:
+      - type: feature
+        text: "Message report events are now sent to a moderation sub-channel. Methods for user reporting and message reporting to a global admin channel are now deprecated and renamed with a DEPRECATED_ prefix."
+  - date: 2024-06-18
+    version: v0.7.3
+    changes:
+      - type: feature
+        text: "Take membership related events while updating users into account ."
+  - date: 2024-06-10
+    version: v0.7.2
+    changes:
+      - type: feature
+        text: "Respect eTag and updated fields in the Membership object."
+  - date: 2024-06-05
+    version: v0.7.1
+    changes:
+      - type: feature
+        text: "Extend "filter" property for getMemberships."
+  - date: 2024-05-22
+    version: v0.7.0
+    changes:
+      - type: feature
+        text: "Update JS SDK to 8.2.0."
+      - type: feature
+        text: "Remove look behind regexes for old Safari compatibility."
+  - date: 2024-05-22
+    version: v0.6.2
+    changes:
+      - type: bug
+        text: "APNS environment was not set in push payloads."
+  - date: 2024-05-21
+    version: v0.6.1
+    changes:
+      - type: feature
+        text: "Fix whose memberships are returned when using user.getMemberships()."
+  - date: 2024-03-11
+    version: v0.6.0
+    changes:
+      - type: feature
+        text: "Check PAM permissions before sending signals."
+      - type: feature
+        text: "Allow custom payloads while sending and receiving messages."
+  - date: 2024-01-16
+    version: v0.5.2
+    changes:
+      - type: feature
+        text: "Make ThreadMessage.streamUpdatesOn return ThreadMessage[] instead of Message[]."
+  - date: 2023-12-18
+    version: v0.5.1
+    changes:
+      - type: feature
+        text: "Add missing "reason" parameter to user restrictions."
+  - date: 2023-12-14
+    version: v0.5.0
+    changes:
+      - type: feature
+        text: "Add "restore" method to the Message entity."
+      - type: feature
+        text: "Add "reason" for user restrictions."
+      - type: feature
+        text: "Muted | banned | lifted)."
+  - date: 2023-12-06
+    version: v0.4.0
+    changes:
+      - type: feature
+        text: "Add CryptoModule support."
+  - date: 2023-11-08
+    version: v0.3.1
+    changes:
+      - type: feature
+        text: "Updated pubnub dependency to 7.4.3."
+      - type: bug
+        text: "Typo in moderation setRestrictions method names."
+  - date: 2023-11-07
+    version: v0.3.0
+    changes:
+      - type: feature
+        text: "Updated pubnub dependency to 7.4.2."
+      - type: feature
+        text: "New type of software license."
+      - type: feature
+        text: "New "invite" custom event emitted when users are added to channels."
+      - type: feature
+        text: "Auto generation of channel IDs in every type of channel creation method, that can be bypassed."
+      - type: feature
+        text: "Fully optional parameters for `getUsers` and `getChannels` methods."
+      - type: feature
+        text: "Improved parameter lists for custom event related methods."
+      - type: feature
+        text: "Ability to forward message to the original channel."
+      - type: bug
+        text: "Behavior of spaces around mentions in Message Drafts."
+  - date: 2023-10-23
+    version: v0.2.0
+    changes:
+      - type: feature
+        text: "Add moderation restriction methods."
+      - type: feature
+        text: "Change the way unread message count is calculated."
+      - type: bug
+        text: "Removing threads."
+  - date: 2023-09-26
+    version: v0.1.0
+    changes:
+      - type: feature
+        text: "Initial release."
