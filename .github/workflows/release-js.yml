@@ -48,6 +48,11 @@ jobs:
           ref: v1
           token: ${{ secrets.GH_TOKEN }}
           path: .github/.release/actions
+      - name: Install JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu' # See 'Supported distributions' for available options
+          java-version: '21'
       - name: Publish to NPM
         uses: ./.github/.release/actions/actions/services/npm
         with:
@@ -59,15 +64,3 @@ jobs:
           build-command: npm run build
           build-path: dist
           last-service: true
-#      - name: Update Pages
-#        uses: ./.github/.release/actions/actions/services/github-pages
-#        with:
-#          token: ${{ secrets.GH_TOKEN }}
-#          source-folder: build/dokka/gfmMultiModule
-#          jira-api-key: ${{ secrets.JIRA_API_KEY }}
-#          last-service: true
-#      - name: Upload test reports
-#        uses: ./.github/.release/actions/actions/test-reports/upload
-#        with:
-#          token: ${{ secrets.GH_TOKEN }}
-#          acceptance-tests-workflow: Tests
