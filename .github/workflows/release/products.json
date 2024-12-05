@@ -8,7 +8,7 @@
   "js": {
     "path": "./js-chat",
     "name": "PubNub JS Chat SDK",
-    "main": true,
+    "main": false,
     "overrideRelease": true
   }
 }
