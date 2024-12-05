@@ -37,7 +37,7 @@
   ],
   "Package.swift": [
     {
-      "pattern": "https://github.com/pubnub/kmp-chat/releases/download/chat-(v?(\\d+\\.?){2,}([a-zA-Z0-9-]+(\\.?\\d+)?)?)",
+      "pattern": "https://github.com/pubnub/kmp-chat/releases/download/kotlin-(v?(\\d+\\.?){2,}([a-zA-Z0-9-]+(\\.?\\d+)?)?)",
       "clearedPrefix": true,
       "clearedSuffix": false
     }
