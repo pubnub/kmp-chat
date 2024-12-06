@@ -6,6 +6,11 @@ schema: 1
 files:
   - lib/dist/index.js
 changelog:
+  - date: 2024-12-06
+    version: 0.9.0-dev
+    changes:
+      - type: improvement
+        text: "Internal code changes."
   - date: 2024-11-26
     version: v0.8.4
     changes:
