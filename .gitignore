@@ -49,4 +49,3 @@ bin/
 
 node_modules
 js-chat/dist
-js-chat/junit.xml

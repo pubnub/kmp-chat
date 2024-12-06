@@ -1,16 +1,11 @@
 ---
 name: pubnub-js-chat
-version: 0.9.0-dev
+version: v0.8.4
 scm: github.com/pubnub/js-chat
 schema: 1
 files:
   - lib/dist/index.js
 changelog:
-  - date: 2024-12-05
-    version: 0.9.0-dev
-    changes:
-      - type: feature
-        text: "Lock moderated messages from editing."
   - date: 2024-11-26
     version: v0.8.4
     changes:
