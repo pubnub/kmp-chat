@@ -391,8 +391,3 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         }
     }
 }
-
-@OptIn(ExperimentalStdlibApi::class)
-@JsExport
-@EagerInitialization
-val INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_"

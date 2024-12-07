@@ -346,6 +346,7 @@ fun range(start: Int, stop: Int, step: Int = 1): List<Int> {
 }
 
 @JsExport
+@JsName("MessageDraft")
 class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs, config: MessageDraftConfig? = null) {
     private var previousValue = ""
     private val mentionedUsers: MutableMap<Int, UserJs> = mutableMapOf()
