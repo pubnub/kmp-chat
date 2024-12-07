@@ -145,4 +145,4 @@ changelog:
     version: v0.1.0
     changes:
       - type: feature
-        text: "Initial release"
+        text: "Initial release."

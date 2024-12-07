@@ -1,6 +1,5 @@
 import com.pubnub.gradle.enableAnyIosTarget
 import com.pubnub.gradle.enableJsTarget
-import org.jetbrains.kotlin.gradle.dsl.JsModuleKind
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension
 
 plugins {
@@ -79,7 +78,7 @@ kotlin {
 
             compilerOptions {
                 target.set("es2015")
-                moduleKind.set(JsModuleKind.MODULE_UMD)
+//                moduleKind.set(JsModuleKind.MODULE_UMD)
             }
             binaries.library()
         }
