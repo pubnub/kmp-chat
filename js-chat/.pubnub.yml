@@ -10,8 +10,7 @@ changelog:
     version: 0.9.1
     changes:
       - type: bug
-        text: "Fix ES module named exports that were broken in 0.9.0 ."
-  - date: 2024-12-06
+        text: "Fix ES module named imports."  - date: 2024-12-06
     version: 0.9.0-dev
     changes:
       - type: improvement
