@@ -2,7 +2,12 @@ name: Tests
 
 on:
   push:
+    branches-ignore:
+      - master
   workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   tests:
@@ -47,11 +52,3 @@ jobs:
       - name: Cancel workflow runs for commit on error
         if: failure()
         uses: ./.github/.release/actions/actions/utils/fast-jobs-failure
-  all-tests:
-    name: Tests
-    needs: [tests]
-    runs-on:
-      group: macos-gh
-    steps:
-      - name: Tests summary
-        run: echo -e "\033[38;2;95;215;0m\033[1mAll tests successfully passed"
