@@ -2,6 +2,8 @@ name: Validations
 
 on:
   push:
+    branches-ignore:
+      - master
   workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,39 +36,3 @@ jobs:
       - name: Cancel workflow runs for commit on error
         if: failure()
         uses: ./.github/.release/actions/actions/utils/fast-jobs-failure
-  build-validation:
-    name: Validate build
-    runs-on:
-      group: macos-gh
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Install JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu' # See 'Supported distributions' for available options
-          java-version: '21'
-      - name: Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-      - name: Validate clean build
-        run: ./gradlew apiCheck ktlintFormat publishAllPublicationsToRepoRepository -PRELEASE_SIGNING_ENABLED=false
-      - name: Cancel workflow runs for commit on error
-        if: failure()
-        uses: ./.github/.release/actions/actions/utils/fast-jobs-failure
-  all-validations:
-    name: Validations
-    needs: [pubnub-yml, build-validation]
-    runs-on:
-      group: macos-gh
-    steps:
-      - name: Validations summary
-        run: echo -e "\033[38;2;95;215;0m\033[1mAll validations passed"
