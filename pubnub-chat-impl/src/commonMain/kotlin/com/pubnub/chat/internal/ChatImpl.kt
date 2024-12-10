@@ -796,8 +796,11 @@ class ChatImpl(
                     return@thenAsync emptyList<GetUnreadMessagesCounts>().asFuture()
                 }
                 val channels = memberships.map { membership -> membership.channel.id }
-                val channelsTimetoken =
-                    memberships.map { membership -> membership.lastReadMessageTimetoken ?: 0 }
+
+                // we need to increased returned lastReadMessageTimetoken by 1 because for odds numbers larger than 9007199254740991 server store them one bigger
+                val channelsTimetoken: List<Long> =
+                    memberships.map { membership -> (membership.lastReadMessageTimetoken?.plus(1))?: 0 }
+
                 pubNub.messageCounts(channels = channels, channelsTimetoken = channelsTimetoken)
                     .then { pnMessageCountResult ->
                         val unreadMessageCounts =

@@ -315,7 +315,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         chat.pubNub.deleteMessages(listOf(channelId01)).await()
     }
 
-    @Ignore // fails from time to time
     @Test
     fun can_getUnreadMessageCounts_global() = runTest {
         val channelId01 = channel01.id
@@ -359,7 +358,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             }?.count
                 ?: 0
         assertEquals(0, unreadMessagesCountsForChannel01)
-        assertEquals(0, unreadMessagesCountsForChannel02) // todo when run in set sometimes fails :/
+        assertEquals(0, unreadMessagesCountsForChannel02)
 
         // remove messages
         chat.pubNub.deleteMessages(listOf(channelId01, channelId02))

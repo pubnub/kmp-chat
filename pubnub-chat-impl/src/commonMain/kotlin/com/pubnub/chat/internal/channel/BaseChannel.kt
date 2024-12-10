@@ -600,7 +600,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
             log.pnError(READ_RECEIPTS_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS)
         }
         val timetokensPerUser = mutableMapOf<String, Long>()
-        val future = getMembers().then { members -> // todo what about paging? maybe not needed in non-public chats...
+        // in group chats it work till 100 members
+        val future = getMembers().then { members ->
             members.members.forEach { m ->
                 val lastTimetoken = m.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN)?.tryLong()
                 if (lastTimetoken != null) {
