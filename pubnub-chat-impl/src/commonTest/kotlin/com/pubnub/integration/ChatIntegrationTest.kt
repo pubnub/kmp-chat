@@ -66,6 +66,16 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun test_storeUserActivityInterval_and_storeUserActivityTimestamps() = runTest {
+        chat = ChatImpl(ChatConfiguration(storeUserActivityInterval = 100.seconds, storeUserActivityTimestamps = true), pubnub)
+        chat.initialize().await()
+
+        val user: User = chat.getUser(chat.currentUser.id).await()!!
+
+        assertTrue(user.custom?.get("lastActiveTimestamp") != null)
+    }
+
+    @Test
     fun initializeShouldPassWhenPamEnableAndTokenProvided() = runTest {
         if (PLATFORM == "iOS") {
             return@runTest

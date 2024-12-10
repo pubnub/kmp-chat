@@ -657,10 +657,10 @@ class ChatImpl(
 
                 val event = EventImpl(
                     chat = this,
-                    timetoken = pnEvent.timetoken!!, // todo can this even be null?
+                    timetoken = pnEvent.timetoken!!,
                     payload = payload,
                     channelId = pnEvent.channel,
-                    userId = pnEvent.publisher!! // todo can this even be null?
+                    userId = pnEvent.publisher!!
                 )
                 callback(event)
             } catch (e: Exception) {

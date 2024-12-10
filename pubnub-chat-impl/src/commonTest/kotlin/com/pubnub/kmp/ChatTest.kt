@@ -1304,7 +1304,7 @@ class ChatTest : BaseTest() {
         val mute = false
         val pnMemberArrayResult = PNMemberArrayResult(
             status = 200,
-            data = listOf(PNMember(PNUUIDMetadata(id = userId), null, "", "", null)),
+            data = listOf(PNMember(PNUUIDMetadata(id = userId), null, "", "", null, null)),
             1,
             null,
             null
@@ -1362,7 +1362,7 @@ class ChatTest : BaseTest() {
         val reason = "He rehabilitated"
         val pnMemberArrayResult = PNMemberArrayResult(
             status = 200,
-            data = listOf(PNMember(PNUUIDMetadata(id = userId), null, "", "", null)),
+            data = listOf(PNMember(PNUUIDMetadata(id = userId), null, "", "", null, null)),
             1,
             null,
             null

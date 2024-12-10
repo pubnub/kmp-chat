@@ -25,13 +25,13 @@ interface ChatConfiguration {
      * to be set to true. The default value is set to 60 seconds, and that's the minimum possible value.
      * If you try to set it to a lower value, you'll get the storeUserActivityInterval must be at least 60000ms error.
      */
-    val storeUserActivityInterval: Duration // todo do we have test for this?
+    val storeUserActivityInterval: Duration
 
     /**
      * Specifies if you want to track the user's global presence in your chat app. The user's activity is tracked
      * through [com.pubnub.chat.User.lastActiveTimestamp].
      */
-    val storeUserActivityTimestamps: Boolean // todo do we have test for this?
+    val storeUserActivityTimestamps: Boolean
 
     /**
      * List of parameters you must set if you want to enable sending/receiving mobile push notifications for phone

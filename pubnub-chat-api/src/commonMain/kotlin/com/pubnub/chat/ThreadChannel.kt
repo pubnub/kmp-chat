@@ -25,7 +25,6 @@ interface ThreadChannel : Channel {
      * @return [PNFuture] containing [ThreadChannel]
      */
     override fun pinMessage(message: Message): PNFuture<ThreadChannel>
-    // TODO change parameter to ThreadMessage
 
     /**
      * Unpins the previously pinned thread message from the thread channel.
