@@ -3,11 +3,13 @@ package com.pubnub.kmp
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
+import com.pubnub.chat.Membership
 import com.pubnub.chat.MentionTarget
 import com.pubnub.chat.MessageDraft
 import com.pubnub.chat.MessageDraftChangeListener
 import com.pubnub.chat.MessageElement
 import com.pubnub.chat.SuggestedMention
+import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.Mention
@@ -17,6 +19,7 @@ import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.findChannelMentionMatches
 import com.pubnub.chat.internal.findUserMentionMatches
 import com.pubnub.test.await
+import com.pubnub.test.randomString
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -433,5 +436,32 @@ class MessageDraftTest {
         stringsToExpectedMatches.forEach {
             assertEquals(it.second, findChannelMentionMatches(it.first).first().value)
         }
+    }
+
+    @Test
+    fun thread_channel_user_suggestions_come_from_parent_channel() {
+        val threadChannel: ThreadChannel = mock(MockMode.strict)
+        every { threadChannel.chat } returns chat
+        every { threadChannel.parentChannelId } returns randomString()
+        every { threadChannel.getUserSuggestions(any(), any()) } returns listOf<Membership>().asFuture()
+
+        val md = MessageDraftImpl(threadChannel, MessageDraft.UserSuggestionSource.CHANNEL, false)
+        try {
+            md.getSuggestedUsers("aaa")
+        } catch (_: Throwable) {
+            // ignore
+        }
+        verifyNoMoreCalls()
+    }
+
+    @Test
+    fun channel_user_suggestions_come_from_this_channel() {
+        val channel: Channel = mock(MockMode.strict)
+        every { channel.chat } returns chat
+        every { channel.getUserSuggestions(any(), any()) } returns listOf<Membership>().asFuture()
+
+        val md = MessageDraftImpl(channel, MessageDraft.UserSuggestionSource.CHANNEL, false)
+        md.getSuggestedUsers("aaa")
+        verify { channel.getUserSuggestions(any(), any()) }
     }
 }

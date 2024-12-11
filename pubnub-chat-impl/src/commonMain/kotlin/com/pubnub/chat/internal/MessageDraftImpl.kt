@@ -263,7 +263,7 @@ class MessageDraftImpl(
         return getMessageElements(messageText, mentions)
     }
 
-    private fun getSuggestedUsers(searchText: String): PNFuture<Collection<User>> {
+    internal fun getSuggestedUsers(searchText: String): PNFuture<Collection<User>> {
         return if (userSuggestionSource == MessageDraft.UserSuggestionSource.CHANNEL) {
             userSuggestionSourceChannel.getUserSuggestions(searchText, userLimit).then { memberships ->
                 memberships.map { it.user }
