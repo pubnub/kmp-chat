@@ -78,7 +78,6 @@ kotlin {
 
             compilerOptions {
                 target.set("es2015")
-//                moduleKind.set(JsModuleKind.MODULE_UMD)
             }
             binaries.library()
         }

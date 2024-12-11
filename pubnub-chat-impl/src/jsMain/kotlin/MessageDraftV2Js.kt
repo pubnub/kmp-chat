@@ -1,12 +1,14 @@
 @file:OptIn(ExperimentalJsExport::class)
 
 import com.pubnub.chat.MentionTarget
+import com.pubnub.chat.MessageDraftChangeListener
 import com.pubnub.chat.MessageElement
+import com.pubnub.chat.SuggestedMention
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.types.InputFile
 import com.pubnub.kmp.JsMap
+import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.UploadableImpl
-import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
 import com.pubnub.kmp.toMap
 import kotlin.js.Promise
@@ -14,9 +16,11 @@ import kotlin.js.Promise
 @JsExport
 @JsName("MessageDraftV2")
 class MessageDraftV2Js internal constructor(
+    private val chat: ChatJs,
     private val messageDraft: MessageDraftImpl,
-    val config: MessageDraftConfig?,
+    val config: MessageDraftConfig,
 ) {
+    val channel: ChannelJs get() = messageDraft.channel.asJs(chat)
     val value: String get() = messageDraft.value.toString()
     var quotedMessage: MessageJs? = null
     var files: Any? = null
@@ -41,40 +45,8 @@ class MessageDraftV2Js internal constructor(
         messageDraft.removeMention(positionOnInput)
     }
 
-    fun getMessagePreview(): Array<MessageElementJs> {
-        return messageDraft.getMessageElements().map { element ->
-            when (element) {
-                is MessageElement.Link -> when (val target = element.target) {
-                    is MentionTarget.Channel -> createJsObject<MessageElementJs> {
-                        this.type = "channelReference"
-                        this.content = createJsObject<MessageElementPayloadJs.Channel> {
-                            this.name = element.text.substring(1)
-                            this.id = target.channelId
-                        }
-                    }
-                    is MentionTarget.Url -> createJsObject<MessageElementJs> {
-                        this.type = "textLink"
-                        this.content = createJsObject<MessageElementPayloadJs.Link> {
-                            this.text = element.text
-                            this.link = target.url
-                        }
-                    }
-                    is MentionTarget.User -> createJsObject<MessageElementJs> {
-                        this.type = "mention"
-                        this.content = createJsObject<MessageElementPayloadJs.User> {
-                            this.name = element.text.substring(1)
-                            this.id = target.userId
-                        }
-                    }
-                }
-                is MessageElement.PlainText -> createJsObject<MessageElementJs> {
-                    this.type = "text"
-                    this.content = createJsObject<MessageElementPayloadJs.Text> {
-                        this.text = element.text
-                    }
-                }
-            }
-        }.toTypedArray()
+    fun getMessagePreview(): Array<MixedTextTypedElement> {
+        return messageDraft.getMessageElements().toJs()
     }
 
     fun send(options: PubNub.PublishParameters?): Promise<PubNub.PublishResponse> {
@@ -96,30 +68,108 @@ class MessageDraftV2Js internal constructor(
             options?.ttl?.toInt()
         ).then { it.toPublishResponse() }.asPromise()
     }
+
+    fun addChangeListener(listener: (Array<MixedTextTypedElement>, Promise<Array<SuggestedMentionJs>>) -> Unit) {
+        messageDraft.addChangeListener(MessageDraftListenerJs(listener))
+    }
+
+    fun removeChangeListener(listener: (Array<MixedTextTypedElement>, Promise<Array<SuggestedMentionJs>>) -> Unit) {
+        messageDraft.removeChangeListener(MessageDraftListenerJs(listener))
+    }
+
+    fun insertText(offset: Int, text: String) = messageDraft.insertText(offset, text)
+
+    fun removeText(offset: Int, length: Int) = messageDraft.removeText(offset, length)
+
+    fun insertSuggestedMention(mention: SuggestedMentionJs, text: String) {
+        return messageDraft.insertSuggestedMention(
+            SuggestedMention(
+                mention.offset,
+                mention.replaceFrom,
+                mention.replaceWith,
+                when (mention.type) {
+                    TYPE_MENTION -> MentionTarget.User(mention.target)
+                    TYPE_CHANNEL_REFERENCE -> MentionTarget.Channel(mention.target)
+                    TYPE_TEXT_LINK -> MentionTarget.Url(mention.target)
+                    else -> throw IllegalStateException("Unknown target type")
+                }
+            ),
+            text
+        )
+    }
+
+    fun addMention(offset: Int, length: Int, mentionType: String, mentionTarget: String) {
+        return messageDraft.addMention(
+            offset,
+            length,
+            when (mentionType) {
+                TYPE_MENTION -> MentionTarget.User(mentionTarget)
+                TYPE_CHANNEL_REFERENCE -> MentionTarget.Channel(mentionTarget)
+                TYPE_TEXT_LINK -> MentionTarget.Url(mentionTarget)
+                else -> throw IllegalStateException("Unknown target type")
+            }
+        )
+    }
+
+    fun removeMention(offset: Int) = messageDraft.removeMention(offset)
+
+    fun update(text: String) = messageDraft.update(text)
 }
 
-external interface MessageElementJs {
-    var type: String
-    var content: MessageElementPayloadJs
+data class MessageDraftListenerJs(val listener: (Array<MixedTextTypedElement>, Promise<Array<SuggestedMentionJs>>) -> Unit) : MessageDraftChangeListener {
+    override fun onChange(
+        messageElements: List<MessageElement>,
+        suggestedMentions: PNFuture<List<SuggestedMention>>,
+    ) {
+        listener(
+            messageElements.toJs(),
+            suggestedMentions.then {
+                it.map {
+                    SuggestedMentionJs(
+                        it.offset,
+                        it.replaceFrom,
+                        it.replaceWith,
+                        when (it.target) {
+                            is MentionTarget.Channel -> TYPE_CHANNEL_REFERENCE
+                            is MentionTarget.Url -> TYPE_TEXT_LINK
+                            is MentionTarget.User -> TYPE_MENTION
+                        },
+                        when (val link = it.target) {
+                            is MentionTarget.Channel -> link.channelId
+                            is MentionTarget.Url -> link.url
+                            is MentionTarget.User -> link.userId
+                        }
+                    )
+                }.toTypedArray()
+            }.asPromise()
+        )
+    }
 }
 
-external interface MessageElementPayloadJs {
-    interface Text : MessageElementPayloadJs {
-        var text: String
-    }
+@JsExport
+@JsName("SuggestedMention")
+class SuggestedMentionJs(
+    val offset: Int,
+    val replaceFrom: String,
+    val replaceWith: String,
+    val type: String,
+    val target: String,
+)
 
-    interface User : MessageElementPayloadJs {
-        var name: String
-        var id: String
-    }
+private const val TYPE_CHANNEL_REFERENCE = "channelReference"
+private const val TYPE_TEXT_LINK = "textLink"
+private const val TYPE_MENTION = "mention"
+private const val TYPE_TEXT = "text"
 
-    interface Link : MessageElementPayloadJs {
-        var text: String
-        var link: String
+fun List<MessageElement>.toJs() = map { element ->
+    when (element) {
+        is MessageElement.Link -> when (val target = element.target) {
+            is MentionTarget.Channel -> MixedTextTypedElement.ChannelReference(
+                ChannelReferenceContent(target.channelId, element.text.substring(1))
+            )
+            is MentionTarget.Url -> MixedTextTypedElement.TextLink(TextLinkContent(target.url, element.text))
+            is MentionTarget.User -> MixedTextTypedElement.Mention(MentionContent(target.userId, element.text.substring(1)))
+        }
+        is MessageElement.PlainText -> MixedTextTypedElement.Text(TextContent(element.text))
     }
-
-    interface Channel : MessageElementPayloadJs {
-        var name: String
-        var id: String
-    }
-}
+}.toTypedArray()

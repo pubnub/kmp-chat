@@ -421,6 +421,38 @@ type AddLinkedTextParams = {
     link: string;
     positionInInput: number;
 };
+
+declare class MessageDraftV2 {
+    get channel: Channel;
+    get value: string;
+    quotedMessage: Message | undefined;
+    readonly config: MessageDraftConfig;
+    files?: FileList | File[] | SendFileParameters["file"][];
+    addQuote(message: Message): void;
+    removeQuote(): void;
+    addLinkedText(params: AddLinkedTextParams): void;
+    removeLinkedText(positionInInput: number): void;
+    getMessagePreview(): MixedTextTypedElement[];
+    send(params?: MessageDraftOptions): Promise<PubNub.PublishResponse>;
+    addChangeListener(listener:(messageElements: MixedTextTypedElement[], suggestedMentions:Promise<SuggestedMention[]>) => unknown): void;
+    removeChangeListener(listener:(messageElements: MixedTextTypedElement[], suggestedMentions:Promise<SuggestedMention[]>) => unknown): void;
+    insertText(offset: number, text: string): void;
+    removeText(offset: number, length: number): void;
+    removeText(offset: number, length: number): void;
+    insertSuggestedMention(mention: SuggestedMention, text: string): void;
+    addMention(offset: number, length: number, mentionType: TextTypes, mentionTarget: string): void;
+    removeMention(offset: number): void;
+    update(text: string): void;
+}
+
+declare class SuggestedMention {
+    offset: number;
+    replaceFrom: string;
+    replaceWith: string;
+    type: TextTypes;
+    target: string;
+}
+
 declare class MessageDraft {
     private chat;
     value: string;
@@ -527,6 +559,7 @@ declare class Channel {
         limit: number;
     }): Promise<Membership[]>;
     createMessageDraft(config?: Partial<MessageDraftConfig>): MessageDraft;
+    createMessageDraftV2(config?: Partial<MessageDraftConfig>): MessageDraftV2;
     registerForPush(): Promise<void>;
     unregisterFromPush(): Promise<void>;
     streamReadReceipts(callback: (receipts: {

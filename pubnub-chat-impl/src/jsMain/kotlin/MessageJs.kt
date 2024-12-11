@@ -3,6 +3,7 @@
 import com.pubnub.api.PubNubError
 import com.pubnub.api.adjustCollectionTypes
 import com.pubnub.chat.Message
+import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageMentionedUser
@@ -67,13 +68,24 @@ open class MessageJs internal constructor(internal val message: Message, interna
         return message.streamUpdates<Message> { it.asJs(chatJs) }::close
     }
 
+    fun getLinkedText() = getMessageElements()
+
     fun getMessageElements(): Array<MixedTextTypedElement> {
-        return MessageElementsUtils.getMessageElements(
-            text,
-            mentionedUsers?.toMap()?.mapKeys { it.key.toInt() } ?: emptyMap(),
-            textLinks?.toList() ?: emptyList(),
-            referencedChannels?.toMap()?.mapKeys { it.key.toInt() } ?: emptyMap(),
-        )
+        // data from v1 message draft
+        if (mentionedUsers?.toMap()?.isNotEmpty() == true ||
+            textLinks?.isNotEmpty() == true ||
+            referencedChannels?.toMap()?.isNotEmpty() == true
+        ) {
+            return MessageElementsUtils.getMessageElements(
+                text,
+                mentionedUsers?.toMap()?.mapKeys { it.key.toInt() } ?: emptyMap(),
+                textLinks?.toList() ?: emptyList(),
+                referencedChannels?.toMap()?.mapKeys { it.key.toInt() } ?: emptyMap(),
+            )
+        } else {
+            // use v2 message draft
+            return MessageDraftImpl.getMessageElements(text).toJs()
+        }
     }
 
     fun editText(newText: String): Promise<MessageJs> {

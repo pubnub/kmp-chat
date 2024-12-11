@@ -200,6 +200,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
 
     fun createMessageDraftV2(config: MessageDraftConfig?): MessageDraftV2Js {
         return MessageDraftV2Js(
+            this.chatJs,
             MessageDraftImpl(
                 this.channel,
                 config?.userSuggestionSource?.let {
@@ -209,7 +210,12 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
                 config?.userLimit ?: 10,
                 config?.channelLimit ?: 10
             ),
-            config
+            createJsObject<MessageDraftConfig> {
+                this.userSuggestionSource = config?.userSuggestionSource ?: "channel"
+                this.isTypingIndicatorTriggered = config?.isTypingIndicatorTriggered ?: (channel.type != ChannelType.PUBLIC)
+                this.userLimit = config?.userLimit ?: 10
+                this.channelLimit = config?.channelLimit ?: 10
+            }
         )
     }
 
