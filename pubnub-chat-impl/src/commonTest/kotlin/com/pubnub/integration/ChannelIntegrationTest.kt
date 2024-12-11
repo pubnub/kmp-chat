@@ -710,7 +710,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val channel01withChat = channel01
         val join01 = channel01withChat.join { }.await()
         val join02 = channel01Chat02.join { }.await()
-        delayInMillis(1000)
+        delayInMillis(1500)
         val whoIsPresent01: Collection<String> = channel01withChat.whoIsPresent().await()
         val whoIsPresent02: Collection<String> = channel01Chat02.whoIsPresent().await()
 

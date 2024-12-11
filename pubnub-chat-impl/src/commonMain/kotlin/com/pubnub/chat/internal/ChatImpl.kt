@@ -497,9 +497,17 @@ class ChatImpl(
     ): PNFuture<PNPublishResult> {
         val emitMethod = payload::class.getEmitMethod() ?: (payload as? EventContent.Custom)?.method
         return if (emitMethod == EmitEventMethod.SIGNAL) {
-            pubNub.signal(channel = channelId, message = payload.encodeForSending(mergePayloadWith))
+            pubNub.signal(
+                channel = channelId,
+                message = payload.encodeForSending(mergePayloadWith),
+                customMessageType = payload.customMessageType
+            )
         } else {
-            pubNub.publish(channel = channelId, message = payload.encodeForSending(mergePayloadWith))
+            pubNub.publish(
+                channel = channelId,
+                message = payload.encodeForSending(mergePayloadWith),
+                customMessageType = payload.customMessageType
+            )
         }
     }
 
@@ -699,7 +707,7 @@ class ChatImpl(
                 pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
                     .alsoAsync { _ ->
                         emitEvent(
-                            channelId = userId,
+                            channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
                             payload = EventContent.Moderation(
                                 channelId = channel,
                                 restriction = RestrictionType.LIFT,
@@ -710,16 +718,16 @@ class ChatImpl(
             } else {
                 val custom = createCustomObject(
                     mapOf(
-                        "ban" to restriction.ban,
-                        "mute" to restriction.mute,
-                        "reason" to restriction.reason
+                        RESTRICTION_BAN to restriction.ban,
+                        RESTRICTION_MUTE to restriction.mute,
+                        RESTRICTION_REASON to restriction.reason
                     )
                 )
                 val uuids = listOf(PNMember.Partial(uuidId = userId, custom = custom, null))
                 pubNub.setChannelMembers(channel = channel, uuids = uuids)
                     .alsoAsync { _ ->
                         emitEvent(
-                            channelId = userId,
+                            channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
                             payload = EventContent.Moderation(
                                 channelId = channel,
                                 restriction = if (restriction.ban) {
