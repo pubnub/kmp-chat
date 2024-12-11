@@ -69,11 +69,11 @@ class MessageDraftV2Js internal constructor(
         ).then { it.toPublishResponse() }.asPromise()
     }
 
-    fun addChangeListener(listener: (Array<MixedTextTypedElement>, Promise<Array<SuggestedMentionJs>>) -> Unit) {
+    fun addChangeListener(listener: (MessageDraftState) -> Unit) {
         messageDraft.addChangeListener(MessageDraftListenerJs(listener))
     }
 
-    fun removeChangeListener(listener: (Array<MixedTextTypedElement>, Promise<Array<SuggestedMentionJs>>) -> Unit) {
+    fun removeChangeListener(listener: (MessageDraftState) -> Unit) {
         messageDraft.removeChangeListener(MessageDraftListenerJs(listener))
     }
 
@@ -116,32 +116,44 @@ class MessageDraftV2Js internal constructor(
     fun update(text: String) = messageDraft.update(text)
 }
 
-data class MessageDraftListenerJs(val listener: (Array<MixedTextTypedElement>, Promise<Array<SuggestedMentionJs>>) -> Unit) : MessageDraftChangeListener {
+@JsExport
+class MessageDraftState internal constructor(
+    val messageElements: Array<MixedTextTypedElement>,
+    suggestedMentionsFuture: PNFuture<List<SuggestedMention>>
+) {
+    val suggestedMentions: Promise<Array<SuggestedMentionJs>> by lazy {
+        suggestedMentionsFuture.then {
+            it.map {
+                SuggestedMentionJs(
+                    it.offset,
+                    it.replaceFrom,
+                    it.replaceWith,
+                    when (it.target) {
+                        is MentionTarget.Channel -> TYPE_CHANNEL_REFERENCE
+                        is MentionTarget.Url -> TYPE_TEXT_LINK
+                        is MentionTarget.User -> TYPE_MENTION
+                    },
+                    when (val link = it.target) {
+                        is MentionTarget.Channel -> link.channelId
+                        is MentionTarget.Url -> link.url
+                        is MentionTarget.User -> link.userId
+                    }
+                )
+            }.toTypedArray()
+        }.asPromise()
+    }
+}
+
+data class MessageDraftListenerJs(val listener: (MessageDraftState) -> Unit) : MessageDraftChangeListener {
     override fun onChange(
         messageElements: List<MessageElement>,
         suggestedMentions: PNFuture<List<SuggestedMention>>,
     ) {
         listener(
-            messageElements.toJs(),
-            suggestedMentions.then {
-                it.map {
-                    SuggestedMentionJs(
-                        it.offset,
-                        it.replaceFrom,
-                        it.replaceWith,
-                        when (it.target) {
-                            is MentionTarget.Channel -> TYPE_CHANNEL_REFERENCE
-                            is MentionTarget.Url -> TYPE_TEXT_LINK
-                            is MentionTarget.User -> TYPE_MENTION
-                        },
-                        when (val link = it.target) {
-                            is MentionTarget.Channel -> link.channelId
-                            is MentionTarget.Url -> link.url
-                            is MentionTarget.User -> link.userId
-                        }
-                    )
-                }.toTypedArray()
-            }.asPromise()
+            MessageDraftState(
+                messageElements.toJs(),
+                suggestedMentions
+            )
         )
     }
 }

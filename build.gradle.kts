@@ -78,6 +78,7 @@ kotlin {
 
             compilerOptions {
                 target.set("es2015")
+                generateTypeScriptDefinitions()
             }
             binaries.library()
         }

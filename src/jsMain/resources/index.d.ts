@@ -434,8 +434,8 @@ declare class MessageDraftV2 {
     removeLinkedText(positionInInput: number): void;
     getMessagePreview(): MixedTextTypedElement[];
     send(params?: MessageDraftOptions): Promise<PubNub.PublishResponse>;
-    addChangeListener(listener:(messageElements: MixedTextTypedElement[], suggestedMentions:Promise<SuggestedMention[]>) => unknown): void;
-    removeChangeListener(listener:(messageElements: MixedTextTypedElement[], suggestedMentions:Promise<SuggestedMention[]>) => unknown): void;
+    addChangeListener(listener: (p0: MessageDraftState) => void): void;
+    removeChangeListener(listener: (p0: MessageDraftState) => void): void;
     insertText(offset: number, text: string): void;
     removeText(offset: number, length: number): void;
     removeText(offset: number, length: number): void;
@@ -443,6 +443,12 @@ declare class MessageDraftV2 {
     addMention(offset: number, length: number, mentionType: TextTypes, mentionTarget: string): void;
     removeMention(offset: number): void;
     update(text: string): void;
+}
+
+declare class MessageDraftState {
+    private constructor();
+    get messageElements(): Array<MixedTextTypedElement>;
+    get suggestedMentions(): Promise<Array<SuggestedMention>>;
 }
 
 declare class SuggestedMention {
