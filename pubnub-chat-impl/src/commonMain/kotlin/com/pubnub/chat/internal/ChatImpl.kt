@@ -797,9 +797,7 @@ class ChatImpl(
                 }
                 val channels = memberships.map { membership -> membership.channel.id }
 
-                // we need to increased returned lastReadMessageTimetoken by 1 because for odds numbers larger than 9007199254740991 server store them one bigger
-                val channelsTimetoken: List<Long> =
-                    memberships.map { membership -> (membership.lastReadMessageTimetoken?.plus(1))?: 0 }
+                val channelsTimetoken = memberships.map { membership -> membership.lastReadMessageTimetoken ?: 0 }
 
                 pubNub.messageCounts(channels = channels, channelsTimetoken = channelsTimetoken)
                     .then { pnMessageCountResult ->
@@ -848,7 +846,9 @@ class ChatImpl(
 
                             val customMap: Map<String, Any?> = buildMap {
                                 membership.custom?.let { putAll(it) }
-                                put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, relevantLastMessageTimeToken)
+                                // toString is required because server for odd numbers larger than 9007199254740991(timetoken has 17 digits)
+                                // returns values that differ by one
+                                put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, relevantLastMessageTimeToken.toString())
                             }
 
                             PNChannelMembership.Partial(
