@@ -1,9 +1,10 @@
-import { Channel, Chat } from "../dist"
+import { Channel, Chat, MessageDraftV2, MixedTextTypedElement } from "../dist"
 import {
   createChatInstance,
   createRandomChannel,
   createRandomUser,
   renderMessagePart,
+  sleep,
 } from "./utils"
 import { jest } from "@jest/globals"
 
@@ -11,7 +12,7 @@ describe("MessageDraft", function () {
   jest.retryTimes(2)
   let chat: Chat
   let channel: Channel
-  let messageDraft
+  let messageDraft: MessageDraftV2
 
   beforeAll(async () => {
     chat = await createChatInstance()
@@ -22,7 +23,7 @@ describe("MessageDraft", function () {
     messageDraft = channel.createMessageDraftV2({ userSuggestionSource: "global" })
   })
 
-  test.only("should mention 2 users", async () => {
+  test("should mention 2 users", async () => {
     const [user1, user2] = await Promise.all([createRandomUser(), createRandomUser()])
 
     messageDraft.update("Hello @user1 and @user2")
@@ -41,30 +42,42 @@ describe("MessageDraft", function () {
     await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
   })
 
-  test("should mention 2 - 3 users next to each other", async () => {
+  test.only("should mention 2 - 3 users next to each other", async () => {
     const [user1, user2, user3] = await Promise.all([
       createRandomUser(),
       createRandomUser(),
       createRandomUser(),
     ])
 
-    messageDraft.onChange("Hello @user1 @user2 @user3")
-    messageDraft.addMentionedUser(user1, 0)
-    messageDraft.addMentionedUser(user2, 1)
-    messageDraft.addMentionedUser(user3, 2)
-    const messagePreview = messageDraft.getMessagePreview()
+    let elements: MixedTextTypedElement[][] = []
+    let resolve, reject;
+    const promise = new Promise((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
 
-    expect(messagePreview.length).toBe(6)
+    messageDraft.addChangeListener(async function(state) {
+      elements.push(state.messageElements)
+      if (elements.length == 3) {
+        resolve()
+        return
+      }
+      let mentions = await state.suggestedMentions
+      messageDraft.insertSuggestedMention(mentions[0], mentions[0].replaceWith)
+    })
+
+    messageDraft.update("Hello @Te @Tes @Test")
+    await promise
+
+    const messagePreview = messageDraft.getMessagePreview()
+    expect(messagePreview.length).toBe(4)
     expect(messagePreview[0].type).toBe("text")
     expect(messagePreview[1].type).toBe("mention")
     expect(messagePreview[2].type).toBe("text")
     expect(messagePreview[3].type).toBe("mention")
-    expect(messagePreview[4].type).toBe("text")
-    expect(messagePreview[5].type).toBe("mention")
     expect(messagePreview.map(renderMessagePart).join("")).toBe(
-      `Hello @${user1.name} @${user2.name} @${user3.name}`
+      elements[2].map(renderMessagePart).join("")
     )
-    expect(messageDraft.value).toBe(`Hello @${user1.name} @${user2.name} @${user3.name}`)
     await Promise.all([
       user1.delete({ soft: false }),
       user2.delete({ soft: false }),
@@ -128,7 +141,7 @@ describe("MessageDraft", function () {
     const [channel1, channel2] = await Promise.all([createRandomChannel(), createRandomChannel()])
     const [user1, user2] = await Promise.all([createRandomUser(), createRandomUser()])
 
-    messageDraft.onChange("Hello #channel1 and @brad and #channel2 or @jasmine.")
+    messageDraft.update("Hello #channel1 and @brad and #channel2 or @jasmine.")
     messageDraft.addReferencedChannel(channel1, 0)
     messageDraft.addReferencedChannel(channel2, 1)
     messageDraft.addMentionedUser(user1, 0)

@@ -422,9 +422,9 @@ type AddLinkedTextParams = {
     positionInInput: number;
 };
 
-declare class MessageDraftV2 {
-    get channel: Channel;
-    get value: string;
+export declare class MessageDraftV2 {
+    get channel(): Channel;
+    get value(): string;
     quotedMessage: Message | undefined;
     readonly config: MessageDraftConfig;
     files?: FileList | File[] | SendFileParameters["file"][];
@@ -438,20 +438,19 @@ declare class MessageDraftV2 {
     removeChangeListener(listener: (p0: MessageDraftState) => void): void;
     insertText(offset: number, text: string): void;
     removeText(offset: number, length: number): void;
-    removeText(offset: number, length: number): void;
     insertSuggestedMention(mention: SuggestedMention, text: string): void;
     addMention(offset: number, length: number, mentionType: TextTypes, mentionTarget: string): void;
     removeMention(offset: number): void;
     update(text: string): void;
 }
 
-declare class MessageDraftState {
+export declare class MessageDraftState {
     private constructor();
     get messageElements(): Array<MixedTextTypedElement>;
     get suggestedMentions(): Promise<Array<SuggestedMention>>;
 }
 
-declare class SuggestedMention {
+export declare class SuggestedMention {
     offset: number;
     replaceFrom: string;
     replaceWith: string;
