@@ -505,7 +505,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     // there is a discrepancy between KMP and JS. There is no unsubscribe here. This is agreed and will be changed in JS Chat
-    override fun leave(): PNFuture<Unit> = chat.pubNub.removeMemberships(channels = listOf(id)).then { Unit }
+    override fun leave(): PNFuture<Unit> = chat.pubNub.removeMemberships(channels = listOf(id), includeType = false).then { Unit }
 
     override fun getPinnedMessage(): PNFuture<Message?> {
         val pinnedMessageTimetoken = this.custom?.get(PINNED_MESSAGE_TIMETOKEN).tryLong() ?: return null.asFuture()
@@ -600,7 +600,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
             log.pnError(READ_RECEIPTS_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS)
         }
         val timetokensPerUser = mutableMapOf<String, Long>()
-        val future = getMembers().then { members -> // todo what about paging? maybe not needed in non-public chats...
+        // in group chats it work till 100 members
+        val future = getMembers().then { members ->
             members.members.forEach { m ->
                 val lastTimetoken = m.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN)?.tryLong()
                 if (lastTimetoken != null) {

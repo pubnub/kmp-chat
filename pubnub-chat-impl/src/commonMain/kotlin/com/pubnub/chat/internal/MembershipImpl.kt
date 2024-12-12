@@ -67,7 +67,9 @@ data class MembershipImpl(
     override fun setLastReadMessageTimetoken(timetoken: Long): PNFuture<Membership> {
         val newCustom = buildMap {
             custom?.let { putAll(it) }
-            put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, timetoken)
+            // toString is required because server for odd numbers larger than 9007199254740991(timetoken has 17 digits)
+            // returns values that differ by one
+            put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, timetoken.toString())
         }
         return update(createCustomObject(newCustom)).alsoAsync {
             val canISendSignal = AccessManager(chat).canI(

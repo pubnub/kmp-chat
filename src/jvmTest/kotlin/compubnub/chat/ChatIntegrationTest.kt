@@ -22,9 +22,11 @@ import com.pubnub.test.Keys
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertTrue
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.time.Duration.Companion.seconds
 
 class ChatIntegrationTest : BaseIntegrationTest() {
     @Test
@@ -40,6 +42,16 @@ class ChatIntegrationTest : BaseIntegrationTest() {
                 println("Exception initialising chat: ${exception.message}")
             }
         }
+    }
+
+    @Test
+    fun test_storeUserActivityInterval_and_storeUserActivityTimestamps() = runTest {
+        val chatConfig = ChatConfiguration(storeUserActivityInterval = 100.seconds, storeUserActivityTimestamps = true)
+
+        val chat: Chat = Chat.init(chatConfig, config).await()
+        val user = chat.getUser(chat.currentUser.id).await()
+
+        assertTrue(user?.custom?.get("lastActiveTimestamp") != null)
     }
 
     @Test

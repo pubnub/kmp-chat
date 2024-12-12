@@ -665,10 +665,10 @@ class ChatImpl(
 
                 val event = EventImpl(
                     chat = this,
-                    timetoken = pnEvent.timetoken!!, // todo can this even be null?
+                    timetoken = pnEvent.timetoken!!,
                     payload = payload,
                     channelId = pnEvent.channel,
-                    userId = pnEvent.publisher!! // todo can this even be null?
+                    userId = pnEvent.publisher!!
                 )
                 callback(event)
             } catch (e: Exception) {
@@ -804,8 +804,9 @@ class ChatImpl(
                     return@thenAsync emptyList<GetUnreadMessagesCounts>().asFuture()
                 }
                 val channels = memberships.map { membership -> membership.channel.id }
-                val channelsTimetoken =
-                    memberships.map { membership -> membership.lastReadMessageTimetoken ?: 0 }
+
+                val channelsTimetoken = memberships.map { membership -> membership.lastReadMessageTimetoken ?: 0 }
+
                 pubNub.messageCounts(channels = channels, channelsTimetoken = channelsTimetoken)
                     .then { pnMessageCountResult ->
                         val unreadMessageCounts =
@@ -853,7 +854,9 @@ class ChatImpl(
 
                             val customMap: Map<String, Any?> = buildMap {
                                 membership.custom?.let { putAll(it) }
-                                put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, relevantLastMessageTimeToken)
+                                // toString is required because server for odd numbers larger than 9007199254740991(timetoken has 17 digits)
+                                // returns values that differ by one
+                                put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, relevantLastMessageTimeToken.toString())
                             }
 
                             PNChannelMembership.Partial(

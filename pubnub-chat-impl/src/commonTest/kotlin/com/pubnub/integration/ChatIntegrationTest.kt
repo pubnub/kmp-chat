@@ -45,7 +45,6 @@ import delayForHistory
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import tryLong
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -64,6 +63,16 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         }
 
         assertEquals(403, exception.statusCode)
+    }
+
+    @Test
+    fun test_storeUserActivityInterval_and_storeUserActivityTimestamps() = runTest {
+        chat = ChatImpl(ChatConfiguration(storeUserActivityInterval = 100.seconds, storeUserActivityTimestamps = true), pubnub)
+        chat.initialize().await()
+
+        val user: User = chat.getUser(chat.currentUser.id).await()!!
+
+        assertTrue(user.custom?.get("lastActiveTimestamp") != null)
     }
 
     @Test
@@ -187,7 +196,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val channelId02 = channel02.id
         val membership01: ChannelMembershipInput = PNChannelMembership.Partial(channelId01, custom)
         val membership02: ChannelMembershipInput = PNChannelMembership.Partial(channelId02)
-        chat.pubNub.setMemberships(listOf(membership01, membership02), chat.currentUser.id).await()
+        chat.pubNub.setMemberships(channels = listOf(membership01, membership02), uuid = chat.currentUser.id, includeType = false).await()
 
         // to each channel add two messages(we want to check if last message will be taken by fetchMessages with limit = 1)
         channel01.sendText("message01In$channelId01").await()
@@ -272,7 +281,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         }
     }
 
-    @Ignore // fails from time to time
     @Test
     fun can_getUnreadMessagesCount_onMembership() = runTest {
         val channelId01 = channel01.id
@@ -288,7 +296,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // send message
         channel01.sendText("message02In$channelId01").await()
-        delayInMillis(150) // history calls have around 130ms of cache time
+        delayForHistory()
 
         val unreadMessageCount02: Long? = membership.getUnreadMessagesCount().await()
         assertEquals(1L, unreadMessageCount02)
@@ -306,7 +314,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         chat.pubNub.deleteMessages(listOf(channelId01)).await()
     }
 
-    @Ignore // fails from time to time
     @Test
     fun can_getUnreadMessageCounts_global() = runTest {
         val channelId01 = channel01.id
@@ -350,7 +357,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             }?.count
                 ?: 0
         assertEquals(0, unreadMessagesCountsForChannel01)
-        assertEquals(0, unreadMessagesCountsForChannel02) // todo when run in set sometimes fails :/
+        assertEquals(0, unreadMessagesCountsForChannel02)
 
         // remove messages
         chat.pubNub.deleteMessages(listOf(channelId01, channelId02))
