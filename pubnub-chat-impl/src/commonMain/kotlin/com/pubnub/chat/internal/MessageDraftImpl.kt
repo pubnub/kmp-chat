@@ -9,7 +9,9 @@ import com.pubnub.chat.MessageDraft
 import com.pubnub.chat.MessageDraftChangeListener
 import com.pubnub.chat.MessageElement
 import com.pubnub.chat.SuggestedMention
+import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.User
+import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.ChannelType
@@ -53,6 +55,11 @@ class MessageDraftImpl(
     private var messageText: StringBuilder = StringBuilder("")
 
     internal val value get() = messageText as CharSequence
+    private val userSuggestionSourceChannel = if (channel is ThreadChannel) {
+        ChannelImpl(chat, id = channel.parentChannelId)
+    } else {
+        channel
+    }
 
     override fun addChangeListener(listener: MessageDraftChangeListener) {
         listeners.update {
@@ -256,9 +263,9 @@ class MessageDraftImpl(
         return getMessageElements(messageText, mentions)
     }
 
-    private fun getSuggestedUsers(searchText: String): PNFuture<Collection<User>> {
+    internal fun getSuggestedUsers(searchText: String): PNFuture<Collection<User>> {
         return if (userSuggestionSource == MessageDraft.UserSuggestionSource.CHANNEL) {
-            channel.getUserSuggestions(searchText, userLimit).then { memberships ->
+            userSuggestionSourceChannel.getUserSuggestions(searchText, userLimit).then { memberships ->
                 memberships.map { it.user }
             }
         } else {
