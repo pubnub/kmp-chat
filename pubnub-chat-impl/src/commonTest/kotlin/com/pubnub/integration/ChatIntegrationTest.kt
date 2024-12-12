@@ -281,7 +281,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         }
     }
 
-    @Ignore // fails from time to time
     @Test
     fun can_getUnreadMessagesCount_onMembership() = runTest {
         val channelId01 = channel01.id
@@ -297,7 +296,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // send message
         channel01.sendText("message02In$channelId01").await()
-        delayInMillis(150) // history calls have around 130ms of cache time
+        delayForHistory()
 
         val unreadMessageCount02: Long? = membership.getUnreadMessagesCount().await()
         assertEquals(1L, unreadMessageCount02)
