@@ -505,7 +505,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     // there is a discrepancy between KMP and JS. There is no unsubscribe here. This is agreed and will be changed in JS Chat
-    override fun leave(): PNFuture<Unit> = chat.pubNub.removeMemberships(channels = listOf(id)).then { Unit }
+    override fun leave(): PNFuture<Unit> = chat.pubNub.removeMemberships(channels = listOf(id), includeType = false).then { Unit }
 
     override fun getPinnedMessage(): PNFuture<Message?> {
         val pinnedMessageTimetoken = this.custom?.get(PINNED_MESSAGE_TIMETOKEN).tryLong() ?: return null.asFuture()
