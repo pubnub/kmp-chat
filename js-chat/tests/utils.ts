@@ -64,16 +64,18 @@ export async function createChatInstance(
   return chat
 }
 
-export function createRandomChannel() {
-  return chat.createChannel(`channel_${makeid()}`, {
-    name: "Test Channel",
+export function createRandomChannel(prefix?: string) {
+  if (!prefix) prefix = ""
+  return chat.createChannel(`${prefix}channel_${makeid()}`, {
+    name: `${prefix}Test Channel`,
     description: "This is a test channel",
   })
 }
 
-export function createRandomUser() {
-  return chat.createUser(`user_${makeid()}`, {
-    name: "Test User",
+export function createRandomUser(prefix?: string) {
+  if (!prefix) prefix = ""
+  return chat.createUser(`${prefix}user_${makeid()}`, {
+    name: `${prefix}Test User`,
   })
 }
 

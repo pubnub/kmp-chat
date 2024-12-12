@@ -177,10 +177,10 @@ fun List<MessageElement>.toJs() = map { element ->
     when (element) {
         is MessageElement.Link -> when (val target = element.target) {
             is MentionTarget.Channel -> MixedTextTypedElement.ChannelReference(
-                ChannelReferenceContent(target.channelId, element.text.substring(1))
+                ChannelReferenceContent(target.channelId, element.text)
             )
             is MentionTarget.Url -> MixedTextTypedElement.TextLink(TextLinkContent(target.url, element.text))
-            is MentionTarget.User -> MixedTextTypedElement.Mention(MentionContent(target.userId, element.text.substring(1)))
+            is MentionTarget.User -> MixedTextTypedElement.Mention(MentionContent(target.userId, element.text))
         }
         is MessageElement.PlainText -> MixedTextTypedElement.Text(TextContent(element.text))
     }

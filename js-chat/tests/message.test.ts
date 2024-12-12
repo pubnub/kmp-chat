@@ -1037,11 +1037,11 @@ describe("Send message test", () => {
 
     const firstThreadMessage = (await thread.getHistory()).messages[0]
 
-    const messageDraft = thread.createMessageDraft()
+    const messageDraft = thread.createMessageDraftV2()
 
     messageDraft.addQuote(firstThreadMessage)
 
-    await messageDraft.onChange("This is a forwarded message.")
+    await messageDraft.update("This is a forwarded message.")
     await messageDraft.send()
 
     await sleep(500)
