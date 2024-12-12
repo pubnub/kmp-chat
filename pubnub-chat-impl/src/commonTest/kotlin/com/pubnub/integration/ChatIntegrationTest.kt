@@ -44,7 +44,6 @@ import delayForHistory
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import tryLong
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
