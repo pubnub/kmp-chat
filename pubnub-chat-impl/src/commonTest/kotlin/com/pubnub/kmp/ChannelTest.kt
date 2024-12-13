@@ -4,6 +4,8 @@ import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.endpoints.FetchMessages
+import com.pubnub.api.endpoints.files.GetFileUrl
+import com.pubnub.api.endpoints.files.SendFile
 import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.endpoints.pubsub.Publish
@@ -11,6 +13,9 @@ import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.files.PNBaseFile
+import com.pubnub.api.models.consumer.files.PNFileUploadResult
+import com.pubnub.api.models.consumer.files.PNFileUrlResult
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
@@ -39,8 +44,10 @@ import com.pubnub.chat.internal.timer.createTimerManager
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.HistoryResponse
+import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.integration.generateFileContent
 import com.pubnub.internal.PLATFORM
 import com.pubnub.kmp.utils.BaseTest
 import com.pubnub.kmp.utils.get
@@ -521,7 +528,115 @@ class ChannelTest : BaseTest() {
     @Test
     fun sendTextAllParametersArePassedToPublish() {
         val publish: Publish = mock(MockMode.autofill)
+        val sendFile: SendFile = mock(MockMode.autofill)
+        val getFileUrl: GetFileUrl = mock(MockMode.autofill)
+        val fileName = "name.txt"
+        val fileType = "text/plain"
+        val fileSource = generateFileContent()
         every { pubNub.publish(any(), any(), any(), any(), any(), any(), any()) } returns publish
+        every { pubNub.sendFile(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns sendFile
+        every { sendFile.async(any()) } calls { (callback1: Consumer<Result<PNFileUploadResult>>) ->
+            callback1.accept(
+                Result.success(
+                    PNFileUploadResult(
+                        timetoken = 123,
+                        status = 200,
+                        file = PNBaseFile(id = id, name = fileName)
+                    )
+                )
+            )
+        }
+        every { pubNub.getFileUrl(any(), any(), any()) } returns getFileUrl
+        every { getFileUrl.async(any()) } calls { (callback1: Consumer<Result<PNFileUrlResult>>) ->
+            callback1.accept(Result.success(PNFileUrlResult(url = "url134")))
+        }
+        val messageText = "someText"
+        val message =
+            MessageImpl(chat, 1000L, EventContent.TextMessageContent(messageText), channelId, "some user", null, null)
+        val mentionedUser1 = "mention1"
+        val ttl = 100
+
+        objectUnderTest.sendText(
+            text = messageText,
+            meta = mapOf("custom_meta" to "custom"),
+            shouldStore = true,
+            usePost = false,
+            ttl = ttl,
+            quotedMessage = message,
+            files = listOf(InputFile(fileName, fileType, fileSource)),
+            usersToMention = listOf(mentionedUser1)
+        ).async {}
+
+        verify {
+            pubNub.sendFile(
+                channel = channelId,
+                fileName = fileName,
+                inputStream = fileSource,
+                message = null,
+                meta = null,
+                ttl = null,
+                shouldStore = false,
+                cipherKey = null,
+                customMessageType = null
+            )
+        }
+
+        verify {
+            pubNub.publish(
+                channel = channelId,
+                message = mapOf(
+                    "type" to "text",
+                    "text" to messageText,
+                    "files" to listOf(
+                        mapOf(
+                            "name" to fileName,
+                            "id" to id,
+                            "url" to "url134",
+                            "type" to fileType
+                        )
+                    )
+                ),
+                meta = mapOf(
+                    "custom_meta" to "custom",
+                    "quotedMessage" to mapOf(
+                        "timetoken" to message.timetoken.toString(),
+                        "text" to message.text,
+                        "userId" to message.userId
+                    ),
+                ),
+                shouldStore = true,
+                usePost = false,
+                replicate = true,
+                ttl = ttl
+            )
+        }
+    }
+
+    @Test
+    fun sendTextAllParametersArePassedToPublishDeprecataed() {
+        val publish: Publish = mock(MockMode.autofill)
+        val sendFile: SendFile = mock(MockMode.autofill)
+        val getFileUrl: GetFileUrl = mock(MockMode.autofill)
+        val fileName = "name.txt"
+        val fileType = "text/plain"
+        val fileSource = generateFileContent()
+        every { pubNub.publish(any(), any(), any(), any(), any(), any(), any()) } returns publish
+        every { pubNub.sendFile(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns sendFile
+        every { sendFile.async(any()) } calls { (callback1: Consumer<Result<PNFileUploadResult>>) ->
+            callback1.accept(
+                Result.success(
+                    PNFileUploadResult(
+                        timetoken = 123,
+                        status = 200,
+                        file = PNBaseFile(id = id, name = fileName)
+                    )
+                )
+            )
+        }
+        every { pubNub.getFileUrl(any(), any(), any()) } returns getFileUrl
+        every { getFileUrl.async(any()) } calls { (callback1: Consumer<Result<PNFileUrlResult>>) ->
+            callback1.accept(Result.success(PNFileUrlResult(url = "url134")))
+        }
         val messageText = "someText"
         val message =
             MessageImpl(chat, 1000L, EventContent.TextMessageContent(messageText), channelId, "some user", null, null)
@@ -531,6 +646,7 @@ class ChannelTest : BaseTest() {
         val channelName = "someChannel"
         val link = "some link"
         val ttl = 100
+
         objectUnderTest.sendText(
             text = messageText,
             meta = mapOf("custom_meta" to "custom"),
@@ -541,14 +657,39 @@ class ChannelTest : BaseTest() {
             referencedChannels = mapOf(0 to MessageReferencedChannel(referencedChannel1, channelName)),
             textLinks = listOf(com.pubnub.chat.types.TextLink(1, 20, link)),
             quotedMessage = message,
-            null, // todo when files work
+            files = listOf(InputFile(fileName, fileType, fileSource))
         ).async {}
 
         verify {
+            pubNub.sendFile(
+                channel = channelId,
+                fileName = fileName,
+                inputStream = fileSource,
+                message = null,
+                meta = null,
+                ttl = null,
+                shouldStore = false,
+                cipherKey = null,
+                customMessageType = null
+            )
+        }
+
+        verify {
             pubNub.publish(
-                channelId,
-                mapOf("type" to "text", "text" to messageText, "files" to emptyList<String>()),
-                mapOf(
+                channel = channelId,
+                message = mapOf(
+                    "type" to "text",
+                    "text" to messageText,
+                    "files" to listOf(
+                        mapOf(
+                            "name" to fileName,
+                            "id" to id,
+                            "url" to "url134",
+                            "type" to fileType
+                        )
+                    )
+                ),
+                meta = mapOf(
                     "custom_meta" to "custom",
                     "mentionedUsers" to mapOf(
                         "0" to mapOf("id" to mentionedUser1, "name" to userName)
@@ -569,10 +710,10 @@ class ChannelTest : BaseTest() {
                         "userId" to message.userId
                     )
                 ),
-                true,
-                false,
-                true,
-                ttl
+                shouldStore = true,
+                usePost = false,
+                replicate = true,
+                ttl = ttl
             )
         }
     }
