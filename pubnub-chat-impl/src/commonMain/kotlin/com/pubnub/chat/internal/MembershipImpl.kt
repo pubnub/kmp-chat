@@ -2,7 +2,7 @@ package com.pubnub.chat.internal
 
 import co.touchlab.kermit.Logger
 import com.pubnub.api.models.consumer.objects.member.PNMember
-import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteMembershipEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEvent
@@ -51,12 +51,18 @@ data class MembershipImpl(
                 log.pnError(NO_SUCH_MEMBERSHIP_EXISTS)
             }
             chat.pubNub.setMemberships(
-                uuid = user.id,
+                userId = user.id,
                 channels = listOf(PNChannelMembership.Partial(channel.id, custom)),
-                includeCustom = true,
-                includeCount = true,
-                includeType = true,
-                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
+                include = MembershipInclude(
+                    includeCustom = true,
+                    includeStatus = false,
+                    includeType = false,
+                    includeTotalCount = true,
+                    includeChannel = true,
+                    includeChannelCustom = true,
+                    includeChannelType = true,
+                    includeChannelStatus = false
+                ),
                 filter = filterThisChannel()
             ).then { pnChannelMembershipArrayResult ->
                 fromMembershipDTO(chat, pnChannelMembershipArrayResult.data.first(), user)
@@ -115,7 +121,7 @@ data class MembershipImpl(
     }
 
     private fun exists(): PNFuture<Boolean> =
-        chat.pubNub.getMemberships(uuid = user.id, filter = filterThisChannel()).then {
+        chat.pubNub.getMemberships(userId = user.id, filter = filterThisChannel()).then {
             it.data.isNotEmpty()
         }
 
@@ -147,11 +153,11 @@ data class MembershipImpl(
                         previousMembership?.let { it + message.data }
                             ?: MembershipImpl(
                                 chat,
-                                user = membership.user,
                                 channel = membership.channel,
+                                user = membership.user,
                                 custom = message.data.custom?.value,
                                 updated = message.data.updated,
-                                eTag = message.data.eTag
+                                eTag = message.data.eTag,
                             )
                     }
                     is PNDeleteMembershipEventMessage -> null
@@ -184,7 +190,7 @@ data class MembershipImpl(
                 user,
                 channelMembership.custom?.value,
                 channelMembership.updated,
-                channelMembership.eTag
+                channelMembership.eTag,
             )
 
         internal fun fromChannelMemberDTO(chat: ChatInternal, userMembership: PNMember, channel: Channel) =

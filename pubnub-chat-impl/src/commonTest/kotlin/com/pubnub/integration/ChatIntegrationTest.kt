@@ -196,7 +196,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val channelId02 = channel02.id
         val membership01: ChannelMembershipInput = PNChannelMembership.Partial(channelId01, custom)
         val membership02: ChannelMembershipInput = PNChannelMembership.Partial(channelId02)
-        chat.pubNub.setMemberships(channels = listOf(membership01, membership02), uuid = chat.currentUser.id, includeType = false).await()
+        chat.pubNub.setMemberships(channels = listOf(membership01, membership02), userId = chat.currentUser.id).await()
 
         // to each channel add two messages(we want to check if last message will be taken by fetchMessages with limit = 1)
         channel01.sendText("message01In$channelId01").await()

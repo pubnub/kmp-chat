@@ -986,10 +986,7 @@ class ChatTest : BaseTest() {
                 any(),
                 any(),
                 any(),
-                any(),
-                any(),
-                any(),
-                any()
+                include = any(),
             )
         } returns getMembershipsEndpoint
         every { getMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
@@ -1298,10 +1295,7 @@ class ChatTest : BaseTest() {
                 any(),
                 any(),
                 any(),
-                any(),
-                any(),
-                any(),
-                any()
+                include = any(),
             )
         } returns getMembershipsEndpoint
         every { getMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
@@ -1420,7 +1414,8 @@ class ChatTest : BaseTest() {
         every {
             pubnub.setChannelMembers(
                 channel = capture(channelIdSlot),
-                uuids = capture(userIdsSlot)
+                users = capture(userIdsSlot),
+                include = any()
             )
         } returns manageChannelMembersEndpoint
         every { manageChannelMembersEndpoint.async(any()) } calls { (callback: Consumer<Result<PNMemberArrayResult>>) ->

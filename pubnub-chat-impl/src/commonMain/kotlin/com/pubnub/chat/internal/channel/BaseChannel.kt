@@ -14,10 +14,10 @@ import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
+import com.pubnub.api.models.consumer.objects.member.MemberInclude
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
-import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
-import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteChannelMetadataEventMessage
@@ -371,12 +371,18 @@ abstract class BaseChannel<C : Channel, M : Message>(
             } else {
                 chat.pubNub.setMemberships(
                     channels = listOf(PNChannelMembership.Partial(this.id)),
-                    uuid = user.id,
-                    includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-                    includeCustom = true,
-                    includeCount = true,
-                    includeType = true,
+                    userId = user.id,
                     filter = channelFilterString,
+                    include = MembershipInclude(
+                        includeCustom = true,
+                        includeStatus = false,
+                        includeType = false,
+                        includeTotalCount = true,
+                        includeChannel = true,
+                        includeChannelCustom = true,
+                        includeChannelType = true,
+                        includeChannelStatus = false
+                    )
                 ).then { setMembershipsResult ->
                     MembershipImpl.fromMembershipDTO(chat, setMembershipsResult.data.first(), user)
                 }.thenAsync { membership ->
@@ -397,10 +403,16 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return chat.pubNub.setChannelMembers(
             this.id,
             users.map { PNMember.Partial(it.id) },
-            includeCustom = true,
-            includeCount = true,
-            includeType = true,
-            includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
+            include = MemberInclude(
+                includeCustom = true,
+                includeStatus = false,
+                includeType = false,
+                includeTotalCount = true,
+                includeUser = true,
+                includeUserCustom = true,
+                includeUserType = true,
+                includeUserStatus = false
+            ),
             filter = users.joinToString(" || ") { it.uuidFilterString }
         ).thenAsync { memberArrayResult: PNMemberArrayResult ->
             chat.pubNub.time().thenAsync { time: PNTimeResult ->
@@ -428,10 +440,16 @@ abstract class BaseChannel<C : Channel, M : Message>(
             page = page,
             filter = filter,
             sort = sort,
-            includeCustom = true,
-            includeCount = true,
-            includeType = true,
-            includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
+            include = MemberInclude(
+                includeCustom = true,
+                includeStatus = false,
+                includeType = false,
+                includeTotalCount = true,
+                includeUser = true,
+                includeUserCustom = true,
+                includeUserType = true,
+                includeUserStatus = false
+            ),
         ).then { it: PNMemberArrayResult ->
             MembersResponse(
                 it.next,
@@ -484,11 +502,17 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     custom
                 )
             ), // todo should null overwrite? Waiting for optionals?
-            includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-            includeCustom = true,
-            includeCount = true,
-            includeType = true,
             filter = channelFilterString,
+            include = MembershipInclude(
+                includeCustom = true,
+                includeStatus = false,
+                includeType = false,
+                includeTotalCount = true,
+                includeChannel = true,
+                includeChannelCustom = true,
+                includeChannelType = true,
+                includeChannelStatus = false
+            )
         ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
             val resultDisconnect = callback?.let { connect(it) }
 
@@ -505,7 +529,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     // there is a discrepancy between KMP and JS. There is no unsubscribe here. This is agreed and will be changed in JS Chat
-    override fun leave(): PNFuture<Unit> = chat.pubNub.removeMemberships(channels = listOf(id), includeType = false).then { Unit }
+    override fun leave(): PNFuture<Unit> = chat.pubNub.removeMemberships(channels = listOf(id), include = MembershipInclude()).then { Unit }
 
     override fun getPinnedMessage(): PNFuture<Message?> {
         val pinnedMessageTimetoken = this.custom?.get(PINNED_MESSAGE_TIMETOKEN).tryLong() ?: return null.asFuture()
@@ -721,10 +745,16 @@ abstract class BaseChannel<C : Channel, M : Message>(
             page = page,
             filter = user?.let { "uuid.id == '${user.id}'" },
             sort = sort,
-            includeCount = true,
-            includeCustom = true,
-            includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
-            includeType = true
+            include = MemberInclude(
+                includeCustom = true,
+                includeStatus = false,
+                includeType = false,
+                includeTotalCount = true,
+                includeUser = true,
+                includeUserCustom = true,
+                includeUserType = true,
+                includeUserStatus = false
+            ),
         )
     }
 

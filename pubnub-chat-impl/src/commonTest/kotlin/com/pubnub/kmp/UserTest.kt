@@ -6,7 +6,7 @@ import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
-import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
@@ -27,6 +27,7 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify
 import kotlin.test.BeforeTest
@@ -190,15 +191,12 @@ class UserTest {
         every { chat.pubNub } returns pubNub
         every {
             pubNub.getMemberships(
-                uuid = any(),
+                userId = any(),
                 limit = any(),
                 page = any(),
                 filter = any(),
                 sort = any(),
-                includeCount = any(),
-                includeCustom = any(),
-                includeChannelDetails = any(),
-                includeType = any()
+                include = any()
             )
         } returns getMembershipsEndpoint
         every { getMembershipsEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMembershipArrayResult>>) ->
@@ -225,15 +223,12 @@ class UserTest {
         every { chat.pubNub } returns pubNub
         every {
             pubNub.getMemberships(
-                uuid = any(),
+                userId = any(),
                 limit = any(),
                 page = any(),
                 filter = any(),
                 sort = any(),
-                includeCount = any(),
-                includeCustom = any(),
-                includeChannelDetails = any(),
-                includeType = any()
+                include = any(),
             )
         } returns getMembershipsEndpoint
         every { getMembershipsEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMembershipArrayResult>>) ->
@@ -251,15 +246,16 @@ class UserTest {
         // then
         verify {
             pubNub.getMemberships(
-                uuid = id,
+                userId = id,
                 limit = limit,
                 page = page,
                 filter = expectedFilter,
                 sort = sort,
-                includeCount = true,
-                includeCustom = true,
-                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-                includeType = true
+                include = matching<MembershipInclude> {
+                    it.includeCustom && !it.includeStatus && !it.includeType && it.includeTotalCount &&
+                        it.includeChannel && it.includeChannelCustom && it.includeChannelType &&
+                        !it.includeChannelStatus
+                }
             )
         }
     }
@@ -279,10 +275,7 @@ class UserTest {
                 any(),
                 any(),
                 any(),
-                any(),
-                any(),
-                any(),
-                any()
+                include = any(),
             )
         } returns getMemberships
 
@@ -296,15 +289,16 @@ class UserTest {
         val expectedFilter = "channel.id LIKE 'PUBNUB_INTERNAL_MODERATION_*'"
         verify {
             pubNub.getMemberships(
-                uuid = id,
+                userId = id,
                 limit = limit,
                 page = page,
                 filter = expectedFilter,
                 sort = sort,
-                includeCount = true,
-                includeCustom = true,
-                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-                includeType = true
+                include = matching<MembershipInclude> {
+                    it.includeCustom && !it.includeStatus && !it.includeType && it.includeTotalCount &&
+                        it.includeChannel && it.includeChannelCustom && it.includeChannelType &&
+                        !it.includeChannelStatus
+                }
             )
         }
     }
@@ -325,10 +319,7 @@ class UserTest {
                 any(),
                 any(),
                 any(),
-                any(),
-                any(),
-                any(),
-                any()
+                include = any(),
             )
         } returns getMemberships
 
@@ -337,15 +328,16 @@ class UserTest {
         val expectedFilter = "channel.id == 'PUBNUB_INTERNAL_MODERATION_channelId'"
         verify {
             pubNub.getMemberships(
-                uuid = id,
+                userId = id,
                 limit = limit,
                 page = page,
                 filter = expectedFilter,
                 sort = sort,
-                includeCount = true,
-                includeCustom = true,
-                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-                includeType = true
+                include = matching<MembershipInclude> {
+                    it.includeCustom && !it.includeStatus && !it.includeType && it.includeTotalCount &&
+                        it.includeChannel && it.includeChannelCustom &&
+                        it.includeChannelType && !it.includeChannelStatus
+                }
             )
         }
     }
@@ -367,7 +359,11 @@ class UserTest {
         val user = createUser(chat)
         val expectedUser = user.copy(name = randomString(), email = randomString())
 
-        val newUser = user + PNUUIDMetadata(expectedUser.id, name = PatchValue.of(expectedUser.name), email = PatchValue.of(expectedUser.email))
+        val newUser = user + PNUUIDMetadata(
+            expectedUser.id,
+            name = PatchValue.of(expectedUser.name),
+            email = PatchValue.of(expectedUser.email)
+        )
 
         assertEquals(expectedUser, newUser)
     }

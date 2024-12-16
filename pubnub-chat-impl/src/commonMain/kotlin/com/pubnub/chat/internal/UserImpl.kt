@@ -5,7 +5,7 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
-import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
@@ -98,15 +98,21 @@ data class UserImpl(
         val effectiveFilter: String = filter?.let { "$internalModerationFilter && ($filter)" } ?: internalModerationFilter
 
         return chat.pubNub.getMemberships(
-            uuid = id,
+            userId = id,
             limit = limit,
             page = page,
             filter = effectiveFilter,
             sort = sort,
-            includeCount = true,
-            includeCustom = true,
-            includeType = true,
-            includeChannelDetails = getChannelDetailsType(true)
+            include = MembershipInclude(
+                includeCustom = true,
+                includeStatus = false,
+                includeType = false,
+                includeTotalCount = true,
+                includeChannel = true,
+                includeChannelCustom = true,
+                includeChannelType = true,
+                includeChannelStatus = false
+            )
         ).then { pnChannelMembershipArrayResult ->
             MembershipsResponse(
                 next = pnChannelMembershipArrayResult.next,
@@ -196,24 +202,22 @@ data class UserImpl(
             }
 
         return chat.pubNub.getMemberships(
-            uuid = id,
+            userId = id,
             limit = limit,
             page = page,
             filter = filter,
             sort = sort,
-            includeCount = true,
-            includeCustom = true,
-            includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-            includeType = true
+            include = MembershipInclude(
+                includeCustom = true,
+                includeStatus = false,
+                includeType = false,
+                includeTotalCount = true,
+                includeChannel = true,
+                includeChannelCustom = true,
+                includeChannelType = true,
+                includeChannelStatus = false
+            )
         )
-    }
-
-    private fun getChannelDetailsType(includeChannelWithCustom: Boolean): PNChannelDetailsLevel {
-        return if (includeChannelWithCustom) {
-            PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM
-        } else {
-            PNChannelDetailsLevel.CHANNEL
-        }
     }
 
     private fun getMembershipsFromResult(

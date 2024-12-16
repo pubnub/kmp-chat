@@ -20,7 +20,7 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
-import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
@@ -556,10 +556,16 @@ class ChatImpl(
             val hostMembershipFuture = pubNub.setMemberships(
                 listOf(PNChannelMembership.Partial(channel.id, membershipCustom)),
                 filter = "channel.id == '${channel.id}'",
-                includeCustom = true,
-                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-                includeCount = true,
-                includeType = true,
+                include = MembershipInclude(
+                    includeCustom = true,
+                    includeStatus = false,
+                    includeType = false,
+                    includeTotalCount = true,
+                    includeChannel = true,
+                    includeChannelCustom = true,
+                    includeChannelType = true,
+                    includeChannelStatus = false
+                ),
             )
             awaitAll(
                 hostMembershipFuture,
@@ -602,10 +608,16 @@ class ChatImpl(
             val hostMembershipFuture = pubNub.setMemberships(
                 listOf(PNChannelMembership.Partial(channel.id, membershipCustom)),
                 filter = "channel.id == '${channel.id}'",
-                includeCustom = true,
-                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-                includeCount = true,
-                includeType = true,
+                include = MembershipInclude(
+                    includeCustom = true,
+                    includeStatus = false,
+                    includeType = false,
+                    includeTotalCount = true,
+                    includeChannel = true,
+                    includeChannelCustom = true,
+                    includeChannelType = true,
+                    includeChannelStatus = false
+                ),
             )
             awaitAll(
                 hostMembershipFuture,
@@ -876,11 +888,17 @@ class ChatImpl(
                         pubNub.setMemberships(
                             channels = channelMembershipInputs,
                             filter = filterExpression,
-                            uuid = currentUser.id,
-                            includeCount = true,
-                            includeCustom = true,
-                            includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-                            includeType = true
+                            userId = currentUser.id,
+                            include = MembershipInclude(
+                                includeCustom = true,
+                                includeStatus = false,
+                                includeType = false,
+                                includeTotalCount = true,
+                                includeChannel = true,
+                                includeChannelCustom = true,
+                                includeChannelType = true,
+                                includeChannelStatus = false
+                            ),
                         ).alsoAsync { _: PNChannelMembershipArrayResult ->
                             val emitEventFutures: List<PNFuture<PNPublishResult>> =
                                 relevantChannelIds.map { channelId: String ->
