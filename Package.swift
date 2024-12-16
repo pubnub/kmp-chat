@@ -18,8 +18,8 @@ let package = Package(
   targets: [
     .binaryTarget(
       name: "PubNubChatRemoteBinaryPackage",
-      url: "https://github.com/pubnub/kmp-chat/releases/download/kotlin-v0.9.2/PubNubChat.xcframework.zip",
-      checksum: "ba90004881639c1ae7e05cf93d68554a77717f8f7c89515a1894cce03a557122"
+      url: "https://github.com/pubnub/kmp-chat/releases/download/kotlin-0.9.3/PubNubChat.xcframework.zip",
+      checksum: "dccc53b725a2c5f75936a8b85ae4dab7bd5060ede5b6e19ce80c7ecc35090578"
     )
   ]
 )
