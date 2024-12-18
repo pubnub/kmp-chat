@@ -13,7 +13,7 @@ jobs:
   tests:
     name: Integration and Unit tests
     runs-on:
-      group: macos-gh
+      group: organization/Default
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
             ${{ runner.os }}-gradle-
       - name: Build and run tests
         run: |
-          ./gradlew check
+          ./gradlew jsTest -i
         env:
           SDK_PUB_KEY: ${{ secrets.SDK_PUB_KEY }}
           SDK_SUB_KEY: ${{ secrets.SDK_SUB_KEY }}

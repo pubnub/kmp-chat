@@ -48,6 +48,7 @@ kotlin {
             val jsTest by getting {
                 dependencies {
                     implementation(kotlin("test-js"))
+                    implementation(npm("pubnub", "8.4.0"))
                 }
             }
         }
