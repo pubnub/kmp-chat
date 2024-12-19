@@ -9,7 +9,7 @@ import {
 } from "./utils"
 import { jest } from "@jest/globals"
 
-describe("MessageDraft", function () {
+describe("MessageDraft2", function () {
   jest.retryTimes(2)
   let chat: Chat
   let channel: Channel

@@ -73,7 +73,7 @@ external interface CreateDirectConversationResultJs {
 }
 
 external interface GetChannelsResponseJs {
-    var users: Array<ChannelJs>
+    var channels: Array<ChannelJs>
     var page: PubNub.MetadataPage
     var total: Int
 }

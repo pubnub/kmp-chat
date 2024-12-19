@@ -554,7 +554,7 @@ describe("Channel test", () => {
 
     expect(foundUser1AmongSuggestedUsers).toBeTruthy()
     // get members of the channel and verify if user that is member of channel exists in keyset
-    const membersResponse = await channel.getMembers()
+    const membersResponse = await channel.getMembers( { "sort": {"uuid.updated": "desc"} })
     const members = membersResponse.members
     expect(
       onChangeResponse.users.suggestedUsers.some(
@@ -1089,7 +1089,7 @@ describe("Channel test", () => {
     const moderationEventCallback = jest.fn()
 
     const removeModerationListener = chat.listenForEvents({
-      channel: chat.currentUser.id,
+      channel: "PUBNUB_INTERNAL_MODERATION." + chat.currentUser.id,
       type: "moderation",
       callback: moderationEventCallback,
     })
@@ -1223,5 +1223,10 @@ describe("Channel test", () => {
     expect(updatedMembership?.updated).toBeDefined()
     expect(updatedMembership?.eTag).toBeDefined()
     removeListener()
+  })
+
+  test("chat.getChannels with filter returns results", async () => {
+      let result = await chat.getChannels({ limit: 2, filter: `type == 'public'` })
+      expect(result.channels.length).toBe(2)
   })
 })
