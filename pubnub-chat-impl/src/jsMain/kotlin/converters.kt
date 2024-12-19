@@ -38,13 +38,23 @@ internal fun GetRestrictionsResponse.toJs() =
     }
 
 internal inline fun <reified T : SortField> extractSortKeys(sort: Any?): List<PNSortKey<T>> =
-    sort?.unsafeCast<JsMap<String>>()?.toMap()?.map {
+    sort?.unsafeCast<JsMap<String?>>()?.toMap()?.map {
         val fieldName = it.key
-        val direction = it.value
+        val direction = it.value ?: "asc"
         when (T::class) {
-            PNMembershipKey::class -> getAscOrDesc(direction, PNMembershipKey.valueOf(fieldName))
-            PNKey::class -> getAscOrDesc(direction, PNKey.valueOf(fieldName))
-            PNMemberKey::class -> getAscOrDesc(direction, PNMemberKey.valueOf(fieldName))
+            PNMembershipKey::class -> getAscOrDesc(
+                direction,
+                PNMembershipKey.entries.find {
+                    it.fieldName == fieldName
+                } ?: error("Unknown sort field: $fieldName")
+            )
+            PNKey::class -> getAscOrDesc(direction, PNKey.entries.find { it.fieldName == fieldName } ?: error("Unknown sort field: $fieldName"))
+            PNMemberKey::class -> getAscOrDesc(
+                direction,
+                PNMemberKey.entries.find {
+                    it.fieldName == fieldName
+                } ?: error("Unknown sort field: $fieldName")
+            )
             else -> error("Should never happen")
         } as PNSortKey<T>
     } ?: listOf()

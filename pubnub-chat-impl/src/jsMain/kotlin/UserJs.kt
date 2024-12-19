@@ -1,14 +1,10 @@
 @file:OptIn(ExperimentalJsExport::class, ExperimentalJsStatic::class)
 
-import com.pubnub.api.models.consumer.objects.PNMembershipKey
-import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.UserImpl
-import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
 import com.pubnub.kmp.toJsMap
-import com.pubnub.kmp.toMap
 import kotlin.js.Promise
 import kotlin.js.json
 
@@ -73,15 +69,7 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
             params?.limit?.toInt(),
             page.toKmp(),
             params?.filter,
-            params?.sort?.unsafeCast<JsMap<String>>()?.toMap()?.map {
-                val fieldName = it.key
-                val direction = it.value
-                if (direction == "asc") {
-                    PNSortKey.PNAsc(PNMembershipKey.valueOf(fieldName))
-                } else {
-                    PNSortKey.PNDesc(PNMembershipKey.valueOf(fieldName))
-                }
-            } ?: listOf()
+            extractSortKeys(params?.sort)
         ).then {
             createJsObject<MembershipsResponseJs> {
                 this.page = MetadataPage(it.next, it.prev)

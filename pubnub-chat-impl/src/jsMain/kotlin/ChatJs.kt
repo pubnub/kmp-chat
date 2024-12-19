@@ -122,7 +122,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     fun getUsers(params: PubNub.GetAllMetadataParameters?): Promise<GetUsersResponseJs> {
         return chat.getUsers(
             params?.filter,
-            extractSortKeys(params),
+            extractSortKeys(params?.sort),
             params?.limit?.toInt(),
             params?.page?.toKmp()
         ).then { result ->
@@ -152,12 +152,12 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     fun getChannels(params: PubNub.GetAllMetadataParameters?): Promise<GetChannelsResponseJs> {
         return chat.getChannels(
             params?.filter,
-            extractSortKeys(params),
+            extractSortKeys(params?.sort),
             params?.limit?.toInt(),
             params?.page?.toKmp()
         ).then { result ->
             createJsObject<GetChannelsResponseJs> {
-                this.users = result.channels.map { it.asJs(this@ChatJs) }.toTypedArray()
+                this.channels = result.channels.map { it.asJs(this@ChatJs) }.toTypedArray()
                 this.page = MetadataPage(result.next, result.prev)
                 this.total = result.total
             }
@@ -316,12 +316,12 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         }.asPromise()
     }
 
-    fun markAllMessagesAsRead(params: PubNub.GetMembershipsParametersv2): Promise<MarkAllMessageAsReadResponseJs> {
+    fun markAllMessagesAsRead(params: PubNub.GetMembershipsParametersv2?): Promise<MarkAllMessageAsReadResponseJs> {
         return chat.markAllMessagesAsRead(
-            params.limit?.toInt(),
-            params.page?.toKmp(),
-            params.filter,
-            extractSortKeys(params.sort)
+            params?.limit?.toInt(),
+            params?.page?.toKmp(),
+            params?.filter,
+            extractSortKeys(params?.sort)
         ).then { result ->
             createJsObject<MarkAllMessageAsReadResponseJs> {
                 this.page = MetadataPage(result.next, result.prev)
