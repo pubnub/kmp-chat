@@ -35,6 +35,8 @@ data class MembershipImpl(
     override val custom: Map<String, Any?>?,
     override val updated: String?,
     override val eTag: String?,
+    override val status: String?,
+    override val type: String?,
 ) : Membership {
     override val lastReadMessageTimetoken: Long?
         get() {
@@ -116,7 +118,9 @@ data class MembershipImpl(
             user,
             update.custom?.value ?: custom,
             update.updated,
-            update.eTag
+            update.eTag,
+            update.status?.value,
+            update.type?.value
         )
     }
 
@@ -158,6 +162,8 @@ data class MembershipImpl(
                                 custom = message.data.custom?.value,
                                 updated = message.data.updated,
                                 eTag = message.data.eTag,
+                                status = message.data.status?.value,
+                                type = message.data.type?.value,
                             )
                     }
                     is PNDeleteMembershipEventMessage -> null
@@ -191,6 +197,8 @@ data class MembershipImpl(
                 channelMembership.custom?.value,
                 channelMembership.updated,
                 channelMembership.eTag,
+                channelMembership.status?.value,
+                channelMembership.type?.value,
             )
 
         internal fun fromChannelMemberDTO(chat: ChatInternal, userMembership: PNMember, channel: Channel) =
@@ -201,6 +209,8 @@ data class MembershipImpl(
                 userMembership.custom?.value,
                 userMembership.updated,
                 userMembership.eTag,
+                userMembership.status?.value,
+                userMembership.type?.value,
             )
     }
 }

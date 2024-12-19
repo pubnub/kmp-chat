@@ -63,6 +63,7 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_FORWARD_MESSA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ID_IS_REQUIRED
+import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THERE_IS_NO_ACTION_TIMETOKEN_CORRESPONDING_TO_THE_THREAD
@@ -711,6 +712,9 @@ class ChatImpl(
     override fun setRestrictions(
         restriction: Restriction
     ): PNFuture<Unit> {
+        if (this.pubNub.configuration.secretKey.isEmpty()) {
+            return log.logErrorAndReturnException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY).asFuture()
+        }
         val channel: String = INTERNAL_MODERATION_PREFIX + restriction.channelId
         val userId = restriction.userId
         return createChannel(channel).catch { exception ->
@@ -1180,7 +1184,11 @@ class ChatImpl(
                 customMetadataToSet[PINNED_MESSAGE_TIMETOKEN] = message.timetoken.toString()
                 customMetadataToSet[PINNED_MESSAGE_CHANNEL_ID] = message.channelId
             }
-            return pubNub.setChannelMetadata(channel.id, includeCustom = true, custom = createCustomObject(customMetadataToSet))
+            return pubNub.setChannelMetadata(
+                channel = channel.id,
+                includeCustom = true,
+                custom = createCustomObject(customMetadataToSet)
+            )
         }
 
         internal fun getThreadId(channelId: String, messageTimetoken: Long): String {

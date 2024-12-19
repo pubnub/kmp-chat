@@ -128,6 +128,8 @@ public abstract interface class com/pubnub/chat/Membership {
 	public abstract fun getCustom ()Ljava/util/Map;
 	public abstract fun getETag ()Ljava/lang/String;
 	public abstract fun getLastReadMessageTimetoken ()Ljava/lang/Long;
+	public abstract fun getStatus ()Ljava/lang/String;
+	public abstract fun getType ()Ljava/lang/String;
 	public abstract fun getUnreadMessagesCount ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getUpdated ()Ljava/lang/String;
 	public abstract fun getUser ()Lcom/pubnub/chat/User;
