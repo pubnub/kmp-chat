@@ -41,6 +41,8 @@ class MembershipTest {
                 mapOf("lastReadMessageTimetoken" to lastMessageTimetoken, "other_stuff" to "some string"),
                 null,
                 null,
+                null,
+                null
             )
 
         assertEquals(lastMessageTimetoken, membership.lastReadMessageTimetoken)
@@ -56,6 +58,8 @@ class MembershipTest {
                 mapOf(),
                 null,
                 null,
+                null,
+                null
             )
         assertNull(membership.getUnreadMessagesCount().await())
     }
@@ -70,6 +74,8 @@ class MembershipTest {
                 mapOf("lastReadMessageTimetoken" to lastMessageTimetoken),
                 null,
                 null,
+                null,
+                null
             )
 
         val messageCounts: MessageCounts = mock()
