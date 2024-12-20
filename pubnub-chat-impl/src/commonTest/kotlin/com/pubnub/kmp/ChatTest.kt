@@ -1346,6 +1346,12 @@ class ChatTest : BaseTest() {
             mute = mute,
             reason = "paid"
         )
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.success(getPNChannelMetadataResult("PUBNUB_INTERNAL_MODERATION_myChannelId")))
+        }
+        every {
+            pubnub.getChannelMetadata(channel = "PUBNUB_INTERNAL_MODERATION_myChannelId", includeCustom = true)
+        } returns getChannelMetadataEndpoint
         every {
             pubnub.removeChannelMembers(
                 capture(channelIdSlot),
@@ -1405,6 +1411,12 @@ class ChatTest : BaseTest() {
             mute = mute,
             reason = reason
         )
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.success(getPNChannelMetadataResult("PUBNUB_INTERNAL_MODERATION_myChannelId")))
+        }
+        every {
+            pubnub.getChannelMetadata(channel = "PUBNUB_INTERNAL_MODERATION_myChannelId", includeCustom = true)
+        } returns getChannelMetadataEndpoint
         every {
             pubnub.setChannelMembers(
                 channel = capture(channelIdSlot),
