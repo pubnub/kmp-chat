@@ -1,11 +1,16 @@
 ---
 name: pubnub-js-chat
-version: 0.9.4
+version: 0.9.5
 scm: github.com/pubnub/js-chat
 schema: 1
 files:
   - lib/dist/index.js
 changelog:
+  - date: 2024-12-20
+    version: 0.9.5
+    changes:
+      - type: bug
+        text: "Make setRestrictions work with Enforce referential integrity for memberships enabled on keyset."
   - date: 2024-12-19
     version: 0.9.4
     changes:
