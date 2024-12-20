@@ -6,6 +6,13 @@
       "clearedSuffix": false
     }
   ],
+  "../gradle.properties": [
+    {
+      "pattern": "^VERSION_NAME=(v?(\\d+\\.?){2,}([a-zA-Z0-9-]+(\\.?\\d+)?)?)$",
+      "clearedPrefix": true,
+      "clearedSuffix": false
+    }
+  ],
   "README.md": [
     {
       "pattern": "^\\s{2,}<version>(v?(\\d+\\.?){2,}([a-zA-Z0-9-]+(\\.?\\d+)?)?)<\\/version>$",
