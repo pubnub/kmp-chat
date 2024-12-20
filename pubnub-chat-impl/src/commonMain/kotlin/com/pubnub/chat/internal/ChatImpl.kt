@@ -701,46 +701,53 @@ class ChatImpl(
     ): PNFuture<Unit> {
         val channel: String = INTERNAL_MODERATION_PREFIX + restriction.channelId
         val userId = restriction.userId
-
-        val moderationEvent: PNFuture<PNMemberArrayResult> =
-            if (!restriction.ban && !restriction.mute) {
-                pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
-                    .alsoAsync { _ ->
-                        emitEvent(
-                            channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
-                            payload = EventContent.Moderation(
-                                channelId = channel,
-                                restriction = RestrictionType.LIFT,
-                                reason = restriction.reason
-                            ),
-                        )
-                    }
+        return createChannel(channel).catch { exception ->
+            if (exception.message == CHANNEL_ID_ALREADY_EXIST) {
+                Result.success(Unit)
             } else {
-                val custom = createCustomObject(
-                    mapOf(
-                        RESTRICTION_BAN to restriction.ban,
-                        RESTRICTION_MUTE to restriction.mute,
-                        RESTRICTION_REASON to restriction.reason
-                    )
-                )
-                val uuids = listOf(PNMember.Partial(uuidId = userId, custom = custom, null))
-                pubNub.setChannelMembers(channel = channel, uuids = uuids)
-                    .alsoAsync { _ ->
-                        emitEvent(
-                            channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
-                            payload = EventContent.Moderation(
-                                channelId = channel,
-                                restriction = if (restriction.ban) {
-                                    RestrictionType.BAN
-                                } else {
-                                    RestrictionType.MUTE
-                                },
-                                reason = restriction.reason
-                            ),
-                        )
-                    }
+                Result.failure(exception)
             }
-        return moderationEvent.then { }
+        }.thenAsync {
+            val moderationEvent: PNFuture<PNMemberArrayResult> =
+                if (!restriction.ban && !restriction.mute) {
+                    pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
+                        .alsoAsync { _ ->
+                            emitEvent(
+                                channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
+                                payload = EventContent.Moderation(
+                                    channelId = channel,
+                                    restriction = RestrictionType.LIFT,
+                                    reason = restriction.reason
+                                ),
+                            )
+                        }
+                } else {
+                    val custom = createCustomObject(
+                        mapOf(
+                            RESTRICTION_BAN to restriction.ban,
+                            RESTRICTION_MUTE to restriction.mute,
+                            RESTRICTION_REASON to restriction.reason
+                        )
+                    )
+                    val uuids = listOf(PNMember.Partial(uuidId = userId, custom = custom, null))
+                    pubNub.setChannelMembers(channel = channel, uuids = uuids)
+                        .alsoAsync { _ ->
+                            emitEvent(
+                                channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
+                                payload = EventContent.Moderation(
+                                    channelId = channel,
+                                    restriction = if (restriction.ban) {
+                                        RestrictionType.BAN
+                                    } else {
+                                        RestrictionType.MUTE
+                                    },
+                                    reason = restriction.reason
+                                ),
+                            )
+                        }
+                }
+            moderationEvent.then { }
+        }
     }
 
     override fun registerPushChannels(channels: List<String>): PNFuture<PNPushAddChannelResult> {
