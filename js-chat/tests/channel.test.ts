@@ -350,6 +350,7 @@ describe("Channel test", () => {
 
   test("should stream channel updates and invoke the callback", async () => {
     let updatedChannel
+    channel = await channel.update({ type: "public" })
     const name = "Updated Channel"
     const callback = jest.fn((chanel) => (updatedChannel = chanel))
 
@@ -360,7 +361,9 @@ describe("Channel test", () => {
     expect(callback).toHaveBeenCalled()
     expect(callback).toHaveBeenCalledWith(updatedChannel)
     expect(updatedChannel.name).toEqual(name)
-
+    expect(updatedChannel.type).toEqual(channel.type)
+    console.log(JSON.stringify(updatedChannel))
+    console.log(JSON.stringify(channel))
     stopUpdates()
   })
 

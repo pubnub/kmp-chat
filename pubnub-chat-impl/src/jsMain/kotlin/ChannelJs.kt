@@ -31,10 +31,10 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
     fun update(data: ChannelFields): Promise<ChannelJs> {
         return channel.update(
             data.name,
-            convertToCustomObject(data.custom),
+            data.custom?.let { convertToCustomObject(it) },
             data.description,
             data.status,
-            ChannelType.from(data.type)
+            data.type?.let { ChannelType.from(it) }
         ).then {
             it.asJs(chatJs)
         }.asPromise()

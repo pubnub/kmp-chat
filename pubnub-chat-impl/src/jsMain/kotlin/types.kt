@@ -310,3 +310,7 @@ external interface Reaction {
     var uuid: String
     var actionTimetoken: String
 }
+
+external interface UpdateMembershipParams {
+    val custom: PubNub.CustomObject?
+}

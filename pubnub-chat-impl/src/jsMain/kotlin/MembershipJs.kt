@@ -19,8 +19,8 @@ class MembershipJs internal constructor(internal val membership: Membership, int
 
     val lastReadMessageTimetoken: String? get() = membership.lastReadMessageTimetoken?.toString()
 
-    fun update(custom: dynamic): Promise<MembershipJs> {
-        return membership.update(convertToCustomObject(custom?.custom))
+    fun update(custom: UpdateMembershipParams?): Promise<MembershipJs> {
+        return membership.update(custom?.custom?.let { convertToCustomObject(it) })
             .then { it.asJs(chatJs) }
             .asPromise()
     }

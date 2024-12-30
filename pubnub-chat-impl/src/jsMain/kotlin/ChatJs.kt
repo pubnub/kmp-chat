@@ -89,7 +89,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             data.externalId,
             data.profileUrl,
             data.email,
-            convertToCustomObject(data.custom),
+            data.custom?.let { convertToCustomObject(data.custom) },
             data.status,
             data.type
         ).then { it.asJs(this@ChatJs) }.asPromise()
@@ -102,7 +102,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             data.externalId,
             data.profileUrl,
             data.email,
-            convertToCustomObject(data.custom),
+            data.custom?.let { convertToCustomObject(data.custom) },
             data.status,
             data.type
         ).then { it.asJs(this@ChatJs) }.asPromise()
@@ -142,10 +142,10 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         return chat.updateChannel(
             id,
             data.name,
-            convertToCustomObject(data.custom),
+            data.custom?.let { convertToCustomObject(it) },
             data.description,
             data.status,
-            ChannelType.from(data.type)
+            data.type?.let { ChannelType.from(data.type) }
         ).then { it.asJs(this@ChatJs) }.asPromise()
     }
 
