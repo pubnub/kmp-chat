@@ -1243,7 +1243,7 @@ describe("Channel test", () => {
       await sleep(1000)
       await chat.emitEvent({
           channel: channel.id,
-          type: 'customaaa',
+          type: 'custom',
           method: 'publish',
           payload: {
             action: "action",
