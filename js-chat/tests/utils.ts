@@ -1,8 +1,8 @@
 // lib/tests/testUtils.ts
-import { Chat, MessageDraft, Channel, Message, ChatConfig } from "../dist"
+import { Chat, MessageDraft, Channel, Message, ChatConfig } from "../dist-test"
 import * as dotenv from "dotenv"
-import { User } from "../dist"
-import { MixedTextTypedElement } from "../dist"
+import { User } from "../dist-test"
+import { MixedTextTypedElement } from "../dist-test"
 import PubNub from "pubnub"
 
 dotenv.config()

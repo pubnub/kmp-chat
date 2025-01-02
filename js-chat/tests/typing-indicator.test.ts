@@ -1,4 +1,4 @@
-import { Channel, Chat } from "../dist"
+import { Channel, Chat } from "../dist-test"
 import { createChatInstance, createRandomChannel, sleep } from "./utils"
 
 describe("Typing indicator test", () => {

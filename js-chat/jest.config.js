@@ -1,5 +1,5 @@
 module.exports = {
   bail: false,
-  reporters: [["jest-silent-reporter", { "useDots": true }], "jest-junit", "summary"],
+  reporters: ["default", "jest-junit", "summary"],
   testTimeout: 10000
 }

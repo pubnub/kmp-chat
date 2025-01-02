@@ -1,4 +1,4 @@
-import { TimetokenUtils } from "../dist"
+import { TimetokenUtils } from "../dist-test"
 
 describe("Channel test", () => {
   test("should convert unix timestamp to PubNub timetoken", () => {

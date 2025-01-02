@@ -1,9 +1,9 @@
 // lib/tests/testUtils.ts
-import { Chat } from "../dist"
-import { Channel } from "../dist"
+import { Chat } from "../dist-test"
+import { Channel } from "../dist-test"
 import * as dotenv from "dotenv"
 import { nanoid } from "nanoid"
-import { User } from "../dist"
+import { User } from "../dist-test"
 
 dotenv.config()
 

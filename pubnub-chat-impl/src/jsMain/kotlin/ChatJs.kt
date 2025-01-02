@@ -5,6 +5,7 @@ import com.pubnub.api.createJsonElement
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.PUBNUB_CHAT_VERSION
+import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_CUSTOM
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelMentionData
@@ -14,8 +15,10 @@ import com.pubnub.chat.types.CreateGroupConversationResult
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.ThreadMentionData
+import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
+import com.pubnub.kmp.toMap
 import kotlin.js.Json
 import kotlin.js.Promise
 import kotlin.js.json
@@ -31,26 +34,39 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         val channel: String = event.channel ?: event.user
         val type = event.type
         val payload = event.payload
-        payload.type = type
+
+        val method = if (event.method == EmitEventMethod.SIGNAL.toJs()) {
+            EmitEventMethod.SIGNAL
+        } else {
+            EmitEventMethod.PUBLISH
+        }
+
+        val eventContent = if (type == TYPE_OF_MESSAGE_IS_CUSTOM) {
+            EventContent.Custom((payload as JsMap<Any?>).toMap(), method)
+        } else {
+            payload.type = type
+            PNDataEncoder.decode(createJsonElement(payload))
+        }
         return chat.emitEvent(
             channel,
-            PNDataEncoder.decode(createJsonElement(payload))
+            eventContent
         ).then { it.toPublishResponse() }.asPromise()
     }
 
     fun listenForEvents(event: ListenForEventsParams): () -> Unit {
         val klass = when (event.type) {
-            "typing" -> EventContent.Typing::class
-            "report" -> EventContent.Report::class
-            "receipt" -> EventContent.Receipt::class
-            "mention" -> EventContent.Mention::class
-            "invite" -> EventContent.Invite::class
-            "custom" -> EventContent.Custom::class
-            "moderation" -> EventContent.Moderation::class
+            EventContent.Typing.serializer().descriptor.serialName -> EventContent.Typing::class
+            EventContent.Report.serializer().descriptor.serialName -> EventContent.Report::class
+            EventContent.Receipt.serializer().descriptor.serialName -> EventContent.Receipt::class
+            EventContent.Mention.serializer().descriptor.serialName -> EventContent.Mention::class
+            EventContent.Invite.serializer().descriptor.serialName -> EventContent.Invite::class
+            TYPE_OF_MESSAGE_IS_CUSTOM -> EventContent.Custom::class
+            EventContent.Moderation.serializer().descriptor.serialName -> EventContent.Moderation::class
+            EventContent.TextMessageContent.serializer().descriptor.serialName -> EventContent.TextMessageContent::class
             else -> throw IllegalArgumentException("Unknown event type ${event.type}")
         }
         val channel: String = event.channel ?: event.user!!
-        val method = if (event.method == "signal") {
+        val method = if (event.method == EmitEventMethod.SIGNAL.toJs()) {
             EmitEventMethod.SIGNAL
         } else {
             EmitEventMethod.PUBLISH
@@ -89,7 +105,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             data.externalId,
             data.profileUrl,
             data.email,
-            convertToCustomObject(data.custom),
+            data.custom?.let { convertToCustomObject(data.custom) },
             data.status,
             data.type
         ).then { it.asJs(this@ChatJs) }.asPromise()
@@ -102,7 +118,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             data.externalId,
             data.profileUrl,
             data.email,
-            convertToCustomObject(data.custom),
+            data.custom?.let { convertToCustomObject(data.custom) },
             data.status,
             data.type
         ).then { it.asJs(this@ChatJs) }.asPromise()
@@ -142,10 +158,10 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         return chat.updateChannel(
             id,
             data.name,
-            convertToCustomObject(data.custom),
+            data.custom?.let { convertToCustomObject(it) },
             data.description,
             data.status,
-            ChannelType.from(data.type)
+            data.type?.let { ChannelType.from(data.type) }
         ).then { it.asJs(this@ChatJs) }.asPromise()
     }
 
@@ -390,4 +406,10 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             }.asPromise()
         }
     }
+}
+
+private fun EmitEventMethod.toJs() = if (this == EmitEventMethod.SIGNAL) {
+    "signal"
+} else {
+    "publish"
 }

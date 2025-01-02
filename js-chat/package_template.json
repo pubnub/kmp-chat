@@ -14,7 +14,7 @@
     "dist", "NOTICE"
   ],
   "scripts": {
-    "test": "jest --forceExit",
+    "test": "cp -r dist/ dist-test && rollup --config rollup-test.config.mjs && jest --forceExit",
     "build": "rollup -c",
     "dev": "tsc -w"
   },

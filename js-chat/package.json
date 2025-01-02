@@ -15,7 +15,7 @@
         "NOTICE"
     ],
     "scripts": {
-        "test": "jest --forceExit",
+        "test": "cp -r dist/ dist-test && rollup --config rollup-test.config.mjs && jest --forceExit",
         "build": "rollup -c",
         "dev": "tsc -w"
     },
@@ -41,10 +41,10 @@
     "module": "dist/index.es.js",
     "types": "dist/index.d.ts",
     "react-native": "dist/index.es.js",
-    "version": "0.9.5",
+    "version": "0.9.6",
     "name": "@pubnub/chat",
     "dependencies": {
-        "pubnub": "8.2.8",
+        "pubnub": "8.3.1",
         "format-util": "^1.0.5"
     }
 }

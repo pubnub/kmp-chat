@@ -30,7 +30,7 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
             data.externalId,
             data.profileUrl,
             data.email,
-            convertToCustomObject(data.custom),
+            data.custom?.let { convertToCustomObject(it) },
             data.status,
             data.type
         ).then {

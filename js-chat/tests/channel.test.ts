@@ -5,7 +5,7 @@ import {
   MessageDraft,
   INTERNAL_MODERATION_PREFIX,
   Membership,
-} from "../dist"
+} from "../dist-test"
 import {
   sleep,
   extractMentionedUserIds,
@@ -350,6 +350,7 @@ describe("Channel test", () => {
 
   test("should stream channel updates and invoke the callback", async () => {
     let updatedChannel
+    channel = await channel.update({ type: "public" })
     const name = "Updated Channel"
     const callback = jest.fn((chanel) => (updatedChannel = chanel))
 
@@ -360,7 +361,7 @@ describe("Channel test", () => {
     expect(callback).toHaveBeenCalled()
     expect(callback).toHaveBeenCalledWith(updatedChannel)
     expect(updatedChannel.name).toEqual(name)
-
+    expect(updatedChannel.type).toEqual(channel.type)
     stopUpdates()
   })
 
@@ -1229,4 +1230,35 @@ describe("Channel test", () => {
       let result = await chat.getChannels({ limit: 2, filter: `type == 'public'` })
       expect(result.channels.length).toBe(2)
   })
+
+  test("send custom event", async () => {
+      const inviteCallback = jest.fn()
+      const unsubscribe = chat.listenForEvents({
+            channel: channel.id,
+            type: "custom",
+            method: "publish",
+            callback: inviteCallback,
+          })
+
+      await sleep(1000)
+      await chat.emitEvent({
+          channel: channel.id,
+          type: 'custom',
+          method: 'publish',
+          payload: {
+            action: "action",
+            body: "payload"
+          }
+      })
+      await sleep(2000)
+      expect(inviteCallback).toHaveBeenCalledTimes(1)
+      expect(inviteCallback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            action: "action",
+            body: "payload"
+          }),
+        })
+      )
+    })
 })
