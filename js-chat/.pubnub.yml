@@ -6,6 +6,13 @@ schema: 1
 files:
   - lib/dist/index.js
 changelog:
+  - date: 2025-01-02
+    version: 0.9.6
+    changes:
+      - type: bug
+        text: "Channel type was erased (set to `null`) on edits to other Channel fields."
+      - type: bug
+        text: "Custom events sending/receiving in JS."
   - date: 2024-12-20
     version: 0.9.5
     changes:
