@@ -7,7 +7,7 @@ import {
   CryptoUtils,
   CryptoModule,
   MessageDTOParams,
-} from "../dist"
+} from "../dist-test"
 import {
   createChatInstance,
   createRandomChannel,

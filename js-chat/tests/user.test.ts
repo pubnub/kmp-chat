@@ -1,6 +1,6 @@
-import { Chat, INTERNAL_MODERATION_PREFIX, User } from "../dist"
+import { Chat, INTERNAL_MODERATION_PREFIX, User } from "../dist-test"
 import { createChatInstance, createRandomUser, sleep } from "./utils"
-import { INTERNAL_ADMIN_CHANNEL } from "../dist"
+import { INTERNAL_ADMIN_CHANNEL } from "../dist-test"
 
 describe("User test", () => {
   let chat: Chat

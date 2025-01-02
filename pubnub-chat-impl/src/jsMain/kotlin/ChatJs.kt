@@ -14,8 +14,10 @@ import com.pubnub.chat.types.CreateGroupConversationResult
 import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.ThreadMentionData
+import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
+import com.pubnub.kmp.toMap
 import kotlin.js.Json
 import kotlin.js.Promise
 import kotlin.js.json
@@ -31,10 +33,22 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         val channel: String = event.channel ?: event.user
         val type = event.type
         val payload = event.payload
-        payload.type = type
+
+        val method = if (event.method == "signal") {
+            EmitEventMethod.SIGNAL
+        } else {
+            EmitEventMethod.PUBLISH
+        }
+
+        val eventContent = if (type == "custom") {
+            EventContent.Custom((payload as JsMap<Any?>).toMap(), method)
+        } else {
+            payload.type = type
+            PNDataEncoder.decode(createJsonElement(payload))
+        }
         return chat.emitEvent(
             channel,
-            PNDataEncoder.decode(createJsonElement(payload))
+            eventContent
         ).then { it.toPublishResponse() }.asPromise()
     }
 

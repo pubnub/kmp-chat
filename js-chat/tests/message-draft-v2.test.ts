@@ -1,4 +1,4 @@
-import { Channel, Chat, MessageDraftV2, MixedTextTypedElement } from "../dist"
+import { Channel, Chat, MessageDraftV2, MixedTextTypedElement } from "../dist-test"
 import {
   createChatInstance,
   createRandomChannel,

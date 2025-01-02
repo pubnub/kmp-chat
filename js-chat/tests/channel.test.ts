@@ -5,7 +5,7 @@ import {
   MessageDraft,
   INTERNAL_MODERATION_PREFIX,
   Membership,
-} from "../dist"
+} from "../dist-test"
 import {
   sleep,
   extractMentionedUserIds,
@@ -19,7 +19,7 @@ import {
 import { jest } from "@jest/globals"
 
 describe("Channel test", () => {
-  jest.retryTimes(3)
+//   jest.retryTimes(3)
 
   let chat: Chat
   let channel: Channel
@@ -793,6 +793,8 @@ describe("Channel test", () => {
     const usersToInvite = await Promise.all([createRandomUser(), createRandomUser()])
 
     const invitedMemberships = await channel.inviteMultiple(usersToInvite)
+    console.log(JSON.stringify(usersToInvite))
+    console.log(JSON.stringify(invitedMemberships))
 
     expect(invitedMemberships).toBeDefined()
 
@@ -1232,4 +1234,35 @@ describe("Channel test", () => {
       let result = await chat.getChannels({ limit: 2, filter: `type == 'public'` })
       expect(result.channels.length).toBe(2)
   })
+
+  test("send custom event", async () => {
+      const inviteCallback = jest.fn(ev => console.log(JSON.stringify(ev)))
+      const unsubscribe = chat.listenForEvents({
+            channel: channel.id,
+            type: "custom",
+            method: "publish",
+            callback: inviteCallback,
+          })
+
+      await sleep(1000)
+      await chat.emitEvent({
+          channel: channel.id,
+          type: 'custom',
+          method: 'publish',
+          payload: {
+            action: "action",
+            body: "payload"
+          }
+      })
+      await sleep(2000)
+      expect(inviteCallback).toHaveBeenCalledTimes(1)
+      expect(inviteCallback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            action: "action",
+            body: "payload"
+          }),
+        })
+      )
+    })
 })

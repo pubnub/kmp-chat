@@ -2,6 +2,7 @@
 
 import com.pubnub.chat.Event
 import com.pubnub.chat.ThreadChannel
+import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -48,16 +49,28 @@ external fun delete(p: dynamic): Boolean
 
 @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
 internal fun Event<*>.toJs(chatJs: ChatJs): EventJs {
-    return EventJs(
-        chatJs,
-        timetoken.toString(),
-        payload::class.serializer().descriptor.serialName,
-        payload.toJsObject().apply {
-            delete(this.asDynamic()["type"])
-        },
-        channelId,
-        userId
-    )
+    val customPayload = payload as? EventContent.Custom
+    return if (customPayload != null) {
+        EventJs(
+            chatJs,
+            timetoken.toString(),
+            "custom",
+            customPayload.data.toJsObject(),
+            channelId,
+            userId
+        )
+    } else {
+        EventJs(
+            chatJs,
+            timetoken.toString(),
+            payload::class.serializer().descriptor.serialName,
+            payload.toJsObject().apply {
+                delete(this.asDynamic()["type"])
+            },
+            channelId,
+            userId
+        )
+    }
 }
 
 internal fun ThreadChannel.asJs(chat: ChatJs) = ThreadChannelJs(this, chat)
