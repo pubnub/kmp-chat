@@ -2,6 +2,8 @@
 
 import com.pubnub.chat.Event
 import com.pubnub.chat.ThreadChannel
+import com.pubnub.chat.internal.TYPE_OF_MESSAGE
+import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_CUSTOM
 import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
@@ -54,7 +56,7 @@ internal fun Event<*>.toJs(chatJs: ChatJs): EventJs {
         EventJs(
             chatJs,
             timetoken.toString(),
-            "custom",
+            TYPE_OF_MESSAGE_IS_CUSTOM,
             customPayload.data.toJsObject(),
             channelId,
             userId
@@ -65,7 +67,7 @@ internal fun Event<*>.toJs(chatJs: ChatJs): EventJs {
             timetoken.toString(),
             payload::class.serializer().descriptor.serialName,
             payload.toJsObject().apply {
-                delete(this.asDynamic()["type"])
+                delete(this.asDynamic()[TYPE_OF_MESSAGE])
             },
             channelId,
             userId

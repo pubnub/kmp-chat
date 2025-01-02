@@ -1,3 +1,5 @@
+import com.pubnub.chat.internal.TYPE_OF_MESSAGE
+import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_CUSTOM
 import com.pubnub.chat.internal.defaultGetMessagePublishBody
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
@@ -53,7 +55,7 @@ internal fun EventContent.encodeForSending(
     var finalMessage = if (this is EventContent.Custom) {
         buildMap<String, Any?> {
             putAll(data)
-            put("type", "custom")
+            put(TYPE_OF_MESSAGE, TYPE_OF_MESSAGE_IS_CUSTOM)
         }
     } else {
         PNDataEncoder.encode(this) as Map<String, Any?>

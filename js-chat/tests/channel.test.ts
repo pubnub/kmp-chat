@@ -19,7 +19,7 @@ import {
 import { jest } from "@jest/globals"
 
 describe("Channel test", () => {
-//   jest.retryTimes(3)
+  jest.retryTimes(3)
 
   let chat: Chat
   let channel: Channel
@@ -362,8 +362,6 @@ describe("Channel test", () => {
     expect(callback).toHaveBeenCalledWith(updatedChannel)
     expect(updatedChannel.name).toEqual(name)
     expect(updatedChannel.type).toEqual(channel.type)
-    console.log(JSON.stringify(updatedChannel))
-    console.log(JSON.stringify(channel))
     stopUpdates()
   })
 
@@ -793,8 +791,6 @@ describe("Channel test", () => {
     const usersToInvite = await Promise.all([createRandomUser(), createRandomUser()])
 
     const invitedMemberships = await channel.inviteMultiple(usersToInvite)
-    console.log(JSON.stringify(usersToInvite))
-    console.log(JSON.stringify(invitedMemberships))
 
     expect(invitedMemberships).toBeDefined()
 
@@ -1236,7 +1232,7 @@ describe("Channel test", () => {
   })
 
   test("send custom event", async () => {
-      const inviteCallback = jest.fn(ev => console.log(JSON.stringify(ev)))
+      const inviteCallback = jest.fn()
       const unsubscribe = chat.listenForEvents({
             channel: channel.id,
             type: "custom",
@@ -1247,7 +1243,7 @@ describe("Channel test", () => {
       await sleep(1000)
       await chat.emitEvent({
           channel: channel.id,
-          type: 'custom',
+          type: 'customaaa',
           method: 'publish',
           payload: {
             action: "action",
