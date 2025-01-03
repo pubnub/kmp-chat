@@ -1,6 +1,7 @@
 pluginManagement {
     includeBuild("build-logic/gradle-plugins")
     repositories {
+        mavenLocal() // todo remove
         gradlePluginPortal()
         mavenCentral()
     }
@@ -13,6 +14,7 @@ rootProject.name = "pubnub-chat"
 
 dependencyResolutionManagement {
     repositories {
+        mavenLocal() // todo remove
         mavenCentral()
     }
 }

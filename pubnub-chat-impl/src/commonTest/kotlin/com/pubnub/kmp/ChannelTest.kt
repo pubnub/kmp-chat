@@ -22,7 +22,7 @@ import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
-import com.pubnub.api.models.consumer.objects.member.PNUUIDDetailsLevel
+import com.pubnub.api.models.consumer.objects.member.MemberInclude
 import com.pubnub.api.utils.Clock
 import com.pubnub.api.utils.Instant
 import com.pubnub.api.utils.PatchValue
@@ -732,10 +732,7 @@ class ChannelTest : BaseTest() {
                 any(),
                 any(),
                 any(),
-                any(),
-                any(),
-                any(),
-                any()
+                include = any(),
             )
         } returns fetChannelMembers
 
@@ -748,10 +745,10 @@ class ChannelTest : BaseTest() {
                 page = page,
                 filter = null,
                 sort = sort,
-                includeCount = true,
-                includeCustom = true,
-                includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
-                includeType = true
+                include = matching<MemberInclude> {
+                    it.includeCustom && !it.includeStatus && !it.includeType && it.includeTotalCount &&
+                        it.includeUser && it.includeUserCustom && it.includeUserType && !it.includeUserStatus
+                },
             )
         }
     }
@@ -771,10 +768,7 @@ class ChannelTest : BaseTest() {
                 any(),
                 any(),
                 any(),
-                any(),
-                any(),
-                any(),
-                any()
+                include = any(),
             )
         } returns getChannelMembers
 
@@ -787,10 +781,10 @@ class ChannelTest : BaseTest() {
                 page = page,
                 filter = "uuid.id == 'userId'",
                 sort = sort,
-                includeCount = true,
-                includeCustom = true,
-                includeUUIDDetails = PNUUIDDetailsLevel.UUID_WITH_CUSTOM,
-                includeType = true
+                include = matching<MemberInclude> {
+                    it.includeCustom && !it.includeStatus && !it.includeType && it.includeTotalCount &&
+                        it.includeUser && it.includeUserCustom && it.includeUserType && !it.includeUserStatus
+                },
             )
         }
     }

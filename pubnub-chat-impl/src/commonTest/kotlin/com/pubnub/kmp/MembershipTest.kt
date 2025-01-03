@@ -40,6 +40,8 @@ class MembershipTest {
                 user,
                 mapOf("lastReadMessageTimetoken" to lastMessageTimetoken, "other_stuff" to "some string"),
                 null,
+                null,
+                null,
                 null
             )
 
@@ -55,6 +57,8 @@ class MembershipTest {
                 user,
                 mapOf(),
                 null,
+                null,
+                null,
                 null
             )
         assertNull(membership.getUnreadMessagesCount().await())
@@ -68,6 +72,8 @@ class MembershipTest {
                 channel,
                 user,
                 mapOf("lastReadMessageTimetoken" to lastMessageTimetoken),
+                null,
+                null,
                 null,
                 null
             )
