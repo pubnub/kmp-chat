@@ -105,13 +105,13 @@ data class UserImpl(
             sort = sort,
             include = MembershipInclude(
                 includeCustom = true,
-                includeStatus = false,
-                includeType = false,
+                includeStatus = true,
+                includeType = true,
                 includeTotalCount = true,
                 includeChannel = true,
                 includeChannelCustom = true,
                 includeChannelType = true,
-                includeChannelStatus = false
+                includeChannelStatus = true
             )
         ).then { pnChannelMembershipArrayResult ->
             MembershipsResponse(
@@ -209,13 +209,13 @@ data class UserImpl(
             sort = sort,
             include = MembershipInclude(
                 includeCustom = true,
-                includeStatus = false,
-                includeType = false,
+                includeStatus = true,
+                includeType = true,
                 includeTotalCount = true,
                 includeChannel = true,
                 includeChannelCustom = true,
                 includeChannelType = true,
-                includeChannelStatus = false
+                includeChannelStatus = true
             )
         )
     }

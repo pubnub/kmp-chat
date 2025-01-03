@@ -57,13 +57,13 @@ data class MembershipImpl(
                 channels = listOf(PNChannelMembership.Partial(channel.id, custom)),
                 include = MembershipInclude(
                     includeCustom = true,
-                    includeStatus = false,
-                    includeType = false,
+                    includeStatus = true,
+                    includeType = true,
                     includeTotalCount = true,
                     includeChannel = true,
                     includeChannelCustom = true,
                     includeChannelType = true,
-                    includeChannelStatus = false
+                    includeChannelStatus = true
                 ),
                 filter = filterThisChannel()
             ).then { pnChannelMembershipArrayResult ->
@@ -116,11 +116,11 @@ data class MembershipImpl(
             chat,
             channel,
             user,
-            update.custom?.value ?: custom,
+            update.custom.let { newCustom -> if (newCustom != null) newCustom.value else custom },
             update.updated,
             update.eTag,
-            update.status?.value,
-            update.type?.value
+            update.status.let { newStatus -> if (newStatus != null) newStatus.value else status },
+            update.type.let { newType -> if (newType != null) newType.value else type }
         )
     }
 
