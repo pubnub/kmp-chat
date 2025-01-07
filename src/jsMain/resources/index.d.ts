@@ -1,18 +1,18 @@
 /// <reference types="pubnub" />
 import PubNub from "pubnub";
-import { GetMembershipsParametersv2, GetChannelMembersParameters, ObjectCustom, SetMembershipsParameters, ChannelMetadataObject, PublishParameters, SendFileParameters } from "pubnub";
+import { AppContext, Publish, FileSharing, Signal, Subscription, History } from "pubnub";
 type MembershipFields = Pick<Membership, "channel" | "user" | "custom" | "updated" | "eTag" | "status" | "type">;
 declare class Membership {
     private chat;
     readonly channel: Channel;
     readonly user: User;
-    readonly custom: ObjectCustom | null | undefined;
+    readonly custom?: AppContext.CustomData | null;
     readonly updated: string;
     readonly eTag: string;
     readonly status?: string;
     readonly type?: string;
     update({ custom }: {
-        custom: ObjectCustom;
+        custom: AppContext.CustomData;
     }): Promise<Membership>;
     /*
     * Updates
@@ -35,7 +35,7 @@ declare class User {
     readonly externalId?: string;
     readonly profileUrl?: string;
     readonly email?: string;
-    readonly custom?: ObjectCustom;
+    readonly custom?: AppContext.CustomData;
     readonly status?: string;
     readonly type?: string;
     readonly updated?: string;
@@ -59,7 +59,7 @@ declare class User {
     /*
     * Memberships
     */
-    getMemberships(params?: Omit<GetMembershipsParametersv2, "include" | "uuid">): Promise<{
+    getMemberships(params?: Omit<AppContext.GetMembershipsParameters, "include" | "uuid">): Promise<{
         page: {
             next: string | undefined;
             prev: string | undefined;
@@ -81,7 +81,7 @@ declare class User {
         mute: boolean;
         reason: string | number | boolean | undefined;
     }>;
-    getChannelsRestrictions(params?: Pick<PubNub.GetChannelMembersParameters, "limit" | "page" | "sort">): Promise<{
+    getChannelsRestrictions(params?: Pick<AppContext.GetMembersParameters, "limit" | "page" | "sort">): Promise<{
         page: {
             next: string | undefined;
             prev: string | undefined;
@@ -99,7 +99,7 @@ declare class User {
     * Other
     */
     /** @deprecated */
-    DEPRECATED_report(reason: string): Promise<PubNub.SignalResponse>;
+    DEPRECATED_report(reason: string): Promise<Signal.SignalResponse>;
 }
 type EventFields<T extends EventType> = Pick<Event<T>, "timetoken" | "type" | "payload" | "channelId" | "userId">;
 declare class Event<T extends EventType> {
@@ -243,26 +243,22 @@ type MessageReferencedChannels = {
         name: string;
     };
 };
-type MessageDraftOptions = Omit<PublishParameters, "message" | "channel">;
-type SendTextOptionParams = Omit<PublishParameters, "message" | "channel"> & {
+type MessageDraftOptions = Omit<Publish.PublishParameters, "message" | "channel">;
+type SendTextOptionParams = Omit<Publish.PublishParameters, "message" | "channel"> & {
     mentionedUsers?: MessageMentionedUsers;
     referencedChannels?: MessageReferencedChannels;
     textLinks?: TextLink[];
     quotedMessage?: Message;
-    files?: FileList | File[] | SendFileParameters["file"][];
+    files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
 };
-type EnhancedMessageEvent = PubNub.MessageEvent & {
-    userMetadata?: {
-        [key: string]: any;
-    };
-};
-type MessageDTOParams = PubNub.FetchMessagesResponse["channels"]["channel"][0] | EnhancedMessageEvent;
+type EnhancedMessageEvent = Subscription.Message;
+type MessageDTOParams = History.FetchMessagesForChannelsResponse['channels'][string][number] | History.FetchMessagesWithActionsResponse['channels'][string][number] | EnhancedMessageEvent;
 type ThreadMessageDTOParams = MessageDTOParams & {
     parentChannelId: string;
 };
 type MembershipResponse = Awaited<ReturnType<User["getMemberships"]>>;
 type OptionalAllBut<T, K extends keyof T> = Partial<T> & Pick<T, K>;
-type ChannelDTOParams = OptionalAllBut<ChannelMetadataObject<ObjectCustom>, "id"> & {
+type ChannelDTOParams = OptionalAllBut<AppContext.ChannelMetadataObject<AppContext.CustomData>, "id"> & {
     status?: string | null;
     type?: ChannelType | null | string;
 };
@@ -396,11 +392,11 @@ declare class Message {
     /*
     * Other
     */
-    forward(channelId: string): Promise<PubNub.PublishResponse>;
+    forward(channelId: string): Promise<Publish.PublishResponse>;
     pin(): Promise<void>;
     /** @deprecated */
-    DEPRECATED_report(reason: string): Promise<PubNub.SignalResponse>;
-    report(reason: string): Promise<PubNub.SignalResponse>;
+    DEPRECATED_report(reason: string): Promise<Signal.SignalResponse>;
+    report(reason: string): Promise<Signal.SignalResponse>;
     /**
      * Threads
      */
@@ -429,13 +425,13 @@ export declare class MessageDraftV2 {
     get value(): string;
     quotedMessage: Message | undefined;
     readonly config: MessageDraftConfig;
-    files?: FileList | File[] | SendFileParameters["file"][];
+    files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
     addQuote(message: Message): void;
     removeQuote(): void;
     addLinkedText(params: AddLinkedTextParams): void;
     removeLinkedText(positionInInput: number): void;
     getMessagePreview(): MixedTextTypedElement[];
-    send(params?: MessageDraftOptions): Promise<PubNub.PublishResponse>;
+    send(params?: MessageDraftOptions): Promise<Publish.PublishResponse>;
     addChangeListener(listener: (p0: MessageDraftState) => void): void;
     removeChangeListener(listener: (p0: MessageDraftState) => void): void;
     insertText(offset: number, text: string): void;
@@ -465,7 +461,7 @@ declare class MessageDraft {
     value: string;
     quotedMessage: Message | undefined;
     readonly config: MessageDraftConfig;
-    files?: FileList | File[] | SendFileParameters["file"][];
+    files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
     onChange(text: string): Promise<{
         users: {
             nameOccurrenceIndex: number;
@@ -499,7 +495,7 @@ declare class Channel {
     protected chat: Chat;
     readonly id: string;
     readonly name?: string;
-    readonly custom?: ObjectCustom;
+    readonly custom?: AppContext.CustomData;
     readonly description?: string;
     readonly updated?: string;
     readonly status?: string;
@@ -515,9 +511,9 @@ declare class Channel {
     static streamUpdatesOn(channels: Channel[], callback: (channels: Channel[]) => unknown): () => void;
     streamUpdates(callback: (channel: Channel) => unknown): () => void;
     sendText(text: string, options?: SendTextOptionParams): Promise<unknown>;
-    forwardMessage(message: Message): Promise<PubNub.PublishResponse>;
-    startTyping(): Promise<PubNub.SignalResponse | undefined>;
-    stopTyping(): Promise<PubNub.SignalResponse | undefined>;
+    forwardMessage(message: Message): Promise<Publish.PublishResponse>;
+    startTyping(): Promise<Signal.SignalResponse | undefined>;
+    stopTyping(): Promise<Signal.SignalResponse | undefined>;
     getTyping(callback: (typingUserIds: string[]) => unknown): () => void;
     /*
     * Streaming messages
@@ -541,14 +537,14 @@ declare class Channel {
         isMore: boolean;
     }>;
     getMessage(timetoken: string): Promise<Message>;
-    join(callback: (message: Message) => void, params?: Omit<SetMembershipsParameters<ObjectCustom>, "channels" | "include" | "filter"> & {
-        custom?: ObjectCustom;
+    join(callback: (message: Message) => void, params?: Omit<AppContext.SetMembershipsParameters<AppContext.CustomData>, "channels" | "include" | "filter"> & {
+        custom?: AppContext.CustomData;
     }): Promise<{
         membership: Membership;
         disconnect: () => void;
     }>;
     leave(): Promise<boolean>;
-    getMembers(params?: Omit<GetChannelMembersParameters, "channel" | "include">): Promise<{
+    getMembers(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<{
         page: {
             next: string | undefined;
             prev: string | undefined;
@@ -572,7 +568,7 @@ declare class Channel {
     streamReadReceipts(callback: (receipts: {
         [key: string]: string[];
     }) => unknown): Promise<() => void>;
-    getFiles(params?: Omit<PubNub.ListFilesParameters, "channel">): Promise<{
+    getFiles(params?: Omit<FileSharing.ListFilesParameters, "channel">): Promise<{
         files: {
             name: string;
             id: string;
@@ -584,7 +580,7 @@ declare class Channel {
     deleteFile(params: {
         id: string;
         name: string;
-    }): Promise<PubNub.DeleteFileResponse>;
+    }): Promise<FileSharing.DeleteFileResponse>;
     /**
      * Moderation restrictions
      */
@@ -598,7 +594,7 @@ declare class Channel {
         mute: boolean;
         reason: string | number | boolean | undefined;
     }>;
-    getUsersRestrictions(params?: Pick<PubNub.GetChannelMembersParameters, "limit" | "page" | "sort">): Promise<{
+    getUsersRestrictions(params?: Pick<AppContext.GetMembersParameters, "limit" | "page" | "sort">): Promise<{
         page: {
             next: string | undefined;
             prev: string | undefined;
@@ -652,13 +648,13 @@ type ChatConfig = {
     authKey?: string;
     syncMutedUsers?: boolean;
 };
-type ChatConstructor = Partial<ChatConfig> & PubNub.PubnubConfig;
+type ChatConstructor = Partial<ChatConfig> & PubNub.PubNubConfiguration;
 declare class Chat {
     readonly sdk: PubNub;
     readonly config: ChatConfig;
     private user;
     static init(params: ChatConstructor): Promise<Chat>;
-    emitEvent(event: EmitEventParams): Promise<PubNub.SignalResponse>;
+    emitEvent(event: EmitEventParams): Promise<Signal.SignalResponse>;
     listenForEvents<T extends EventType>(event: GenericEventParams<T> & {
         callback: (event: Event<T>) => unknown;
     }): () => void;
@@ -683,7 +679,7 @@ declare class Chat {
     createUser(id: string, data: Omit<UserFields, "id">): Promise<User>;
     updateUser(id: string, data: Omit<UserFields, "id">): Promise<User>;
     deleteUser(id: string, params?: DeleteParameters): Promise<true | User>;
-    getUsers(params?: Omit<PubNub.GetAllMetadataParameters, "include">): Promise<{
+    getUsers(params?: Omit<AppContext.GetAllMetadataParameters<AppContext.UUIDMetadataObject<AppContext.CustomData>>, "include">): Promise<{
         users: User[];
         page: {
             next: string | undefined;
@@ -696,7 +692,7 @@ declare class Chat {
      */
     getChannel(id: string): Promise<Channel | null>;
     updateChannel(id: string, data: Omit<ChannelFields, "id">): Promise<Channel>;
-    getChannels(params?: Omit<PubNub.GetAllMetadataParameters, "include">): Promise<{
+    getChannels(params?: Omit<AppContext.GetAllMetadataParameters<AppContext.ChannelMetadataObject<AppContext.CustomData>>, "include">): Promise<{
         channels: Channel[];
         page: {
             next: string | undefined;
@@ -710,7 +706,7 @@ declare class Chat {
      */
     createPublicConversation({ channelId, channelData }?: {
         channelId?: string;
-        channelData?: PubNub.ChannelMetadata<PubNub.ObjectCustom>;
+        channelData?: AppContext.SetChannelMetadataParameters<AppContext.CustomData>;
     }): Promise<Channel>;
     /**
      *  Presence
@@ -721,9 +717,9 @@ declare class Chat {
     createDirectConversation({ user, channelId, channelData, membershipData }: {
         user: User;
         channelId?: string;
-        channelData?: PubNub.ChannelMetadata<PubNub.ObjectCustom>;
-        membershipData?: Omit<PubNub.SetMembershipsParameters<PubNub.ObjectCustom>, "channels" | "include" | "filter"> & {
-            custom?: PubNub.ObjectCustom;
+        channelData?: AppContext.SetChannelMetadataParameters<AppContext.CustomData>;
+        membershipData?: Omit<AppContext.SetMembershipsParameters<AppContext.CustomData>, "channels" | "include" | "filter"> & {
+            custom?: AppContext.CustomData;
         };
     }): Promise<{
         channel: Channel;
@@ -733,9 +729,9 @@ declare class Chat {
     createGroupConversation({ users, channelId, channelData, membershipData }: {
         users: User[];
         channelId?: string;
-        channelData?: PubNub.ChannelMetadata<PubNub.ObjectCustom>;
-        membershipData?: Omit<PubNub.SetMembershipsParameters<PubNub.ObjectCustom>, "channels" | "include" | "filter"> & {
-            custom?: PubNub.ObjectCustom;
+        channelData?: AppContext.SetChannelMetadataParameters<AppContext.CustomData>;
+        membershipData?: Omit<AppContext.SetMembershipsParameters<AppContext.CustomData>, "channels" | "include" | "filter"> & {
+            custom?: AppContext.CustomData;
         };
     }): Promise<{
         channel: Channel;
@@ -761,12 +757,12 @@ declare class Chat {
         enhancedMentionsData: UserMentionData[];
         isMore: boolean;
     }>;
-    getUnreadMessagesCounts(params?: Omit<GetMembershipsParametersv2, "include">): Promise<{
+    getUnreadMessagesCounts(params?: Omit<AppContext.GetMembershipsParameters, "include">): Promise<{
         channel: Channel;
         membership: Membership;
         count: number;
     }[]>;
-    markAllMessagesAsRead(params?: Omit<GetMembershipsParametersv2, "include">): Promise<{
+    markAllMessagesAsRead(params?: Omit<AppContext.GetMembershipsParameters, "include">): Promise<{
         page: {
             next: string | undefined;
             prev: string | undefined;
@@ -829,8 +825,8 @@ declare class QuotedMessage {
 
 declare class MutedUsersManager {
     get mutedUsers(): string[];
-    async muteUser(userId: string);
-    async unmuteUser(userId: string);
+    muteUser(userId: string): Promise<any>;
+    unmuteUser(userId: string): Promise<any>;
 }
 
 declare const MESSAGE_THREAD_ID_PREFIX = "PUBNUB_INTERNAL_THREAD";

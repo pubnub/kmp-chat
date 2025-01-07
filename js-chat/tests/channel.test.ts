@@ -1261,4 +1261,12 @@ describe("Channel test", () => {
         })
       )
     })
+
+  test.only("use PubNub SDK types from Chat SDK", async () => {
+    let channelMetadata = await chat.sdk.objects.getChannelMetadata({
+      channel: channel.id,
+      include: { customFields: true }
+    })
+    expect(channelMetadata).toBeDefined()
+  })
 })
