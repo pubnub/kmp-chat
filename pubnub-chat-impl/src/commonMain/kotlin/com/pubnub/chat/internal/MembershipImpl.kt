@@ -116,11 +116,29 @@ data class MembershipImpl(
             chat,
             channel,
             user,
-            update.custom.let { newCustom -> if (newCustom != null) newCustom.value else custom },
+            update.custom.let { newCustom ->
+                if (newCustom != null) {
+                    newCustom.value
+                } else {
+                    custom
+                }
+            },
             update.updated,
             update.eTag,
-            update.status.let { newStatus -> if (newStatus != null) newStatus.value else status },
-            update.type.let { newType -> if (newType != null) newType.value else type }
+            update.status.let { newStatus ->
+                if (newStatus != null) {
+                    newStatus.value
+                } else {
+                    status
+                }
+            },
+            update.type.let { newType ->
+                if (newType != null) {
+                    newType.value
+                } else {
+                    type
+                }
+            }
         )
     }
 

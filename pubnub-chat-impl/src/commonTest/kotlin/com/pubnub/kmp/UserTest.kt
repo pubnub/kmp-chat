@@ -252,9 +252,9 @@ class UserTest {
                 filter = expectedFilter,
                 sort = sort,
                 include = matching<MembershipInclude> {
-                    it.includeCustom && !it.includeStatus && !it.includeType && it.includeTotalCount &&
+                    it.includeCustom && it.includeStatus && it.includeType && it.includeTotalCount &&
                         it.includeChannel && it.includeChannelCustom && it.includeChannelType &&
-                        !it.includeChannelStatus
+                        it.includeChannelStatus
                 }
             )
         }
@@ -295,9 +295,9 @@ class UserTest {
                 filter = expectedFilter,
                 sort = sort,
                 include = matching<MembershipInclude> {
-                    it.includeCustom && !it.includeStatus && !it.includeType && it.includeTotalCount &&
+                    it.includeCustom && it.includeStatus && it.includeType && it.includeTotalCount &&
                         it.includeChannel && it.includeChannelCustom && it.includeChannelType &&
-                        !it.includeChannelStatus
+                        it.includeChannelStatus
                 }
             )
         }
@@ -334,9 +334,9 @@ class UserTest {
                 filter = expectedFilter,
                 sort = sort,
                 include = matching<MembershipInclude> {
-                    it.includeCustom && !it.includeStatus && !it.includeType && it.includeTotalCount &&
+                    it.includeCustom && it.includeStatus && it.includeType && it.includeTotalCount &&
                         it.includeChannel && it.includeChannelCustom &&
-                        it.includeChannelType && !it.includeChannelStatus
+                        it.includeChannelType && it.includeChannelStatus
                 }
             )
         }

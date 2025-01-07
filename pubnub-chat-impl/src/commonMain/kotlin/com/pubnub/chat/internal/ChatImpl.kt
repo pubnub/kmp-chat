@@ -746,7 +746,7 @@ class ChatImpl(
                         )
                     )
                     val uuids = listOf(PNMember.Partial(uuidId = userId, custom = custom, null))
-                    pubNub.setChannelMembers(channel = channel, uuids = uuids)
+                    pubNub.setChannelMembers(channel = channel, users = uuids)
                         .alsoAsync { _ ->
                             emitEvent(
                                 channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
