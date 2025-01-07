@@ -333,7 +333,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     fun shouldReturnUserSuggestions_whenNoDataInCacheButUserAvailableInChat() = runTest {
         // given
         val userName = "userName_${someUser.id}"
-        val user: User = chat.createUser(id = someUser.id, name = userName).await()
+        val user = chat.createUser(id = someUser.id, name = userName).await()
         channel01.invite(someUser).await()
 
         // when no data in cache
