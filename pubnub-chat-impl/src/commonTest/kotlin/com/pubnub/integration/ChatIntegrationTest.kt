@@ -196,7 +196,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val channelId02 = channel02.id
         val membership01: ChannelMembershipInput = PNChannelMembership.Partial(channelId01, custom)
         val membership02: ChannelMembershipInput = PNChannelMembership.Partial(channelId02)
-        chat.pubNub.setMemberships(channels = listOf(membership01, membership02), uuid = chat.currentUser.id, includeType = false).await()
+        chat.pubNub.setMemberships(channels = listOf(membership01, membership02), userId = chat.currentUser.id).await()
 
         // to each channel add two messages(we want to check if last message will be taken by fetchMessages with limit = 1)
         channel01.sendText("message01In$channelId01").await()
@@ -627,10 +627,10 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val unbanned = CompletableDeferred<Unit>()
         val restrictionBan = Restriction(userId = userId, channelId = channelId, ban = true, reason = "rude")
         val restrictionUnban = Restriction(userId = userId, channelId = channelId, ban = false, mute = false, reason = "ok")
-        pubnub.test(backgroundScope, checkAllEvents = false) {
+        pubnubPamServer.test(backgroundScope, checkAllEvents = false) {
             var removeListenerAndUnsubscribe: AutoCloseable? = null
-            pubnub.awaitSubscribe(channels = listOf(INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId)) {
-                removeListenerAndUnsubscribe = chat.listenForEvents(
+            pubnubPamServer.awaitSubscribe(channels = listOf(INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId)) {
+                removeListenerAndUnsubscribe = chatPamServer.listenForEvents(
                     type = EventContent.Moderation::class,
                     channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId
                 ) { event: Event<EventContent.Moderation> ->
@@ -643,9 +643,9 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
                 }
             }
 
-            chat.setRestrictions(restrictionBan).await()
+            chatPamServer.setRestrictions(restrictionBan).await()
             banned.await()
-            chat.setRestrictions(restrictionUnban).await()
+            chatPamServer.setRestrictions(restrictionUnban).await()
             unbanned.await()
 
             removeListenerAndUnsubscribe?.close()

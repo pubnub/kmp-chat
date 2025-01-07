@@ -20,7 +20,7 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
-import com.pubnub.api.models.consumer.objects.membership.PNChannelDetailsLevel
+import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
@@ -63,6 +63,7 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_FORWARD_MESSA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ID_IS_REQUIRED
+import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THERE_IS_NO_ACTION_TIMETOKEN_CORRESPONDING_TO_THE_THREAD
@@ -556,10 +557,16 @@ class ChatImpl(
             val hostMembershipFuture = pubNub.setMemberships(
                 listOf(PNChannelMembership.Partial(channel.id, membershipCustom)),
                 filter = "channel.id == '${channel.id}'",
-                includeCustom = true,
-                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-                includeCount = true,
-                includeType = true,
+                include = MembershipInclude(
+                    includeCustom = true,
+                    includeStatus = false,
+                    includeType = false,
+                    includeTotalCount = true,
+                    includeChannel = true,
+                    includeChannelCustom = true,
+                    includeChannelType = true,
+                    includeChannelStatus = false
+                ),
             )
             awaitAll(
                 hostMembershipFuture,
@@ -602,10 +609,16 @@ class ChatImpl(
             val hostMembershipFuture = pubNub.setMemberships(
                 listOf(PNChannelMembership.Partial(channel.id, membershipCustom)),
                 filter = "channel.id == '${channel.id}'",
-                includeCustom = true,
-                includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-                includeCount = true,
-                includeType = true,
+                include = MembershipInclude(
+                    includeCustom = true,
+                    includeStatus = false,
+                    includeType = false,
+                    includeTotalCount = true,
+                    includeChannel = true,
+                    includeChannelCustom = true,
+                    includeChannelType = true,
+                    includeChannelStatus = false
+                ),
             )
             awaitAll(
                 hostMembershipFuture,
@@ -699,6 +712,9 @@ class ChatImpl(
     override fun setRestrictions(
         restriction: Restriction
     ): PNFuture<Unit> {
+        if (this.pubNub.configuration.secretKey.isEmpty()) {
+            return log.logErrorAndReturnException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY).asFuture()
+        }
         val channel: String = INTERNAL_MODERATION_PREFIX + restriction.channelId
         val userId = restriction.userId
         return createChannel(channel).catch { exception ->
@@ -730,7 +746,7 @@ class ChatImpl(
                         )
                     )
                     val uuids = listOf(PNMember.Partial(uuidId = userId, custom = custom, null))
-                    pubNub.setChannelMembers(channel = channel, uuids = uuids)
+                    pubNub.setChannelMembers(channel = channel, users = uuids)
                         .alsoAsync { _ ->
                             emitEvent(
                                 channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
@@ -876,11 +892,17 @@ class ChatImpl(
                         pubNub.setMemberships(
                             channels = channelMembershipInputs,
                             filter = filterExpression,
-                            uuid = currentUser.id,
-                            includeCount = true,
-                            includeCustom = true,
-                            includeChannelDetails = PNChannelDetailsLevel.CHANNEL_WITH_CUSTOM,
-                            includeType = true
+                            userId = currentUser.id,
+                            include = MembershipInclude(
+                                includeCustom = true,
+                                includeStatus = false,
+                                includeType = false,
+                                includeTotalCount = true,
+                                includeChannel = true,
+                                includeChannelCustom = true,
+                                includeChannelType = true,
+                                includeChannelStatus = false
+                            ),
                         ).alsoAsync { _: PNChannelMembershipArrayResult ->
                             val emitEventFutures: List<PNFuture<PNPublishResult>> =
                                 relevantChannelIds.map { channelId: String ->
@@ -1162,7 +1184,11 @@ class ChatImpl(
                 customMetadataToSet[PINNED_MESSAGE_TIMETOKEN] = message.timetoken.toString()
                 customMetadataToSet[PINNED_MESSAGE_CHANNEL_ID] = message.channelId
             }
-            return pubNub.setChannelMetadata(channel.id, includeCustom = true, custom = createCustomObject(customMetadataToSet))
+            return pubNub.setChannelMetadata(
+                channel = channel.id,
+                includeCustom = true,
+                custom = createCustomObject(customMetadataToSet)
+            )
         }
 
         internal fun getThreadId(channelId: String, messageTimetoken: Long): String {

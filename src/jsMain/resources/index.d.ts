@@ -1,7 +1,7 @@
 /// <reference types="pubnub" />
 import PubNub from "pubnub";
 import { GetMembershipsParametersv2, GetChannelMembersParameters, ObjectCustom, SetMembershipsParameters, ChannelMetadataObject, PublishParameters, SendFileParameters } from "pubnub";
-type MembershipFields = Pick<Membership, "channel" | "user" | "custom" | "updated" | "eTag">;
+type MembershipFields = Pick<Membership, "channel" | "user" | "custom" | "updated" | "eTag" | "status" | "type">;
 declare class Membership {
     private chat;
     readonly channel: Channel;
@@ -9,6 +9,8 @@ declare class Membership {
     readonly custom: ObjectCustom | null | undefined;
     readonly updated: string;
     readonly eTag: string;
+    readonly status?: string;
+    readonly type?: string;
     update({ custom }: {
         custom: ObjectCustom;
     }): Promise<Membership>;

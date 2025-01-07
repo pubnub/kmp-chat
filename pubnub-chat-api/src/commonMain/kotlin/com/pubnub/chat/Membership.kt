@@ -40,6 +40,16 @@ interface Membership {
     val eTag: String?
 
     /**
+     * Status of a Membership
+     */
+    val status: String?
+
+    /**
+     * Type of a Membership
+     */
+    val type: String?
+
+    /**
      * Timetoken of the last message a user read on a given channel.
      */
     val lastReadMessageTimetoken: Long?

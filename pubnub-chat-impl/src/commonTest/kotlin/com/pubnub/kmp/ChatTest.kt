@@ -134,12 +134,22 @@ class ChatTest : BaseTest() {
 
     @BeforeTest
     fun setUp() {
-        pnConfiguration = createPNConfiguration(UserId(userId), subscribeKey, publishKey, authToken = null)
+        objectUnderTest = ChatImpl(setupConfiguration(withSecretKey = false), pubnub, timerManager = timerManager)
+    }
+
+    private fun setupConfiguration(withSecretKey: Boolean): ChatConfiguration {
+        pnConfiguration = if (withSecretKey) {
+            createPNConfiguration(UserId(userId), subscribeKey, publishKey, "secretKey", authToken = null)
+        } else {
+            createPNConfiguration(UserId(userId), subscribeKey, publishKey, authToken = null)
+        }
+
         every { pubnub.configuration } returns pnConfiguration
         chatConfig = ChatConfiguration(
             typingTimeout = 2000.milliseconds
         )
-        objectUnderTest = ChatImpl(chatConfig, pubnub, timerManager = timerManager)
+
+        return chatConfig
     }
 
     @Test
@@ -986,10 +996,7 @@ class ChatTest : BaseTest() {
                 any(),
                 any(),
                 any(),
-                any(),
-                any(),
-                any(),
-                any()
+                include = any(),
             )
         } returns getMembershipsEndpoint
         every { getMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
@@ -1298,10 +1305,7 @@ class ChatTest : BaseTest() {
                 any(),
                 any(),
                 any(),
-                any(),
-                any(),
-                any(),
-                any()
+                include = any(),
             )
         } returns getMembershipsEndpoint
         every { getMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
@@ -1325,6 +1329,8 @@ class ChatTest : BaseTest() {
 
     @Test
     fun shouldRemoveRestrictionWhenBanAndMuteIsFalse() {
+        objectUnderTest = ChatImpl(setupConfiguration(withSecretKey = true), pubnub, timerManager = timerManager)
+
         val restrictedUserId = userId
         val restrictedChannelId = channelId
         val ban = false
@@ -1387,7 +1393,28 @@ class ChatTest : BaseTest() {
     }
 
     @Test
+    fun shouldThrowExceptionWhenSecretKeyIsNotSet() {
+        val restriction = Restriction(
+            userId = "userId",
+            channelId = "channelId",
+            ban = true,
+            mute = true,
+            reason = "rude"
+        )
+
+        objectUnderTest.setRestrictions(restriction).async { result: Result<Unit> ->
+            assertTrue(result.isFailure)
+            assertEquals(
+                "Moderation restrictions can only be set by clients initialized with a Secret Key.",
+                result.exceptionOrNull()?.message
+            )
+        }
+    }
+
+    @Test
     fun shouldAddRestrictionWhenBanIsTrue() {
+        objectUnderTest = ChatImpl(setupConfiguration(withSecretKey = true), pubnub, timerManager = timerManager)
+
         val restrictedUserId = userId
         val restrictedChannelId = channelId
         val ban = true
@@ -1420,7 +1447,8 @@ class ChatTest : BaseTest() {
         every {
             pubnub.setChannelMembers(
                 channel = capture(channelIdSlot),
-                uuids = capture(userIdsSlot)
+                users = capture(userIdsSlot),
+                include = any()
             )
         } returns manageChannelMembersEndpoint
         every { manageChannelMembersEndpoint.async(any()) } calls { (callback: Consumer<Result<PNMemberArrayResult>>) ->

@@ -16,6 +16,8 @@ class MembershipJs internal constructor(internal val membership: Membership, int
     val custom get() = membership.custom?.toJsMap()
     val updated by membership::updated
     val eTag by membership::eTag
+    val status by membership::status
+    val type by membership::type
 
     val lastReadMessageTimetoken: String? get() = membership.lastReadMessageTimetoken?.toString()
 
@@ -56,6 +58,8 @@ class MembershipJs internal constructor(internal val membership: Membership, int
             "custom" to custom,
             "updated" to updated,
             "eTag" to eTag,
+            "status" to status,
+            "type" to type,
             "lastReadMessageTimetoken" to lastReadMessageTimetoken
         )
     }
