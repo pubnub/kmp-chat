@@ -11,6 +11,7 @@ import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
+import com.pubnub.chat.mutelist.MutedUsers
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.CreateDirectConversationResult
@@ -51,6 +52,17 @@ interface Chat {
      * [User] object representing current user.
      */
     val currentUser: User
+
+    /**
+     * An object for manipulating the list of muted users.
+     *
+     * The list is local to this instance of Chat (it is not persisted anywhere) unless
+     * [ChatConfiguration.syncMutedUsers] is enabled, in which case it will be synced using App Context.
+     *
+     * @see ChatConfiguration.syncMutedUsers
+     * @see MutedUsers
+     */
+    val mutedUsers: MutedUsers
 
     /**
      * Creates a new [User] with a unique User ID.
