@@ -1,11 +1,16 @@
 ---
 name: pubnub-js-chat
-version: 0.9.6
+version: 0.10.0
 scm: github.com/pubnub/js-chat
 schema: 1
 files:
   - lib/dist/index.js
 changelog:
+  - date: 2025-01-08
+    version: 0.10.0
+    changes:
+      - type: feature
+        text: "Added status and type to Membership."
   - date: 2025-01-02
     version: 0.9.6
     changes:
