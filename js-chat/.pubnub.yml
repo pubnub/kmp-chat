@@ -1,4 +1,3 @@
----
 name: pubnub-js-chat
 version: 0.10.0
 scm: github.com/pubnub/js-chat
@@ -96,7 +95,7 @@ changelog:
     version: v0.7.1
     changes:
       - type: feature
-        text: "Extend "filter" property for getMemberships."
+        text: "Extend filter property for getMemberships."
   - date: 2024-05-22
     version: v0.7.0
     changes:
