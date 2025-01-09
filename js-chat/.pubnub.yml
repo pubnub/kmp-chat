@@ -159,7 +159,7 @@ changelog:
       - type: feature
         text: "New type of software license."
       - type: feature
-        text: "New "invite" custom event emitted when users are added to channels."
+        text: "New `invite` custom event emitted when users are added to channels."
       - type: feature
         text: "Auto generation of channel IDs in every type of channel creation method, that can be bypassed."
       - type: feature
