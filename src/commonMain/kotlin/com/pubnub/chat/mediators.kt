@@ -6,6 +6,7 @@ import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.message.BaseMessage
+import com.pubnub.chat.types.QuotedMessage
 
 /**
  * Receive updates when specific messages and related message reactions are added, edited, or removed.
@@ -100,5 +101,9 @@ fun Channel.createMessageDraft(
  * representing plain text or additional information such as user mentions, channel references and links.
  */
 fun Message.getMessageElements(): List<MessageElement> {
+    return MessageDraftImpl.getMessageElements(text)
+}
+
+fun QuotedMessage.getMessageElements(): List<MessageElement> {
     return MessageDraftImpl.getMessageElements(text)
 }
