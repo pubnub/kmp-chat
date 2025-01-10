@@ -16,38 +16,47 @@ import com.pubnub.test.await
 import com.pubnub.test.randomString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 
 internal const val CHANNEL_ID_OF_PARENT_MESSAGE_PREFIX = "channelIdOfParentMessage_"
 internal const val THREAD_CHANNEL_ID_PREFIX = "threadChannel_id_"
 
 abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
-    lateinit var chat: ChatImpl
-    lateinit var chat02: ChatImpl
-    lateinit var chatPamServer: ChatImpl
-    lateinit var chatPamClient: ChatImpl
-    lateinit var channel01: Channel // this simulates first user in channel01
-    lateinit var channel01Chat02: Channel // this simulates second user in channel01
-    lateinit var channel02: Channel
-    lateinit var threadChannel: ThreadChannel
-    lateinit var channelPam: Channel
-    lateinit var someUser: User
-    lateinit var someUser02: User
-    lateinit var userPamServer: User
-    lateinit var userPamClient: User
+    private val channel01Id = randomString() + "!_=-@"
+    private val usersToRemove = mutableSetOf<String>()
+    private val usersToRemovePam = mutableSetOf<String>()
+    private val channelsToRemove = mutableSetOf<String>()
+    private val channelsToRemovePam = mutableSetOf<String>()
 
-    @BeforeTest
-    override fun before() {
-        super.before()
-        chat = ChatImpl(ChatConfiguration(), pubnub)
-        chat02 = ChatImpl(ChatConfiguration(), pubnub02)
-        chatPamServer = ChatImpl(ChatConfiguration(), pubnubPamServer)
-        chatPamClient = ChatImpl(ChatConfiguration(), pubnubPamClient)
-        val channel01Id = randomString() + "!_=-@"
-        channel01 = ChannelImpl(
+    fun createChat(action: () -> ChatImpl): ChatImpl {
+        return action().also {
+            usersToRemove.add(it.currentUser.id)
+        }
+    }
+
+    fun createPamChat(action: () -> ChatImpl): ChatImpl {
+        return action().also {
+            usersToRemovePam.add(it.currentUser.id)
+        }
+    }
+
+    val chat: ChatImpl by lazy(LazyThreadSafetyMode.NONE) {
+        ChatImpl(ChatConfiguration(), pubnub).also { usersToRemove.add(it.currentUser.id) }
+    }
+    val chat02: ChatImpl by lazy(LazyThreadSafetyMode.NONE) {
+        ChatImpl(ChatConfiguration(), pubnub02).also { usersToRemove.add(it.currentUser.id) }
+    }
+    val chatPamServer: ChatImpl by lazy(LazyThreadSafetyMode.NONE) {
+        ChatImpl(ChatConfiguration(), pubnubPamServer).also { usersToRemovePam.add(it.currentUser.id) }
+    }
+    val chatPamClient: ChatImpl by lazy(LazyThreadSafetyMode.NONE) {
+        ChatImpl(ChatConfiguration(), pubnubPamClient).also { usersToRemovePam.add(it.currentUser.id) }
+    }
+    val channel01: Channel by lazy(LazyThreadSafetyMode.NONE) {
+        ChannelImpl(
             chat = chat,
             id = channel01Id,
             name = randomString(),
@@ -56,8 +65,10 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
             updated = randomString(),
             status = randomString(),
             type = ChannelType.DIRECT
-        )
-        channel01Chat02 = ChannelImpl(
+        ).also { channelsToRemove.add(it.id) }
+    }
+    val channel01Chat02: Channel by lazy(LazyThreadSafetyMode.NONE) {
+        ChannelImpl(
             chat = chat02,
             id = channel01Id,
             name = randomString(),
@@ -66,8 +77,10 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
             updated = randomString(),
             status = randomString(),
             type = ChannelType.DIRECT
-        )
-        channel02 = ChannelImpl(
+        ).also { channelsToRemove.add(it.id) }
+    }
+    val channel02: Channel by lazy(LazyThreadSafetyMode.NONE) {
+        ChannelImpl(
             chat = chat,
             id = randomString() + "!_=-@",
             name = randomString(),
@@ -76,8 +89,10 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
             updated = randomString(),
             status = randomString(),
             type = ChannelType.DIRECT
-        )
-        threadChannel = ThreadChannelImpl(
+        ).also { channelsToRemove.add(it.id) }
+    }
+    val threadChannel: ThreadChannel by lazy(LazyThreadSafetyMode.NONE) {
+        ThreadChannelImpl(
             parentMessage = MessageImpl(
                 chat = chat,
                 timetoken = 123345,
@@ -97,7 +112,9 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
             status = randomString(),
             type = ChannelType.DIRECT,
         )
-        channelPam = ChannelImpl(
+    }
+    val channelPam: Channel by lazy(LazyThreadSafetyMode.NONE) {
+        ChannelImpl(
             chat = chatPamServer,
             id = randomString() + "!_=-@",
             name = randomString(),
@@ -106,27 +123,38 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
             updated = randomString(),
             status = randomString(),
             type = ChannelType.DIRECT
-        )
-        // user has chat and chat has user they should be the same?
-        someUser = chat.currentUser
-        someUser02 = chat02.currentUser
-        userPamServer = chatPamServer.currentUser
-        userPamClient = chatPamClient.currentUser
+        ).also { channelsToRemovePam.add(it.id) }
     }
+    val someUser: User by lazy(LazyThreadSafetyMode.NONE) { chat.currentUser }
+    val someUser02: User by lazy(LazyThreadSafetyMode.NONE) { chat02.currentUser }
+    val userPamServer: User by lazy(LazyThreadSafetyMode.NONE) { chatPamServer.currentUser }
+    val userPamClient: User by lazy(LazyThreadSafetyMode.NONE) { chatPamClient.currentUser }
 
     @AfterTest
     fun afterTest() = runTest {
         try {
-            pubnub.removeUUIDMetadata(someUser.id).await()
-            if (PLATFORM != "iOS") {
-                pubnubPamServer.removeUUIDMetadata(userPamServer.id).await()
-                pubnubPamServer.removeUUIDMetadata(userPamClient.id).await()
+            usersToRemove.forEach {
+                launch {
+                    pubnub.removeUUIDMetadata(it).await()
+                }
             }
-            pubnub.removeChannelMetadata(channel01.id).await()
-            pubnub.removeChannelMetadata(channel01Chat02.id).await()
-            pubnub.removeChannelMetadata(channel02.id).await()
-            pubnub.removeChannelMetadata(threadChannel.id).await()
-            pubnub.removeChannelMetadata(channelPam.id).await()
+            if (PLATFORM != "iOS") {
+                usersToRemovePam.forEach {
+                    launch {
+                        pubnubPamServer.removeUUIDMetadata(it).await()
+                    }
+                }
+            }
+            channelsToRemove.forEach {
+                launch {
+                    pubnub.removeChannelMetadata(it).await()
+                }
+            }
+            channelsToRemovePam.forEach {
+                launch {
+                    pubnubPamServer.removeChannelMetadata(it).await()
+                }
+            }
         } finally {
             chat.destroy()
             chat02.destroy()

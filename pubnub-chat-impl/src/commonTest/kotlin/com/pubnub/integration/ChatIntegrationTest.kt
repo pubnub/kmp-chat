@@ -67,7 +67,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun test_storeUserActivityInterval_and_storeUserActivityTimestamps() = runTest {
-        chat = ChatImpl(ChatConfiguration(storeUserActivityInterval = 100.seconds, storeUserActivityTimestamps = true), pubnub)
+        val chat =
+            createChat { ChatImpl(ChatConfiguration(storeUserActivityInterval = 100.seconds, storeUserActivityTimestamps = true), pubnub) }
         chat.initialize().await()
 
         val user: User = chat.getUser(chat.currentUser.id).await()!!
@@ -103,7 +104,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         ).await().token
 
         pubnubPamClient.setToken(token)
-        chatPamClient = ChatImpl(ChatConfiguration(), pubnubPamClient)
+        val chatPamClient = createPamChat { ChatImpl(ChatConfiguration(), pubnubPamClient) }
         val initializeChat = chatPamClient.initialize().await()
 
         assertEquals(token, initializeChat.pubNub.getToken())
@@ -426,7 +427,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
                 apnsEnvironment = PNPushEnvironment.PRODUCTION
             )
         )
-        chat = ChatImpl(chatConfig, pubnub)
+        val chat = createChat { ChatImpl(chatConfig, pubnub) }
 
         // remove all pushNotificationChannels
         chat.unregisterAllPushChannels().await()
