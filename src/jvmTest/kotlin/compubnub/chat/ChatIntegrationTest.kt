@@ -70,8 +70,22 @@ class ChatIntegrationTest : BaseIntegrationTest() {
         val serverChat = Chat.init(ChatConfiguration(), configPamServer).await()
         val token = serverChat.pubNub.grantToken(
             ttl = 1,
-            channels = listOf(ChannelGrant.name(get = true, name = "anyChannelForNow")),
-            uuids = listOf(UUIDGrant.id(id = clientUserId, get = true, update = true)) // this is important
+            channels = listOf(
+                ChannelGrant.name(get = true, name = "anyChannelForNow"),
+                ChannelGrant.name(
+                    name = "PN_PRV.$clientUserId.mute1",
+                    read = true,
+                )
+            ),
+            uuids = listOf(
+                UUIDGrant.id(id = clientUserId, get = true, update = true),
+                UUIDGrant.id(
+                    id = "PN_PRV.$clientUserId.mute1",
+                    update = true,
+                    delete = true,
+                    get = true,
+                )
+            ) // this is important
         ).await().token
 
         val configPamClient: PNConfiguration = PNConfiguration.builder(UserId(clientUserId), Keys.pamSubKey) {
