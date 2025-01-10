@@ -9,6 +9,7 @@ import com.pubnub.api.models.consumer.access_manager.v3.UUIDGrant
 import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
 import com.pubnub.chat.User
@@ -171,7 +172,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             chat.currentUser.asImpl().copy(updated = null, lastActiveTimestamp = null),
             result.hostMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null)
         )
-        assertEquals(someUser, result.inviteeMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(someUser, result.inviteeMembership.user.asImpl())
 
         assertEquals(result.channel, result.hostMembership.channel)
         assertEquals(result.channel, result.inviteeMembership.channel)
@@ -434,7 +435,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         delayInMillis(1500)
 
         // list pushNotification
-        assertPushChannels(0)
+        assertPushChannels(chat, 0)
 
         // register 3 channels
         val channel01 = "channel01"
@@ -444,21 +445,21 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         delayInMillis(1500)
 
         // list pushNotification
-        assertPushChannels(3)
+        assertPushChannels(chat, 3)
 
         // remove 1 channel
         chat.unregisterPushChannels(listOf(channel03)).await()
         delayInMillis(1500)
 
         // list pushNotification
-        assertPushChannels(2)
+        assertPushChannels(chat, 2)
 
         // removeAll
         chat.unregisterAllPushChannels().await()
         delayInMillis(1500)
 
         // list pushNotification
-        assertPushChannels(0)
+        assertPushChannels(chat, 0)
     }
 
     @Test
@@ -667,7 +668,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         }
     }
 
-    private suspend fun assertPushChannels(expectedNumberOfChannels: Int) {
+    private suspend fun assertPushChannels(chat: Chat, expectedNumberOfChannels: Int) {
         val pushChannels = chat.getPushChannels().await()
         assertEquals(expectedNumberOfChannels, pushChannels.size)
     }
