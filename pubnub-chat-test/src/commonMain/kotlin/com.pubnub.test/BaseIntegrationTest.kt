@@ -208,6 +208,12 @@ class PubNubTest(
             pubNub.removeListener(statusListener)
         }
         customSubscriptionBlock()
+        if (getSubscribedChannels().containsAll(channels) && getSubscribedChannelGroups().containsAll(
+                channelGroups
+            )
+        ) {
+            cont.resume(Unit)
+        }
     }
 
     suspend fun PubNub.awaitUnsubscribe(
