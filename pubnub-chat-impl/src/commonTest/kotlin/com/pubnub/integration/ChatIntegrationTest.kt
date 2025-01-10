@@ -84,8 +84,22 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         pubnubPamClient = createPubNub(configPamClient)
         val token = chatPamServer.pubNub.grantToken(
             ttl = 1,
-            channels = listOf(ChannelGrant.name(get = true, name = "any", read = true, write = true, manage = true)), // get = true
-            uuids = listOf(UUIDGrant.id(id = pubnubPamClient.configuration.userId.value, get = true, update = true)) // this is important
+            channels = listOf(
+                ChannelGrant.name(get = true, name = "any", read = true, write = true, manage = true),
+                ChannelGrant.name(
+                    name = "PN_PRV.${pubnubPamClient.configuration.userId.value}.mute1",
+                    read = true,
+                )
+            ), // get = true
+            uuids = listOf(
+                UUIDGrant.id(id = pubnubPamClient.configuration.userId.value, get = true, update = true),
+                UUIDGrant.id(
+                    id = "PN_PRV.${pubnubPamClient.configuration.userId.value}.mute1",
+                    update = true,
+                    delete = true,
+                    get = true,
+                )
+            ) // this is important
         ).await().token
 
         pubnubPamClient.setToken(token)
