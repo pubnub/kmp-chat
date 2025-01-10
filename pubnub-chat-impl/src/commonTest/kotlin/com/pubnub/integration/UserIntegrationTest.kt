@@ -163,8 +163,8 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         val chatConfig = ChatConfiguration(
             storeUserActivityTimestamps = true
         )
-        val chatNew: Chat = ChatImpl(chatConfig, pubnub).initialize().await()
-        someUser = chatNew.currentUser
+        val chatNew: Chat = createChat { ChatImpl(chatConfig, pubnub) }.initialize().await()
+        val someUser = chatNew.currentUser
 
         // when
         val isUserActive = someUser.active
@@ -180,11 +180,11 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
             storeUserActivityTimestamps = true
         )
 
-        val chatNew: Chat = ChatImpl(chatConfig, pubnub).initialize().await()
+        val chatNew: Chat = createChat { ChatImpl(chatConfig, pubnub) }.initialize().await()
         delayInMillis(2000)
         // call init second time to simulate user existence
         val chatNew2: Chat = ChatImpl(chatConfig, pubnub).initialize().await()
-        someUser = chatNew2.currentUser
+        val someUser = chatNew2.currentUser
 
         // when
         val isUserActive = someUser.active
