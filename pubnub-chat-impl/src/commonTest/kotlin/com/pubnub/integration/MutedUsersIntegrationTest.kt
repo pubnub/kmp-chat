@@ -6,6 +6,7 @@ import com.pubnub.chat.internal.mutelist.MutedUsersImpl
 import com.pubnub.chat.mutelist.MutedUsers
 import com.pubnub.test.await
 import com.pubnub.test.test
+import delayForHistory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -55,6 +56,7 @@ class MutedUsersIntegrationTest : BaseChatIntegrationTest() {
             pubnub.awaitSubscribe(listOf("${PREFIX_PUBNUB_PRIVATE}${pubnub.configuration.userId.value}.mute1")) {
                 // custom subscription block empty, let mutedUsers subscribe for us
             }
+            delayForHistory()
             mutedUsers2.muteUser(someUser02.id).await()
             nextEvent<PNEvent>()
             assertContains(mutedUsers1.muteSet, someUser02.id)
