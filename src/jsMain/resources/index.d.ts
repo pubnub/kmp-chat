@@ -352,7 +352,7 @@ declare class Message {
     get referencedChannels(): any;
     get textLinks(): any;
     get type(): MessageType;
-    get quotedMessage(): any;
+    get quotedMessage(): QuotedMessage | null | undefined;
     get files(): {
         name: string;
         id: string;
@@ -817,6 +817,14 @@ declare class CryptoUtils {
         decryptor: (encryptedContent: string) => TextMessageContent;
     }): Message;
 }
+
+declare class QuotedMessage {
+    get timetoken(): String;
+    get userId(): String;
+    get text(): string;
+    getMessageElements(): MixedTextTypedElement[];
+}
+
 declare const MESSAGE_THREAD_ID_PREFIX = "PUBNUB_INTERNAL_THREAD";
 declare const INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_";
 declare const INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL";

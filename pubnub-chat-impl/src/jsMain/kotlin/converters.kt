@@ -67,13 +67,11 @@ internal fun <T : SortField> getAscOrDesc(direction: String, field: T): PNSortKe
     }
 }
 
-internal fun QuotedMessage.toJs(): QuotedMessageJs {
-    return createJsObject {
-        this.text = this@toJs.text
-        this.userId = this@toJs.userId
-        this.timetoken = this@toJs.timetoken.toString()
-    }
-}
+internal fun QuotedMessage.toJs(): QuotedMessageJs = QuotedMessageJs(
+    timetoken = timetoken.toString(),
+    text = text,
+    userId = userId
+)
 
 internal inline fun <reified T> @Serializable T.toJsObject(): JsMap<Any?> {
     return createJsonElement(PNDataEncoder.encode(this) as Map<String, Any?>).value.unsafeCast<JsMap<Any?>>()
@@ -167,11 +165,12 @@ internal fun ChatConfig.toChatConfiguration(): ChatConfiguration {
     return ChatConfiguration(
         typingTimeout = typingTimeout?.milliseconds ?: 5.seconds,
         storeUserActivityInterval = storeUserActivityInterval?.milliseconds ?: 600.seconds,
-        storeUserActivityTimestamps = storeUserActivityTimestamps ?: false,
+        storeUserActivityTimestamps = storeUserActivityTimestamps == true,
         pushNotifications = pushNotifications.toKmp(),
         rateLimitFactor = rateLimitFactor ?: 2,
         rateLimitPerChannel = rateLimitPerChannel.toKmp(),
         customPayloads = customPayloads.toKmp(),
+        syncMutedUsers = syncMutedUsers == true
     )
 }
 

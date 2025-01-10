@@ -86,6 +86,7 @@ public abstract interface class com/pubnub/chat/Chat {
 	public static synthetic fun getCurrentUserMentions$default (Lcom/pubnub/chat/Chat;Ljava/lang/Long;Ljava/lang/Long;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getEventsHistory (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;I)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getEventsHistory$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun getMutedUsers ()Lcom/pubnub/chat/mutelist/MutedUsers;
 	public abstract fun getPubNub ()Lcom/pubnub/api/PubNub;
 	public abstract fun getPushChannels ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getUnreadMessagesCounts (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
@@ -361,12 +362,13 @@ public abstract interface class com/pubnub/chat/config/ChatConfiguration {
 	public abstract fun getRateLimitPerChannel ()Ljava/util/Map;
 	public abstract fun getStoreUserActivityInterval-UwyO8pc ()J
 	public abstract fun getStoreUserActivityTimestamps ()Z
+	public abstract fun getSyncMutedUsers ()Z
 	public abstract fun getTypingTimeout-UwyO8pc ()J
 }
 
 public final class com/pubnub/chat/config/ChatConfigurationKt {
-	public static final fun ChatConfiguration-QkTvx9o (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;)Lcom/pubnub/chat/config/ChatConfiguration;
-	public static synthetic fun ChatConfiguration-QkTvx9o$default (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;ILjava/lang/Object;)Lcom/pubnub/chat/config/ChatConfiguration;
+	public static final fun ChatConfiguration-ZH2SSTU (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;Z)Lcom/pubnub/chat/config/ChatConfiguration;
+	public static synthetic fun ChatConfiguration-ZH2SSTU$default (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;ZILjava/lang/Object;)Lcom/pubnub/chat/config/ChatConfiguration;
 	public static final fun RateLimitPerChannel-InTURus (JJJJ)Ljava/util/Map;
 	public static synthetic fun RateLimitPerChannel-InTURus$default (JJJJILjava/lang/Object;)Ljava/util/Map;
 }
@@ -436,6 +438,12 @@ public final class com/pubnub/chat/message/MarkAllMessageAsReadResponse {
 	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getStatus ()I
 	public final fun getTotal ()I
+}
+
+public abstract interface class com/pubnub/chat/mutelist/MutedUsers {
+	public abstract fun getMuteSet ()Ljava/util/Set;
+	public abstract fun muteUser (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun unmuteUser (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 }
 
 public final class com/pubnub/chat/restrictions/GetRestrictionsResponse {
