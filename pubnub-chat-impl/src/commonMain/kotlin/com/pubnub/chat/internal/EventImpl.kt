@@ -40,4 +40,8 @@ class EventImpl<T : EventContent>(
             )
         }
     }
+
+    override fun toString(): String {
+        return "EventImpl(chat=$chat, timetoken=$timetoken, payload=$payload, channelId='$channelId', userId='$userId')"
+    }
 }

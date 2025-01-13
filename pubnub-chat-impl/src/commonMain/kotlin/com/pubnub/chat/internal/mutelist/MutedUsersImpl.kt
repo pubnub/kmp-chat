@@ -55,6 +55,8 @@ class MutedUsersImpl(val pubNub: PubNub, val userId: String, val syncEnabled: Bo
                 createStatusListener(pubNub) { _, status: PNStatus ->
                     if (status.category == PNStatusCategory.PNConnectedCategory || status.category == PNStatusCategory.PNSubscriptionChanged) {
                         if (userMuteChannelId !in pubNub.getSubscribedChannels()) {
+                            // the client might have been offline for a while and missed some updates so load the list first
+                            loadMutedUsers().async { }
                             pubNub.subscribe(listOf(userMuteChannelId))
                         }
                     }
