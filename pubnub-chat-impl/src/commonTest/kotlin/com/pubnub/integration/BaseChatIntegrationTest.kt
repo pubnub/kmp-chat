@@ -150,9 +150,11 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
                     pubnub.removeChannelMetadata(it).await()
                 }
             }
-            channelsToRemovePam.forEach {
-                launch {
-                    pubnubPamServer.removeChannelMetadata(it).await()
+            if (PLATFORM != "iOS") {
+                channelsToRemovePam.forEach {
+                    launch {
+                        pubnubPamServer.removeChannelMetadata(it).await()
+                    }
                 }
             }
         } finally {

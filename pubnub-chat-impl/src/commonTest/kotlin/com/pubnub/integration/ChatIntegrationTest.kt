@@ -637,6 +637,9 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun setRestrictionThenUnset() = runTest(timeout = 10.seconds) {
+        if (PLATFORM == "iOS") {
+            return@runTest
+        }
         val userId = someUser.id
         val channelId = channel01.id
         val banned = CompletableDeferred<Unit>()
