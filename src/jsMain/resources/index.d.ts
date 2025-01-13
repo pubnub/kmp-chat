@@ -671,6 +671,7 @@ declare class Chat {
         events: Event<any>[];
         isMore: boolean;
     }>;
+    get mutedUsers(): MutedUsers;
     /**
      * Current user
      */
@@ -820,10 +821,16 @@ declare class CryptoUtils {
 }
 
 declare class QuotedMessage {
-    get timetoken(): String;
-    get userId(): String;
+    get timetoken(): string;
+    get userId(): string;
     get text(): string;
     getMessageElements(): MixedTextTypedElement[];
+}
+
+declare class MutedUsers {
+    get muteSet(): string[];
+    async muteUser(userId: string);
+    async unmuteUser(userId: string);
 }
 
 declare const MESSAGE_THREAD_ID_PREFIX = "PUBNUB_INTERNAL_THREAD";
