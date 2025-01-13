@@ -650,6 +650,7 @@ type ChatConfig = {
         reactionsActionName?: string;
     };
     authKey?: string;
+    syncMutedUsers?: boolean;
 };
 type ChatConstructor = Partial<ChatConfig> & PubNub.PubnubConfig;
 declare class Chat {
