@@ -74,10 +74,13 @@ interface ChatConfiguration {
      * Specifically, the data is saved in the `custom` object of the following User in App Context:
      *
      * ```
-     * PN_PRIV.{userId}.mute.1
+     * PN_PRIV.<userId>.mute.1
      * ```
      *
      * where {userId} is the current [com.pubnub.api.v2.PNConfiguration.userId].
+     *
+     * If using Access Manager, the access token must be configured with the appropriate rights to subscribe to that
+     * channel, and get, update, and delete the App Context User with that id.
      *
      * Due to App Context size limits, the number of muted users is limited to around 200 and will result in sync errors
      * when the limit is exceeded. The list will not sync until its size is reduced.

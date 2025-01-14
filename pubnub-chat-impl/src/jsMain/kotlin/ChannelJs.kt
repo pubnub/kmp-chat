@@ -3,7 +3,7 @@
 import com.pubnub.chat.Channel
 import com.pubnub.chat.MessageDraft
 import com.pubnub.chat.internal.MessageDraftImpl
-import com.pubnub.chat.internal.channel.BaseChannel
+import com.pubnub.chat.internal.channel.BaseChannelImpl
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.InputFile
 import com.pubnub.kmp.JsMap
@@ -322,7 +322,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         @JsStatic
         fun streamUpdatesOn(channels: Array<ChannelJs>, callback: (Array<ChannelJs>) -> Unit): () -> Unit {
             val chatJs = channels.first().chatJs
-            val closeable = BaseChannel.streamUpdatesOn(channels.map { jsChannel -> jsChannel.channel }) {
+            val closeable = BaseChannelImpl.streamUpdatesOn(channels.map { jsChannel -> jsChannel.channel }) {
                 callback(it.map { kmpChannel -> ChannelJs(kmpChannel, chatJs) }.toTypedArray())
             }
             return closeable::close

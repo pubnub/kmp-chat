@@ -37,7 +37,7 @@ import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.MINIMAL_TYPING_INDICATOR_TIMEOUT
 import com.pubnub.chat.internal.UserImpl
-import com.pubnub.chat.internal.channel.BaseChannel
+import com.pubnub.chat.internal.channel.BaseChannelImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.mutelist.MutedUsersImpl
@@ -337,7 +337,7 @@ class ChannelTest : BaseTest() {
         val user2 = "user2"
         typingIndicatorsForTest[user1] = typingSent1
         typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
-        BaseChannel.removeExpiredTypingIndicators(
+        BaseChannelImpl.removeExpiredTypingIndicators(
             objectUnderTest.chat.config.typingTimeout,
             typingIndicatorsForTest,
             now
@@ -357,7 +357,7 @@ class ChannelTest : BaseTest() {
         typingIndicatorsForTest[user1] = typingSent1
         typingIndicatorsForTest[user2] = typingSent1.plus(2.milliseconds)
 
-        BaseChannel.removeExpiredTypingIndicators(
+        BaseChannelImpl.removeExpiredTypingIndicators(
             objectUnderTest.chat.config.typingTimeout,
             typingIndicatorsForTest,
             now
@@ -374,7 +374,7 @@ class ChannelTest : BaseTest() {
         val isTyping = true
         val typingIndicators = mutableMapOf<String, Instant>()
 
-        BaseChannel.updateUserTypingStatus(userId, isTyping, now, typingIndicators)
+        BaseChannelImpl.updateUserTypingStatus(userId, isTyping, now, typingIndicators)
 
         assertTrue(typingIndicators.contains(userId))
     }
@@ -387,7 +387,7 @@ class ChannelTest : BaseTest() {
         val isTyping = false
         val typingIndicators = mutableMapOf(userId to typingSent1)
 
-        BaseChannel.updateUserTypingStatus(userId, isTyping, now, typingIndicators)
+        BaseChannelImpl.updateUserTypingStatus(userId, isTyping, now, typingIndicators)
 
         assertFalse(typingIndicators.contains(userId))
     }
@@ -400,7 +400,7 @@ class ChannelTest : BaseTest() {
         val isTyping = true
         val typingIndicators = mutableMapOf(userId to typingSent1)
 
-        BaseChannel.updateUserTypingStatus(userId, isTyping, now, typingIndicators)
+        BaseChannelImpl.updateUserTypingStatus(userId, isTyping, now, typingIndicators)
 
         assertTrue(typingIndicators.contains(userId))
         assertEquals(now, typingIndicators[userId])
@@ -883,7 +883,7 @@ class ChannelTest : BaseTest() {
     fun getPushPayload_empty_when_sendPushes_is_false() {
         val config = PushNotificationsConfig(false, null, PNPushType.FCM, null, PNPushEnvironment.PRODUCTION)
 
-        val result = BaseChannel.getPushPayload(createChannel(type), "some text", config)
+        val result = BaseChannelImpl.getPushPayload(createChannel(type), "some text", config)
 
         assertEquals(emptyMap(), result)
     }
@@ -896,7 +896,7 @@ class ChannelTest : BaseTest() {
 
         every { chat.currentUser } returns UserImpl(chat, userId)
 
-        val result = BaseChannel.getPushPayload(createChannel(type), text, config)
+        val result = BaseChannelImpl.getPushPayload(createChannel(type), text, config)
 
         assertEquals(objectUnderTest.name, result["pn_fcm"]["data"]["subtitle"])
         assertEquals(userId, result["pn_fcm"]["notification"]["title"])
@@ -914,7 +914,7 @@ class ChannelTest : BaseTest() {
         val config = PushNotificationsConfig(true, "abc", PNPushType.FCM, topic, PNPushEnvironment.PRODUCTION)
         every { chat.currentUser } returns UserImpl(chat, userId)
 
-        val result = BaseChannel.getPushPayload(createChannel(type), text, config)
+        val result = BaseChannelImpl.getPushPayload(createChannel(type), text, config)
 
         assertEquals(objectUnderTest.name, result["pn_fcm"]["data"]["subtitle"])
 
@@ -938,7 +938,7 @@ class ChannelTest : BaseTest() {
 
     @Test
     fun generateReceipts() {
-        val result = BaseChannel.generateReceipts(mapOf("user" to 1L, "user2" to 2L, "user3" to 1L, "user4" to 3L))
+        val result = BaseChannelImpl.generateReceipts(mapOf("user" to 1L, "user2" to 2L, "user3" to 1L, "user4" to 3L))
         assertEquals(mapOf(1L to listOf("user", "user3"), 2L to listOf("user2"), 3L to listOf("user4")), result)
     }
 

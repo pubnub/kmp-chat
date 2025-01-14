@@ -6,7 +6,7 @@ import com.pubnub.kmp.PNFuture
 /**
  * Represents an object that refers to a single thread (channel) in a chat.
  */
-interface ThreadChannel : Channel {
+interface ThreadChannel : BaseChannel<ThreadChannel, ThreadMessage> {
     /**
      * Message for which the thread was created.
      */
@@ -17,33 +17,11 @@ interface ThreadChannel : Channel {
      */
     val parentChannelId: String
 
-    /**
-     * Pins a selected thread message to the thread channel.
-     *
-     * @param message you want to pin to the selected thread channel.
-     *
-     * @return [PNFuture] containing [ThreadChannel]
-     */
-    override fun pinMessage(message: Message): PNFuture<ThreadChannel>
+    override fun pinMessage(message: BaseMessage<*, *>): PNFuture<ThreadChannel>
 
-    /**
-     * Unpins the previously pinned thread message from the thread channel.
-     *
-     * @return [PNFuture] containing [ThreadChannel]
-     */
     override fun unpinMessage(): PNFuture<ThreadChannel>
 
-    /**
-     *  Returns historical messages for the [ThreadChannel]
-     *
-     *  @param startTimetoken
-     *  @param endTimetoken
-     *  @param count The maximum number of messages to retrieve. Default and maximum values is 25.
-     *
-     *  @return [PNFuture] containing a list of messages with pagination information (isMore: Boolean). The result of
-     *  this future can be processed using the `async` method of `PNFuture`.
-     */
-    override fun getHistory(startTimetoken: Long?, endTimetoken: Long?, count: Int): PNFuture<HistoryResponse<ThreadMessage>>
+    override fun getHistory(startTimetoken: Long?, endTimetoken: Long?, count: Int): PNFuture<HistoryResponse<ThreadMessage, ThreadChannel>>
 
     /**
      * Pins a selected thread message to the parent channel. This updates the parent channel's metadata with the

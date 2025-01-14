@@ -5,6 +5,7 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.utils.Clock
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
@@ -39,7 +40,7 @@ data class ThreadChannelImpl(
     override val status: String? = null,
     override val type: ChannelType? = null,
     private var threadCreated: Boolean = true,
-) : BaseChannel<ThreadChannel, ThreadMessage>(
+) : BaseChannelImpl<ThreadChannel, ThreadMessage>(
         chat,
         clock,
         id,
@@ -54,7 +55,10 @@ data class ThreadChannelImpl(
         },
         { chat, pnMessageItem, channelId ->
             ThreadMessageImpl.fromDTO(chat, pnMessageItem, channelId, parentMessage.channelId)
-        }
+        },
+        { chat, messageResult ->
+            ThreadMessageImpl.fromDTO(chat, messageResult, parentMessage.channelId)
+        },
     ),
     ThreadChannel {
     override val parentChannelId: String
@@ -75,7 +79,7 @@ data class ThreadChannelImpl(
         }
     }
 
-    override fun delete(soft: Boolean): PNFuture<Channel?> {
+    override fun delete(soft: Boolean): PNFuture<ThreadChannel?> {
         return chat.removeThreadChannel(chat, parentMessage, soft).then { it.second }
     }
 
@@ -112,7 +116,7 @@ data class ThreadChannelImpl(
         mentionedUsers: MessageMentionedUsers?,
         referencedChannels: MessageReferencedChannels?,
         textLinks: List<com.pubnub.chat.types.TextLink>?,
-        quotedMessage: Message?,
+        quotedMessage: BaseMessage<*, *>?,
         files: List<InputFile>?,
     ): PNFuture<PNPublishResult> {
         return createThreadAndSend {
@@ -137,7 +141,7 @@ data class ThreadChannelImpl(
         shouldStore: Boolean,
         usePost: Boolean,
         ttl: Int?,
-        quotedMessage: Message?,
+        quotedMessage: BaseMessage<*, *>?,
         files: List<InputFile>?,
         usersToMention: Collection<String>?,
     ): PNFuture<PNPublishResult> {

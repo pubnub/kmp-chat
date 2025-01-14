@@ -7,7 +7,7 @@ import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.MESSAGE_THREAD_ID_PREFIX
-import com.pubnub.chat.internal.message.BaseMessage
+import com.pubnub.chat.internal.message.BaseMessageImpl
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.types.EventContent
@@ -176,7 +176,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id)) {
-                dispose = BaseMessage.streamUpdatesOn(listOf(message1, message2)) { messages ->
+                dispose = BaseMessageImpl.streamUpdatesOn(listOf(message1, message2)) { messages ->
                     actualUpdates.add(messages.sortedBy { it.timetoken })
                 }
             }
