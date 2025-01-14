@@ -67,11 +67,15 @@ class MutedUsersManagerImpl(val pubNub: PubNub, val userId: String, val syncEnab
     }
 
     fun loadMutedUsers(): PNFuture<Unit> {
-        return pubNub.getUUIDMetadata(
-            userMuteChannelId,
-            includeCustom = true
-        ).nullOn404().then {
-            muteSetAtomic.value = customToMutedUsersSet(it?.data?.custom)
+        return if (syncEnabled) {
+            pubNub.getUUIDMetadata(
+                userMuteChannelId,
+                includeCustom = true
+            ).nullOn404().then {
+                muteSetAtomic.value = customToMutedUsersSet(it?.data?.custom)
+            }
+        } else {
+            Unit.asFuture()
         }
     }
 

@@ -1,8 +1,12 @@
 package com.pubnub.integration
 
+import com.pubnub.api.models.consumer.access_manager.v3.ChannelGrant
+import com.pubnub.api.models.consumer.access_manager.v3.UUIDGrant
 import com.pubnub.api.models.consumer.pubsub.PNEvent
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
+import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.PREFIX_PUBNUB_PRIVATE
 import com.pubnub.chat.internal.SUFFIX_MUTE_1
 import com.pubnub.chat.internal.mutelist.MutedUsersManagerImpl
@@ -10,6 +14,7 @@ import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.mutelist.MutedUsersManager
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
+import com.pubnub.internal.PLATFORM
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
@@ -70,6 +75,49 @@ class MutedUsersIntegrationTest : BaseChatIntegrationTest() {
             nextEvent<PNEvent>()
             assertContains(mutedUsers1.mutedUsers, someUser02.id)
         }
+    }
+
+    @Test
+    fun sync_updates_between_clients_on_init() = runTest {
+        val mutedUsers1 = getMutedUsers(true)
+        mutedUsers1.muteUser(someUser02.id).await()
+        val chat2 = ChatImpl(ChatConfiguration(syncMutedUsers = true), pubnub).initialize().await()
+        assertContains(chat2.mutedUsersManager.mutedUsers, someUser02.id)
+    }
+
+    @Test
+    fun sync_updates_between_clients_on_init_pam() = runTest {
+        if (PLATFORM == "iOS") {
+            return@runTest
+        }
+
+        val clientUserId = pubnubPamClient.configuration.userId.value
+
+        val serverChat = ChatImpl(ChatConfiguration(), pubnubPamServer).initialize().await()
+        val token = serverChat.pubNub.grantToken(
+            ttl = 1,
+            channels = listOf(
+                ChannelGrant.name(get = true, name = "anyChannelForNow"),
+                ChannelGrant.name(
+                    name = "PN_PRV.$clientUserId.mute1",
+                    read = true,
+                )
+            ),
+            uuids = listOf(
+                UUIDGrant.id(id = clientUserId, get = true, update = true),
+                UUIDGrant.id(
+                    id = "PN_PRV.$clientUserId.mute1",
+                    update = true,
+                    delete = true,
+                    get = true,
+                )
+            ) // this is important
+        ).await().token
+
+        pubnubPamClient.setToken(token)
+
+        ChatImpl(ChatConfiguration(syncMutedUsers = true), pubnubPamClient).initialize().await()
+        // no exception
     }
 
     @Test
