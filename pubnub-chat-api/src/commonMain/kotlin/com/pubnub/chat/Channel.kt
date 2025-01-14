@@ -401,6 +401,9 @@ interface Channel {
     /**
      * Allows to mute/ban a specific user on a channel or unmute/unban them.
      *
+     * Please note that this is a server-side moderation mechanism, as opposed to [Chat.mutedUsersManager] (which is local to
+     * a client).
+     *
      * @param user to be muted or banned.
      * @param ban represents the user's moderation restrictions. Set to true to ban the user from the channel or to false to unban them.
      * @param mute represents the user's moderation restrictions. Set to true to mute the user on the channel or to false to unmute them.

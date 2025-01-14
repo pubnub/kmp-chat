@@ -40,7 +40,7 @@ import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.message.MessageImpl
-import com.pubnub.chat.internal.mutelist.MutedUsersImpl
+import com.pubnub.chat.internal.mutelist.MutedUsersManagerImpl
 import com.pubnub.chat.internal.timer.createTimerManager
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
@@ -104,7 +104,7 @@ class ChannelTest : BaseTest() {
 
         every { chat.config } returns chatConfig
         every { chat.pubNub } returns pubNub
-        every { chat.mutedUsers } returns MutedUsersImpl(pubNub, "demo", false)
+        every { chat.mutedUsersManager } returns MutedUsersManagerImpl(pubNub, "demo", false)
         val timerManager = createTimerManager()
         every { chat.timerManager } returns timerManager
         every { pubNub.configuration } returns createPNConfiguration(UserId("demo"), "demo", "demo", authToken = null)

@@ -4,9 +4,10 @@ import com.pubnub.api.models.consumer.pubsub.PNEvent
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.PREFIX_PUBNUB_PRIVATE
-import com.pubnub.chat.internal.mutelist.MutedUsersImpl
+import com.pubnub.chat.internal.SUFFIX_MUTE_1
+import com.pubnub.chat.internal.mutelist.MutedUsersManagerImpl
 import com.pubnub.chat.listenForEvents
-import com.pubnub.chat.mutelist.MutedUsers
+import com.pubnub.chat.mutelist.MutedUsersManager
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.test.await
@@ -22,7 +23,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MutedUsersIntegrationTest : BaseChatIntegrationTest() {
-    private fun getMutedUsers(sync: Boolean = false): MutedUsers = MutedUsersImpl(pubnub, pubnub.configuration.userId.value, sync)
+    private fun getMutedUsers(
+        sync: Boolean = false
+    ): MutedUsersManager = MutedUsersManagerImpl(pubnub, pubnub.configuration.userId.value, sync)
 
     @Test
     fun muteUser_adds_user_to_set() {
@@ -30,12 +33,12 @@ class MutedUsersIntegrationTest : BaseChatIntegrationTest() {
 
         mutedUsers.muteUser(someUser.id)
 
-        assertContains(mutedUsers.muteSet, someUser.id)
+        assertContains(mutedUsers.mutedUsers, someUser.id)
 
         mutedUsers.muteUser(someUser02.id)
 
-        assertContains(mutedUsers.muteSet, someUser.id)
-        assertContains(mutedUsers.muteSet, someUser02.id)
+        assertContains(mutedUsers.mutedUsers, someUser.id)
+        assertContains(mutedUsers.mutedUsers, someUser02.id)
     }
 
     @Test
@@ -46,33 +49,33 @@ class MutedUsersIntegrationTest : BaseChatIntegrationTest() {
 
         mutedUsers.unmuteUser(someUser.id)
 
-        assertContains(mutedUsers.muteSet, someUser02.id)
-        assertFalse { mutedUsers.muteSet.contains(someUser.id) }
+        assertContains(mutedUsers.mutedUsers, someUser02.id)
+        assertFalse { mutedUsers.mutedUsers.contains(someUser.id) }
 
         mutedUsers.unmuteUser(someUser02.id)
 
-        assertTrue { mutedUsers.muteSet.isEmpty() }
+        assertTrue { mutedUsers.mutedUsers.isEmpty() }
     }
 
     @Test
     fun sync_updates_between_clients() = runTest {
         val mutedUsers1 = getMutedUsers(true)
-        val mutedUsers2 = MutedUsersImpl(pubnub02, pubnub.configuration.userId.value, true)
+        val mutedUsers2 = MutedUsersManagerImpl(pubnub02, pubnub.configuration.userId.value, true)
         pubnub.test(backgroundScope) {
             pubnub.awaitSubscribe(listOf("aaa")) // just to kick off connection
-            pubnub.awaitSubscribe(listOf("${PREFIX_PUBNUB_PRIVATE}${pubnub.configuration.userId.value}.mute1")) {
+            pubnub.awaitSubscribe(listOf("${PREFIX_PUBNUB_PRIVATE}${pubnub.configuration.userId.value}.$SUFFIX_MUTE_1")) {
                 // custom subscription block empty, let mutedUsers subscribe for us
             }
             mutedUsers2.muteUser(someUser02.id).await()
             nextEvent<PNEvent>()
-            assertContains(mutedUsers1.muteSet, someUser02.id)
+            assertContains(mutedUsers1.mutedUsers, someUser02.id)
         }
     }
 
     @Test
     fun connect_filters_muted_users() = runTest {
         val channel = chat.createChannel(randomString()).await()
-        chat.mutedUsers.muteUser(chat.currentUser.id)
+        chat.mutedUsersManager.muteUser(chat.currentUser.id)
         val messageText = randomString()
         val message = CompletableDeferred<Message>()
 
@@ -93,7 +96,7 @@ class MutedUsersIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun getHistory_filters_muted_users() = runTest {
         val channel = chat.createChannel(randomString()).await()
-        chat.mutedUsers.muteUser(chat.currentUser.id)
+        chat.mutedUsersManager.muteUser(chat.currentUser.id)
         val messageText = randomString()
         val tt1 = channel.sendText(messageText).await()
         val tt2 = chat02.getChannel(channel.id).await()!!.sendText("text").await()
@@ -107,7 +110,7 @@ class MutedUsersIntegrationTest : BaseChatIntegrationTest() {
     fun getEventsHistory_filters_muted_users() = runTest {
         // given
         val startTimetoken = pubnub.time().await().timetoken
-        chat.mutedUsers.muteUser(chat02.currentUser.id)
+        chat.mutedUsersManager.muteUser(chat02.currentUser.id)
         channel01Chat02.invite(chat.currentUser).await()
         channel01Chat02.sendText(
             text = "message01In${channel01.id}",
@@ -129,7 +132,7 @@ class MutedUsersIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun listenForEvents_filters_muted_users() = runTest {
         // given
-        chat.mutedUsers.muteUser(chat02.currentUser.id)
+        chat.mutedUsersManager.muteUser(chat02.currentUser.id)
         val completableInvite = CompletableDeferred<Event<EventContent.Invite>>()
         chat.listenForEvents(chat.currentUser.id) { invite: Event<EventContent.Invite> ->
             completableInvite.complete(invite)

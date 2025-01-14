@@ -53,3 +53,4 @@ internal const val RESTRICTION_REASON = "reason"
 
 internal const val TYPE_PUBNUB_PRIVATE = "pn.prv"
 internal const val PREFIX_PUBNUB_PRIVATE = "PN_PRV."
+internal const val SUFFIX_MUTE_1 = "mute1"

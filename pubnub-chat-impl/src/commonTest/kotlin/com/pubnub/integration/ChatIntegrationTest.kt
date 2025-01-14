@@ -17,6 +17,7 @@ import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.INTERNAL_USER_MODERATION_CHANNEL_PREFIX
+import com.pubnub.chat.internal.SUFFIX_MUTE_1
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.utils.cyrb53a
@@ -89,14 +90,14 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             channels = listOf(
                 ChannelGrant.name(get = true, name = "any", read = true, write = true, manage = true),
                 ChannelGrant.name(
-                    name = "PN_PRV.${pubnubPamClient.configuration.userId.value}.mute1",
+                    name = "PN_PRV.${pubnubPamClient.configuration.userId.value}.$SUFFIX_MUTE_1",
                     read = true,
                 )
             ), // get = true
             uuids = listOf(
                 UUIDGrant.id(id = pubnubPamClient.configuration.userId.value, get = true, update = true),
                 UUIDGrant.id(
-                    id = "PN_PRV.${pubnubPamClient.configuration.userId.value}.mute1",
+                    id = "PN_PRV.${pubnubPamClient.configuration.userId.value}.$SUFFIX_MUTE_1",
                     update = true,
                     delete = true,
                     get = true,

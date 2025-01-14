@@ -30,7 +30,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
 
     val sdk: PubNub get() = (chat.pubNub as PubNubImpl).jsPubNub
 
-    val mutedUsers: MutedUsersJs get() = MutedUsersJs(chat.mutedUsers)
+    val mutedUsersManager: MutedUsersManagerJs get() = MutedUsersManagerJs(chat.mutedUsersManager)
 
     fun emitEvent(event: dynamic): Promise<PubNub.PublishResponse> {
         val channel: String = event.channel ?: event.user

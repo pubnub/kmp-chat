@@ -469,7 +469,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         val listener = createEventListener(
             chat.pubNub,
             onMessage = { _, pnMessageResult ->
-                if (pnMessageResult.publisher in chat.mutedUsers.muteSet) {
+                if (pnMessageResult.publisher in chat.mutedUsersManager.mutedUsers) {
                     return@createEventListener
                 }
                 try {
@@ -818,7 +818,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
                 HistoryResponse(
                     messages = pnFetchMessagesResult.channelsUrlDecoded[channelId]?.mapNotNull { messageItem: PNFetchMessageItem ->
-                        if (messageItem.uuid in chat.mutedUsers.muteSet) {
+                        if (messageItem.uuid in chat.mutedUsersManager.mutedUsers) {
                             null
                         } else {
                             messageFactory(chat, messageItem, channelId)

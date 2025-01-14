@@ -3,11 +3,11 @@ package com.pubnub.chat.mutelist
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.kmp.PNFuture
 
-interface MutedUsers {
+interface MutedUsersManager {
     /**
      * The current set of muted users.
      */
-    val muteSet: Set<String>
+    val mutedUsers: Set<String>
 
     /**
      * Add a user to the list of muted users.

@@ -75,7 +75,7 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.THREAD_FOR_THIS_MESSAGE
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES
-import com.pubnub.chat.internal.mutelist.MutedUsersImpl
+import com.pubnub.chat.internal.mutelist.MutedUsersManagerImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer
 import com.pubnub.chat.internal.timer.TimerManager
@@ -132,7 +132,7 @@ class ChatImpl(
         UserImpl(this, pubNub.configuration.userId.value, name = pubNub.configuration.userId.value)
         private set
 
-    override val mutedUsers = MutedUsersImpl(pubNub, pubNub.configuration.userId.value, config.syncMutedUsers)
+    override val mutedUsersManager = MutedUsersManagerImpl(pubNub, pubNub.configuration.userId.value, config.syncMutedUsers)
 
     private val suggestedChannelsCache: MutableMap<String, List<Channel>> = mutableMapOf()
     private val suggestedUsersCache: MutableMap<String, List<User>> = mutableMapOf()
@@ -164,7 +164,7 @@ class ChatImpl(
                 Unit.asFuture()
             }
         }
-        val mutedUsersFuture = mutedUsers.loadMutedUsers()
+        val mutedUsersFuture = mutedUsersManager.loadMutedUsers()
         return awaitAll(userFuture, mutedUsersFuture).then {
             this
         }
@@ -654,7 +654,7 @@ class ChatImpl(
                     return
                 }
                 val message = (pnEvent as? MessageResult)?.message ?: return
-                if (pnEvent.publisher in mutedUsers.muteSet) {
+                if (pnEvent.publisher in mutedUsersManager.mutedUsers) {
                     return
                 }
 
@@ -715,7 +715,7 @@ class ChatImpl(
         }
         val channel: String = INTERNAL_MODERATION_PREFIX + restriction.channelId
         val userId = restriction.userId
-        return createChannel(channel).catch { exception ->
+        return createChannel(channel, type = ChannelType.PUBNUB_PRIVATE).catch { exception ->
             if (exception.message == CHANNEL_ID_ALREADY_EXIST) {
                 Result.success(Unit)
             } else {
@@ -985,7 +985,7 @@ class ChatImpl(
             val pnFetchMessageItems: List<PNFetchMessageItem> =
                 pnFetchMessagesResult.channelsUrlDecoded[channelId] ?: emptyList()
             val events = pnFetchMessageItems.mapNotNull { pnFetchMessageItem: PNFetchMessageItem ->
-                if (pnFetchMessageItem.uuid in mutedUsers.muteSet) {
+                if (pnFetchMessageItem.uuid in mutedUsersManager.mutedUsers) {
                     null
                 } else {
                     EventImpl.fromDTO(

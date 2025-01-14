@@ -671,7 +671,7 @@ declare class Chat {
         events: Event<any>[];
         isMore: boolean;
     }>;
-    get mutedUsers(): MutedUsers;
+    get mutedUsersManager(): MutedUsersManager;
     /**
      * Current user
      */
@@ -827,8 +827,8 @@ declare class QuotedMessage {
     getMessageElements(): MixedTextTypedElement[];
 }
 
-declare class MutedUsers {
-    get muteSet(): string[];
+declare class MutedUsersManager {
+    get mutedUsers(): string[];
     async muteUser(userId: string);
     async unmuteUser(userId: string);
 }

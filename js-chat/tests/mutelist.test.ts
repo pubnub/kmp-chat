@@ -40,16 +40,16 @@ describe("Mute list test", () => {
   })
 
   test("should add user to mute set", async () => {
-     await chat.mutedUsers.muteUser("abc")
-     expect(chat.mutedUsers.muteSet[0]).toBe("abc")
+     await chat.mutedUsersManager.muteUser("abc")
+     expect(chat.mutedUsersManager.mutedUsers[0]).toBe("abc")
   })
 
     test("should remove user from mute set", async () => {
-       await chat.mutedUsers.muteUser("abc")
-       await chat.mutedUsers.muteUser("def")
-       await chat.mutedUsers.unmuteUser("abc")
-       expect(chat.mutedUsers.muteSet[0]).toBe("def")
-       expect(chat.mutedUsers.muteSet.length).toBe(1)
+       await chat.mutedUsersManager.muteUser("abc")
+       await chat.mutedUsersManager.muteUser("def")
+       await chat.mutedUsersManager.unmuteUser("abc")
+       expect(chat.mutedUsersManager.mutedUsers[0]).toBe("def")
+       expect(chat.mutedUsersManager.mutedUsers.length).toBe(1)
     })
 
 })

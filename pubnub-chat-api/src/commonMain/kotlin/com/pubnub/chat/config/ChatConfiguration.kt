@@ -68,7 +68,7 @@ interface ChatConfiguration {
     val customPayloads: CustomPayloads?
 
     /**
-     * Enable automatic syncing of the [com.pubnub.chat.mutelist.MutedUsers] data with App Context,
+     * Enable automatic syncing of the [com.pubnub.chat.mutelist.MutedUsersManager] data with App Context,
      * using the current `userId` as the key.
      *
      * Specifically, the data is saved in the `custom` object of the following User in App Context:

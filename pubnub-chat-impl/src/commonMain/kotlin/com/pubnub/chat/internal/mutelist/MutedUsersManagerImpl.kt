@@ -7,9 +7,10 @@ import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteUUIDMetadataEventMe
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetUUIDMetadataEventMessage
 import com.pubnub.api.utils.PatchValue
 import com.pubnub.chat.internal.PREFIX_PUBNUB_PRIVATE
+import com.pubnub.chat.internal.SUFFIX_MUTE_1
 import com.pubnub.chat.internal.TYPE_PUBNUB_PRIVATE
 import com.pubnub.chat.internal.util.nullOn404
-import com.pubnub.chat.mutelist.MutedUsers
+import com.pubnub.chat.mutelist.MutedUsersManager
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
@@ -21,11 +22,11 @@ import com.pubnub.kmp.then
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.updateAndGet
 
-class MutedUsersImpl(val pubNub: PubNub, val userId: String, val syncEnabled: Boolean) : MutedUsers {
+class MutedUsersManagerImpl(val pubNub: PubNub, val userId: String, val syncEnabled: Boolean) : MutedUsersManager {
     private val muteSetAtomic = atomic(emptySet<String>())
-    override val muteSet by muteSetAtomic
+    override val mutedUsers by muteSetAtomic
 
-    private val userMuteChannelId = "${PREFIX_PUBNUB_PRIVATE}$userId.mute1"
+    private val userMuteChannelId = "${PREFIX_PUBNUB_PRIVATE}$userId.$SUFFIX_MUTE_1"
 
     init {
         if (syncEnabled) {
@@ -36,7 +37,7 @@ class MutedUsersImpl(val pubNub: PubNub, val userId: String, val syncEnabled: Bo
                         when (val message = objectEvent.extractedMessage) {
                             is PNSetUUIDMetadataEventMessage -> {
                                 if (message.data.id == userMuteChannelId) {
-                                    muteSetAtomic.value = customToMuteSet(message.data.custom)
+                                    muteSetAtomic.value = customToMutedUsersSet(message.data.custom)
                                 }
                             }
 
@@ -70,16 +71,16 @@ class MutedUsersImpl(val pubNub: PubNub, val userId: String, val syncEnabled: Bo
             userMuteChannelId,
             includeCustom = true
         ).nullOn404().then {
-            muteSetAtomic.value = customToMuteSet(it?.data?.custom)
+            muteSetAtomic.value = customToMutedUsersSet(it?.data?.custom)
         }
     }
 
     override fun muteUser(userId: String): PNFuture<Unit> {
-        return updateMutedUsers { it + userId }
+        return updateMutedUsers { currentMutedUserIds -> currentMutedUserIds + userId }
     }
 
     override fun unmuteUser(userId: String): PNFuture<Unit> {
-        return updateMutedUsers { it - userId }
+        return updateMutedUsers { currentMutedUserIds -> currentMutedUserIds - userId }
     }
 
     private fun updateMutedUsers(updateFunction: (Set<String>) -> Set<String>): PNFuture<Unit> {
@@ -90,19 +91,19 @@ class MutedUsersImpl(val pubNub: PubNub, val userId: String, val syncEnabled: Bo
                 uuid = userMuteChannelId,
                 includeCustom = false,
                 type = TYPE_PUBNUB_PRIVATE,
-                custom = muteSetToCustom(newMuteSet)
+                custom = mutedUsersSetToCustom(newMuteSet)
             ).then { Unit }.remember()
         } else {
             Unit.asFuture()
         }
     }
 
-    private fun customToMuteSet(custom: PatchValue<Map<String, Any?>?>?): Set<String> {
+    private fun customToMutedUsersSet(custom: PatchValue<Map<String, Any?>?>?): Set<String> {
         val mutedUsersList = custom?.value?.getOrElse("m") { "" } as? String
         return mutedUsersList?.split(",")?.filterNot { it.isEmpty() }?.toSet() ?: emptySet()
     }
 
-    private fun muteSetToCustom(set: Set<String>): CustomObject {
+    private fun mutedUsersSetToCustom(set: Set<String>): CustomObject {
         return createCustomObject(mapOf("m" to set.joinToString(",")))
     }
 }
