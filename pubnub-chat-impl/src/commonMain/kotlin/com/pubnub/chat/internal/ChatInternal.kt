@@ -3,6 +3,8 @@ package com.pubnub.chat.internal
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Message
@@ -25,7 +27,7 @@ interface ChatInternal : Chat {
         chat: Chat,
         message: Message,
         soft: Boolean = false
-    ): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>>
+    ): PNFuture<Pair<PNRemoveMessageActionResult, ThreadChannel?>>
 
     fun restoreThreadChannel(message: Message): PNFuture<PNMessageAction?>
 
@@ -38,7 +40,7 @@ interface ChatInternal : Chat {
         status: String? = null,
     ): PNFuture<Channel>
 
-    fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult>
+    fun forwardMessage(message: BaseMessage<*, *>, channelId: String): PNFuture<PNPublishResult>
 
     fun getThreadChannel(message: Message): PNFuture<ThreadChannel>
 
@@ -63,4 +65,24 @@ interface ChatInternal : Chat {
      * @return [PNFuture] containing set of [User]
      */
     fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<List<User>>
+
+    fun setChannelMetadata(
+        id: String,
+        name: String?,
+        description: String?,
+        custom: CustomObject?,
+        type: ChannelType?,
+        status: String?,
+    ): PNFuture<PNChannelMetadataResult>
+
+    fun performDeleteChannel(id: String, soft: Boolean): PNFuture<PNChannelMetadataResult?>
+
+    fun performCreateChannel(
+        id: String,
+        name: String?,
+        description: String?,
+        custom: CustomObject?,
+        type: ChannelType?,
+        status: String?
+    ): PNFuture<PNChannelMetadataResult>
 }

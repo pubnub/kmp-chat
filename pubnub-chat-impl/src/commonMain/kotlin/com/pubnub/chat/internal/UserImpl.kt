@@ -17,7 +17,7 @@ import com.pubnub.api.utils.Clock
 import com.pubnub.api.utils.Instant
 import com.pubnub.api.utils.PatchValue
 import com.pubnub.api.v2.callbacks.Result
-import com.pubnub.chat.Channel
+import com.pubnub.chat.BaseChannel
 import com.pubnub.chat.Membership
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.error.PubNubErrorMessage
@@ -140,7 +140,7 @@ data class UserImpl(
         }
     }
 
-    override fun setRestrictions(channel: Channel, ban: Boolean, mute: Boolean, reason: String?): PNFuture<Unit> {
+    override fun setRestrictions(channel: BaseChannel<*, *>, ban: Boolean, mute: Boolean, reason: String?): PNFuture<Unit> {
         if (chat.pubNub.configuration.secretKey.isEmpty()) {
             return log.logErrorAndReturnException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY).asFuture()
         }
@@ -155,7 +155,7 @@ data class UserImpl(
         )
     }
 
-    override fun getChannelRestrictions(channel: Channel): PNFuture<Restriction> {
+    override fun getChannelRestrictions(channel: BaseChannel<*, *>): PNFuture<Restriction> {
         return getRestrictions(channel).then { pnChannelMembershipArrayResult ->
             val firstMembership: PNChannelMembership = pnChannelMembershipArrayResult.data.first()
             RestrictionImpl.fromChannelMembershipDTO(id, firstMembership)
@@ -203,7 +203,7 @@ data class UserImpl(
     }
 
     internal fun getRestrictions(
-        channel: Channel?,
+        channel: BaseChannel<*, *>?,
         limit: Int? = null,
         page: PNPage? = null,
         sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),

@@ -11,7 +11,7 @@ import kotlin.js.json
 @JsExport
 @JsName("Membership")
 class MembershipJs internal constructor(internal val membership: Membership, internal val chatJs: ChatJs) {
-    val channel: ChannelJs get() = membership.channel.asJs(chatJs)
+    val channel: BaseChannelJs get() = membership.channel.asJs(chatJs)
     val user: UserJs get() = membership.user.asJs(chatJs)
     val custom get() = membership.custom?.toJsMap()
     val updated by membership::updated
@@ -33,8 +33,8 @@ class MembershipJs internal constructor(internal val membership: Membership, int
         }
     }
 
-    fun setLastReadMessage(message: MessageJs): Promise<MembershipJs> {
-        return membership.setLastReadMessage(message.message).then { it.asJs(chatJs) }.asPromise()
+    fun setLastReadMessage(message: BaseMessageJs): Promise<MembershipJs> {
+        return membership.setLastReadMessage(message.baseMessage).then { it.asJs(chatJs) }.asPromise()
     }
 
     fun setLastReadMessageTimetoken(timetoken: String): Promise<MembershipJs> {

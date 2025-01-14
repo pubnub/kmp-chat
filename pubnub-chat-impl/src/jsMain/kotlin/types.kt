@@ -30,44 +30,44 @@ external interface GetCurrentUserMentionsResultJs {
 external interface UserMentionDataJs {
     val event: EventJs
     val userId: String
-    val message: MessageJs
+    val message: BaseMessageJs
 }
 
 external interface ChannelMentionDataJs : UserMentionDataJs {
     override var event: EventJs
     override var userId: String
-    override var message: MessageJs
+    override var message: BaseMessageJs
     var channelId: String
 }
 
 external interface ThreadMentionDataJs : UserMentionDataJs {
     override var event: EventJs
     override var userId: String
-    override var message: MessageJs
+    override var message: BaseMessageJs
     var parentChannelId: String
     var threadChannelId: String
 }
 
 external interface GetUnreadMessagesCountsJs {
-    var channel: ChannelJs
+    var channel: BaseChannelJs
     var membership: MembershipJs
     var count: Double
 }
 
 external interface CreateGroupConversationResultJs {
-    var channel: ChannelJs
+    var channel: BaseChannelJs
     var hostMembership: MembershipJs
     var inviteesMemberships: Array<MembershipJs>
 }
 
 external interface CreateDirectConversationResultJs {
-    var channel: ChannelJs
+    var channel: BaseChannelJs
     var hostMembership: MembershipJs
     var inviteeMembership: MembershipJs
 }
 
 external interface GetChannelsResponseJs {
-    var channels: Array<ChannelJs>
+    var channels: Array<BaseChannelJs>
     var page: PubNub.MetadataPage
     var total: Int
 }
@@ -115,7 +115,7 @@ external interface MembersResponseJs {
 }
 
 external interface HistoryResponseJs {
-    var messages: Array<MessageJs>
+    var messages: Array<BaseMessageJs>
     var isMore: Boolean
 }
 
@@ -202,7 +202,7 @@ external interface SendTextOptionParams : PubNub.PublishParameters {
     var mentionedUsers: JsMap<MessageMentionedUser>?
     var referencedChannels: JsMap<MessageReferencedChannel>?
     var textLinks: Array<TextLink>?
-    var quotedMessage: MessageJs?
+    var quotedMessage: BaseMessageJs?
     var files: Any?
     var customPushData: JsMap<String>?
 }
@@ -232,7 +232,7 @@ inline fun DeleteUserResult(boolean: Boolean): DeleteUserResult {
 external interface DeleteChannelResult
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun DeleteChannelResult(channel: ChannelJs): DeleteChannelResult {
+inline fun DeleteChannelResult(channel: BaseChannelJs): DeleteChannelResult {
     return channel.unsafeCast<DeleteChannelResult>()
 }
 

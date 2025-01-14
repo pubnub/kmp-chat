@@ -7,10 +7,13 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.chat.Channel
+import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.ChatImpl.Companion.getParentMessageTimetokenFromThreadId
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.channel.ThreadChannelImpl
 import com.pubnub.chat.internal.defaultGetMessageResponseBody
 import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.util.pnError
@@ -29,7 +32,7 @@ data class ThreadMessageImpl(
     override val actions: Map<String, Map<String, List<Action>>>? = null,
     val metaInternal: JsonElement? = null,
     override val error: PubNubError? = null,
-) : BaseMessage<ThreadMessage>(
+) : BaseMessageImpl<ThreadMessage, ThreadChannel>(
         chat = chat,
         timetoken = timetoken,
         content = content,
@@ -37,9 +40,11 @@ data class ThreadMessageImpl(
         userId = userId,
         actions = actions,
         metaInternal = metaInternal,
-        error = error
+        error = error,
     ),
     ThreadMessage {
+    val parentMessageTimetoken get() = getParentMessageTimetokenFromThreadId(channelId)
+
     override fun copyWithActions(actions: Actions?): ThreadMessage = copy(actions = actions)
 
     override fun copyWithContent(content: EventContent.TextMessageContent): ThreadMessage = copy(content = content)
@@ -47,7 +52,7 @@ data class ThreadMessageImpl(
     companion object {
         private val log = Logger.withTag("ThreadMessageImpl")
 
-        internal fun fromDTO(chat: ChatImpl, pnMessageResult: PNMessageResult, parentChannelId: String): ThreadMessage {
+        internal fun fromDTO(chat: ChatInternal, pnMessageResult: PNMessageResult, parentChannelId: String): ThreadMessage {
             val content =
                 chat.config.customPayloads?.getMessageResponseBody?.invoke(pnMessageResult.message, pnMessageResult.channel, ::defaultGetMessageResponseBody)
                     ?: defaultGetMessageResponseBody(pnMessageResult.message)
@@ -60,7 +65,7 @@ data class ThreadMessageImpl(
                 pnMessageResult.channel,
                 pnMessageResult.publisher!!,
                 metaInternal = pnMessageResult.userMetadata,
-                error = pnMessageResult.error
+                error = pnMessageResult.error,
             )
         }
 
@@ -79,7 +84,7 @@ data class ThreadMessageImpl(
                 userId = messageItem.uuid!!,
                 actions = messageItem.actions,
                 metaInternal = messageItem.meta,
-                error = messageItem.error
+                error = messageItem.error,
             )
         }
     }
@@ -95,6 +100,14 @@ data class ThreadMessageImpl(
             }
             ChatImpl.pinOrUnpinMessageToChannel(chat.pubNub, message, parentChannel).then {
                 ChannelImpl.fromDTO(chat, it.data)
+            }
+        }
+    }
+
+    override fun pin(): PNFuture<ThreadChannel> {
+        return pinInternal().thenAsync { parentChannelMetadata ->
+            ChannelImpl(chat, id = parentChannelId).getMessage(parentMessageTimetoken).then { parentMessage ->
+                ThreadChannelImpl.fromDTO(chat, requireNotNull(parentMessage), parentChannelMetadata.data)
             }
         }
     }

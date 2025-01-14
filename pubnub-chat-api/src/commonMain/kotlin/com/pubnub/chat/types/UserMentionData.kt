@@ -1,7 +1,9 @@
 package com.pubnub.chat.types
 
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
+import com.pubnub.chat.ThreadMessage
 
 /**
  * A sealed class representing the data related to a user mention event.
@@ -12,7 +14,7 @@ import com.pubnub.chat.Message
  */
 sealed class UserMentionData {
     abstract val event: Event<EventContent.Mention>
-    abstract val message: Message
+    abstract val message: BaseMessage<*, *>
     abstract val userId: String
 }
 
@@ -42,7 +44,7 @@ class ChannelMentionData(
  */
 class ThreadMentionData(
     override val event: Event<EventContent.Mention>,
-    override val message: Message,
+    override val message: ThreadMessage,
     override val userId: String,
     val parentChannelId: String,
     val threadChannelId: String

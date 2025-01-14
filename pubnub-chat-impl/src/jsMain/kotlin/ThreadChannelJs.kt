@@ -14,22 +14,25 @@ import kotlin.js.Promise
 
 @JsExport
 @JsName("ThreadChannel")
-class ThreadChannelJs internal constructor(internal val threadChannel: ThreadChannel, chatJs: ChatJs) : ChannelJs(threadChannel, chatJs) {
+class ThreadChannelJs internal constructor(
+    internal val threadChannel: ThreadChannel,
+    chatJs: ChatJs
+) : BaseChannelJs(threadChannel, chatJs) {
     val parentChannelId by threadChannel::parentChannelId
 
-    override fun pinMessage(message: MessageJs): Promise<ChannelJs> {
-        return channel.pinMessage(message.message).then { it.asJs(chatJs) }.asPromise()
+    override fun pinMessage(message: BaseMessageJs): Promise<BaseChannelJs> {
+        return baseChannel.pinMessage(message.baseMessage).then { it.asJs(chatJs) }.asPromise()
     }
 
-    override fun unpinMessage(): Promise<ChannelJs> {
-        return channel.unpinMessage().then { it.asJs(chatJs) }.asPromise()
+    override fun unpinMessage(): Promise<BaseChannelJs> {
+        return baseChannel.unpinMessage().then { it.asJs(chatJs) }.asPromise()
     }
 
-    fun pinMessageToParentChannel(message: ThreadMessageJs): Promise<ChannelJs> {
+    fun pinMessageToParentChannel(message: ThreadMessageJs): Promise<BaseChannelJs> {
         return threadChannel.pinMessageToParentChannel(message.threadMessage).then { it.asJs(chatJs) }.asPromise()
     }
 
-    fun unpinMessageFromParentChannel(): Promise<ChannelJs> {
+    fun unpinMessageFromParentChannel(): Promise<BaseChannelJs> {
         return threadChannel.unpinMessageFromParentChannel().then { it.asJs(chatJs) }.asPromise()
     }
 

@@ -2,7 +2,7 @@
 
 import com.pubnub.api.createJsonElement
 import com.pubnub.chat.ThreadMessage
-import com.pubnub.chat.internal.message.BaseMessage
+import com.pubnub.chat.internal.message.BaseMessageImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
 
@@ -10,11 +10,11 @@ import com.pubnub.chat.types.EventContent
 class CryptoUtils {
     companion object {
         @JsStatic
-        fun decrypt(params: DecryptParams): MessageJs {
-            val decryptedContentJs = params.decryptor(params.message.message.text)
+        fun decrypt(params: DecryptParams): BaseMessageJs {
+            val decryptedContentJs = params.decryptor(params.message.baseMessage.text)
             val decryptedContent: EventContent.TextMessageContent = PNDataEncoder.decode(createJsonElement(decryptedContentJs))
 
-            val message = params.message.message as BaseMessage<*>
+            val message = params.message.baseMessage as BaseMessageImpl<*, *>
             val newMessage = message.copyWithContent(decryptedContent)
             return (newMessage as? ThreadMessage)?.asJs(params.chat) ?: newMessage.asJs(params.chat)
         }
@@ -23,6 +23,6 @@ class CryptoUtils {
 
 external interface DecryptParams {
     val chat: ChatJs
-    val message: MessageJs
+    val message: BaseMessageJs
     val decryptor: (String) -> Any
 }

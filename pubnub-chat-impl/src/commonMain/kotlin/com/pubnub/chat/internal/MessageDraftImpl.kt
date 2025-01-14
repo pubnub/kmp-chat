@@ -2,9 +2,10 @@ package com.pubnub.chat.internal
 
 import co.touchlab.kermit.Logger
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.chat.BaseChannel
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.MentionTarget
-import com.pubnub.chat.Message
 import com.pubnub.chat.MessageDraft
 import com.pubnub.chat.MessageDraftChangeListener
 import com.pubnub.chat.MessageElement
@@ -32,13 +33,13 @@ private const val SCHEMA_CHANNEL = "pn-channel://"
  * from a single thread at a time.
  */
 class MessageDraftImpl(
-    override val channel: Channel,
+    override val channel: BaseChannel<*, *>,
     override val userSuggestionSource: MessageDraft.UserSuggestionSource = MessageDraft.UserSuggestionSource.CHANNEL,
     override val isTypingIndicatorTriggered: Boolean = channel.type != ChannelType.PUBLIC,
     override val userLimit: Int = 10,
     override val channelLimit: Int = 10
 ) : MessageDraft {
-    override var quotedMessage: Message? = null
+    override var quotedMessage: BaseMessage<*, *>? = null
         set(value) {
             if (value != null && value.channelId != this.channel.id) {
                 log.pnError(PubNubErrorMessage.CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS)

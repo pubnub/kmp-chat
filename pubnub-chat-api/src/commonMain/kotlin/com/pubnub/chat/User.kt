@@ -179,7 +179,7 @@ interface User {
      * @return [PNFuture] indicating the result of setting the restriction.
      */
     fun setRestrictions(
-        channel: Channel,
+        channel: BaseChannel<*, *>,
         ban: Boolean = false,
         mute: Boolean = false,
         reason: String? = null,
@@ -191,7 +191,7 @@ interface User {
      * @param channel The [Channel] for which to retrieve the restrictions.
      * @return [PNFuture] containing the [Restriction] applied to the user in the specified channel.
      */
-    fun getChannelRestrictions(channel: Channel): PNFuture<Restriction>
+    fun getChannelRestrictions(channel: BaseChannel<*, *>): PNFuture<Restriction>
 
     /**
      * Retrieves all restrictions applied to the user on all channels they are a member of.

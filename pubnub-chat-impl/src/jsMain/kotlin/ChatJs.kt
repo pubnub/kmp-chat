@@ -152,11 +152,11 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         }.asPromise()
     }
 
-    fun getChannel(id: String): Promise<ChannelJs?> {
+    fun getChannel(id: String): Promise<BaseChannelJs?> {
         return chat.getChannel(id).then { it?.asJs(this) }.asPromise()
     }
 
-    fun updateChannel(id: String, data: ChannelFields): Promise<ChannelJs> {
+    fun updateChannel(id: String, data: ChannelFields): Promise<BaseChannelJs> {
         return chat.updateChannel(
             id,
             data.name,
@@ -194,7 +194,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     }
 
     // internal
-    fun createChannel(id: String, data: PubNub.ChannelMetadata?): Promise<ChannelJs> {
+    fun createChannel(id: String, data: PubNub.ChannelMetadata?): Promise<BaseChannelJs> {
         return chat.createChannel(
             id,
             data?.name,
@@ -209,7 +209,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     fun getThreadId(channelId: String, messageId: String) =
         ChatImpl.getThreadId(channelId, messageId.toLong())
 
-    fun createPublicConversation(params: CreateChannelParams?): Promise<ChannelJs> {
+    fun createPublicConversation(params: CreateChannelParams?): Promise<BaseChannelJs> {
         val channelId: String? = params?.channelId
         val data: PubNub.ChannelMetadata? = params?.channelData
         return chat.createPublicConversation(
@@ -390,11 +390,11 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     }
 
     @Deprecated("Only for internal MessageDraft V1 use")
-    fun getChannelSuggestions(text: String, options: GetSuggestionsParams?): Promise<Array<ChannelJs>> {
+    fun getChannelSuggestions(text: String, options: GetSuggestionsParams?): Promise<Array<BaseChannelJs>> {
         val limit = options?.limit
-        val cacheKey = MessageElementsUtils.getChannelPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<ChannelJs>())
+        val cacheKey = MessageElementsUtils.getChannelPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<BaseChannelJs>())
         return chat.getChannelSuggestions(cacheKey, limit?.toInt() ?: 10).then { channels ->
-            channels.map { it.asJs(this@ChatJs) }.toTypedArray()
+            channels.map { it.asJs(this@ChatJs) as BaseChannelJs }.toTypedArray()
         }.asPromise()
     }
 

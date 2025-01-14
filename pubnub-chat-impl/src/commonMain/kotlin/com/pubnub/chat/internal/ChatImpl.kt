@@ -17,6 +17,7 @@ import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
@@ -34,17 +35,20 @@ import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.api.utils.Clock
 import com.pubnub.api.utils.Instant
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.chat.BaseChannel
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
+import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.LogLevel
 import com.pubnub.chat.config.PushNotificationsConfig
-import com.pubnub.chat.internal.channel.BaseChannel
+import com.pubnub.chat.internal.channel.BaseChannelImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.channel.ThreadChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
@@ -64,17 +68,16 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_SOFT_DELETE_CHANNEL
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ID_IS_REQUIRED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
-import com.pubnub.chat.internal.error.PubNubErrorMessage.ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THERE_IS_NO_ACTION_TIMETOKEN_CORRESPONDING_TO_THE_THREAD
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THERE_IS_NO_THREAD_TO_BE_DELETED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THERE_IS_NO_THREAD_WITH_ID
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_MESSAGE_IS_NOT_A_THREAD
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_THREAD_ID_ALREADY_RESTORED
-import com.pubnub.chat.internal.error.PubNubErrorMessage.THREAD_FOR_THIS_MESSAGE_ALREADY_EXISTS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_NOT_EXIST
-import com.pubnub.chat.internal.error.PubNubErrorMessage.YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES
+import com.pubnub.chat.internal.message.MessageImpl
+import com.pubnub.chat.internal.message.ThreadMessageImpl
 import com.pubnub.chat.internal.mutelist.MutedUsersManagerImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer
@@ -126,7 +129,7 @@ class ChatImpl(
         ?: MessageActionType.DELETED.toString(),
     override val reactionsActionName: String = config.customPayloads?.reactionsActionName
         ?: MessageActionType.REACTIONS.toString(),
-    override val timerManager: TimerManager = createTimerManager()
+    override val timerManager: TimerManager = createTimerManager(),
 ) : ChatInternal {
     override var currentUser: User =
         UserImpl(this, pubNub.configuration.userId.value, name = pubNub.configuration.userId.value)
@@ -238,11 +241,21 @@ class ChatImpl(
         }
     }
 
+    fun <C : BaseChannel<C, *>> getChannel(channelId: String, channelFactory: (ChatInternal, PNChannelMetadata) -> C): PNFuture<C?> {
+        if (!isValidId(channelId)) {
+            return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
+        }
+        return pubNub.getChannelMetadata(channel = channelId, includeCustom = true)
+            .then { pnChannelMetadataResult: PNChannelMetadataResult ->
+                channelFactory(this, pnChannelMetadataResult.data)
+            }.nullOn404()
+    }
+
     override fun removeThreadChannel(
         chat: Chat,
         message: Message,
-        soft: Boolean
-    ): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> {
+        soft: Boolean,
+    ): PNFuture<Pair<PNRemoveMessageActionResult, ThreadChannel?>> {
         if (!message.hasThread) {
             return PubNubException(THERE_IS_NO_THREAD_TO_BE_DELETED).logErrorAndReturnException(log).asFuture()
         }
@@ -255,15 +268,25 @@ class ChatImpl(
                     log
                 ).asFuture()
 
-        return chat.getChannel(threadId).thenAsync { threadChannel ->
-            if (threadChannel == null) {
-                log.pnError("$THERE_IS_NO_THREAD_WITH_ID$threadId")
+        return getChannel(
+            channelId = threadId,
+            channelFactory = { chat, data -> ThreadChannelImpl.fromDTO(chat, message, data) }
+        )
+            .thenAsync { threadChannel ->
+                if (threadChannel == null) {
+                    log.pnError("$THERE_IS_NO_THREAD_WITH_ID$threadId")
+                }
+                awaitAll(
+                    chat.pubNub.removeMessageAction(message.channelId, message.timetoken, actionTimetoken),
+                    performDeleteChannel(threadChannel.id, soft).then {
+                        if (it != null) {
+                            threadChannel + it.data
+                        } else {
+                            null
+                        }
+                    }
+                )
             }
-            awaitAll(
-                chat.pubNub.removeMessageAction(message.channelId, message.timetoken, actionTimetoken),
-                threadChannel.delete(soft)
-            )
-        }
     }
 
     override fun getUser(userId: String): PNFuture<User?> {
@@ -313,7 +336,7 @@ class ChatImpl(
         email: String?,
         custom: CustomObject?,
         status: String?,
-        type: String?
+        type: String?,
     ): PNFuture<User> {
         if (!isValidId(id)) {
             return log.logErrorAndReturnException(ID_IS_REQUIRED).asFuture()
@@ -383,8 +406,21 @@ class ChatImpl(
         description: String?,
         custom: CustomObject?,
         type: ChannelType?,
-        status: String?
+        status: String?,
     ): PNFuture<Channel> {
+        return performCreateChannel(id, name, description, custom, type, status).then {
+            ChannelImpl.fromDTO(this, it.data)
+        }
+    }
+
+    override fun performCreateChannel(
+        id: String,
+        name: String?,
+        description: String?,
+        custom: CustomObject?,
+        type: ChannelType?,
+        status: String?,
+    ): PNFuture<PNChannelMetadataResult> {
         if (!isValidId(id)) {
             return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
@@ -401,7 +437,7 @@ class ChatImpl(
         filter: String?,
         sort: Collection<PNSortKey<PNKey>>,
         limit: Int?,
-        page: PNPage?
+        page: PNPage?,
     ): PNFuture<GetChannelsResponse> {
         return pubNub.getAllChannelMetadata(
             limit = limit,
@@ -441,7 +477,7 @@ class ChatImpl(
         custom: CustomObject?,
         description: String?,
         status: String?,
-        type: ChannelType?
+        type: ChannelType?,
     ): PNFuture<Channel> {
         if (!isValidId(id)) {
             return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
@@ -449,7 +485,9 @@ class ChatImpl(
 
         return getChannel(id).thenAsync { channel: Channel? ->
             if (channel != null) {
-                setChannelMetadata(id, name, description, custom, type, status)
+                setChannelMetadata(id, name, description, custom, type, status).then { pnChannelMetadataResult ->
+                    ChannelImpl.fromDTO(this, pnChannelMetadataResult.data)
+                }
             } else {
                 log.pnError(CHANNEL_NOT_FOUND)
             }
@@ -457,6 +495,12 @@ class ChatImpl(
     }
 
     override fun deleteChannel(id: String, soft: Boolean): PNFuture<Channel?> {
+        return performDeleteChannel(id, soft).then { result ->
+            result?.let { ChannelImpl.fromDTO(this, it.data) }
+        }
+    }
+
+    override fun performDeleteChannel(id: String, soft: Boolean): PNFuture<PNChannelMetadataResult?> {
         if (!isValidId(id)) {
             return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
@@ -469,11 +513,11 @@ class ChatImpl(
                 performSoftChannelDelete(channel)
             }
         } else {
-            performChannelDelete(id).then { null }
+            performHardChannelDelete(id).then { null }
         }
     }
 
-    override fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult> {
+    override fun forwardMessage(message: BaseMessage<*, *>, channelId: String): PNFuture<PNPublishResult> {
         if (!isValidId(channelId)) {
             return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
@@ -497,7 +541,7 @@ class ChatImpl(
     override fun <T : EventContent> emitEvent(
         channelId: String,
         payload: T,
-        mergePayloadWith: Map<String, Any>?
+        mergePayloadWith: Map<String, Any>?,
     ): PNFuture<PNPublishResult> {
         val emitMethod = payload::class.getEmitMethod() ?: (payload as? EventContent.Custom)?.method
         return if (emitMethod == EmitEventMethod.SIGNAL) {
@@ -520,7 +564,7 @@ class ChatImpl(
         channelName: String?,
         channelDescription: String?,
         channelCustom: CustomObject?,
-        channelStatus: String?
+        channelStatus: String?,
     ): PNFuture<Channel> {
         val finalChannelId: String = channelId ?: generateRandomUuid()
 
@@ -595,7 +639,7 @@ class ChatImpl(
         channelDescription: String?,
         channelCustom: CustomObject?,
         channelStatus: String?,
-        membershipCustom: CustomObject?
+        membershipCustom: CustomObject?,
     ): PNFuture<CreateGroupConversationResult> {
         val user = this.currentUser
         val finalChannelId = channelId ?: generateRandomUuid()
@@ -655,7 +699,7 @@ class ChatImpl(
         type: KClass<T>,
         channelId: String,
         customMethod: EmitEventMethod,
-        callback: (event: Event<T>) -> Unit
+        callback: (event: Event<T>) -> Unit,
     ): AutoCloseable {
         val handler = fun(_: PubNub, pnEvent: PNEvent) {
             try {
@@ -717,7 +761,7 @@ class ChatImpl(
     }
 
     override fun setRestrictions(
-        restriction: Restriction
+        restriction: Restriction,
     ): PNFuture<Unit> {
         if (this.pubNub.configuration.secretKey.isEmpty()) {
             return log.logErrorAndReturnException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY).asFuture()
@@ -835,7 +879,7 @@ class ChatImpl(
         limit: Int?,
         page: PNPage?,
         filter: String?,
-        sort: Collection<PNSortKey<PNMembershipKey>>
+        sort: Collection<PNSortKey<PNMembershipKey>>,
     ): PNFuture<List<GetUnreadMessagesCounts>> {
         return currentUser.getMemberships(limit = limit, page = page, filter = filter, sort = sort)
             .thenAsync { membershipsResponse: MembershipsResponse ->
@@ -991,7 +1035,7 @@ class ChatImpl(
         channelId: String,
         startTimetoken: Long?,
         endTimetoken: Long?,
-        count: Int
+        count: Int,
     ): PNFuture<GetEventsHistoryResult> {
         return pubNub.fetchMessages(
             channels = listOf(channelId),
@@ -1022,7 +1066,7 @@ class ChatImpl(
     override fun getCurrentUserMentions(
         startTimetoken: Long?,
         endTimetoken: Long?,
-        count: Int
+        count: Int,
     ): PNFuture<GetCurrentUserMentionsResult> {
         if (count > 100) {
             return log.logErrorAndReturnException(COUNT_SHOULD_NOT_EXCEED_100).asFuture()
@@ -1042,35 +1086,54 @@ class ChatImpl(
                 .map { mentionEvent: Event<EventContent.Mention> ->
                     val mentionTimetoken = mentionEvent.payload.messageTimetoken
                     val mentionChannelId = mentionEvent.payload.channel
+                    val mentionParentChannelId = mentionEvent.payload.parentChannel
 
-                    BaseChannel.getMessage(chat = this, channelId = mentionChannelId, timetoken = mentionTimetoken)
-                        .then { message: Message? ->
-                            if (message == null) {
-                                return@then null
+                    if (mentionParentChannelId != null) {
+                        BaseChannelImpl.getMessage<ThreadMessage, ThreadChannel>(
+                            chat = this,
+                            channelId = mentionChannelId,
+                            timetoken = mentionTimetoken,
+                            messageFactory = { chat, item, messageFactory ->
+                                ThreadMessageImpl.fromDTO(chat, item, mentionChannelId, mentionParentChannelId)
                             }
-                            if (mentionEvent.payload.parentChannel == null) {
+                        ).then { message: ThreadMessage? ->
+                            if (message == null) {
+                                null
+                            } else {
+                                ThreadMentionData(
+                                    event = mentionEvent,
+                                    message = message,
+                                    userId = mentionEvent.userId,
+                                    parentChannelId = mentionParentChannelId,
+                                    threadChannelId = mentionChannelId
+                                )
+                            }
+                        }
+                    } else {
+                        BaseChannelImpl.getMessage(
+                            this,
+                            mentionChannelId,
+                            mentionTimetoken,
+                            MessageImpl::fromDTO
+                        ).then { message ->
+                            if (message == null) {
+                                null
+                            } else {
                                 ChannelMentionData(
                                     event = mentionEvent,
                                     message = message,
                                     userId = mentionEvent.userId,
                                     channelId = mentionChannelId
                                 )
-                            } else {
-                                ThreadMentionData(
-                                    event = mentionEvent,
-                                    message = message,
-                                    userId = mentionEvent.userId,
-                                    parentChannelId = mentionEvent.payload.parentChannel.orEmpty(),
-                                    threadChannelId = mentionEvent.payload.channel
-                                )
                             }
                         }
+                    }
                 }.awaitAll()
+                .then { it.filterNotNull() }
+                .then { userMentionDataList: List<UserMentionData> ->
+                    GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList, isMore = isMore)
+                }
         }
-            .then { it.filterNotNull() }
-            .then { userMentionDataList: List<UserMentionData> ->
-                GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList, isMore = isMore)
-            }
     }
 
     override fun destroy() {
@@ -1080,7 +1143,7 @@ class ChatImpl(
 
     private fun getTimetokenFromHistoryMessage(
         channelId: String,
-        pnFetchMessagesResult: PNFetchMessagesResult
+        pnFetchMessagesResult: PNFetchMessagesResult,
     ): Long {
         val relevantLastMessage: List<PNFetchMessageItem>? = pnFetchMessagesResult.channelsUrlDecoded[channelId]
         return relevantLastMessage?.firstOrNull()?.timetoken ?: 0
@@ -1113,8 +1176,8 @@ class ChatImpl(
     private fun performUserDelete(userId: String): PNFuture<Unit> =
         pubNub.removeUUIDMetadata(uuid = userId).then { }
 
-    private fun performSoftChannelDelete(channel: Channel): PNFuture<Channel> {
-        val updatedChannel = (channel as BaseChannel<*, *>).copyWithStatusDeleted()
+    private fun performSoftChannelDelete(channel: BaseChannel<*, *>): PNFuture<PNChannelMetadataResult> {
+        val updatedChannel = (channel as BaseChannelImpl<*, *>).copyWithStatusDeleted()
         return pubNub.setChannelMetadata(
             channel = channel.id,
             name = updatedChannel.name,
@@ -1123,24 +1186,22 @@ class ChatImpl(
             includeCustom = false,
             type = updatedChannel.type?.stringValue,
             status = updatedChannel.status
-        ).then { pnChannelMetadataResult ->
-            ChannelImpl.fromDTO(this, pnChannelMetadataResult.data)
-        }.catch { exception ->
+        ).catch { exception ->
             Result.failure(PubNubException(FAILED_TO_SOFT_DELETE_CHANNEL, exception))
         }
     }
 
-    private fun performChannelDelete(channelId: String): PNFuture<Unit> =
+    private fun performHardChannelDelete(channelId: String): PNFuture<Unit> =
         pubNub.removeChannelMetadata(channel = channelId).then { }
 
-    private fun setChannelMetadata(
+    override fun setChannelMetadata(
         id: String,
         name: String?,
         description: String?,
         custom: CustomObject?,
         type: ChannelType?,
         status: String?,
-    ): PNFuture<Channel> {
+    ): PNFuture<PNChannelMetadataResult> {
         return pubNub.setChannelMetadata(
             channel = id,
             name = name,
@@ -1149,9 +1210,7 @@ class ChatImpl(
             includeCustom = true,
             type = type?.stringValue,
             status = status
-        ).then { pnChannelMetadataResult ->
-            ChannelImpl.fromDTO(this, pnChannelMetadataResult.data)
-        }.catch { exception ->
+        ).catch { exception ->
             Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA, exception))
         }
     }
@@ -1188,8 +1247,8 @@ class ChatImpl(
 
         internal fun pinOrUnpinMessageToChannel(
             pubNub: PubNub,
-            message: Message?,
-            channel: Channel
+            message: BaseMessage<*, *>?,
+            channel: BaseChannel<*, *>,
         ): PNFuture<PNChannelMetadataResult> {
             val customMetadataToSet = channel.custom?.toMutableMap() ?: mutableMapOf()
             if (message == null) {
@@ -1208,32 +1267,16 @@ class ChatImpl(
             )
         }
 
-        internal fun getThreadId(channelId: String, messageTimetoken: Long): String {
+        fun getThreadId(channelId: String, messageTimetoken: Long): String {
             return "${MESSAGE_THREAD_ID_PREFIX}_${channelId}_$messageTimetoken"
         }
 
-        internal fun createThreadChannel(chat: ChatInternal, message: Message): PNFuture<ThreadChannel> {
-            if (message.channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
-                return log.logErrorAndReturnException(ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED).asFuture()
-            }
-            if (message.deleted) {
-                return log.logErrorAndReturnException(YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES).asFuture()
-            }
+        fun getParentChannelIdFromThreadId(threadChannelId: String): String {
+            return threadChannelId.removePrefix(MESSAGE_THREAD_ID_PREFIX + "_").substringBeforeLast("_")
+        }
 
-            val threadChannelId =
-                getThreadId(message.channelId, message.timetoken)
-            return chat.getChannel(threadChannelId).thenAsync { it: Channel? ->
-                if (it != null) {
-                    return@thenAsync log.logErrorAndReturnException(THREAD_FOR_THIS_MESSAGE_ALREADY_EXISTS).asFuture()
-                }
-                ThreadChannelImpl(
-                    message,
-                    chat,
-                    description = "Thread on channel ${message.channelId} with message timetoken ${message.timetoken}",
-                    id = threadChannelId,
-                    threadCreated = false
-                ).asFuture()
-            }
+        fun getParentMessageTimetokenFromThreadId(threadChannelId: String): Long {
+            return threadChannelId.substringAfterLast("_").toLong()
         }
     }
 

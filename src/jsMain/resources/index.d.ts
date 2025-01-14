@@ -335,8 +335,8 @@ type ThreadMentionData = {
 };
 type UserMentionData = ChannelMentionData | ThreadMentionData;
 type MessageFields = Pick<Message, "timetoken" | "content" | "channelId" | "userId" | "actions" | "meta">;
-declare class Message {
-    protected chat: Chat;
+
+declare class BaseMessage {
     readonly timetoken: string;
     readonly content: TextMessageContent;
     readonly channelId: string;
@@ -346,7 +346,6 @@ declare class Message {
         [key: string]: any;
     };
     readonly error?: string;
-    get hasThread(): boolean;
     get mentionedUsers(): any;
     get referencedChannels(): any;
     get textLinks(): any;
@@ -358,11 +357,6 @@ declare class Message {
         url: string;
         type?: string | undefined;
     }[];
-    /*
-    * Updates
-    */
-    static streamUpdatesOn(messages: Message[], callback: (messages: Message[]) => unknown): () => void;
-    streamUpdates(callback: (message: Message) => unknown): () => void;
     /*
     * Message text
     */
@@ -400,6 +394,18 @@ declare class Message {
     /** @deprecated */
     DEPRECATED_report(reason: string): Promise<Signal.SignalResponse>;
     report(reason: string): Promise<Signal.SignalResponse>;
+}
+
+declare class Message extends BaseMessage {
+    protected chat: Chat;
+    get hasThread(): boolean;
+
+    /*
+    * Updates
+    */
+    static streamUpdatesOn(messages: Message[], callback: (messages: Message[]) => unknown): () => void;
+    streamUpdates(callback: (message: Message) => unknown): () => void;
+
     /**
      * Threads
      */
@@ -494,8 +500,8 @@ declare class MessageDraft {
     removeQuote(): void;
 }
 type ChannelFields = Pick<Channel, "id" | "name" | "custom" | "description" | "updated" | "status" | "type">;
-declare class Channel {
-    protected chat: Chat;
+
+declare class BaseChannel {
     readonly id: string;
     readonly name?: string;
     readonly custom?: AppContext.CustomData;
@@ -503,74 +509,32 @@ declare class Channel {
     readonly updated?: string;
     readonly status?: string;
     readonly type?: ChannelType;
-    /*
-    * CRUD
-    */
-    update(data: Omit<ChannelFields, "id">): Promise<Channel>;
-    delete(options?: DeleteParameters): Promise<true | Channel>;
-    /*
-    * Updates
-    */
-    static streamUpdatesOn(channels: Channel[], callback: (channels: Channel[]) => unknown): () => void;
-    streamUpdates(callback: (channel: Channel) => unknown): () => void;
+
     sendText(text: string, options?: SendTextOptionParams): Promise<unknown>;
-    forwardMessage(message: Message): Promise<Publish.PublishResponse>;
+    forwardMessage(message: BaseMessage): Promise<Publish.PublishResponse>;
     startTyping(): Promise<Signal.SignalResponse | undefined>;
     stopTyping(): Promise<Signal.SignalResponse | undefined>;
     getTyping(callback: (typingUserIds: string[]) => unknown): () => void;
-    /*
-    * Streaming messages
-    */
-    connect(callback: (message: Message) => void): () => void;
     /*
     * Presence
     */
     whoIsPresent(): Promise<string[]>;
     isPresent(userId: string): Promise<boolean>;
     streamPresence(callback: (userIds: string[]) => unknown): Promise<() => void>;
-    /*
-    * Messages
-    */
-    getHistory(params?: {
-        startTimetoken?: string;
-        endTimetoken?: string;
-        count?: number;
-    }): Promise<{
-        messages: Message[];
-        isMore: boolean;
-    }>;
-    getMessage(timetoken: string): Promise<Message>;
-    join(callback: (message: Message) => void, params?: Omit<AppContext.SetMembershipsParameters<AppContext.CustomData>, "channels" | "include" | "filter"> & {
-        custom?: AppContext.CustomData;
-    }): Promise<{
-        membership: Membership;
-        disconnect: () => void;
-    }>;
+
     leave(): Promise<boolean>;
-    getMembers(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<{
-        page: {
-            next: string | undefined;
-            prev: string | undefined;
-        };
-        total: number | undefined;
-        status: number;
-        members: Membership[];
-    }>;
-    invite(user: User): Promise<Membership>;
-    inviteMultiple(users: User[]): Promise<Membership[]>;
     pinMessage(message: Message): Promise<Channel>;
     unpinMessage(): Promise<Channel>;
     getPinnedMessage(): Promise<Message | null>;
     getUserSuggestions(text: string, options?: {
         limit: number;
     }): Promise<Membership[]>;
+
     createMessageDraft(config?: Partial<MessageDraftConfig>): MessageDraft;
     createMessageDraftV2(config?: Partial<MessageDraftConfig>): MessageDraftV2;
     registerForPush(): Promise<void>;
     unregisterFromPush(): Promise<void>;
-    streamReadReceipts(callback: (receipts: {
-        [key: string]: string[];
-    }) => unknown): Promise<() => void>;
+
     getFiles(params?: Omit<FileSharing.ListFilesParameters, "channel">): Promise<{
         files: {
             name: string;
@@ -623,6 +587,62 @@ declare class Channel {
         isMore: boolean;
     }>;
     streamMessageReports(callback: (event: Event<"report">) => void): () => void;
+}
+
+declare class Channel extends BaseChannel {
+    protected chat: Chat;
+
+    /*
+    * CRUD
+    */
+    update(data: Omit<ChannelFields, "id">): Promise<Channel>;
+    delete(options?: DeleteParameters): Promise<true | Channel>;
+    /*
+    * Updates
+    */
+    static streamUpdatesOn(channels: Channel[], callback: (channels: Channel[]) => unknown): () => void;
+    streamUpdates(callback: (channel: Channel) => unknown): () => void;
+
+    /*
+    * Streaming messages
+    */
+    connect(callback: (message: Message) => void): () => void;
+
+    /*
+    * Messages
+    */
+    getHistory(params?: {
+        startTimetoken?: string;
+        endTimetoken?: string;
+        count?: number;
+    }): Promise<{
+        messages: Message[];
+        isMore: boolean;
+    }>;
+    getMessage(timetoken: string): Promise<Message>;
+    join(callback: (message: Message) => void, params?: Omit<AppContext.SetMembershipsParameters<AppContext.CustomData>, "channels" | "include" | "filter"> & {
+        custom?: AppContext.CustomData;
+    }): Promise<{
+        membership: Membership;
+        disconnect: () => void;
+    }>;
+
+    getMembers(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<{
+        page: {
+            next: string | undefined;
+            prev: string | undefined;
+        };
+        total: number | undefined;
+        status: number;
+        members: Membership[];
+    }>;
+    invite(user: User): Promise<Membership>;
+    inviteMultiple(users: User[]): Promise<Membership[]>;
+
+    streamReadReceipts(callback: (receipts: {
+        [key: string]: string[];
+    }) => unknown): Promise<() => void>;
+
 }
 type ChatConfig = {
     saveDebugLog: boolean;
@@ -783,7 +803,7 @@ declare class Chat {
         reason?: string;
     }): Promise<void>;
 }
-declare class ThreadMessage extends Message {
+declare class ThreadMessage extends BaseMessage {
     readonly parentChannelId: string;
     static streamUpdatesOn(threadMessages: ThreadMessage[], callback: (threadMessages: ThreadMessage[]) => unknown): () => void;
     pinToParentChannel(): Promise<Channel>;
