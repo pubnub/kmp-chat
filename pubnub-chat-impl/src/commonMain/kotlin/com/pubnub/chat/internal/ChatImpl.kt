@@ -224,7 +224,16 @@ class ChatImpl(
             if (user != null) {
                 log.pnError(USER_ID_ALREADY_EXIST)
             } else {
-                setUserMetadata(id, name, externalId, profileUrl, email, custom, type, status)
+                setUserMetadata(
+                    id = id,
+                    name = name,
+                    externalId = externalId,
+                    profileUrl = profileUrl,
+                    email = email,
+                    custom = custom,
+                    type = type,
+                    status = status
+                )
             }
         }
     }
@@ -1074,10 +1083,6 @@ class ChatImpl(
         return config.pushNotifications
     }
 
-    private fun isValidId(id: String): Boolean {
-        return id.isNotEmpty()
-    }
-
     private fun performSoftUserDelete(user: User): PNFuture<User> {
         val updatedUser = (user as UserImpl).copy(status = DELETED)
         return pubNub.setUUIDMetadata(
@@ -1260,16 +1265,15 @@ class ChatImpl(
     }
 
     private fun saveTimeStampFunc(): PNFuture<Unit> {
-        val customWithUpdatedLastActiveTimestamp = buildMap {
-            currentUser.custom?.let { putAll(it) }
-            put(LAST_ACTIVE_TIMESTAMP, Clock.System.now().toEpochMilliseconds().toString())
-        }
-        return pubNub.setUUIDMetadata(
-            uuid = currentUser.id,
-            custom = createCustomObject(customWithUpdatedLastActiveTimestamp),
-            includeCustom = true,
-        ).then { pnUUIDMetadataResult: PNUUIDMetadataResult ->
-            currentUser = UserImpl.fromDTO(this, pnUUIDMetadataResult.data)
+        return currentUser.update { user ->
+            this.custom = createCustomObject(
+                buildMap {
+                    user.custom?.let { putAll(it) }
+                    put(LAST_ACTIVE_TIMESTAMP, Clock.System.now().toEpochMilliseconds().toString())
+                }
+            )
+        }.then { updatedUser ->
+            currentUser = updatedUser
         }
     }
 
@@ -1294,3 +1298,7 @@ class ChatImpl(
 }
 
 internal expect fun generateRandomUuid(): String
+
+internal fun isValidId(id: String): Boolean {
+    return id.isNotEmpty()
+}

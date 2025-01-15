@@ -116,7 +116,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     fun createUser() = runTest {
         val user = chat.createUser(someUser).await()
 
-        assertEquals(someUser, user.asImpl().copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(someUser, user.asImpl().copy(updated = null, lastActiveTimestamp = null, eTag = null))
         assertNotNull(user.updated)
     }
 
@@ -132,7 +132,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
                 randomString() to randomString()
             ),
             type = randomString(),
-            updated = null
+            updated = null,
+            eTag = null
         )
 
         val updatedUser = chat.updateUser(
@@ -146,7 +147,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             expectedUser.type
         ).await()
 
-        assertEquals(expectedUser, updatedUser.asImpl().copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(expectedUser, updatedUser.asImpl().copy(updated = null, lastActiveTimestamp = null, eTag = null))
         assertNotNull(updatedUser.updated)
     }
 

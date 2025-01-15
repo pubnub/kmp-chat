@@ -675,6 +675,22 @@ pubnub@8.4.1:
     react-native-url-polyfill "^2.0.0"
     text-encoding "^0.7.0"
 
+pubnub@8.6.0:
+  version "8.6.0"
+  resolved "https://registry.yarnpkg.com/pubnub/-/pubnub-8.6.0.tgz#75524e7ed3653090652d160ce83ac089362a0379"
+  integrity sha512-LBCglooxiLkNT3ArUOvSJnLKK6/QdeshWY60IWlSQ+SkXlzEjt74wAnX5XriEXKsmza2yw9mFGG6+B5SlczRzA==
+  dependencies:
+    agentkeepalive "^3.5.2"
+    buffer "^6.0.3"
+    cbor-js "^0.1.0"
+    cbor-sync "^1.0.4"
+    form-data "^4.0.0"
+    lil-uuid "^0.1.1"
+    node-fetch "^2.7.0"
+    proxy-agent "^6.3.0"
+    react-native-url-polyfill "^2.0.0"
+    text-encoding "^0.7.0"
+
 punycode@^2.1.1:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.1.tgz#027422e2faec0b25e1549c3e1bd8309b9133b6e5"
