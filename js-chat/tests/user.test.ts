@@ -190,7 +190,11 @@ describe("User test", () => {
         channelTypeField: true,
         statusField: true,
         channelStatusField: true,
+        typeField: true,
       },
+      limit: null,
+      page: null,
+      sort: {},
       uuid: chat.currentUser.id,
     }
 
