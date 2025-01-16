@@ -352,7 +352,7 @@ declare class Message {
     get referencedChannels(): any;
     get textLinks(): any;
     get type(): MessageType;
-    get quotedMessage(): any;
+    get quotedMessage(): QuotedMessage | null | undefined;
     get files(): {
         name: string;
         id: string;
@@ -650,6 +650,7 @@ type ChatConfig = {
         reactionsActionName?: string;
     };
     authKey?: string;
+    syncMutedUsers?: boolean;
 };
 type ChatConstructor = Partial<ChatConfig> & PubNub.PubnubConfig;
 declare class Chat {
@@ -670,6 +671,7 @@ declare class Chat {
         events: Event<any>[];
         isMore: boolean;
     }>;
+    get mutedUsersManager(): MutedUsersManager;
     /**
      * Current user
      */
@@ -817,6 +819,20 @@ declare class CryptoUtils {
         decryptor: (encryptedContent: string) => TextMessageContent;
     }): Message;
 }
+
+declare class QuotedMessage {
+    get timetoken(): string;
+    get userId(): string;
+    get text(): string;
+    getMessageElements(): MixedTextTypedElement[];
+}
+
+declare class MutedUsersManager {
+    get mutedUsers(): string[];
+    async muteUser(userId: string);
+    async unmuteUser(userId: string);
+}
+
 declare const MESSAGE_THREAD_ID_PREFIX = "PUBNUB_INTERNAL_THREAD";
 declare const INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_";
 declare const INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL";

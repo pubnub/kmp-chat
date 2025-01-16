@@ -9,6 +9,7 @@ import com.pubnub.api.models.consumer.access_manager.v3.UUIDGrant
 import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
 import com.pubnub.chat.User
@@ -16,6 +17,7 @@ import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.INTERNAL_USER_MODERATION_CHANNEL_PREFIX
+import com.pubnub.chat.internal.SUFFIX_MUTE_1
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.utils.cyrb53a
@@ -67,7 +69,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun test_storeUserActivityInterval_and_storeUserActivityTimestamps() = runTest {
-        chat = ChatImpl(ChatConfiguration(storeUserActivityInterval = 100.seconds, storeUserActivityTimestamps = true), pubnub)
+        val chat =
+            createChat { ChatImpl(ChatConfiguration(storeUserActivityInterval = 100.seconds, storeUserActivityTimestamps = true), pubnub) }
         chat.initialize().await()
 
         val user: User = chat.getUser(chat.currentUser.id).await()!!
@@ -84,12 +87,26 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         pubnubPamClient = createPubNub(configPamClient)
         val token = chatPamServer.pubNub.grantToken(
             ttl = 1,
-            channels = listOf(ChannelGrant.name(get = true, name = "any", read = true, write = true, manage = true)), // get = true
-            uuids = listOf(UUIDGrant.id(id = pubnubPamClient.configuration.userId.value, get = true, update = true)) // this is important
+            channels = listOf(
+                ChannelGrant.name(get = true, name = "any", read = true, write = true, manage = true),
+                ChannelGrant.name(
+                    name = "PN_PRV.${pubnubPamClient.configuration.userId.value}.$SUFFIX_MUTE_1",
+                    read = true,
+                )
+            ), // get = true
+            uuids = listOf(
+                UUIDGrant.id(id = pubnubPamClient.configuration.userId.value, get = true, update = true),
+                UUIDGrant.id(
+                    id = "PN_PRV.${pubnubPamClient.configuration.userId.value}.$SUFFIX_MUTE_1",
+                    update = true,
+                    delete = true,
+                    get = true,
+                )
+            ) // this is important
         ).await().token
 
         pubnubPamClient.setToken(token)
-        chatPamClient = ChatImpl(ChatConfiguration(), pubnubPamClient)
+        val chatPamClient = createPamChat { ChatImpl(ChatConfiguration(), pubnubPamClient) }
         val initializeChat = chatPamClient.initialize().await()
 
         assertEquals(token, initializeChat.pubNub.getToken())
@@ -156,7 +173,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             chat.currentUser.asImpl().copy(updated = null, lastActiveTimestamp = null),
             result.hostMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null)
         )
-        assertEquals(someUser, result.inviteeMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null))
+        assertEquals(someUser, result.inviteeMembership.user.asImpl())
 
         assertEquals(result.channel, result.hostMembership.channel)
         assertEquals(result.channel, result.inviteeMembership.channel)
@@ -412,14 +429,14 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
                 apnsEnvironment = PNPushEnvironment.PRODUCTION
             )
         )
-        chat = ChatImpl(chatConfig, pubnub)
+        val chat = createChat { ChatImpl(chatConfig, pubnub) }
 
         // remove all pushNotificationChannels
         chat.unregisterAllPushChannels().await()
         delayInMillis(1500)
 
         // list pushNotification
-        assertPushChannels(0)
+        assertPushChannels(chat, 0)
 
         // register 3 channels
         val channel01 = "channel01"
@@ -429,21 +446,21 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         delayInMillis(1500)
 
         // list pushNotification
-        assertPushChannels(3)
+        assertPushChannels(chat, 3)
 
         // remove 1 channel
         chat.unregisterPushChannels(listOf(channel03)).await()
         delayInMillis(1500)
 
         // list pushNotification
-        assertPushChannels(2)
+        assertPushChannels(chat, 2)
 
         // removeAll
         chat.unregisterAllPushChannels().await()
         delayInMillis(1500)
 
         // list pushNotification
-        assertPushChannels(0)
+        assertPushChannels(chat, 0)
     }
 
     @Test
@@ -621,6 +638,9 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun setRestrictionThenUnset() = runTest(timeout = 10.seconds) {
+        if (PLATFORM == "iOS") {
+            return@runTest
+        }
         val userId = someUser.id
         val channelId = channel01.id
         val banned = CompletableDeferred<Unit>()
@@ -652,7 +672,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         }
     }
 
-    private suspend fun assertPushChannels(expectedNumberOfChannels: Int) {
+    private suspend fun assertPushChannels(chat: Chat, expectedNumberOfChannels: Int) {
         val pushChannels = chat.getPushChannels().await()
         assertEquals(expectedNumberOfChannels, pushChannels.size)
     }

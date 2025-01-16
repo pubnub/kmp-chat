@@ -44,7 +44,7 @@
     "version": "0.10.0",
     "name": "@pubnub/chat",
     "dependencies": {
-        "pubnub": "8.3.1",
+        "pubnub": "8.4.1",
         "format-util": "^1.0.5"
     }
 }

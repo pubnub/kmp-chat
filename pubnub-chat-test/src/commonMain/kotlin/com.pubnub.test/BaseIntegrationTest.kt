@@ -207,7 +207,14 @@ class PubNubTest(
         cont.invokeOnCancellation {
             pubNub.removeListener(statusListener)
         }
+        val resumeImmediately = getSubscribedChannels().containsAll(channels) && getSubscribedChannelGroups().containsAll(
+            channelGroups
+        )
+
         customSubscriptionBlock()
+        if (resumeImmediately) {
+            cont.resume(Unit)
+        }
     }
 
     suspend fun PubNub.awaitUnsubscribe(

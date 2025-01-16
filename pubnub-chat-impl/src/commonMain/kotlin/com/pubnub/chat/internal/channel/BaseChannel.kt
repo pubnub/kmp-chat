@@ -469,6 +469,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
         val listener = createEventListener(
             chat.pubNub,
             onMessage = { _, pnMessageResult ->
+                if (pnMessageResult.publisher in chat.mutedUsersManager.mutedUsers) {
+                    return@createEventListener
+                }
                 try {
                     if (
                         (
@@ -814,8 +817,12 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 includeMeta = true
             ).then { pnFetchMessagesResult: PNFetchMessagesResult ->
                 HistoryResponse(
-                    messages = pnFetchMessagesResult.channelsUrlDecoded[channelId]?.map { messageItem: PNFetchMessageItem ->
-                        messageFactory(chat, messageItem, channelId)
+                    messages = pnFetchMessagesResult.channelsUrlDecoded[channelId]?.mapNotNull { messageItem: PNFetchMessageItem ->
+                        if (messageItem.uuid in chat.mutedUsersManager.mutedUsers) {
+                            null
+                        } else {
+                            messageFactory(chat, messageItem, channelId)
+                        }
                     } ?: emptyList(),
                     isMore = pnFetchMessagesResult.channelsUrlDecoded[channelId]?.size == count
                 )

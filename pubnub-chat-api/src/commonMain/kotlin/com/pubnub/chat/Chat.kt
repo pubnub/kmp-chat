@@ -11,6 +11,7 @@ import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
+import com.pubnub.chat.mutelist.MutedUsersManager
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.CreateDirectConversationResult
@@ -51,6 +52,21 @@ interface Chat {
      * [User] object representing current user.
      */
     val currentUser: User
+
+    /**
+     * An object for manipulating the list of muted users.
+     *
+     * The list is local to this instance of Chat (it is not persisted anywhere) unless
+     * [ChatConfiguration.syncMutedUsers] is enabled, in which case it will be synced using App Context for the current
+     * user.
+     *
+     * Please note that this is not a server-side moderation mechanism (use [Chat.setRestrictions] for that), but rather
+     * a way to ignore messages from certain users on the client.
+     *
+     * @see ChatConfiguration.syncMutedUsers
+     * @see MutedUsersManager
+     */
+    val mutedUsersManager: MutedUsersManager
 
     /**
      * Creates a new [User] with a unique User ID.
@@ -359,6 +375,9 @@ interface Chat {
 
     /**
      * Allows to mute/ban a specific user on a channel or unmute/unban them.
+     *
+     * Please note that this is a server-side moderation mechanism, as opposed to [Chat.mutedUsersManager] (which is local to
+     * a client).
      *
      * @param restriction containing restriction details.
      *

@@ -54,12 +54,6 @@ external interface GetUnreadMessagesCountsJs {
     var count: Double
 }
 
-external interface QuotedMessageJs {
-    var timetoken: String
-    var text: String
-    var userId: String
-}
-
 external interface CreateGroupConversationResultJs {
     var channel: ChannelJs
     var hostMembership: MembershipJs
@@ -174,6 +168,7 @@ external interface ChatConfig {
     val rateLimitPerChannel: RateLimitPerChannelJs?
     val errorLogger: Any?
     val customPayloads: CustomPayloadsJs?
+    val syncMutedUsers: Boolean?
 }
 
 external interface CustomPayloadsJs {

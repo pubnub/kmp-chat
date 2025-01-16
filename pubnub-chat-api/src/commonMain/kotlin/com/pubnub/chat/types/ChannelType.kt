@@ -7,6 +7,7 @@ private const val CHANNELTYPE_DIRECT = "direct"
 private const val CHANNELTYPE_GROUP = "group"
 private const val CHANNELTYPE_PUBLIC = "public"
 private const val CHANNELTYPE_UNKKNOWN = "unknown"
+private const val CHANNELTYPE_PUBNUB_PRIVATE = "pn.prv"
 
 /**
  * Enum class representing the different types of channels that can be created.
@@ -37,7 +38,15 @@ enum class ChannelType(val stringValue: String) {
      * An unknown channel type, used as a fallback when the type is unrecognized.
      */
     @SerialName(CHANNELTYPE_UNKKNOWN)
-    UNKNOWN(CHANNELTYPE_UNKKNOWN);
+    UNKNOWN(CHANNELTYPE_UNKKNOWN),
+
+    /**
+     * A technical channel used by chat for storing additional metadata. Not for normal use.
+     */
+    @SerialName(CHANNELTYPE_PUBNUB_PRIVATE)
+    PUBNUB_PRIVATE(CHANNELTYPE_PUBNUB_PRIVATE),
+
+    ;
 
     companion object {
         fun from(type: String?): ChannelType {
