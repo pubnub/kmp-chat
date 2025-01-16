@@ -1156,7 +1156,11 @@ describe("Channel test", () => {
         channelTypeField: true,
         statusField: true,
         channelStatusField: true,
+        typeField: true,
       },
+      limit: null,
+      page: null,
+      sort: {},
       uuid: chat.currentUser.id,
     }
 
@@ -1261,4 +1265,12 @@ describe("Channel test", () => {
         })
       )
     })
+
+  test("use PubNub SDK types from Chat SDK", async () => {
+    let channelMetadata = await chat.sdk.objects.getChannelMetadata({
+      channel: channel.id,
+      include: { customFields: true }
+    })
+    expect(channelMetadata).toBeDefined()
+  })
 })
