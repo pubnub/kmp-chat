@@ -25,43 +25,83 @@ export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export async function createChatInstance(
-  options: {
-    userId?: string
-    shouldCreateNewInstance?: boolean
-    config?: Partial<ChatConfig> & PubNub.PubnubConfig
-  } = {}
-) {
+type ClientType = 'PamClient' | 'PamServer' | 'NoPam';
+
+const createChat = async (
+    userId: string,
+    config?: Partial<ChatConfig> & PubNub.PubnubConfig,
+    clientType?: ClientType,
+
+): Promise<Chat> => {
+
   const keysetError = `
     #######################################################
     # Could not read the PubNub keyset from the .env file #
     #######################################################
   `
 
-  if (!process.env.PUBLISH_KEY || !process.env.SUBSCRIBE_KEY || !process.env.USER_ID)
+  // Determine keys based on clientType
+  let publishKey: string | undefined;
+  let subscribeKey: string | undefined;
+  let secretKey: string | undefined;
+
+  switch (clientType) {
+    case 'PamClient':
+      publishKey = process.env.PAM_PUBLISH_KEY;
+      subscribeKey = process.env.PAM_SUBSCRIBE_KEY;
+      break;
+
+    case 'PamServer':
+      publishKey = process.env.PAM_PUBLISH_KEY;
+      subscribeKey = process.env.PAM_SUBSCRIBE_KEY;
+      secretKey = process.env.PAM_SECRET_KEY;
+      break;
+
+    case 'NoPam':
+    default:
+      publishKey = process.env.PUBLISH_KEY;
+      subscribeKey = process.env.SUBSCRIBE_KEY;
+      break;
+  }
+
+  // Validate required keys
+  if (!publishKey || !subscribeKey || (clientType === 'PamServer' && !secretKey)) {
     throw keysetError
+  }
+  // Build the chat configuration
+  const chatConfig: Partial<ChatConfig> & PubNub.PubnubConfig = {
+    publishKey,
+    subscribeKey,
+    userId,
+    ...config,
+  };
+
+  // Include secretKey only if clientType is 'PamServer'
+  if (clientType === 'PamServer' && secretKey) {
+    chatConfig.secretKey = secretKey;
+  }
+
+  return Chat.init(chatConfig);
+};
+
+export async function createChatInstance(
+  options: {
+    userId?: string
+    shouldCreateNewInstance?: boolean
+    config?: Partial<ChatConfig> & PubNub.PubnubConfig
+    clientType?: ClientType
+  } = {}
+) {
 
   if (options.shouldCreateNewInstance) {
-    return await Chat.init({
-      publishKey: process.env.PUBLISH_KEY,
-      subscribeKey: process.env.SUBSCRIBE_KEY,
-      userId: options.userId || process.env.USER_ID,
-//       logVerbosity: true,
-      ...options.config,
-    })
+    return await createChat(options.userId || process.env.USER_ID!, options.config, options.clientType);
   }
 
   if (!chat) {
-    chat = await Chat.init({
-      publishKey: process.env.PUBLISH_KEY,
-      subscribeKey: process.env.SUBSCRIBE_KEY,
-      userId: options.userId || process.env.USER_ID,
-//       logVerbosity: true,
-      ...options.config,
-    })
+    chat = await createChat(options.userId || process.env.USER_ID!, options.config, options.clientType);
   }
 
-  return chat
+  return chat;
 }
 
 export function createRandomChannel(prefix?: string) {

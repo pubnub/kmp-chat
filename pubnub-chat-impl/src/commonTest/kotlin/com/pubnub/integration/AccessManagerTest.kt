@@ -3,6 +3,7 @@ package com.pubnub.integration
 import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.access_manager.v3.ChannelGrant
 import com.pubnub.api.models.consumer.access_manager.v3.UUIDGrant
+import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.listenForEvents
@@ -10,9 +11,11 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.internal.PLATFORM
 import com.pubnub.test.await
 import kotlinx.coroutines.test.runTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.time.Duration.Companion.minutes
 
 class AccessManagerTest : BaseChatIntegrationTest() {
     @Test
@@ -43,6 +46,37 @@ class AccessManagerTest : BaseChatIntegrationTest() {
         assertEquals(token1, token)
         val actualChannelId = chatPamClient.getChannel(channelId).await()?.id
         assertEquals(channelId, actualChannelId)
+
+        chatPamServer.deleteChannel(id = channelId).await()
+    }
+
+    @Ignore // this test has 65 sec delay to wait for token to expire. To run it on JS extend timeout in Mocha to 70s.
+    @Test
+    fun `when token is updated then client can use API`() = runTest(timeout = 2.minutes) {
+        if (PLATFORM == "iOS") {
+            return@runTest
+        }
+        // getToken from server
+        val channelId = channelPam.id
+        chatPamServer.createChannel(id = channelId).await()
+        // todo extract to the function ?
+        val token = generateToken(chatPamServer, channelId, 1)
+        chatPamClient.pubNub.setToken(token)
+
+        val channel = chatPamClient.getChannel(channelId).await()!!
+        val actualChannelId = channel.id
+        assertEquals(channelId, actualChannelId)
+
+        val publishResult = channel.sendText("my first message").await()
+        val message = channel.getMessage(publishResult.timetoken).await()!!
+        message.toggleReaction("one").await()
+
+        delayInMillis(65000)
+        val token2 = generateToken(chatPamServer, channelId, 1)
+        chatPamClient.pubNub.setToken(token2)
+
+        message.toggleReaction("three").await()
+        chatPamClient.getChannel(channelId).await()?.id
 
         chatPamServer.deleteChannel(id = channelId).await()
     }
@@ -99,5 +133,9 @@ class AccessManagerTest : BaseChatIntegrationTest() {
         assertEquals(2, numberOfReceiptEvents) // join and setLastReadMessage sets LastReadMessageTimetoken
 
         chatPamServer.deleteChannel(channelId).await()
+    }
+
+    private suspend fun generateToken(chat: Chat, channelId: String, ttl: Int): String {
+        return chat.pubNub.grantToken(ttl = ttl, channels = listOf(ChannelGrant.name(get = true, name = channelId, read = true, write = true, manage = true))).await().token
     }
 }
