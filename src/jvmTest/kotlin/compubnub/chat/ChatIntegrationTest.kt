@@ -65,7 +65,6 @@ class ChatIntegrationTest : BaseIntegrationTest() {
 
         Chat.init(chatConfig, pnConfiguration).async { result: Result<Chat> ->
             result.onSuccess { chat: Chat ->
-
             }.onFailure { exception: PubNubException ->
                 capturedException = exception
                 latch.countDown()
@@ -96,7 +95,8 @@ class ChatIntegrationTest : BaseIntegrationTest() {
 
         initLatchChatServer.await(3, TimeUnit.SECONDS)
         var token: String? = null
-        chatPamServer?.pubNub?.grantToken(ttl = 1, uuids = listOf(UUIDGrant.id(id = chatClientUserId, get = true, update = true)) )?.async { result: Result<PNGrantTokenResult> ->
+        chatPamServer?.pubNub?.grantToken(ttl = 1, uuids = listOf(UUIDGrant.id(id = chatClientUserId, get = true, update = true)))?.async {
+                result: Result<PNGrantTokenResult> ->
             result.onSuccess { grantTokenResult: PNGrantTokenResult ->
                 token = grantTokenResult.token
                 grantTokenLatch.countDown()
