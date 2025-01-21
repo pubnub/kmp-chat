@@ -7,6 +7,7 @@ import com.pubnub.api.asMap
 import com.pubnub.api.asString
 import com.pubnub.api.enums.PNLogVerbosity
 import com.pubnub.api.models.consumer.access_manager.v3.ChannelGrant
+import com.pubnub.api.models.consumer.access_manager.v3.PNGrantTokenResult
 import com.pubnub.api.models.consumer.access_manager.v3.UUIDGrant
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Result
@@ -23,25 +24,99 @@ import com.pubnub.test.await
 import com.pubnub.test.randomString
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertTrue
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.time.Duration.Companion.seconds
 
 class ChatIntegrationTest : BaseIntegrationTest() {
     @Test
     fun canInitializeChatWithLogLevel() {
-        val chatConfig = ChatConfiguration(logLevel = LogLevel.OFF)
+        val countDownLatch = CountDownLatch(1)
+        val chatConfig = ChatConfiguration(logLevel = LogLevel.VERBOSE)
         val pnConfiguration =
-            PNConfiguration.builder(userId = UserId("myUserId"), subscribeKey = "mySubscribeKey").build()
+            PNConfiguration.builder(userId = UserId("myUserId"), subscribeKey = Keys.subKey) {
+                logVerbosity = PNLogVerbosity.BODY
+            }.build()
 
         Chat.init(chatConfig, pnConfiguration).async { result: Result<Chat> ->
             result.onSuccess { chat: Chat ->
-                println("Chat successfully initialized having logLevel: ${chatConfig.logLevel}")
+                countDownLatch.countDown()
             }.onFailure { exception: PubNubException ->
-                println("Exception initialising chat: ${exception.message}")
+                throw Exception("Exception initialising chat: ${exception.message}")
             }
         }
+
+        assertTrue(countDownLatch.await(3, TimeUnit.SECONDS))
+    }
+
+    @Test
+    fun shouldThrowException_when_initializingChatWithoutSecretKeyAndWithPamEnabled_and_noToken() {
+        val chatConfig = ChatConfiguration(logLevel = LogLevel.VERBOSE)
+        val pnConfiguration =
+            PNConfiguration.builder(userId = UserId("myUserId"), subscribeKey = Keys.pamSubKey) {
+                logVerbosity = PNLogVerbosity.BODY
+            }.build()
+        var capturedException: Exception? = null
+        val latch = CountDownLatch(1)
+
+        Chat.init(chatConfig, pnConfiguration).async { result: Result<Chat> ->
+            result.onSuccess { chat: Chat ->
+            }.onFailure { exception: PubNubException ->
+                capturedException = exception
+                latch.countDown()
+            }
+        }
+
+        latch.await(3, TimeUnit.SECONDS)
+        val exceptionMessage = capturedException?.message
+        assertNotNull(exceptionMessage, "Exception message should not be null")
+        assertTrue(exceptionMessage.contains("\"status\": 403"))
+        assertTrue(exceptionMessage.contains("\"message\": \"Forbidden\""))
+    }
+
+    @Test
+    fun shouldInitializingChatWithoutSecretKeyWithPamEnabled_when_tokenProvided() {
+        val grantTokenLatch = CountDownLatch(1)
+        val initLatchChatServer = CountDownLatch(1)
+        val initLatchChatClient = CountDownLatch(1)
+        val chatClientUserId = randomString()
+        val chatConfig = ChatConfiguration(logLevel = LogLevel.VERBOSE)
+        var chatPamServer: Chat? = null
+        Chat.init(chatConfig, configPamServer).async { result: Result<Chat> ->
+            result.onSuccess { chat: Chat ->
+                chatPamServer = chat
+                initLatchChatServer.countDown()
+            }
+        }
+
+        initLatchChatServer.await(3, TimeUnit.SECONDS)
+        var token: String? = null
+        chatPamServer?.pubNub?.grantToken(ttl = 1, uuids = listOf(UUIDGrant.id(id = chatClientUserId, get = true, update = true)))?.async {
+                result: Result<PNGrantTokenResult> ->
+            result.onSuccess { grantTokenResult: PNGrantTokenResult ->
+                token = grantTokenResult.token
+                grantTokenLatch.countDown()
+            }
+        }
+
+        grantTokenLatch.await(3, TimeUnit.SECONDS)
+        val pnConfiguration =
+            PNConfiguration.builder(userId = UserId(chatClientUserId), subscribeKey = Keys.pamSubKey) {
+                logVerbosity = PNLogVerbosity.BODY
+                authToken = token
+            }.build()
+
+        Chat.init(chatConfig, pnConfiguration).async { result: Result<Chat> ->
+            result.onSuccess { chat: Chat ->
+                initLatchChatClient.countDown()
+            }
+        }
+
+        assertTrue(initLatchChatClient.await(3, TimeUnit.SECONDS))
     }
 
     @Test
@@ -151,7 +226,7 @@ class ChatIntegrationTest : BaseIntegrationTest() {
             result.onSuccess { createdChat: Chat ->
                 chat = createdChat
             }.onFailure { exception: PubNubException ->
-                println("Exception initialising chat: ${exception.message}")
+                throw Exception("Exception initialising chat: ${exception.message}")
             }
         }
     }
