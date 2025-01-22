@@ -131,6 +131,7 @@ external interface RestrictionJs {
     var mute: Boolean?
     var reason: Any?
     var channelId: String?
+    var userId: String?
 }
 
 external interface MembershipsResponseJs {
