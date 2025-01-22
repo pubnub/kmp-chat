@@ -136,6 +136,7 @@ internal fun Restriction.asJs(): RestrictionJs {
         this.mute = restriction.mute
         restriction.reason?.let { this.reason = it }
         this.channelId = restriction.channelId
+        this.userId = restriction.userId
     }
 }
 
