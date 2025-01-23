@@ -330,6 +330,7 @@ public abstract interface class com/pubnub/chat/User {
 	public static synthetic fun getChannelsRestrictions$default (Lcom/pubnub/chat/User;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getChat ()Lcom/pubnub/chat/Chat;
 	public abstract fun getCustom ()Ljava/util/Map;
+	public abstract fun getETag ()Ljava/lang/String;
 	public abstract fun getEmail ()Ljava/lang/String;
 	public abstract fun getExternalId ()Ljava/lang/String;
 	public abstract fun getId ()Ljava/lang/String;
@@ -347,11 +348,32 @@ public abstract interface class com/pubnub/chat/User {
 	public static synthetic fun setRestrictions$default (Lcom/pubnub/chat/User;Lcom/pubnub/chat/Channel;ZZLjava/lang/String;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun streamUpdates (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun update (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun update (Lkotlin/jvm/functions/Function2;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun update$default (Lcom/pubnub/chat/User;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun wherePresent ()Lcom/pubnub/kmp/PNFuture;
 }
 
 public final class com/pubnub/chat/User$Companion {
+}
+
+public final class com/pubnub/chat/User$UpdatableValues {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getCustom ()Ljava/lang/Object;
+	public final fun getEmail ()Ljava/lang/String;
+	public final fun getExternalId ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getProfileUrl ()Ljava/lang/String;
+	public final fun getStatus ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public final fun setCustom (Ljava/lang/Object;)V
+	public final fun setEmail (Ljava/lang/String;)V
+	public final fun setExternalId (Ljava/lang/String;)V
+	public final fun setName (Ljava/lang/String;)V
+	public final fun setProfileUrl (Ljava/lang/String;)V
+	public final fun setStatus (Ljava/lang/String;)V
+	public final fun setType (Ljava/lang/String;)V
 }
 
 public abstract interface class com/pubnub/chat/config/ChatConfiguration {

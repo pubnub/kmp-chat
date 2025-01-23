@@ -12,11 +12,15 @@ import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
+import com.pubnub.test.randomString
 import com.pubnub.test.test
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class UserIntegrationTest : BaseChatIntegrationTest() {
@@ -124,6 +128,107 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun updateUser() = runTest {
+        val user = chat.createUser(someUser).await()
+        val expectedUser = user.asImpl().copy(
+            name = randomString(),
+            externalId = randomString(),
+            profileUrl = randomString(),
+            email = randomString(),
+            custom = mapOf(
+                randomString() to randomString()
+            ),
+            type = randomString(),
+            updated = null,
+            eTag = null
+        )
+
+        val updatedUser = chat.updateUser(
+            expectedUser.id,
+            expectedUser.name,
+            expectedUser.externalId,
+            expectedUser.profileUrl,
+            expectedUser.email,
+            expectedUser.custom?.let { createCustomObject(it) },
+            expectedUser.status,
+            expectedUser.type
+        ).await()
+
+        assertEquals(expectedUser, updatedUser.asImpl().copy(updated = null, lastActiveTimestamp = null, eTag = null))
+        assertNotNull(updatedUser.updated)
+    }
+
+    @Test
+    fun updateUser_withEtag() = runTest {
+        val user = chat.createUser(
+            someUser.id,
+            randomString(),
+            randomString(),
+            randomString(),
+            randomString(),
+            createCustomObject(mapOf("def" to randomString())),
+            randomString(),
+            randomString()
+        ).await()
+
+        val updatedUser = user.update { previousUser ->
+            name = previousUser.name + "1"
+            externalId = previousUser.externalId + "1"
+            profileUrl = previousUser.profileUrl + "1"
+            email = previousUser.email + "1"
+            custom = createCustomObject(previousUser.custom!! + ("abc" to 1))
+            type = previousUser.type + "1"
+            status = previousUser.status + "1"
+        }.await()
+
+        assertEquals(user.name + "1", updatedUser.name)
+        assertEquals(user.externalId + "1", updatedUser.externalId)
+        assertEquals(user.profileUrl + "1", updatedUser.profileUrl)
+        assertEquals(user.email + "1", updatedUser.email)
+        assertEquals(user.custom!!["def"], updatedUser.custom!!["def"])
+        assertEquals(1, (updatedUser.custom!!["abc"] as Number).toInt())
+        assertEquals(user.type + "1", updatedUser.type)
+        assertEquals(user.status + "1", updatedUser.status)
+        assertNotEquals(user.updated, updatedUser.updated)
+        assertNotEquals(user.eTag, updatedUser.eTag)
+    }
+
+    @Test
+    fun updateUser_withEtag_withNullValue() = runTest {
+        val user = chat.createUser(
+            someUser.id,
+            randomString(),
+            randomString(),
+            randomString(),
+            randomString(),
+            createCustomObject(mapOf("def" to randomString())),
+            randomString(),
+            randomString()
+        ).await()
+
+        val updatedUser = user.update { previousUser ->
+            name = previousUser.name + "1"
+            externalId = null
+            profileUrl = previousUser.profileUrl + "1"
+            email = previousUser.email + "1"
+            custom = createCustomObject(previousUser.custom!! + ("abc" to 1))
+            type = previousUser.type + "1"
+            status = previousUser.status + "1"
+        }.await()
+
+        assertEquals(user.name + "1", updatedUser.name)
+        assertEquals(user.externalId, updatedUser.externalId)
+        assertEquals(user.profileUrl + "1", updatedUser.profileUrl)
+        assertEquals(user.email + "1", updatedUser.email)
+        assertEquals(user.custom!!["def"], updatedUser.custom!!["def"])
+        assertEquals(1, (updatedUser.custom!!["abc"] as Number).toInt())
+        assertEquals(user.type + "1", updatedUser.type)
+        assertEquals(user.status + "1", updatedUser.status)
+        assertNotEquals(user.updated, updatedUser.updated)
+        assertNotEquals(user.eTag, updatedUser.eTag)
+    }
+
+    @Test
     fun streamUpdatesOn() = runTest {
         val newName = "newName"
         val expectedUpdates = listOf(
@@ -138,7 +243,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(someUser.id)) {
                 dispose = UserImpl.streamUpdatesOn(listOf(someUser)) {
-                    actualUpdates.add(it.map { it.asImpl().copy(updated = null) })
+                    actualUpdates.add(it.map { it.asImpl().copy(updated = null, eTag = null) })
                 }
             }
 

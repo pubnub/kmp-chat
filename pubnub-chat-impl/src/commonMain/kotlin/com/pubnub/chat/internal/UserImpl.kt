@@ -2,6 +2,7 @@ package com.pubnub.chat.internal
 
 import co.touchlab.kermit.Logger
 import com.pubnub.api.PubNubException
+import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
@@ -9,6 +10,7 @@ import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
+import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteUUIDMetadataEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetUUIDMetadataEventMessage
 import com.pubnub.api.utils.Clock
@@ -20,7 +22,9 @@ import com.pubnub.chat.Membership
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_USER_UPDATES_ON_EMPTY_LIST
+import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_USER_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
+import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
@@ -33,6 +37,7 @@ import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.catch
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
+import com.pubnub.kmp.thenAsync
 import tryLong
 
 data class UserImpl(
@@ -46,6 +51,7 @@ data class UserImpl(
     override val status: String? = null,
     override val type: String? = null,
     override val updated: String? = null,
+    override val eTag: String? = null,
     override val lastActiveTimestamp: Long? = null,
 ) : User {
     override val active: Boolean
@@ -74,6 +80,14 @@ data class UserImpl(
             status,
             type
         )
+    }
+
+    override fun update(
+        updateAction: User.UpdatableValues.(
+            user: User
+        ) -> Unit
+    ): PNFuture<User> {
+        return updateInternal(this, updateAction)
     }
 
     override fun delete(soft: Boolean): PNFuture<User?> {
@@ -249,6 +263,38 @@ data class UserImpl(
     companion object {
         private val log = Logger.withTag("UserImpl")
 
+        private fun updateInternal(
+            user: User,
+            updateAction: User.UpdatableValues.(
+                user: User
+            ) -> Unit,
+            retriesLeft: Int = 1
+        ): PNFuture<User> {
+            val updatableValues = User.UpdatableValues()
+            updatableValues.updateAction(user)
+            return user.setUserUpdatedValues(updatableValues)
+                .catch {
+                    if (it is PubNubException && it.statusCode == HTTP_ERROR_412) {
+                        Result.success(null)
+                    } else {
+                        Result.failure(it)
+                    }
+                }.thenAsync { userDataResult: PNUUIDMetadataResult? ->
+                    if (userDataResult != null) {
+                        return@thenAsync fromDTO(user.chat as ChatInternal, userDataResult.data).asFuture()
+                    }
+                    user.chat.getUser(user.id).thenAsync { newUser: User? ->
+                        if (newUser == null) {
+                            log.pnError(USER_NOT_EXIST)
+                        } else if (retriesLeft > 0) {
+                            updateInternal(newUser, updateAction, retriesLeft - 1)
+                        } else {
+                            log.pnError(FAILED_TO_CREATE_UPDATE_USER_DATA)
+                        }
+                    }
+                }
+        }
+
         internal fun fromDTO(chat: ChatInternal, user: PNUUIDMetadata): User = UserImpl(
             chat,
             id = user.id,
@@ -260,6 +306,7 @@ data class UserImpl(
             updated = user.updated?.value,
             status = user.status?.value,
             type = user.type?.value,
+            eTag = user.eTag?.value,
             lastActiveTimestamp = user.custom?.value?.get(LAST_ACTIVE_TIMESTAMP)?.tryLong()
         )
 
@@ -300,6 +347,19 @@ data class UserImpl(
         }
     }
 }
+
+private fun User.setUserUpdatedValues(updatableValues: User.UpdatableValues): SetUUIDMetadata = chat.pubNub.setUUIDMetadata(
+    uuid = id,
+    name = updatableValues.name,
+    externalId = updatableValues.externalId,
+    profileUrl = updatableValues.profileUrl,
+    email = updatableValues.email,
+    custom = updatableValues.custom,
+    includeCustom = true,
+    type = updatableValues.type,
+    status = updatableValues.status,
+    ifMatchesEtag = eTag
+)
 
 internal val User.uuidFilterString get() = "uuid.id == '${this.id}'"
 internal val User.isInternalModerator get() = this.id == INTERNAL_MODERATOR_DATA_ID && this.type == INTERNAL_MODERATOR_DATA_TYPE

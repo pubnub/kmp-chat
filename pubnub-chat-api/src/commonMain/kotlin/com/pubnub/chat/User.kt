@@ -61,9 +61,16 @@ interface User {
     val type: String?
 
     /**
-     * Type of the user, like admin, member, guest.
+     * The moment in time when the data contained in this User object was updated on the server.
      */
     val updated: String?
+
+    /**
+     * The eTag that was returned by the server with this User object.
+     *
+     * It is a random string that changes with each data update.
+     */
+    val eTag: String?
 
     /**
      * Timestamp for the last time the user information was updated or modified.
@@ -96,6 +103,28 @@ interface User {
         custom: CustomObject? = null,
         status: String? = null,
         type: String? = null,
+    ): PNFuture<User>
+
+    /**
+     * Updates the metadata of the user with information provided in [updateAction].
+     *
+     * Please note that `updateAction` will be called _at least_ once with the current data from the `User` object in
+     * the argument. Inside `updateAction`, new values for `User` fields should be computed and assigned into the
+     * context `UpdatedValues` object.
+     *
+     * In case the user's information has changed on the server since the original User object was retrieved, the
+     * `updateAction` will be called again with new User data that represents the current server state. This might
+     * happen multiple times until either new data is saved successfully, or the request fails.
+     *
+     * @param updateAction a function for computing new values for the User fields based on the provided `user` argument
+     * and saving it into the `UpdatedValues` context object.
+     *
+     * @return [PNFuture] containing the updated [User].
+     */
+    fun update(
+        updateAction: UpdatableValues.(
+            user: User
+        ) -> Unit
     ): PNFuture<User>
 
     /**
@@ -201,6 +230,40 @@ interface User {
      * Get a new `User` instance that is a copy of this `User` with its properties updated with information coming from `update`.
      */
     operator fun plus(update: PNUUIDMetadata): User
+
+    /**
+     * An object representing the fields to update in a [User] object.
+     */
+    class UpdatableValues(
+        /**
+         * The new value for [User.name].
+         */
+        var name: String? = null,
+        /**
+         * The new value for [User.externalId].
+         */
+        var externalId: String? = null,
+        /**
+         * The new value for [User.profileUrl].
+         */
+        var profileUrl: String? = null,
+        /**
+         * The new value for [User.email].
+         */
+        var email: String? = null,
+        /**
+         * The new value for [User.custom].
+         */
+        var custom: CustomObject? = null,
+        /**
+         * The new value for [User.status].
+         */
+        var status: String? = null,
+        /**
+         * The new value for [User.type].
+         */
+        var type: String? = null,
+    )
 
     companion object
 }

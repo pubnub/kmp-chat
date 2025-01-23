@@ -1,5 +1,5 @@
 name: kmp-chat
-version: 0.10.1
+version: 0.11.0
 schema: 1
 scm: github.com/pubnub/kmp-chat
 sdks:
@@ -21,8 +21,8 @@ sdks:
             -
               distribution-type: library
               distribution-repository: maven
-              package-name: pubnub-chat-0.10.1
-              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.10.1/
+              package-name: pubnub-chat-0.11.0
+              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.11.0/
               supported-platforms:
                 supported-operating-systems:
                   Android:
@@ -77,6 +77,19 @@ sdks:
                   license-url: https://github.com/pubnub/kotlin/blob/master/LICENSE
                   is-required: Required
 changelog:
+  - date: 2025-01-23
+    version: 0.11.0
+    changes:
+      - type: feature
+        text: "Added a new version of `User.update` that can be used to update data on the server without losing intermediate updates that might have happened in the time between when the object was last received and updated."
+      - type: feature
+        text: "Added the ability to mute and unmute users through `Chat.mutedUsers.muteUser() / unmuteUser()`."
+      - type: feature
+        text: "Added the option to automatically sync the mute list using App Context by enabling `ChatConfiguration.syncMutedUsers`."
+      - type: feature
+        text: "Added missing function to parse quoted message text into parts."
+      - type: bug
+        text: "Fixes the problem of overwriting custom data at regular intervals when `storeUserActivityInterval` is enabled."
   - date: 2025-01-13
     version: 0.10.1
     changes:
