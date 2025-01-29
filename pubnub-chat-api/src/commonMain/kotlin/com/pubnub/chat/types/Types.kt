@@ -35,7 +35,7 @@ class File(
  * [com.pubnub.api.PubNub.publish] or [com.pubnub.api.PubNub.signal] when sending this event.
  */
 @Serializable
-sealed class EventContent(
+abstract class EventContent(
     @Transient val customMessageType: String? = null
 ) {
     /**

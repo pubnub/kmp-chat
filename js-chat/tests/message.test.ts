@@ -1377,6 +1377,7 @@ describe("Send message test", () => {
               text: messageParams.message.body.message.content.text,
               type: messageParams.message.messageType,
               files: messageParams.message.body.files,
+              customKey: "customValue"
             }
           },
         },
@@ -1392,6 +1393,7 @@ describe("Send message test", () => {
 
     const historyObject = await someChannel.getHistory({ count: 1 })
     expect(historyObject.messages[0].text).toBe("Hello world!")
+    expect(historyObject.messages[0].content.customKey).toBe("customValue")
   })
 
   test("should send a message with custom body and crash if getMessageResponseBody is incorrect", async () => {

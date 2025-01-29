@@ -17,7 +17,6 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 
 class JsonElementDecoder(
@@ -30,7 +29,7 @@ class JsonElementDecoder(
 //    }
     private var counter = 0
 
-    override val serializersModule: SerializersModule = EmptySerializersModule()
+    override val serializersModule: SerializersModule = module
 
     override fun decodeBooleanElement(descriptor: SerialDescriptor, index: Int): Boolean {
         return (

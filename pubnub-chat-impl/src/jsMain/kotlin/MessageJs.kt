@@ -5,7 +5,6 @@ import com.pubnub.api.adjustCollectionTypes
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.message.BaseMessage
-import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.kmp.JsMap
@@ -22,7 +21,10 @@ import kotlin.js.json
 open class MessageJs internal constructor(internal val message: Message, internal val chatJs: ChatJs) {
     val hasThread by message::hasThread
     val timetoken: String get() = message.timetoken.toString()
-    val content get() = (message.content as EventContent).toJsObject()
+    val content: JsMap<Any?>
+        get() {
+            return message.content.toJsTextMessage()
+        }
     val channelId by message::channelId
     val userId by message::userId
     val actions get() = message.actions?.mapValues {

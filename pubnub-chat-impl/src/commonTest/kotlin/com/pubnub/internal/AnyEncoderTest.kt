@@ -1,6 +1,7 @@
 package com.pubnub.internal
 
 import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.types.EventContent
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.test.Test
@@ -166,5 +167,11 @@ class AnyEncoderTest {
             ),
             encodedMap
         )
+    }
+
+    @Test
+    fun testEncodeTextMessageContent() {
+        val map = PNDataEncoder.encode(EventContent.TextMessageContent("abc", null) as EventContent) as Map<String, Any?>
+        assertEquals("abc", map["text"])
     }
 }
