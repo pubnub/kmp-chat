@@ -1,10 +1,15 @@
 name: pubnub-js-chat
-version: 0.11.2
+version: 0.11.3
 scm: github.com/pubnub/js-chat
 schema: 1
 files:
   - lib/dist/index.js
 changelog:
+  - date: 2025-01-30
+    version: 0.11.3
+    changes:
+      - type: bug
+        text: "When using the CustomPayloads configuration option in JS, allow the user to specify custom keys and preserve them when receiving messages."
   - date: 2025-01-30
     version: 0.11.2
     changes:
