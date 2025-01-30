@@ -82,12 +82,16 @@ internal inline fun Map<String, Any?>.toJsObject(): JsMap<Any?> {
     return createJsonElement(this).value.unsafeCast<JsMap<Any?>>()
 }
 
-internal class TextMessageContentWithCustom(text: String, files: List<File>?, internal val customData: Any) : EventContent.TextMessageContent(
+internal class TextMessageContentWithCustom(text: String, files: List<File>?, internal val customJsObject: Any) : EventContent.TextMessageContent(
     text,
     files
 )
 
-internal fun EventContent.TextMessageContent.withJsObject(customData: Any) = TextMessageContentWithCustom(text, files, customData)
+internal fun EventContent.TextMessageContent.withCustomJsObject(customJsObject: Any) = TextMessageContentWithCustom(
+    text,
+    files,
+    customJsObject
+)
 
 internal fun CustomPayloadsJs?.toKmp(): CustomPayloads {
     if (this == null) {
@@ -117,7 +121,7 @@ internal fun CustomPayloadsJs?.toKmp(): CustomPayloads {
                 messageDTOparams.message = jsMap
                 val resultingMessage = mrb(messageDTOparams)
                 val textMessageContent = PNDataEncoder.decode<EventContent.TextMessageContent?>(createJsonElement(resultingMessage))
-                return textMessageContent?.withJsObject(resultingMessage)
+                return textMessageContent?.withCustomJsObject(resultingMessage)
             }
         },
         editMessageActionName = editMessageActionName,
@@ -196,6 +200,6 @@ private fun RateLimitPerChannelJs?.toKmp(): Map<ChannelType, Duration> {
 
 internal fun EventContent.TextMessageContent.toJsTextMessage(): JsMap<Any?> =
     (
-        (this as? TextMessageContentWithCustom)?.customData?.unsafeCast<JsMap<Any?>>()
+        (this as? TextMessageContentWithCustom)?.customJsObject?.unsafeCast<JsMap<Any?>>()
             ?: (this as EventContent).toJsObject()
     )
