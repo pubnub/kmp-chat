@@ -40,10 +40,10 @@
     "module": "dist/index.es.js",
     "types": "dist/index.d.ts",
     "react-native": "dist/index.es.js",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "name": "@pubnub/chat",
     "dependencies": {
-        "pubnub": "8.4.1",
+        "pubnub": "8.6.0",
         "format-util": "^1.0.5"
     }
 }

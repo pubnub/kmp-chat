@@ -706,7 +706,7 @@ declare class Chat {
      */
     createPublicConversation({ channelId, channelData }?: {
         channelId?: string;
-        channelData?: AppContext.SetChannelMetadataParameters<AppContext.CustomData>;
+        channelData?: AppContext.ChannelMetadata<AppContext.CustomData>;
     }): Promise<Channel>;
     /**
      *  Presence
@@ -717,7 +717,7 @@ declare class Chat {
     createDirectConversation({ user, channelId, channelData, membershipData }: {
         user: User;
         channelId?: string;
-        channelData?: AppContext.SetChannelMetadataParameters<AppContext.CustomData>;
+        channelData?: AppContext.ChannelMetadata<AppContext.CustomData>;
         membershipData?: Omit<AppContext.SetMembershipsParameters<AppContext.CustomData>, "channels" | "include" | "filter"> & {
             custom?: AppContext.CustomData;
         };
@@ -729,7 +729,7 @@ declare class Chat {
     createGroupConversation({ users, channelId, channelData, membershipData }: {
         users: User[];
         channelId?: string;
-        channelData?: AppContext.SetChannelMetadataParameters<AppContext.CustomData>;
+        channelData?: AppContext.ChannelMetadata<AppContext.CustomData>;
         membershipData?: Omit<AppContext.SetMembershipsParameters<AppContext.CustomData>, "channels" | "include" | "filter"> & {
             custom?: AppContext.CustomData;
         };
