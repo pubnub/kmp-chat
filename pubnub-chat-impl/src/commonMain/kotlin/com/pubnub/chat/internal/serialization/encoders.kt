@@ -3,6 +3,7 @@
 package com.pubnub.chat.internal.serialization
 
 import com.pubnub.api.JsonElement
+import com.pubnub.chat.types.EventContent
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationStrategy
@@ -11,14 +12,27 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.encoding.CompositeEncoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.subclass
 import kotlinx.serialization.serializer
+
+val module = SerializersModule {
+    polymorphic(EventContent::class) {
+        subclass(EventContent.Typing::class)
+        subclass(EventContent.Report::class)
+        subclass(EventContent.Receipt::class)
+        subclass(EventContent.Mention::class)
+        subclass(EventContent.Moderation::class)
+        subclass(EventContent.TextMessageContent::class)
+        subclass(EventContent.Invite::class)
+    }
+}
 
 class AnyEncoder : Encoder, CompositeEncoder {
     var returnValue: Any? = null
     private var nextSerialNameValue: Pair<String, String>? = null
-    override val serializersModule: SerializersModule = EmptySerializersModule()
+    override val serializersModule: SerializersModule = module
 
     override fun encodeBooleanElement(descriptor: SerialDescriptor, index: Int, value: Boolean) {
         returnValue = value
@@ -186,7 +200,7 @@ class MapEncoder(polymorphicType: Pair<String, String>? = null) : CompositeEncod
             put(polymorphicType.first, polymorphicType.second)
         }
     }
-    override val serializersModule: SerializersModule = EmptySerializersModule()
+    override val serializersModule: SerializersModule = module
 
     override fun encodeBooleanElement(descriptor: SerialDescriptor, index: Int, value: Boolean) {
         encodeValue(descriptor, index, value)
@@ -272,7 +286,7 @@ class MapEncoder(polymorphicType: Pair<String, String>? = null) : CompositeEncod
 
 class ListEncoder : CompositeEncoder {
     val list: MutableList<Any?> = mutableListOf()
-    override val serializersModule: SerializersModule = EmptySerializersModule()
+    override val serializersModule: SerializersModule = module
 
     override fun encodeBooleanElement(descriptor: SerialDescriptor, index: Int, value: Boolean) {
         list.add(value)

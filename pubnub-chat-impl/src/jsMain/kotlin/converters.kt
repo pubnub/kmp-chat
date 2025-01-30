@@ -17,6 +17,7 @@ import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.File
 import com.pubnub.chat.types.QuotedMessage
 import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.PNFuture
@@ -81,6 +82,17 @@ internal inline fun Map<String, Any?>.toJsObject(): JsMap<Any?> {
     return createJsonElement(this).value.unsafeCast<JsMap<Any?>>()
 }
 
+internal class TextMessageContentWithCustom(text: String, files: List<File>?, internal val customJsObject: Any) : EventContent.TextMessageContent(
+    text,
+    files
+)
+
+internal fun EventContent.TextMessageContent.withCustomJsObject(customJsObject: Any) = TextMessageContentWithCustom(
+    text,
+    files,
+    customJsObject
+)
+
 internal fun CustomPayloadsJs?.toKmp(): CustomPayloads {
     if (this == null) {
         return CustomPayloads()
@@ -92,7 +104,7 @@ internal fun CustomPayloadsJs?.toKmp(): CustomPayloads {
                     channelId: String,
                     defaultMessagePublishBody: (m: EventContent.TextMessageContent) -> Map<String, Any?> ->
                 mpb(
-                    (m as EventContent).toJsObject(),
+                    m.toJsTextMessage(),
                     channelId
                 ).unsafeCast<JsMap<Any>>().toMap()
             }
@@ -103,11 +115,13 @@ internal fun CustomPayloadsJs?.toKmp(): CustomPayloads {
                 channelId: String,
                 defaultMessageResponseBody: (JsonElement) -> EventContent.TextMessageContent?
             ): EventContent.TextMessageContent? {
-                val jsM = m.value.unsafeCast<JsMap<Any?>>()
+                val jsMap = m.value.unsafeCast<JsMap<Any?>>()
                 val messageDTOparams = Any().asDynamic()
                 messageDTOparams.channel = channelId
-                messageDTOparams.message = jsM
-                return PNDataEncoder.decode(createJsonElement(mrb(messageDTOparams)))
+                messageDTOparams.message = jsMap
+                val resultingMessage = mrb(messageDTOparams)
+                val textMessageContent = PNDataEncoder.decode<EventContent.TextMessageContent?>(createJsonElement(resultingMessage))
+                return textMessageContent?.withCustomJsObject(resultingMessage)
             }
         },
         editMessageActionName = editMessageActionName,
@@ -183,3 +197,9 @@ private fun RateLimitPerChannelJs?.toKmp(): Map<ChannelType, Duration> {
     }
     return resultingMap
 }
+
+internal fun EventContent.TextMessageContent.toJsTextMessage(): JsMap<Any?> =
+    (
+        (this as? TextMessageContentWithCustom)?.customJsObject?.unsafeCast<JsMap<Any?>>()
+            ?: (this as EventContent).toJsObject()
+    )

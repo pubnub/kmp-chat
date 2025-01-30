@@ -29,13 +29,13 @@ class File(
 
 /**
  * Represents the content of various types of events emitted during chat operations.
- * This is a sealed class with different subclasses representing specific types of events.
+ * This is an abstract class with different subclasses representing specific types of events.
  *
  * @property customMessageType the `customMessageType` that will be passed as a parameter into
  * [com.pubnub.api.PubNub.publish] or [com.pubnub.api.PubNub.signal] when sending this event.
  */
 @Serializable
-sealed class EventContent(
+abstract class EventContent(
     @Transient val customMessageType: String? = null
 ) {
     /**
