@@ -14,6 +14,7 @@ import {
   createChatInstance,
   sendMessageAndWaitForHistory,
   makeid,
+  generateRandomString,
 } from "./utils"
 
 import { jest } from "@jest/globals"
@@ -22,11 +23,13 @@ describe("Channel test", () => {
   jest.retryTimes(3)
 
   let chat: Chat
+  let chatPamServer: Chat
   let channel: Channel
   let messageDraft: MessageDraft
 
   beforeAll(async () => {
     chat = await createChatInstance()
+    chatPamServer = await createChatInstance( { shouldCreateNewInstance: true, clientType: 'PamServer' })
   })
 
   beforeEach(async () => {
@@ -1086,8 +1089,25 @@ describe("Channel test", () => {
     await publicChannel.delete()
   })
 
+  test("canGetUserRestriction", async() => {
+    const userId = generateRandomString(10)
+    let user = await chatPamServer.createUser(userId, { name: "User123" });
+    const channel = (await chatPamServer.createDirectConversation({ user: user})).channel;
+    await channel.setRestrictions(user, {mute: true, reason: "rude"})
+    await sleep(1250)
+    let restrictions = await channel.getUserRestrictions(user);
+
+    expect(restrictions.ban).toEqual(false);
+    expect(restrictions.mute).toEqual(true);
+    expect(restrictions.reason).toEqual("rude");
+
+    await user.delete()
+    await channel.delete()
+  })
+
   test("should set (or lift) restrictions on a user", async () => {
     const moderationEventCallback = jest.fn()
+    const channelName = generateRandomString(10)
 
     const removeModerationListener = chat.listenForEvents({
       channel: "PUBNUB_INTERNAL_MODERATION." + chat.currentUser.id,
@@ -1095,48 +1115,48 @@ describe("Channel test", () => {
       callback: moderationEventCallback,
     })
 
-    await chat.setRestrictions(chat.currentUser.id, "some-channel", { mute: true })
+    await chatPamServer.setRestrictions(chat.currentUser.id, channelName, { mute: true })
     await sleep(250) // Wait for the message to be sent and cached
     expect(moderationEventCallback).toHaveBeenCalledWith(
       expect.objectContaining({
         payload: expect.objectContaining({
-          channelId: "PUBNUB_INTERNAL_MODERATION_some-channel",
+          channelId: `PUBNUB_INTERNAL_MODERATION_${channelName}`,
           restriction: "muted",
         }),
       })
     )
     moderationEventCallback.mockReset()
 
-    await chat.setRestrictions(chat.currentUser.id, "some-channel", { ban: true })
+    await chatPamServer.setRestrictions(chat.currentUser.id, channelName, { ban: true })
     await sleep(250) // Wait for the message to be sent and cached
     expect(moderationEventCallback).toHaveBeenCalledWith(
       expect.objectContaining({
         payload: expect.objectContaining({
-          channelId: "PUBNUB_INTERNAL_MODERATION_some-channel",
+          channelId: `PUBNUB_INTERNAL_MODERATION_${channelName}`,
           restriction: "banned",
         }),
       })
     )
     moderationEventCallback.mockReset()
 
-    await chat.setRestrictions(chat.currentUser.id, "some-channel", { ban: true, mute: true })
+    await chatPamServer.setRestrictions(chat.currentUser.id, channelName, { ban: true, mute: true })
     await sleep(250) // Wait for the message to be sent and cached
     expect(moderationEventCallback).toHaveBeenCalledWith(
       expect.objectContaining({
         payload: expect.objectContaining({
-          channelId: "PUBNUB_INTERNAL_MODERATION_some-channel",
+          channelId: `PUBNUB_INTERNAL_MODERATION_${channelName}`,
           restriction: "banned",
         }),
       })
     )
     moderationEventCallback.mockReset()
 
-    await chat.setRestrictions(chat.currentUser.id, "some-channel", {})
+    await chatPamServer.setRestrictions(chat.currentUser.id, channelName, {})
     await sleep(250) // Wait for the message to be sent and cached
     expect(moderationEventCallback).toHaveBeenCalledWith(
       expect.objectContaining({
         payload: expect.objectContaining({
-          channelId: "PUBNUB_INTERNAL_MODERATION_some-channel",
+          channelId: `PUBNUB_INTERNAL_MODERATION_${channelName}`,
           restriction: "lifted",
         }),
       })
