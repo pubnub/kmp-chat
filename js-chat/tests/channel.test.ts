@@ -351,6 +351,27 @@ describe("Channel test", () => {
     expect(errorOccurred).toBe(true)
   })
 
+  test("streamMessageReport should receive reported message", async () => {
+    const messageTextToReport = "lalalal"
+    const reason = "rude";
+    let receivedEvent
+
+    const unsubscribe = channel.streamMessageReports((event) => {
+      receivedEvent = event
+    })
+
+    const { timetoken } = await channel.sendText(messageTextToReport);
+    await sleep(1000) // delayForHistory
+    const message = await channel.getMessage(timetoken);
+
+    await message.report(reason);
+    await sleep(500)
+
+    expect(receivedEvent.payload.text).toEqual(messageTextToReport);
+    expect(receivedEvent.payload.reason).toEqual(reason);
+    unsubscribe(); // Cleanup
+  });
+
   test("should stream channel updates and invoke the callback", async () => {
     let updatedChannel
     channel = await channel.update({ type: "public" })

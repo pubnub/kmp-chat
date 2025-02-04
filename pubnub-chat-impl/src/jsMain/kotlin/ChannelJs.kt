@@ -284,6 +284,11 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
+    fun streamMessageReports(callback: (EventJs) -> Unit): () -> Unit =
+        channel.streamMessageReports { event ->
+            callback(event.toJs(chatJs))
+        }::close
+
     @Deprecated("Only for internal MessageDraft V1 use")
     fun getUserSuggestions(text: String, options: GetSuggestionsParams?): Promise<Array<MembershipJs>> {
         val limit = options?.limit
