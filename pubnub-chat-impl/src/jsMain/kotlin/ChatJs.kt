@@ -6,6 +6,11 @@ import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.PUBNUB_CHAT_VERSION
 import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_CUSTOM
+import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_INVITE
+import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_MENTION
+import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_RECEIPT
+import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_REPORT
+import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_TYPING
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelMentionData
@@ -43,8 +48,21 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             EmitEventMethod.PUBLISH
         }
 
+        // todo Instead of manually picking Custom for everything try:
+        // val eventContent = PNDataEncoder.decode(EventContent.serializer(), createJsonElement(payload))
+
         val eventContent = if (type == TYPE_OF_MESSAGE_IS_CUSTOM) {
             EventContent.Custom((payload as JsMap<Any?>).toMap(), method)
+        } else if (type == TYPE_OF_MESSAGE_IS_REPORT) {
+            PNDataEncoder.decode(EventContent.Report.serializer(), createJsonElement(payload))
+        } else if (type == TYPE_OF_MESSAGE_IS_TYPING) {
+            PNDataEncoder.decode(EventContent.Typing.serializer(), createJsonElement(payload))
+        } else if (type == TYPE_OF_MESSAGE_IS_RECEIPT) {
+            PNDataEncoder.decode(EventContent.Receipt.serializer(), createJsonElement(payload))
+        } else if (type == TYPE_OF_MESSAGE_IS_MENTION) {
+            PNDataEncoder.decode(EventContent.Mention.serializer(), createJsonElement(payload))
+        } else if (type == TYPE_OF_MESSAGE_IS_INVITE) {
+            PNDataEncoder.decode(EventContent.Invite.serializer(), createJsonElement(payload))
         } else {
             payload.type = type
             PNDataEncoder.decode(createJsonElement(payload))

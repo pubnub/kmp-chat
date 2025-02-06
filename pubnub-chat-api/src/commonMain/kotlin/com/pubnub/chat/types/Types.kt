@@ -2,6 +2,7 @@ package com.pubnub.chat.types
 
 import com.pubnub.api.JsonElement
 import com.pubnub.chat.restrictions.RestrictionType
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -110,8 +111,10 @@ abstract class EventContent(
      * @property data A map containing key-value pairs of custom data associated with the event.
      * @property method The method by which the event was emitted (PUBLISH, SIGNAL).
      */
+    @Serializable
+    @SerialName("custom")
     class Custom(
-        val data: Map<String, Any?>,
+        val data: Map<String, @Contextual Any?>,
         @Transient val method: EmitEventMethod = EmitEventMethod.PUBLISH
     ) : EventContent()
 

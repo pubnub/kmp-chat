@@ -26,6 +26,7 @@ val module = SerializersModule {
         subclass(EventContent.Moderation::class)
         subclass(EventContent.TextMessageContent::class)
         subclass(EventContent.Invite::class)
+        subclass(EventContent.Custom::class)
     }
 }
 
