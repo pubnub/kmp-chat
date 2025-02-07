@@ -1276,36 +1276,96 @@ describe("Channel test", () => {
       expect(result.channels.length).toBe(2)
   })
 
-  test("send custom event", async () => {
-      const inviteCallback = jest.fn()
-      const unsubscribe = chat.listenForEvents({
-            channel: channel.id,
-            type: "custom",
-            method: "publish",
-            callback: inviteCallback,
-          })
+  test("send report event", async () => {
+    let receivedEvent
+    const reason = "rude"
+    const text = "reporting"
+    const unsubscribe = chat.listenForEvents({
+      channel: channel.id,
+      type: "report",
+      callback: (event) => {
+        receivedEvent = event
+      },
+    })
 
-      await sleep(1000)
-      await chat.emitEvent({
-          channel: channel.id,
-          type: 'custom',
-          method: 'publish',
-          payload: {
-            action: "action",
-            body: "payload"
-          }
-      })
-      await sleep(2000)
-      expect(inviteCallback).toHaveBeenCalledTimes(1)
-      expect(inviteCallback).toHaveBeenCalledWith(
+    await sleep(1000)
+    await chat.emitEvent({
+      channel: channel.id,
+      type: 'report',
+      payload: {
+        text: text,
+        reason: reason
+      }
+    })
+    await sleep(500)
+    expect(receivedEvent.payload.text).toEqual(text)
+    expect(receivedEvent.payload.reason).toEqual(reason)
+
+    unsubscribe(); // Cleanup
+  })
+
+  test("send receipt event", async () => {
+    let receivedEvent
+    const messageTimetokenValue = "123"
+    const eventTypeReceipt = "receipt"
+
+    const unsubscribe = chat.listenForEvents({
+      type: eventTypeReceipt,
+      channel: channel.id,
+      callback: event => {
+        receivedEvent = event
+      }
+    })
+
+    await sleep(1000)
+    await chat.emitEvent({
+      type: eventTypeReceipt,
+      channel: channel.id,
+      payload: {
+        messageTimetoken: messageTimetokenValue
+      }
+
+    })
+
+    await sleep(500)
+    expect(receivedEvent.payload.messageTimetoken).toEqual(messageTimetokenValue)
+    expect(receivedEvent.type).toEqual(eventTypeReceipt)
+
+    unsubscribe() // cleanup
+  })
+
+  test("send custom event", async () => {
+    const inviteCallback = jest.fn()
+    const unsubscribe = chat.listenForEvents({
+      channel: channel.id,
+      type: "custom",
+      method: "publish",
+      callback: inviteCallback,
+    })
+
+    await sleep(1000)
+    await chat.emitEvent({
+      channel: channel.id,
+      type: 'custom',
+      method: 'publish',
+      payload: {
+        action: "action",
+        body: "payload"
+      }
+    })
+    await sleep(2000)
+    expect(inviteCallback).toHaveBeenCalledTimes(1)
+    expect(inviteCallback).toHaveBeenCalledWith(
         expect.objectContaining({
           payload: expect.objectContaining({
             action: "action",
             body: "payload"
           }),
         })
-      )
-    })
+    )
+
+    unsubscribe(); // Cleanup
+  })
 
   test("use PubNub SDK types from Chat SDK", async () => {
     let channelMetadata = await chat.sdk.objects.getChannelMetadata({

@@ -1,10 +1,15 @@
 name: pubnub-js-chat
-version: 0.11.4
+version: 0.11.5
 scm: github.com/pubnub/js-chat
 schema: 1
 files:
   - lib/dist/index.js
 changelog:
+  - date: 2025-02-06
+    version: 0.11.5
+    changes:
+      - type: bug
+        text: "Fixed method sendEvent for event types different from custom ."
   - date: 2025-02-04
     version: 0.11.4
     changes:
