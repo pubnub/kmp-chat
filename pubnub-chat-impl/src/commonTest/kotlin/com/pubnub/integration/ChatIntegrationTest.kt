@@ -621,6 +621,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             }
 
         delayForHistory()
+        delayForHistory()
         val eventFromHistory = chat.getEventsHistory(channelId, tt + 1, tt).await().events.first()
         val payload: EventContent.Custom = eventFromHistory.payload as EventContent.Custom
         val customEventData = payload.data

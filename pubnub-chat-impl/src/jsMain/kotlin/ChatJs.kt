@@ -47,7 +47,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             EventContent.Custom((payload as JsMap<Any?>).toMap(), method)
         } else {
             payload.type = type
-            PNDataEncoder.decode(createJsonElement(payload))
+            PNDataEncoder.decode<EventContent>(createJsonElement(payload))
         }
         return chat.emitEvent(
             channel,
