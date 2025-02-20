@@ -1438,6 +1438,10 @@ class ChatTest : BaseTest() {
             mute = mute,
             reason = reason
         )
+        every { getUUIDMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNUUIDMetadataResult>>) ->
+            callback1.accept(Result.success(getPNUuidMetadataResult()))
+        }
+        every { pubnub.getUUIDMetadata(uuid = userId, includeCustom = true) } returns getUUIDMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
             callback1.accept(Result.success(getPNChannelMetadataResult("PUBNUB_INTERNAL_MODERATION_myChannelId")))
         }
