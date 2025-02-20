@@ -1,5 +1,5 @@
 name: kmp-chat
-version: 0.11.0
+version: 0.11.1
 schema: 1
 scm: github.com/pubnub/kmp-chat
 sdks:
@@ -21,8 +21,8 @@ sdks:
             -
               distribution-type: library
               distribution-repository: maven
-              package-name: pubnub-chat-0.11.0
-              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.11.0/
+              package-name: pubnub-chat-0.11.1
+              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.11.1/
               supported-platforms:
                 supported-operating-systems:
                   Android:
@@ -77,6 +77,11 @@ sdks:
                   license-url: https://github.com/pubnub/kotlin/blob/master/LICENSE
                   is-required: Required
 changelog:
+  - date: 2025-02-20
+    version: 0.11.1
+    changes:
+      - type: bug
+        text: "The issue occurred when "Enforce referential integrity for memberships" was enabled and a user did not exist in AppContext."
   - date: 2025-01-23
     version: 0.11.0
     changes:
