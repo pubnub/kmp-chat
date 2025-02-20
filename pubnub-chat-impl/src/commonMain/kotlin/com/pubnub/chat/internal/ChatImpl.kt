@@ -724,6 +724,7 @@ class ChatImpl(
         }
         val channel: String = INTERNAL_MODERATION_PREFIX + restriction.channelId
         val userId = restriction.userId
+        // if "Enforce referential integrity for memberships" is enabled we need to make sure that channel exists in AppContext
         return createChannel(channel, type = ChannelType.PUBNUB_PRIVATE).catch { exception ->
             if (exception.message == CHANNEL_ID_ALREADY_EXIST) {
                 Result.success(Unit)
@@ -753,8 +754,16 @@ class ChatImpl(
                         )
                     )
                     val uuids = listOf(PNMember.Partial(uuidId = userId, custom = custom, null))
-                    pubNub.setChannelMembers(channel = channel, users = uuids)
-                        .alsoAsync { _ ->
+
+                    // if "Enforce referential integrity for memberships" is enabled we need to make sure that user exists in AppContext
+                    createUser(id = userId).catch { exception ->
+                        if (exception.message == USER_ID_ALREADY_EXIST) {
+                            Result.success(Unit)
+                        } else {
+                            Result.failure(exception)
+                        }
+                    }.thenAsync {
+                        pubNub.setChannelMembers(channel = channel, users = uuids).alsoAsync { _ ->
                             emitEvent(
                                 channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
                                 payload = EventContent.Moderation(
@@ -768,6 +777,7 @@ class ChatImpl(
                                 ),
                             )
                         }
+                    }
                 }
             moderationEvent.then { }
         }
