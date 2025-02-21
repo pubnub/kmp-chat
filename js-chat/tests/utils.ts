@@ -25,7 +25,7 @@ export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-type ClientType = 'PamClient' | 'PamServer' | 'NoPam';
+type ClientType = 'PamClient' | 'PamServer' | 'NoPam' | 'PamServerWithRefIntegrity';
 
 const createChat = async (
     userId: string,
@@ -57,6 +57,12 @@ const createChat = async (
       secretKey = process.env.PAM_SECRET_KEY;
       break;
 
+    case 'PamServerWithRefIntegrity':
+      publishKey = process.env.PAM_WITH_INTEGRITY_PUBLISH_KEY;
+      subscribeKey = process.env.PAM_WITH_INTEGRITY_SUBSCRIBE_KEY;
+      secretKey = process.env.PAM_WITH_INTEGRITY_SECRET_KEY;
+      break;
+
     case 'NoPam':
     default:
       publishKey = process.env.PUBLISH_KEY;
@@ -65,7 +71,7 @@ const createChat = async (
   }
 
   // Validate required keys
-  if (!publishKey || !subscribeKey || (clientType === 'PamServer' && !secretKey)) {
+  if (!publishKey || !subscribeKey || (clientType === 'PamServer' && !secretKey) || (clientType === 'PamServerWithRefIntegrity' && !secretKey)) {
     throw keysetError
   }
   // Build the chat configuration
@@ -76,8 +82,8 @@ const createChat = async (
     ...config,
   };
 
-  // Include secretKey only if clientType is 'PamServer'
-  if (clientType === 'PamServer' && secretKey) {
+  // Include secretKey only if clientType is 'PamServer' or 'PamServerWithRefIntegrity'
+  if ((clientType === 'PamServer' || clientType === 'PamServerWithRefIntegrity') && secretKey) {
     chatConfig.secretKey = secretKey;
   }
 
