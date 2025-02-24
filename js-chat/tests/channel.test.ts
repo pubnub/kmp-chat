@@ -24,12 +24,14 @@ describe("Channel test", () => {
 
   let chat: Chat
   let chatPamServer: Chat
+  let chatPamServerWithRefIntegrity: Chat
   let channel: Channel
   let messageDraft: MessageDraft
 
   beforeAll(async () => {
     chat = await createChatInstance()
     chatPamServer = await createChatInstance( { shouldCreateNewInstance: true, clientType: 'PamServer' })
+    chatPamServerWithRefIntegrity = await createChatInstance( { shouldCreateNewInstance: true, clientType: 'PamServerWithRefIntegrity' })
   })
 
   beforeEach(async () => {
@@ -1127,60 +1129,61 @@ describe("Channel test", () => {
   })
 
   test("should set (or lift) restrictions on a user", async () => {
+    const notExistingUserId = generateRandomString(10)
     const moderationEventCallback = jest.fn()
-    const channelName = generateRandomString(10)
+    const notExistingChannelName = generateRandomString(10)
 
-    const removeModerationListener = chat.listenForEvents({
-      channel: "PUBNUB_INTERNAL_MODERATION." + chat.currentUser.id,
+    const removeModerationListener = chatPamServerWithRefIntegrity.listenForEvents({
+      channel: "PUBNUB_INTERNAL_MODERATION." + notExistingUserId,
       type: "moderation",
       callback: moderationEventCallback,
     })
 
-    await chatPamServer.setRestrictions(chat.currentUser.id, channelName, { mute: true })
+    await chatPamServerWithRefIntegrity.setRestrictions(notExistingUserId, notExistingChannelName, {mute: true})
     await sleep(250) // Wait for the message to be sent and cached
     expect(moderationEventCallback).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          channelId: `PUBNUB_INTERNAL_MODERATION_${channelName}`,
-          restriction: "muted",
-        }),
-      })
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            channelId: `PUBNUB_INTERNAL_MODERATION_${notExistingChannelName}`,
+            restriction: "muted",
+          }),
+        })
     )
     moderationEventCallback.mockReset()
 
-    await chatPamServer.setRestrictions(chat.currentUser.id, channelName, { ban: true })
+    await chatPamServerWithRefIntegrity.setRestrictions(notExistingUserId, notExistingChannelName, { ban: true })
     await sleep(250) // Wait for the message to be sent and cached
     expect(moderationEventCallback).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          channelId: `PUBNUB_INTERNAL_MODERATION_${channelName}`,
-          restriction: "banned",
-        }),
-      })
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            channelId: `PUBNUB_INTERNAL_MODERATION_${notExistingChannelName}`,
+            restriction: "banned",
+          }),
+        })
     )
     moderationEventCallback.mockReset()
 
-    await chatPamServer.setRestrictions(chat.currentUser.id, channelName, { ban: true, mute: true })
+    await chatPamServerWithRefIntegrity.setRestrictions(notExistingUserId, notExistingChannelName, { ban: true, mute: true })
     await sleep(250) // Wait for the message to be sent and cached
     expect(moderationEventCallback).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          channelId: `PUBNUB_INTERNAL_MODERATION_${channelName}`,
-          restriction: "banned",
-        }),
-      })
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            channelId: `PUBNUB_INTERNAL_MODERATION_${notExistingChannelName}`,
+            restriction: "banned",
+          }),
+        })
     )
     moderationEventCallback.mockReset()
 
-    await chatPamServer.setRestrictions(chat.currentUser.id, channelName, {})
+    await chatPamServerWithRefIntegrity.setRestrictions(notExistingUserId, notExistingChannelName, {})
     await sleep(250) // Wait for the message to be sent and cached
     expect(moderationEventCallback).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          channelId: `PUBNUB_INTERNAL_MODERATION_${channelName}`,
-          restriction: "lifted",
-        }),
-      })
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            channelId: `PUBNUB_INTERNAL_MODERATION_${notExistingChannelName}`,
+            restriction: "lifted",
+          }),
+        })
     )
 
     removeModerationListener()
