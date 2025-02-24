@@ -9,7 +9,7 @@ changelog:
     version: 0.11.6
     changes:
       - type: bug
-        text: "Fixed bug rel. to setRestriction. When "Enforce referential integrity for memberships" is enabled then when setting restriction(channelMembers) we need to make sure that both channel and user exist in AppContext."
+        text: "Fixed bug rel. to setRestriction. When 'Enforce referential integrity for memberships' is enabled then when setting restriction(channelMembers) we need to make sure that both channel and user exist in AppContext."
   - date: 2025-02-06
     version: 0.11.5
     changes:
