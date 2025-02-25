@@ -203,7 +203,7 @@ interface BaseChannel<C : BaseChannel<C, M>, M : BaseMessage<M, C>> {
         startTimetoken: Long? = null,
         endTimetoken: Long? = null,
         count: Int = 25,
-    ): PNFuture<HistoryResponse<M, C>>
+    ): PNFuture<HistoryResponse<M>>
 
     /**
      * Sends text to the [BaseChannel]
@@ -446,6 +446,16 @@ interface BaseChannel<C : BaseChannel<C, M>, M : BaseMessage<M, C>> {
      * @return AutoCloseable Interface that lets you stop receiving report-related updates (report events) by invoking the close() method.
      */
     fun streamMessageReports(callback: (event: Event<EventContent.Report>) -> Unit): AutoCloseable
+
+    /**
+     * Fetches all suggested users that match the provided 3-letter string from [BaseChannel]
+     *
+     * @param text at least a 3-letter string typed in after @ with the user name you want to mention.
+     * @param limit maximum number of returned usernames that match the typed 3-letter suggestion. The default value is set to 10, and the maximum is 100.
+     *
+     * @return [PNFuture] containing list of [Membership]
+     */
+    fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<List<Membership>>
 
     /**
      * Get a new `Channel` instance that is a copy of this `Channel` with its properties updated with information coming from `update`.

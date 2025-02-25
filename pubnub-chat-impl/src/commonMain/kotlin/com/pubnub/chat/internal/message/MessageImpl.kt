@@ -11,7 +11,6 @@ import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
-import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatImpl.Companion.getThreadId
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.MESSAGE_THREAD_ID_PREFIX
@@ -114,7 +113,6 @@ data class MessageImpl(
     }
 
     companion object {
-
         private val log = Logger.withTag("MessageImpl")
 
         internal fun fromDTO(chat: ChatInternal, pnMessageResult: PNMessageResult): Message {

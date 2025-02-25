@@ -14,7 +14,7 @@ interface MessageDraft {
     /**
      * The [Channel] where this [MessageDraft] will be published.
      */
-    val channel: Channel
+    val channel: BaseChannel<*, *>
 
     /**
      * The scope for searching for suggested users - either [UserSuggestionSource.GLOBAL] or [UserSuggestionSource.CHANNEL].

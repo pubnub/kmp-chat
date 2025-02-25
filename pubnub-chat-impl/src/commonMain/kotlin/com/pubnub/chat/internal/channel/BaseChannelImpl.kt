@@ -234,7 +234,7 @@ abstract class BaseChannelImpl<C : BaseChannel<C, M>, M : BaseMessage<M, C>>(
         startTimetoken: Long?,
         endTimetoken: Long?,
         count: Int
-    ): PNFuture<HistoryResponse<M, C>> {
+    ): PNFuture<HistoryResponse<M>> {
         return getHistory(
             chat = chat,
             channelId = id,
@@ -619,7 +619,7 @@ abstract class BaseChannelImpl<C : BaseChannel<C, M>, M : BaseMessage<M, C>>(
             startTimetoken: Long?,
             endTimetoken: Long?,
             count: Int,
-        ): PNFuture<HistoryResponse<M, C>> {
+        ): PNFuture<HistoryResponse<M>> {
             return chat.pubNub.fetchMessages(
                 listOf(channelId),
                 PNBoundedPage(startTimetoken, endTimetoken, count),

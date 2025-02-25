@@ -5,6 +5,7 @@ import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannelImpl
+import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.message.BaseMessageImpl
 import com.pubnub.chat.types.QuotedMessage
 
@@ -45,22 +46,7 @@ fun ThreadMessage.Companion.streamUpdatesOn(
 fun Channel.Companion.streamUpdatesOn(
     channels: Collection<Channel>,
     callback: (channels: Collection<Channel>) -> Unit,
-): AutoCloseable = BaseChannelImpl.streamUpdatesOn(channels, callback)
-
-/**
- * Receives updates on list of [Channel] object.
- *
- * @param channels Collection of channels to get updates.
- * @param callback Function that takes a single Channel object. It defines the custom behavior to be executed when
- * detecting channel changes.
- *
- * @return [AutoCloseable] interface that lets you stop receiving channel-related updates (objects events)
- * and clean up resources by invoking the close() method.
- */
-fun ThreadChannel.Companion.streamUpdatesOn(
-    channels: Collection<Channel>,
-    callback: (channels: Collection<Channel>) -> Unit,
-): AutoCloseable = BaseChannelImpl.streamUpdatesOn(channels, callback)
+): AutoCloseable = BaseChannelImpl.streamUpdatesOn(channels, ChannelImpl::fromDTO, callback)
 
 /**
  * You can receive updates when specific user-channel Membership object(s) are added, edited, or removed.

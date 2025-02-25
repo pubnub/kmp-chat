@@ -7,6 +7,7 @@ import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.utils.Clock
 import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Channel
+import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.ThreadMessage
@@ -40,6 +41,7 @@ data class ThreadChannelImpl(
     override val status: String? = null,
     override val type: ChannelType? = null,
     private var threadCreated: Boolean = true,
+    private var parentChannel: Channel? = null
 ) : BaseChannelImpl<ThreadChannel, ThreadMessage>(
         chat,
         clock,
@@ -63,6 +65,28 @@ data class ThreadChannelImpl(
     ThreadChannel {
     override val parentChannelId: String
         get() = parentMessage.channelId
+
+    private val suggestedMemberships = mutableMapOf<String, List<Membership>>()
+
+    override fun getUserSuggestions(text: String, limit: Int): PNFuture<List<Membership>> {
+        suggestedMemberships[text]?.let { nonNullMemberships ->
+            return nonNullMemberships.asFuture()
+        }
+
+        return (
+            parentChannel?.asFuture()
+                ?: chat.getChannel(parentChannelId).then { channel ->
+                    parentChannel = channel
+                    channel
+                }
+        ).thenAsync {
+            parentChannel?.getMembers(filter = "uuid.name LIKE '$text*'", limit = limit)?.then { membersResponse ->
+                val memberships = membersResponse.members
+                suggestedMemberships[text] = memberships
+                memberships
+            } ?: emptyList<Membership>().asFuture()
+        }
+    }
 
     override fun pinMessageToParentChannel(message: ThreadMessage) = pinOrUnpinMessageFromParentChannel(message)
 

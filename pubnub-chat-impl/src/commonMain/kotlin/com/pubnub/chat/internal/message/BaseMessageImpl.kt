@@ -10,7 +10,6 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
-import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.chat.BaseChannel
 import com.pubnub.chat.BaseMessage

@@ -7,7 +7,6 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.chat.Channel
-import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
@@ -44,8 +43,8 @@ data class ThreadMessageImpl(
         error = error,
     ),
     ThreadMessage {
-
     val parentMessageTimetoken get() = getParentMessageTimetokenFromThreadId(channelId)
+
     override fun copyWithActions(actions: Actions?): ThreadMessage = copy(actions = actions)
 
     override fun copyWithContent(content: EventContent.TextMessageContent): ThreadMessage = copy(content = content)

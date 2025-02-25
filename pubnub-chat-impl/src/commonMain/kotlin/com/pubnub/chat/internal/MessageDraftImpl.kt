@@ -2,6 +2,7 @@ package com.pubnub.chat.internal
 
 import co.touchlab.kermit.Logger
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.chat.BaseChannel
 import com.pubnub.chat.Channel
 import com.pubnub.chat.MentionTarget
 import com.pubnub.chat.Message
@@ -32,7 +33,7 @@ private const val SCHEMA_CHANNEL = "pn-channel://"
  * from a single thread at a time.
  */
 class MessageDraftImpl(
-    override val channel: Channel,
+    override val channel: BaseChannel<*, *>,
     override val userSuggestionSource: MessageDraft.UserSuggestionSource = MessageDraft.UserSuggestionSource.CHANNEL,
     override val isTypingIndicatorTriggered: Boolean = channel.type != ChannelType.PUBLIC,
     override val userLimit: Int = 10,

@@ -8,8 +8,10 @@ import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
@@ -46,6 +48,36 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
+    override fun forwardMessage(message: BaseMessage<*, *>, channelId: String): PNFuture<PNPublishResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun setChannelMetadata(
+        id: String,
+        name: String?,
+        description: String?,
+        custom: CustomObject?,
+        type: ChannelType?,
+        status: String?
+    ): PNFuture<PNChannelMetadataResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun performCreateChannel(
+        id: String,
+        name: String?,
+        description: String?,
+        custom: CustomObject?,
+        type: ChannelType?,
+        status: String?
+    ): PNFuture<PNChannelMetadataResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun performDeleteChannel(id: String, soft: Boolean): PNFuture<PNChannelMetadataResult?> {
+        TODO("Not yet implemented")
+    }
+
     override val reactionsActionName: String
         get() = TODO("Not yet implemented")
 
@@ -65,7 +97,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         chat: Chat,
         message: Message,
         soft: Boolean
-    ): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> {
+    ): PNFuture<Pair<PNRemoveMessageActionResult, ThreadChannel?>> {
         TODO("Not yet implemented")
     }
 
@@ -173,10 +205,6 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     }
 
     override fun deleteChannel(id: String, soft: Boolean): PNFuture<Channel?> {
-        TODO("Not yet implemented")
-    }
-
-    override fun forwardMessage(message: Message, channelId: String): PNFuture<PNPublishResult> {
         TODO("Not yet implemented")
     }
 

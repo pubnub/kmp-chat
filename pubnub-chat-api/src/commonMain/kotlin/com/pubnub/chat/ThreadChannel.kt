@@ -21,7 +21,7 @@ interface ThreadChannel : BaseChannel<ThreadChannel, ThreadMessage> {
 
     override fun unpinMessage(): PNFuture<ThreadChannel>
 
-    override fun getHistory(startTimetoken: Long?, endTimetoken: Long?, count: Int): PNFuture<HistoryResponse<ThreadMessage, ThreadChannel>>
+    override fun getHistory(startTimetoken: Long?, endTimetoken: Long?, count: Int): PNFuture<HistoryResponse<ThreadMessage>>
 
     /**
      * Pins a selected thread message to the parent channel. This updates the parent channel's metadata with the

@@ -33,7 +33,7 @@ interface Channel : BaseChannel<Channel, Message> {
 
     override fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable
 
-    override fun getHistory(startTimetoken: Long?, endTimetoken: Long?, count: Int): PNFuture<HistoryResponse<Message, Channel>>
+    override fun getHistory(startTimetoken: Long?, endTimetoken: Long?, count: Int): PNFuture<HistoryResponse<Message>>
 
     override operator fun plus(update: PNChannelMetadata): Channel
 
@@ -102,16 +102,6 @@ interface Channel : BaseChannel<Channel, Message> {
      * and clean up resources by invoking the close() method.
      */
     fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable
-
-    /**
-     * Fetches all suggested users that match the provided 3-letter string from [BaseChannel]
-     *
-     * @param text at least a 3-letter string typed in after @ with the user name you want to mention.
-     * @param limit maximum number of returned usernames that match the typed 3-letter suggestion. The default value is set to 10, and the maximum is 100.
-     *
-     * @return [PNFuture] containing list of [Membership]
-     */
-    fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<List<Membership>>
 
     // Companion object required for extending this class elsewhere
     companion object
