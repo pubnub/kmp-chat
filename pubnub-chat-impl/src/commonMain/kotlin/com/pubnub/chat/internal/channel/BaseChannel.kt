@@ -280,6 +280,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         quotedMessage: Message?,
         files: List<InputFile>?,
         usersToMention: Collection<String>?,
+        customPushData: Map<String, String>?,
     ): PNFuture<PNPublishResult> {
         return sendTextInternal(
             text = text,
@@ -289,7 +290,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
             ttl = ttl,
             quotedMessage = quotedMessage,
             files = files,
-            usersToMention = usersToMention
+            usersToMention = usersToMention,
+            customPushData = customPushData,
         )
     }
 
@@ -301,7 +303,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
         ttl: Int?,
         quotedMessage: Message?,
         files: List<InputFile>?,
-        usersToMention: Collection<String>? = null
+        usersToMention: Collection<String>? = null,
+        customPushData: Map<String, String>? = null,
     ): PNFuture<PNPublishResult> {
         if (quotedMessage != null && quotedMessage.channelId != id) {
             return log.logErrorAndReturnException(CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS).asFuture()
@@ -313,7 +316,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     message = EventContent.TextMessageContent(text, filesData).encodeForSending(
                         id,
                         chat.config.customPayloads?.getMessagePublishBody,
-                        getPushPayload(this, text, chat.config.pushNotifications)
+                        getPushPayload(this, text, chat.config.pushNotifications, customPushData)
                     ),
                     meta = meta,
                     shouldStore = shouldStore,
@@ -322,7 +325,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 )
             }.then { publishResult: PNPublishResult ->
                 usersToMention?.forEach { mentionedUser ->
-                    emitUserMention(mentionedUser, publishResult.timetoken, text).async {
+                    emitUserMention(mentionedUser, publishResult.timetoken, text, customPushData).async {
                         it.onFailure { ex ->
                             log.w(throwable = ex) { ex.message.orEmpty() }
                         }
@@ -765,11 +768,12 @@ abstract class BaseChannel<C : Channel, M : Message>(
         userId: String,
         timetoken: Long,
         text: String,
+        customPushData: Map<String, String>? = null,
     ): PNFuture<PNPublishResult> {
         return chat.emitEvent(
             userId,
             EventContent.Mention(timetoken, id),
-            getPushPayload(this, text, chat.config.pushNotifications)
+            getPushPayload(this, text, chat.config.pushNotifications, customPushData)
         )
     }
 
@@ -888,7 +892,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
         internal fun getPushPayload(
             baseChannel: BaseChannel<*, *>,
             text: String,
-            pushConfig: PushNotificationsConfig
+            pushConfig: PushNotificationsConfig,
+            customPushData: Map<String, String>? = null
         ): Map<String, Any> {
             val apnsTopic = pushConfig.apnsTopic
             val apnsEnv = pushConfig.apnsEnvironment
@@ -904,6 +909,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 }
                 data = buildMap {
                     baseChannel.name?.let { put("subtitle", it) }
+                    customPushData?.let { putAll(it) }
                 }
                 this.android = PushPayloadHelper.FCMPayloadV2.AndroidConfig().apply {
                     this.notification = PushPayloadHelper.FCMPayloadV2.AndroidConfig.AndroidNotification().apply {
@@ -932,7 +938,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
                             )
                         }
                     )
-                    baseChannel.name?.let { custom = mapOf("subtitle" to it) }
+                    custom = buildMap {
+                        baseChannel.name?.let { put("subtitle", it) }
+                        customPushData?.let { putAll(it) }
+                    }
                 }
             }
 
