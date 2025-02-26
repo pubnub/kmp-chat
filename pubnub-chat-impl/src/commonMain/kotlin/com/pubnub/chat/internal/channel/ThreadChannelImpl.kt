@@ -21,6 +21,7 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
+import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
@@ -111,9 +112,10 @@ data class ThreadChannelImpl(
         ttl: Int?,
         mentionedUsers: MessageMentionedUsers?,
         referencedChannels: MessageReferencedChannels?,
-        textLinks: List<com.pubnub.chat.types.TextLink>?,
+        textLinks: List<TextLink>?,
         quotedMessage: Message?,
         files: List<InputFile>?,
+        customPushData: Map<String, String>?,
     ): PNFuture<PNPublishResult> {
         return createThreadAndSend {
             super.sendText(
@@ -126,7 +128,8 @@ data class ThreadChannelImpl(
                 referencedChannels,
                 textLinks,
                 quotedMessage,
-                files
+                files,
+                customPushData
             )
         }
     }
@@ -140,6 +143,7 @@ data class ThreadChannelImpl(
         quotedMessage: Message?,
         files: List<InputFile>?,
         usersToMention: Collection<String>?,
+        customPushData: Map<String, String>?,
     ): PNFuture<PNPublishResult> {
         return createThreadAndSend {
             super.sendText(
@@ -150,18 +154,24 @@ data class ThreadChannelImpl(
                 ttl = ttl,
                 quotedMessage = quotedMessage,
                 files = files,
-                usersToMention = usersToMention
+                usersToMention = usersToMention,
+                customPushData = customPushData,
             )
         }
     }
 
     override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
 
-    override fun emitUserMention(userId: String, timetoken: Long, text: String): PNFuture<PNPublishResult> {
+    override fun emitUserMention(
+        userId: String,
+        timetoken: Long,
+        text: String,
+        customPushData: Map<String, String>?,
+    ): PNFuture<PNPublishResult> {
         return chat.emitEvent(
             userId,
             EventContent.Mention(timetoken, id, parentChannelId),
-            getPushPayload(this, text, chat.config.pushNotifications)
+            getPushPayload(this, text, chat.config.pushNotifications, customPushData)
         )
     }
 

@@ -9,7 +9,6 @@ import com.pubnub.chat.Event
 import com.pubnub.chat.MentionTarget
 import com.pubnub.chat.Message
 import com.pubnub.chat.MessageElement
-import com.pubnub.chat.User
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.PINNED_MESSAGE_TIMETOKEN

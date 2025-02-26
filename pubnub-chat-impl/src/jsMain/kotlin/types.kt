@@ -204,6 +204,7 @@ external interface SendTextOptionParams : PubNub.PublishParameters {
     var textLinks: Array<TextLink>?
     var quotedMessage: MessageJs?
     var files: Any?
+    var customPushData: JsMap<String>?
 }
 
 external interface GetHistoryParams {

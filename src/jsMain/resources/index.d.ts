@@ -250,6 +250,9 @@ type SendTextOptionParams = Omit<Publish.PublishParameters, "message" | "channel
     textLinks?: TextLink[];
     quotedMessage?: Message;
     files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
+    customPushData?: {
+        [key: string]: string;
+    };
 };
 type EnhancedMessageEvent = Subscription.Message;
 type MessageDTOParams = History.FetchMessagesForChannelsResponse['channels'][string][number] | History.FetchMessagesWithActionsResponse['channels'][string][number] | EnhancedMessageEvent;

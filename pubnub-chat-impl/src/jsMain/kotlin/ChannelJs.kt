@@ -76,7 +76,8 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
             referencedChannels = options?.referencedChannels?.toMap()?.mapKeys { it.key.toInt() },
             textLinks = options?.textLinks?.toList(),
             quotedMessage = options?.quotedMessage?.message,
-            files = files
+            files = files,
+            customPushData = options?.customPushData?.toMap()
         ).then { result ->
             result.toPublishResponse()
         }.asPromise()

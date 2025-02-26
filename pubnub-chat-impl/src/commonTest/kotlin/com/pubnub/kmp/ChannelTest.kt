@@ -616,6 +616,84 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
+    fun sendTextPushMessageIsIncludedInPublish() {
+        chatConfig = ChatConfiguration(
+            typingTimeout = this@ChannelTest.typingTimeout,
+            pushNotifications = PushNotificationsConfig(sendPushes = true, apnsTopic = "aaa", deviceToken = "aaa", deviceGateway = PNPushType.APNS2)
+        )
+
+        every { chat.config } returns chatConfig
+        every { chat.currentUser } returns UserImpl(chat, "abc", "abc")
+        val publish: Publish = mock(MockMode.autofill)
+        every { pubNub.publish(any(), any(), any(), any(), any(), any(), any()) } returns publish
+        val messageText = "someText"
+        val mentionedUser1 = "mention1"
+        val ttl = 100
+
+        objectUnderTest.sendText(
+            text = messageText,
+            meta = null,
+            shouldStore = true,
+            usePost = false,
+            ttl = ttl,
+            usersToMention = listOf(mentionedUser1),
+            customPushData = mapOf("customProp" to "customVal")
+        ).async {
+            it.onFailure { ex -> ex.printStackTrace() }
+        }
+        // pn_apns" to mapOf("aps" to mapOf("alert" to mapOf("title" to "abc, "body" to "someText), "sound" to "default), "pn_push" to listOf(mapOf("targets" to listOf(mapOf("topic" to "aaa, "environment" to "development)])], "subtitle" to "testName, "customProp" to "customVal), "pn_fcm" to mapOf("data" to mapOf("subtitle" to "testName, "customProp" to "customVal), "notification" to mapOf("title" to "abc, "body" to "someText), "android" to mapOf("priority" to "NORMAL, "notification" to mapOf("title" to "abc, "body" to "someText, "sound" to "default, "sticky" to "false, "notification_priority" to "PRIORITY_DEFAULT), "direct_boot_ok" to "false)))
+
+        verify {
+            pubNub.publish(
+                channel = channelId,
+                message = mapOf(
+                    "type" to "text",
+                    "text" to messageText,
+                    "files" to emptyList<String>(),
+                    "pn_apns" to mapOf(
+                        "aps" to mapOf(
+                            "alert" to mapOf("title" to "abc", "body" to "someText"),
+                            "sound" to "default"
+                        ),
+                        "pn_push" to listOf(
+                            mapOf(
+                                "targets" to listOf(
+                                    mapOf(
+                                        "topic" to "aaa",
+                                        "environment" to "development"
+                                    )
+                                )
+                            )
+                        ),
+                        "subtitle" to "testName",
+                        "customProp" to "customVal"
+                    ),
+                    "pn_fcm" to mapOf(
+                        "data" to mapOf("subtitle" to "testName", "customProp" to "customVal"),
+                        "notification" to mapOf("title" to "abc", "body" to "someText"),
+                        "android" to mapOf(
+                            "priority" to "NORMAL",
+                            "notification" to mapOf(
+                                "title" to "abc",
+                                "body" to "someText",
+                                "sound" to "default",
+                                "sticky" to false,
+                                "notification_priority" to "PRIORITY_DEFAULT"
+                            ),
+                            "direct_boot_ok" to false
+                        )
+                    )
+                ),
+                meta = emptyMap<String, Any>(),
+                shouldStore = true,
+                usePost = false,
+                replicate = true,
+                ttl = ttl
+            )
+        }
+    }
+
+    @Test
     fun sendTextAllParametersArePassedToPublishDeprecataed() {
         val publish: Publish = mock(MockMode.autofill)
         val sendFile: SendFile = mock(MockMode.autofill)
@@ -653,8 +731,6 @@ class ChannelTest : BaseTest() {
         objectUnderTest.sendText(
             text = messageText,
             meta = mapOf("custom_meta" to "custom"),
-            shouldStore = true,
-            usePost = false,
             ttl = ttl,
             mentionedUsers = mapOf(0 to MessageMentionedUser(mentionedUser1, userName)),
             referencedChannels = mapOf(0 to MessageReferencedChannel(referencedChannel1, channelName)),
