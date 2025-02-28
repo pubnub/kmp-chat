@@ -293,8 +293,6 @@ class PubNubTest(
 
     fun close() {
         pubNub.unsubscribeAll()
-        pubNub.destroy()
-
         val remainingMessages = buildList {
             messageQueue.tryReceive().getOrNull()?.apply { add(this) } ?: return@buildList
         }
