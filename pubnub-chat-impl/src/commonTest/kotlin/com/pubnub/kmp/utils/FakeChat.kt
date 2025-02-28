@@ -36,6 +36,7 @@ import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 import kotlin.reflect.KClass
+import kotlin.time.Duration
 
 abstract class FakeChat(override val config: ChatConfiguration, override val pubNub: PubNub) : ChatInternal {
     override val timerManager: TimerManager = createTimerManager()
@@ -59,6 +60,14 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         endTimetoken: Long?,
         count: Int
     ): PNFuture<GetEventsHistoryResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getMessageFromReport(
+        reportEvent: Event<EventContent.Report>,
+        lookupBefore: Duration,
+        lookupAfter: Duration
+    ): PNFuture<Message?> {
         TODO("Not yet implemented")
     }
 

@@ -5,13 +5,17 @@ import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
+import com.pubnub.chat.Event
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 interface ChatInternal : Chat {
     val editMessageActionName: String
@@ -63,4 +67,6 @@ interface ChatInternal : Chat {
      * @return [PNFuture] containing set of [User]
      */
     fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<List<User>>
+
+    fun getMessageFromReport(reportEvent: Event<EventContent.Report>, lookupBefore: Duration = 3.seconds, lookupAfter: Duration = 5.seconds): PNFuture<Message?>
 }

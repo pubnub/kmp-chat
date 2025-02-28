@@ -1,7 +1,10 @@
+import { generateUUID } from "pubnub"
 import {
   Channel,
   Chat,
+  Event,
   INTERNAL_ADMIN_CHANNEL,
+  INTERNAL_MODERATION_PREFIX,
   Message,
   MessageDraft,
   CryptoUtils,
@@ -18,6 +21,10 @@ import {
 } from "./utils"
 import { jest } from "@jest/globals"
 import * as fs from "fs"
+
+declare class ChatInternal extends Chat {
+  getMessageFromReport(eventJs: Event<"report">, lookupBeforeMillis?: number, lookupAfterMillis?: number): Promise<Message | null>
+}
 
 describe("Send message test", () => {
   jest.retryTimes(3)
@@ -485,7 +492,39 @@ describe("Send message test", () => {
     expect(reportMessage?.payload.reportedUserId).toBe(reportedMessage.userId)
   })
 
+  test.only("should find a message from auto moderation report", async () => {
+    const messageText = "Test message to be reported"
+    const modId = generateUUID()
+    const reportChannel = INTERNAL_MODERATION_PREFIX + channel.id
+
+    const reportPayload = {
+      "text": messageText,
+      "reason": "auto moderated",
+      "reportedMessageChannelId": channel.id,
+      "autoModerationId": modId
+    };
+    
+    await chat.emitEvent({
+      "channel": reportChannel,
+      "type": "report",
+      "payload": reportPayload
+    })
+    await sleep(150)
+    await channel.sendText(messageText, {meta : {"pn_mod_id" : modId}})
+    await sleep(150) // history calls have around 130ms of cache time
+
+    const history = await channel.getHistory({ count: 1 })
+    const reportedMessage = history.messages[0]
+    const reportEvents = await chat.getEventsHistory({channel: reportChannel, count: 1 })
+    const reportEvent = reportEvents.events[0]
+    
+    const message = await (chat as ChatInternal).getMessageFromReport(reportEvent)
+
+    expect(message?.timetoken).toBe(reportedMessage.timetoken)
+  })
+
   test.skip("should report a message (deprecated)", async () => {
+
     const messageText = "Test message to be reported"
     const reportReason = "Inappropriate content"
 
