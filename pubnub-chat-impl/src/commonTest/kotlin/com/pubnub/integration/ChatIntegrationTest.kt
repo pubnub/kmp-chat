@@ -16,10 +16,13 @@ import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.ChatInternal
+import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.INTERNAL_USER_MODERATION_CHANNEL_PREFIX
 import com.pubnub.chat.internal.SUFFIX_MUTE_1
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
+import com.pubnub.chat.internal.generateRandomUuid
 import com.pubnub.chat.internal.utils.cyrb53a
 import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.membership.MembershipsResponse
@@ -672,6 +675,54 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
             removeListenerAndUnsubscribe?.close()
         }
+    }
+
+    @Test
+    fun getMessageFromReport() = runTest {
+        val messageText = "Test message to be reported"
+        val modId = generateRandomUuid()
+        val reportChannel = INTERNAL_MODERATION_PREFIX + channel01.id
+
+        val report = EventContent.Report(
+            text = messageText,
+            reason = "auto moderated",
+            reportedMessageTimetoken = null,
+            reportedMessageChannelId = channel01.id,
+            reportedUserId = null,
+            autoModerationId = modId
+        )
+        chat.emitEvent(reportChannel, report).await()
+        channel01.sendText(messageText, meta = mapOf("pn_mod_id" to modId)).await()
+        delayForHistory()
+        val history = channel01.getHistory(count = 1).await()
+        val reportedMessage = history.messages[0]
+        val reportEvents = chat.getEventsHistory(reportChannel, count = 1).await()
+
+        @Suppress("UNCHECKED_CAST")
+        val reportEvent = reportEvents.events[0] as Event<EventContent.Report>
+
+        val message = (chat as ChatInternal).getMessageFromReport(reportEvent).await()
+
+        assertEquals(reportedMessage.timetoken, message?.timetoken)
+    }
+
+    @Test
+    fun findMessageBetween() = runTest {
+        val tts = (0..20).map {
+            channel01.sendText("$it", ttl = 1).await()
+        }
+        val message = (chat as ChatImpl).findMessageBetween(
+            channel01,
+            tts.maxOf {
+                it.timetoken
+            },
+            end = tts.minOf { it.timetoken },
+            countPerRequest = 3
+        ) {
+            it.text == "11"
+        }.await()
+        assertNotNull(message)
+        assertEquals("11", message.text)
     }
 
     private suspend fun assertPushChannels(chat: Chat, expectedNumberOfChannels: Int) {
