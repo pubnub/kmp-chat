@@ -14,9 +14,11 @@ import com.pubnub.internal.PLATFORM
 import com.pubnub.test.BaseIntegrationTest
 import com.pubnub.test.await
 import com.pubnub.test.randomString
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
@@ -131,38 +133,44 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     val userPamClient: User by lazy(LazyThreadSafetyMode.NONE) { chatPamClient.currentUser }
 
     @AfterTest
-    fun afterTest() = runTest {
-        try {
-            usersToRemove.forEach {
-                launch {
-                    pubnub.removeUUIDMetadata(it).await()
-                }
-            }
-            if (PLATFORM != "iOS") {
-                usersToRemovePam.forEach {
-                    launch {
-                        pubnubPamServer.removeUUIDMetadata(it).await()
+    override fun after() {
+        runTest {
+            val exceptionHandler = CoroutineExceptionHandler { _, _ -> }
+            try {
+                supervisorScope {
+                    usersToRemove.forEach {
+                        launch(exceptionHandler) {
+                            pubnub.removeUUIDMetadata(it).await()
+                        }
+                    }
+                    if (PLATFORM != "iOS") {
+                        usersToRemovePam.forEach {
+                            launch(exceptionHandler) {
+                                pubnubPamServer.removeUUIDMetadata(it).await()
+                            }
+                        }
+                    }
+                    channelsToRemove.forEach {
+                        launch(exceptionHandler) {
+                            pubnub.removeChannelMetadata(it).await()
+                        }
+                    }
+                    if (PLATFORM != "iOS") {
+                        channelsToRemovePam.forEach {
+                            launch(exceptionHandler) {
+                                pubnubPamServer.removeChannelMetadata(it).await()
+                            }
+                        }
                     }
                 }
+            } finally {
+                chat.destroy()
+                chat02.destroy()
+                chatPamClient.destroy()
+                chatPamServer.destroy()
             }
-            channelsToRemove.forEach {
-                launch {
-                    pubnub.removeChannelMetadata(it).await()
-                }
-            }
-            if (PLATFORM != "iOS") {
-                channelsToRemovePam.forEach {
-                    launch {
-                        pubnubPamServer.removeChannelMetadata(it).await()
-                    }
-                }
-            }
-        } finally {
-            chat.destroy()
-            chat02.destroy()
-            chatPamClient.destroy()
-            chatPamServer.destroy()
         }
+        super.after()
     }
 
     internal suspend fun delayInMillis(timeMillis: Long) {
