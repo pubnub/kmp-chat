@@ -140,6 +140,7 @@ data class ThreadChannelImpl(
         quotedMessage: Message?,
         files: List<InputFile>?,
         usersToMention: Collection<String>?,
+        customPushData: Map<String, String>?,
     ): PNFuture<PNPublishResult> {
         return createThreadAndSend {
             super.sendText(
@@ -150,18 +151,24 @@ data class ThreadChannelImpl(
                 ttl = ttl,
                 quotedMessage = quotedMessage,
                 files = files,
-                usersToMention = usersToMention
+                usersToMention = usersToMention,
+                customPushData = customPushData,
             )
         }
     }
 
     override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
 
-    override fun emitUserMention(userId: String, timetoken: Long, text: String): PNFuture<PNPublishResult> {
+    override fun emitUserMention(
+        userId: String,
+        timetoken: Long,
+        text: String,
+        customPushData: Map<String, String>?,
+    ): PNFuture<PNPublishResult> {
         return chat.emitEvent(
             userId,
             EventContent.Mention(timetoken, id, parentChannelId),
-            getPushPayload(this, text, chat.config.pushNotifications)
+            getPushPayload(this, text, chat.config.pushNotifications, customPushData)
         )
     }
 
