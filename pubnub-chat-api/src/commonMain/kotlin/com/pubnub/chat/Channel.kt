@@ -224,6 +224,8 @@ interface Channel {
      * original message content, and userId as the identifier of the user who published the quoted message.
      * @param files One or multiple files attached to the text message.
      * @param usersToMention A collection of user ids to automatically notify with a mention after this message is sent.
+     * @param customPushData Additional key-value pairs that will be added to the FCM and/or APNS push messages for the
+     * message itself and any user mentions.
      *
      * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the sent message.
      */
@@ -236,6 +238,7 @@ interface Channel {
         quotedMessage: Message? = null,
         files: List<InputFile>? = null,
         usersToMention: Collection<String>? = null,
+        customPushData: Map<String, String>? = null
     ): PNFuture<PNPublishResult>
 
     /**
@@ -283,6 +286,7 @@ interface Channel {
         textLinks: List<TextLink>? = null,
         quotedMessage: Message? = null,
         files: List<InputFile>? = null,
+        customPushData: Map<String, String>? = null,
     ): PNFuture<PNPublishResult>
 
     /**

@@ -38,10 +38,10 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun pinMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun plus (Lcom/pubnub/api/models/consumer/objects/channel/PNChannelMetadata;)Lcom/pubnub/chat/Channel;
 	public abstract fun registerForPush ()Lcom/pubnub/kmp/PNFuture;
-	public abstract fun sendText (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun sendText (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Ljava/util/Map;Ljava/util/Map;Ljava/util/List;Lcom/pubnub/chat/Message;Ljava/util/List;)Lcom/pubnub/kmp/PNFuture;
-	public static synthetic fun sendText$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
-	public static synthetic fun sendText$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Ljava/util/Map;Ljava/util/Map;Ljava/util/List;Lcom/pubnub/chat/Message;Ljava/util/List;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun sendText (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun sendText (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Ljava/util/Map;Ljava/util/Map;Ljava/util/List;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun sendText$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun sendText$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Ljava/util/Map;Ljava/util/Map;Ljava/util/List;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun setRestrictions (Lcom/pubnub/chat/User;ZZLjava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun setRestrictions$default (Lcom/pubnub/chat/Channel;Lcom/pubnub/chat/User;ZZLjava/lang/String;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun startTyping ()Lcom/pubnub/kmp/PNFuture;
