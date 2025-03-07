@@ -931,6 +931,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     }
                     apns2Configurations = listOf(
                         PushPayloadHelper.APNSPayload.APNS2Configuration().apply {
+                            this.authMethod = PushPayloadHelper.APNSPayload.APNS2Configuration.APNS2AuthMethod.TOKEN
+                            this.version = "v2"
                             this.targets = listOf(
                                 PushPayloadHelper.APNSPayload.APNS2Configuration.Target().apply {
                                     this.topic = apnsTopic
