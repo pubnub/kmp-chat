@@ -1,5 +1,5 @@
 name: kmp-chat
-version: 0.11.1
+version: 0.11.2
 schema: 1
 scm: github.com/pubnub/kmp-chat
 sdks:
@@ -21,8 +21,8 @@ sdks:
             -
               distribution-type: library
               distribution-repository: maven
-              package-name: pubnub-chat-0.11.1
-              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.11.1/
+              package-name: pubnub-chat-0.11.2
+              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.11.2/
               supported-platforms:
                 supported-operating-systems:
                   Android:
@@ -77,6 +77,13 @@ sdks:
                   license-url: https://github.com/pubnub/kotlin/blob/master/LICENSE
                   is-required: Required
 changelog:
+  - date: 2025-03-07
+    version: 0.11.2
+    changes:
+      - type: bug
+        text: "Update PubNub Kotlin SDK dependency to include proper handling of the device token."
+      - type: bug
+        text: "Add the missing keys when building the APNS payload."
   - date: 2025-02-20
     version: 0.11.1
     changes:
