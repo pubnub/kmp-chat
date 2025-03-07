@@ -6,6 +6,7 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
+import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
@@ -175,7 +176,27 @@ interface Message {
      *
      * @return PNFuture that returns a ThreadChannel object which can be used for sending and reading messages from the newly created message thread.
      */
+    @Deprecated(
+        message = "Use `createThread(text, ...)` or `createThreadMessageDraft()` instead to create a thread by sending the first reply.`"
+    )
     fun createThread(): PNFuture<ThreadChannel>
+
+    /**
+     * Create a thread (channel) for a selected message.
+     *
+     * @return PNFuture that returns a ThreadChannel object which can be used for sending and reading messages from the newly created message thread.
+     */
+    fun createThread(
+        text: String,
+        meta: Map<String, Any>? = null,
+        shouldStore: Boolean = true,
+        usePost: Boolean = false,
+        ttl: Int? = null,
+        quotedMessage: Message? = null,
+        files: List<InputFile>? = null,
+        usersToMention: Collection<String>? = null,
+        customPushData: Map<String, String>? = null
+    ): PNFuture<ThreadChannel>
 
     /**
      * Removes a thread (channel) for a selected message.
