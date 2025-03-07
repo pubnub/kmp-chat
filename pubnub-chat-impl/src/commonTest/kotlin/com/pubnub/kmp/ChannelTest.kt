@@ -662,7 +662,9 @@ class ChannelTest : BaseTest() {
                                         "topic" to "aaa",
                                         "environment" to "development"
                                     )
-                                )
+                                ),
+                                "version" to "v2",
+                                "auth_method" to "token"
                             )
                         ),
                         "subtitle" to "testName",
