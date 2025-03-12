@@ -15,8 +15,10 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.ChatImpl.Companion.getThreadId
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
+import com.pubnub.chat.internal.MESSAGE_THREAD_ID_PREFIX
 import com.pubnub.chat.internal.METADATA_MENTIONED_USERS
 import com.pubnub.chat.internal.METADATA_QUOTED_MESSAGE
 import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
@@ -24,17 +26,22 @@ import com.pubnub.chat.internal.METADATA_TEXT_LINKS
 import com.pubnub.chat.internal.PUBNUB_INTERNAL_AUTOMODERATED
 import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.channel.ThreadChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.AUTOMODERATED_MESSAGE_CANNOT_BE_EDITED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.KEY_IS_NOT_VALID_INTEGER
+import com.pubnub.chat.internal.error.PubNubErrorMessage.ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_MESSAGE_HAS_NOT_BEEN_DELETED
+import com.pubnub.chat.internal.error.PubNubErrorMessage.THREAD_FOR_THIS_MESSAGE_ALREADY_EXISTS
+import com.pubnub.chat.internal.error.PubNubErrorMessage.YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES
 import com.pubnub.chat.internal.isInternalModerator
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
+import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannel
@@ -208,7 +215,49 @@ abstract class BaseMessage<T : Message>(
         )
     }
 
-    override fun createThread(): PNFuture<ThreadChannel> = ChatImpl.createThreadChannel(chat, this)
+    @Deprecated("Use `createThread(text, ...)` or `createThreadMessageDraft()` instead to create a thread by sending the first reply.`")
+    override fun createThread(): PNFuture<ThreadChannel> {
+        if (channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
+            return log.logErrorAndReturnException(ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED).asFuture()
+        }
+        if (deleted) {
+            return log.logErrorAndReturnException(YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES).asFuture()
+        }
+
+        val threadChannelId =
+            getThreadId(channelId, timetoken)
+        return chat.getChannel(threadChannelId).thenAsync { it: Channel? ->
+            if (it != null) {
+                return@thenAsync log.logErrorAndReturnException(THREAD_FOR_THIS_MESSAGE_ALREADY_EXISTS).asFuture()
+            }
+            ThreadChannelImpl(
+                this,
+                chat,
+                description = "Thread on channel $channelId with message timetoken $timetoken",
+                id = threadChannelId,
+                threadCreated = false
+            ).asFuture()
+        }
+    }
+
+    override fun createThread(
+        text: String,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean,
+        usePost: Boolean,
+        ttl: Int?,
+        quotedMessage: Message?,
+        files: List<InputFile>?,
+        usersToMention: Collection<String>?,
+        customPushData: Map<String, String>?
+    ): PNFuture<ThreadChannel> {
+        @Suppress("DEPRECATION")
+        return createThread().alsoAsync {
+            it.sendText(
+                text, meta, shouldStore, usePost, ttl, quotedMessage, files, usersToMention, customPushData
+            )
+        }
+    }
 
     override fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> = chat.removeThreadChannel(chat, this)
 

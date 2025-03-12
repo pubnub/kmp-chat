@@ -183,6 +183,8 @@ public final class com/pubnub/chat/MentionTarget$User : com/pubnub/chat/MentionT
 public abstract interface class com/pubnub/chat/Message {
 	public static final field Companion Lcom/pubnub/chat/Message$Companion;
 	public abstract fun createThread ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun createThread (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun createThread$default (Lcom/pubnub/chat/Message;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun delete (ZZ)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun delete$default (Lcom/pubnub/chat/Message;ZZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun editText (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;

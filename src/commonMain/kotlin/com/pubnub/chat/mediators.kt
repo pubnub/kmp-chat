@@ -7,6 +7,8 @@ import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.types.QuotedMessage
+import com.pubnub.kmp.PNFuture
+import com.pubnub.kmp.then
 
 /**
  * Receive updates when specific messages and related message reactions are added, edited, or removed.
@@ -95,6 +97,23 @@ fun Channel.createMessageDraft(
     userLimit: Int = 10,
     channelLimit: Int = 10
 ): MessageDraft = MessageDraftImpl(this, userSuggestionSource, isTypingIndicatorTriggered, userLimit, channelLimit)
+
+/**
+ * Creates a [MessageDraft] for composing a message that will be sent to this [Channel].
+ *
+ * @param userSuggestionSource The scope for searching for suggested users, default: [UserSuggestionSource.CHANNEL]
+ * @param isTypingIndicatorTriggered Whether modifying the message text triggers the typing indicator on [Channel], default: true
+ * @param userLimit The limit on the number of users returned when searching for users to mention, default: 10
+ * @param channelLimit The limit on the number of channels returned when searching for channels to reference, default: 10
+ */
+fun Message.createThreadMessageDraft(
+    userSuggestionSource: UserSuggestionSource = UserSuggestionSource.CHANNEL,
+    isTypingIndicatorTriggered: Boolean = true,
+    userLimit: Int = 10,
+    channelLimit: Int = 10
+): PNFuture<MessageDraft> = createThread().then {
+    it.createMessageDraft(userSuggestionSource, isTypingIndicatorTriggered, userLimit, channelLimit)
+}
 
 /**
  * Use this on the receiving end if a [Message] was sent using [MessageDraft] to parse the `Message` text into parts
