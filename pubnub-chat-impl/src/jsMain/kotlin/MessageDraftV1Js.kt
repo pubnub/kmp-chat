@@ -347,15 +347,15 @@ fun range(start: Int, stop: Int, step: Int = 1): List<Int> {
 
 @JsExport
 @JsName("MessageDraft")
-class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs, config: MessageDraftConfig? = null) {
+class MessageDraftV1Js(private val chat: ChatJs, private val channel: BaseChannelJs, config: MessageDraftConfig? = null) {
     private var previousValue = ""
     private val mentionedUsers: MutableMap<Int, UserJs> = mutableMapOf()
-    private val referencedChannels: MutableMap<Int, ChannelJs> = mutableMapOf()
+    private val referencedChannels: MutableMap<Int, BaseChannelJs> = mutableMapOf()
     private val _textLinks: MutableList<TextLink> = mutableListOf()
 
     var value = ""
     val textLinks get() = _textLinks.toTypedArray()
-    var quotedMessage: MessageJs? = null
+    var quotedMessage: BaseMessageJs? = null
     val config: MessageDraftConfig = createJsObject<MessageDraftConfig> {
         this.userSuggestionSource = config?.userSuggestionSource ?: "channel"
         this.isTypingIndicatorTriggered = config?.isTypingIndicatorTriggered ?: true
@@ -621,7 +621,7 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
         copiedObject.forEach { (key, value) ->
             val referencedName = when (value) {
                 is UserJs -> value.name.orEmpty()
-                is ChannelJs -> value.name.orEmpty()
+                is BaseChannelJs -> value.name.orEmpty()
                 else -> error("Not going to happen")
             }
 
@@ -690,13 +690,13 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
         val referencesObject = result.referencesObject
 
         referencedChannels.clear()
-        referencedChannels.putAll(referencesObject.mapValues { it.value as ChannelJs })
+        referencedChannels.putAll(referencesObject.mapValues { it.value as BaseChannelJs })
 
         if (differentReference == null) {
             return Promise.resolve(
                 mapOf(
                     "channelOccurrenceIndex" to -1,
-                    "suggestedChannels" to arrayOf<ChannelJs>()
+                    "suggestedChannels" to arrayOf<BaseChannelJs>()
                 ).toJsMap()
             )
         }
@@ -770,7 +770,7 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
         value = result.trim()
     }
 
-    fun addReferencedChannel(channel: ChannelJs, channelNameOccurrenceIndex: Int) {
+    fun addReferencedChannel(channel: BaseChannelJs, channelNameOccurrenceIndex: Int) {
         var counter = 0
         var result = ""
         var isChannelFound = false
@@ -925,7 +925,7 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
         )
     }
 
-    fun addQuote(message: MessageJs) {
+    fun addQuote(message: BaseMessageJs) {
         if (message.channelId != channel.id) {
             throw PubNubException("You cannot quote messages from other channels")
         }

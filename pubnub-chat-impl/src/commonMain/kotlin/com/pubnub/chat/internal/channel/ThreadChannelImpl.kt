@@ -5,7 +5,9 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.utils.Clock
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Channel
+import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.ThreadMessage
@@ -40,7 +42,8 @@ data class ThreadChannelImpl(
     override val status: String? = null,
     override val type: ChannelType? = null,
     private var threadCreated: Boolean = true,
-) : BaseChannel<ThreadChannel, ThreadMessage>(
+    private var parentChannel: Channel? = null
+) : BaseChannelImpl<ThreadChannel, ThreadMessage>(
         chat,
         clock,
         id,
@@ -55,11 +58,36 @@ data class ThreadChannelImpl(
         },
         { chat, pnMessageItem, channelId ->
             ThreadMessageImpl.fromDTO(chat, pnMessageItem, channelId, parentMessage.channelId)
-        }
+        },
+        { chat, messageResult ->
+            ThreadMessageImpl.fromDTO(chat, messageResult, parentMessage.channelId)
+        },
     ),
     ThreadChannel {
     override val parentChannelId: String
         get() = parentMessage.channelId
+
+    private val suggestedMemberships = mutableMapOf<String, List<Membership>>()
+
+    override fun getUserSuggestions(text: String, limit: Int): PNFuture<List<Membership>> {
+        suggestedMemberships[text]?.let { nonNullMemberships ->
+            return nonNullMemberships.asFuture()
+        }
+
+        return (
+            parentChannel?.asFuture()
+                ?: chat.getChannel(parentChannelId).then { channel ->
+                    parentChannel = channel
+                    channel
+                }
+        ).thenAsync {
+            parentChannel?.getMembers(filter = "uuid.name LIKE '$text*'", limit = limit)?.then { membersResponse ->
+                val memberships = membersResponse.members
+                suggestedMemberships[text] = memberships
+                memberships
+            } ?: emptyList<Membership>().asFuture()
+        }
+    }
 
     override fun pinMessageToParentChannel(message: ThreadMessage) = pinOrUnpinMessageFromParentChannel(message)
 
@@ -76,7 +104,7 @@ data class ThreadChannelImpl(
         }
     }
 
-    override fun delete(soft: Boolean): PNFuture<Channel?> {
+    override fun delete(soft: Boolean): PNFuture<ThreadChannel?> {
         return chat.removeThreadChannel(chat, parentMessage, soft).then { it.second }
     }
 
@@ -113,7 +141,7 @@ data class ThreadChannelImpl(
         mentionedUsers: MessageMentionedUsers?,
         referencedChannels: MessageReferencedChannels?,
         textLinks: List<TextLink>?,
-        quotedMessage: Message?,
+        quotedMessage: BaseMessage<*, *>?,
         files: List<InputFile>?,
         customPushData: Map<String, String>?,
     ): PNFuture<PNPublishResult> {
@@ -140,7 +168,7 @@ data class ThreadChannelImpl(
         shouldStore: Boolean,
         usePost: Boolean,
         ttl: Int?,
-        quotedMessage: Message?,
+        quotedMessage: BaseMessage<*, *>?,
         files: List<InputFile>?,
         usersToMention: Collection<String>?,
         customPushData: Map<String, String>?,

@@ -13,7 +13,7 @@ import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.PINNED_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.UserImpl
-import com.pubnub.chat.internal.channel.BaseChannel
+import com.pubnub.chat.internal.channel.BaseChannelImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.types.EventContent
@@ -466,7 +466,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id, channel02.id)) {
-                dispose = BaseChannel.streamUpdatesOn(listOf(channel01, channel02)) { channels ->
+                dispose = BaseChannelImpl.streamUpdatesOn(listOf(channel01, channel02), ChannelImpl::fromDTO) { channels ->
                     actualUpdates.add(channels.map { it.asImpl().copy(updated = null) }.sortedBy { it.id })
                 }
             }

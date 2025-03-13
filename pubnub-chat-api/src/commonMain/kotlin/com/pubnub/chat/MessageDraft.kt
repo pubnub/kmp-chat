@@ -14,7 +14,7 @@ interface MessageDraft {
     /**
      * The [Channel] where this [MessageDraft] will be published.
      */
-    val channel: Channel
+    val channel: BaseChannel<*, *>
 
     /**
      * The scope for searching for suggested users - either [UserSuggestionSource.GLOBAL] or [UserSuggestionSource.CHANNEL].
@@ -39,7 +39,7 @@ interface MessageDraft {
     /**
      * Can be used to set a [Message] to quote when sending this [MessageDraft].
      */
-    var quotedMessage: Message?
+    var quotedMessage: BaseMessage<*, *>?
 
     /**
      * Can be used to attach files to send with this [MessageDraft].

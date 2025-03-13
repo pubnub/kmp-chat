@@ -5,7 +5,7 @@ import com.pubnub.kmp.PNFuture
 /**
  * Represents a single message in a thread.
  */
-interface ThreadMessage : Message {
+interface ThreadMessage : BaseMessage<ThreadMessage, ThreadChannel> {
     /**
      * Unique identifier of the main channel on which you create a subchannel (thread channel) and thread messages.
      */
@@ -30,6 +30,14 @@ interface ThreadMessage : Message {
      * @return [PNFuture] containing the updated [Channel] after the message is unpinned.
      */
     fun unpinFromParentChannel(): PNFuture<Channel>
+
+    override fun toggleReaction(reaction: String): PNFuture<ThreadMessage>
+
+    override fun streamUpdates(callback: (message: ThreadMessage) -> Unit): AutoCloseable
+
+    override fun restore(): PNFuture<ThreadMessage>
+
+    override fun pin(): PNFuture<ThreadChannel>
 
     companion object
 }

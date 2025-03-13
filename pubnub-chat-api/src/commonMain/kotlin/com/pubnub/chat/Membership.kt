@@ -60,7 +60,7 @@ interface Membership {
      * @param message Last read message on a given channel with the timestamp that gets added to the user-channel membership as the [lastReadMessageTimetoken] property.
      * @return A [PNFuture] that returns an updated [Membership] object.
      */
-    fun setLastReadMessage(message: Message): PNFuture<Membership>
+    fun setLastReadMessage(message: BaseMessage<*, *>): PNFuture<Membership>
 
     /**
      * Updates the channel membership information for a given user.

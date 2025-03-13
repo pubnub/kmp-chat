@@ -74,7 +74,7 @@ interface ChatConfiguration {
      * Specifically, the data is saved in the `custom` object of the following User in App Context:
      *
      * ```
-     * PN_PRIV.{userId}.mute.1
+     * PN_PRIV.<userId>.mute.1
      * ```
      *
      * where {userId} is the current [com.pubnub.api.v2.PNConfiguration.userId].

@@ -55,8 +55,12 @@ import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl
+import com.pubnub.chat.internal.ChatImpl.Companion.getParentChannelIdFromThreadId
+import com.pubnub.chat.internal.ChatImpl.Companion.getParentMessageTimetokenFromThreadId
+import com.pubnub.chat.internal.ChatImpl.Companion.getThreadId
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_USER_MODERATION_CHANNEL_PREFIX
+import com.pubnub.chat.internal.MESSAGE_THREAD_ID_PREFIX
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.message.GetUnreadMessagesCounts
@@ -1556,6 +1560,21 @@ class ChatTest : BaseTest() {
             next = null,
             prev = null
         )
+    }
+
+    @Test
+    fun threadIdEncodingDecoding() {
+        val channelId = "some_channel"
+        val messageTimetoken = 123456789L
+
+        val threadId = getThreadId(channelId, messageTimetoken)
+        assertEquals("${MESSAGE_THREAD_ID_PREFIX}_${channelId}_$messageTimetoken", threadId)
+
+        val decodedChannelId = getParentChannelIdFromThreadId(threadId)
+        assertEquals(channelId, decodedChannelId)
+
+        val decodedMessageTimetoken = getParentMessageTimetokenFromThreadId(threadId)
+        assertEquals(messageTimetoken, decodedMessageTimetoken)
     }
 
     @Test

@@ -10,10 +10,9 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
-import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
-import com.pubnub.chat.Channel
-import com.pubnub.chat.Message
-import com.pubnub.chat.ThreadChannel
+import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
+import com.pubnub.chat.BaseChannel
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
@@ -23,7 +22,6 @@ import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
 import com.pubnub.chat.internal.METADATA_TEXT_LINKS
 import com.pubnub.chat.internal.PUBNUB_INTERNAL_AUTOMODERATED
 import com.pubnub.chat.internal.THREAD_ROOT_ID
-import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.AUTOMODERATED_MESSAGE_CANNOT_BE_EDITED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST
@@ -53,7 +51,7 @@ import tryInt
 
 typealias Actions = Map<String, Map<String, List<PNFetchMessageItem.Action>>>
 
-abstract class BaseMessage<T : Message>(
+abstract class BaseMessageImpl<M : BaseMessage<M, C>, C : BaseChannel<C, M>>(
     override val chat: ChatInternal,
     override val timetoken: Long,
     override val content: EventContent.TextMessageContent,
@@ -62,7 +60,7 @@ abstract class BaseMessage<T : Message>(
     override val actions: Map<String, Map<String, List<PNFetchMessageItem.Action>>>? = null,
     private val metaInternal: JsonElement? = null,
     override val error: PubNubError? = null,
-) : Message {
+) : BaseMessage<M, C> {
     override val meta: Map<String, Any>? get() = metaInternal?.decode() as? Map<String, Any>
     override val quotedMessage: QuotedMessage? get() = metaInternal.extractQuotedMessage()
     override val mentionedUsers: MessageMentionedUsers? get() = metaInternal.extractMentionedUsers()
@@ -84,11 +82,6 @@ abstract class BaseMessage<T : Message>(
 
     override val deleted: Boolean
         get() = getDeleteActions() != null
-
-    override val hasThread: Boolean
-        get() {
-            return actions?.get(THREAD_ROOT_ID)?.values?.firstOrNull()?.isNotEmpty() ?: false
-        }
 
     @OptIn(ExperimentalSerializationApi::class)
     override val type = EventContent.TextMessageContent.serializer().descriptor.serialName // = "text"
@@ -117,7 +110,7 @@ abstract class BaseMessage<T : Message>(
         return reactions[reaction]?.any { it.uuid == chat.pubNub.configuration.userId.value } ?: false
     }
 
-    override fun editText(newText: String): PNFuture<Message> {
+    override fun editText(newText: String): PNFuture<M> {
         val type = chat.editMessageActionName
         if (this.meta?.containsKey(PUBNUB_INTERNAL_AUTOMODERATED) == true && !this.chat.currentUser.isInternalModerator) {
             return log.logErrorAndReturnException(AUTOMODERATED_MESSAGE_CANNOT_BE_EDITED).asFuture()
@@ -136,7 +129,7 @@ abstract class BaseMessage<T : Message>(
         }
     }
 
-    override fun delete(soft: Boolean, preserveFiles: Boolean): PNFuture<Message?> {
+    override fun delete(soft: Boolean, preserveFiles: Boolean): PNFuture<M?> {
         val type = chat.deleteMessageActionName
         if (soft) {
             var updatedActions: Actions = actions ?: mapOf()
@@ -179,18 +172,14 @@ abstract class BaseMessage<T : Message>(
         }
     }
 
-    override fun getThread() = chat.getThreadChannel(this)
-
     override fun forward(channelId: String): PNFuture<PNPublishResult> = chat.forwardMessage(this, channelId)
 
-    override fun pin(): PNFuture<Channel> {
+    protected fun pinInternal(): PNFuture<PNChannelMetadataResult> {
         return chat.getChannel(channelId).thenAsync { channel ->
             if (channel == null) {
                 log.pnError(PubNubErrorMessage.CHANNEL_NOT_EXIST)
             }
-            ChatImpl.pinOrUnpinMessageToChannel(chat.pubNub, this, channel).then {
-                ChannelImpl.fromDTO(chat, it.data)
-            }
+            ChatImpl.pinOrUnpinMessageToChannel(chat.pubNub, this, channel)
         }
     }
 
@@ -208,11 +197,7 @@ abstract class BaseMessage<T : Message>(
         )
     }
 
-    override fun createThread(): PNFuture<ThreadChannel> = ChatImpl.createThreadChannel(chat, this)
-
-    override fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> = chat.removeThreadChannel(chat, this)
-
-    override fun toggleReaction(reaction: String): PNFuture<Message> {
+    override fun toggleReaction(reaction: String): PNFuture<M> {
         val existingReaction = reactions[reaction]?.find {
             it.uuid == chat.currentUser.id
         }
@@ -231,29 +216,22 @@ abstract class BaseMessage<T : Message>(
         return newActions.then { copyWithActions(it) }
     }
 
-    override fun <M : Message> streamUpdates(callback: (message: M) -> Unit): AutoCloseable {
-        return streamUpdatesOn(listOf(this as M)) {
+    override fun streamUpdates(callback: (message: M) -> Unit): AutoCloseable {
+        return streamUpdatesOn<M, C>(listOf(this as M)) {
             callback(it.first())
         }
     }
 
-    override fun restore(): PNFuture<Message> {
+    open override fun restore(): PNFuture<M> {
         val deleteActions: List<PNFetchMessageItem.Action> = getDeleteActions()
-            ?: return this.also { log.w(THIS_MESSAGE_HAS_NOT_BEEN_DELETED) }.asFuture()
+            ?: return (this as M).also { log.w(THIS_MESSAGE_HAS_NOT_BEEN_DELETED) }.asFuture()
 
         var updatedActions: Actions? = actions?.filterNot { it.key == chat.deleteMessageActionName }
 
         return deleteActions
             .map { removeMessageAction(it.actionTimetoken) }
             .awaitAll()
-            .thenAsync {
-                // attempt to restore the thread channel related to this message if exists
-                chat.restoreThreadChannel(this)
-            }.then { addThreadRootIdMessageAction: PNMessageAction? ->
-                // update actions map by adding THREAD_ROOT_ID if there is thread related to the message
-                addThreadRootIdMessageAction?.let { notNullAction ->
-                    updatedActions = assignAction(updatedActions, notNullAction)
-                }
+            .then {
                 copyWithActions(updatedActions)
             }
     }
@@ -270,12 +248,7 @@ abstract class BaseMessage<T : Message>(
         return actions?.get(chat.deleteMessageActionName)?.get(chat.deleteMessageActionName)
     }
 
-    private fun deleteThread(soft: Boolean): PNFuture<Unit> {
-        if (hasThread) {
-            return getThread().thenAsync {
-                it.delete(soft)
-            }.then { Unit }
-        }
+    protected open fun deleteThread(soft: Boolean): PNFuture<Unit> {
         return Unit.asFuture()
     }
 
@@ -287,16 +260,16 @@ abstract class BaseMessage<T : Message>(
         )
     }
 
-    internal abstract fun copyWithActions(actions: Actions?): T
+    internal abstract fun copyWithActions(actions: Actions?): M
 
-    internal abstract fun copyWithContent(content: EventContent.TextMessageContent): T
+    internal abstract fun copyWithContent(content: EventContent.TextMessageContent): M
 
     companion object {
         private val log = Logger.withTag("BaseMessageImpl")
 
-        fun <T : Message> streamUpdatesOn(
-            messages: Collection<T>,
-            callback: (messages: Collection<T>) -> Unit,
+        fun <M : BaseMessage<M, C>, C : BaseChannel<C, M>> streamUpdatesOn(
+            messages: Collection<M>,
+            callback: (messages: Collection<M>) -> Unit,
         ): AutoCloseable {
             if (messages.isEmpty()) {
                 log.pnError(CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST)
@@ -321,7 +294,7 @@ abstract class BaseMessage<T : Message>(
                         event.messageAction
                     )
                 }
-                val newMessage = (message as BaseMessage<T>).copyWithActions(actions)
+                val newMessage = (message as BaseMessageImpl<M, C>).copyWithActions(actions)
                 latestMessages = latestMessages.map {
                     if (it.timetoken == newMessage.timetoken) {
                         newMessage

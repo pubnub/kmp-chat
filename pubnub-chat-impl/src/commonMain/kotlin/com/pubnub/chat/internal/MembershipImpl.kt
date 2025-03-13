@@ -7,9 +7,9 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteMembershipEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEvent
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEventMessage
+import com.pubnub.chat.BaseMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Membership
-import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST
@@ -43,7 +43,7 @@ data class MembershipImpl(
             return custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN).tryLong()
         }
 
-    override fun setLastReadMessage(message: Message): PNFuture<Membership> {
+    override fun setLastReadMessage(message: BaseMessage<*, *>): PNFuture<Membership> {
         return setLastReadMessageTimetoken(message.timetoken)
     }
 

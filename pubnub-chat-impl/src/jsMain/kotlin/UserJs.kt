@@ -81,19 +81,19 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
     }
 
     fun setRestrictions(
-        channel: ChannelJs,
+        channel: BaseChannelJs,
         params: RestrictionJs,
     ): Promise<Any> {
         return user.setRestrictions(
-            channel.channel,
+            channel.baseChannel,
             params.ban ?: false,
             params.mute ?: false,
             params.reason?.toString()
         ).asPromise()
     }
 
-    fun getChannelRestrictions(channel: ChannelJs): Promise<RestrictionJs> {
-        return user.getChannelRestrictions(channel.channel).then {
+    fun getChannelRestrictions(channel: BaseChannelJs): Promise<RestrictionJs> {
+        return user.getChannelRestrictions(channel.baseChannel).then {
             it.asJs()
         }.asPromise()
     }

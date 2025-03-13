@@ -20,12 +20,12 @@ class MessageDraftV2Js internal constructor(
     private val messageDraft: MessageDraftImpl,
     val config: MessageDraftConfig,
 ) {
-    val channel: ChannelJs get() = messageDraft.channel.asJs(chat)
+    val channel: BaseChannelJs get() = messageDraft.channel.asJs(chat)
     val value: String get() = messageDraft.value.toString()
-    var quotedMessage: MessageJs? = null
+    var quotedMessage: BaseMessageJs? = null
     var files: Any? = null
 
-    fun addQuote(message: MessageJs) {
+    fun addQuote(message: BaseMessageJs) {
         quotedMessage = message
     }
 
@@ -59,7 +59,7 @@ class MessageDraftV2Js internal constructor(
             val name = file.name
             messageDraft.files.add(InputFile(name ?: "", type ?: "", UploadableImpl(file)))
         }
-        messageDraft.quotedMessage = quotedMessage?.message
+        messageDraft.quotedMessage = quotedMessage?.baseMessage
 
         return messageDraft.send(
             options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
