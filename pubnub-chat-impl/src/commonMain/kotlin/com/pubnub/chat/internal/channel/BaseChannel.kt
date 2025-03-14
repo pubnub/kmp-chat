@@ -50,7 +50,6 @@ import com.pubnub.chat.internal.PINNED_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.defaultGetMessageResponseBody
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_CHANNEL_UPDATES_ON_EMPTY_LIST
-import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_HANDLING_ONMESSAGE_EVENT
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
@@ -366,9 +365,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun invite(user: User): PNFuture<Membership> {
-        if (this.type == ChannelType.PUBLIC) {
-            return log.logErrorAndReturnException(CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
-        }
         return getMembers(filter = user.uuidFilterString).thenAsync { channelMembers: MembersResponse ->
             if (channelMembers.members.isNotEmpty()) {
                 return@thenAsync channelMembers.members.first().asFuture()
@@ -401,9 +397,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun inviteMultiple(users: Collection<User>): PNFuture<List<Membership>> {
-        if (this.type == ChannelType.PUBLIC) {
-            return log.logErrorAndReturnException(CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS).asFuture()
-        }
         return chat.pubNub.setChannelMembers(
             this.id,
             users.map { PNMember.Partial(it.id) },

@@ -21,8 +21,6 @@ internal object PubNubErrorMessage {
     internal const val CHANNEL_NOT_EXIST = "Channel does not exist"
     internal const val USER_NOT_EXIST = "User does not exist"
     internal const val FAILED_TO_SOFT_DELETE_CHANNEL = "Failed to soft delete the channel"
-    internal const val CHANNEL_INVITES_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS =
-        "Channel invites are not supported in Public chats."
     internal const val MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY =
         "Moderation restrictions can only be set by clients initialized with a Secret Key."
     internal const val STORE_USER_ACTIVITY_INTERVAL_SHOULD_BE_AT_LEAST_1_MIN =
