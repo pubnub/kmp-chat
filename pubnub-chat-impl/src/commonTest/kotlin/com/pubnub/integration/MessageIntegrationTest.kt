@@ -73,9 +73,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val publishTimetoken = pnPublishResult.timetoken
         delayForHistory()
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
-        val threadChannel: ThreadChannel = message.createThread().await()
-        // we need to call sendText because addMessageAction is called in sendText that stores details about thread
-        threadChannel.sendText("message in thread_${randomString()}").await()
+        val threadChannel: ThreadChannel = message.createThread("message in thread_${randomString()}").await()
         delayForHistory()
         val history: HistoryResponse<ThreadMessage> = threadChannel.getHistory().await()
 
@@ -106,7 +104,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val publishTimetoken = pnPublishResult.timetoken
         delayForHistory()
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
-        val threadChannel: ThreadChannel = message.createThread().await()
+        val threadChannel: ThreadChannel = message.createThread("message in thread_${randomString()}").await()
         // we need to call sendText because addMessageAction is called in sendText that stores details about thread
         threadChannel.sendText("message in thread_${randomString()}").await()
 
