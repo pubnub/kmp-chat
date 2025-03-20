@@ -6,6 +6,7 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
+import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
@@ -175,7 +176,43 @@ interface Message {
      *
      * @return PNFuture that returns a ThreadChannel object which can be used for sending and reading messages from the newly created message thread.
      */
+    @Deprecated(
+        message = "Use `createThread(text, ...)` or `createThreadMessageDraft()` instead to create a thread by sending the first reply.`"
+    )
     fun createThread(): PNFuture<ThreadChannel>
+
+    /**
+     * Create a thread (channel) for a selected message.
+     * @param text Text that you want to send to the selected channel.
+     * @param meta Publish additional details with the request.
+     * @param shouldStore If true, the messages are stored in Message Persistence if enabled in Admin Portal.
+     * @param usePost Use HTTP POST
+     * @param ttl Defines if / how long (in hours) the message should be stored in Message Persistence.
+     * If shouldStore = true, and ttl = 0, the message is stored with no expiry time.
+     * If shouldStore = true and ttl = X, the message is stored with an expiry time of X hours.
+     * If shouldStore = false, the ttl parameter is ignored.
+     * If ttl is not specified, then the expiration of the message defaults back to the expiry value for the keyset.
+     * @param quotedMessage Object added to a message when you quote another message. This object stores the following
+     * info about the quoted message: timetoken for the time when the quoted message was published, text with the
+     * original message content, and userId as the identifier of the user who published the quoted message.
+     * @param files One or multiple files attached to the text message.
+     * @param usersToMention A collection of user ids to automatically notify with a mention after this message is sent.
+     * @param customPushData Additional key-value pairs that will be added to the FCM and/or APNS push messages for the
+     * message itself and any user mentions.
+     *
+     * @return [PNFuture] that returns a ThreadChannel object which can be used for sending and reading messages from the newly created message thread.
+     */
+    fun createThread(
+        text: String,
+        meta: Map<String, Any>? = null,
+        shouldStore: Boolean = true,
+        usePost: Boolean = false,
+        ttl: Int? = null,
+        quotedMessage: Message? = null,
+        files: List<InputFile>? = null,
+        usersToMention: Collection<String>? = null,
+        customPushData: Map<String, String>? = null
+    ): PNFuture<ThreadChannel>
 
     /**
      * Removes a thread (channel) for a selected message.
