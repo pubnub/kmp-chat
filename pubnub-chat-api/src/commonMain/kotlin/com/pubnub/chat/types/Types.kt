@@ -64,7 +64,8 @@ abstract class EventContent(
         @Serializable(with = LongAsStringSerializer::class)
         val reportedMessageTimetoken: Long? = null,
         val reportedMessageChannelId: String? = null,
-        val reportedUserId: String?,
+        val reportedUserId: String? = null,
+        val autoModerationId: String? = null
     ) : EventContent()
 
     /**
