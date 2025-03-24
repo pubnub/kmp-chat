@@ -492,7 +492,7 @@ describe("Send message test", () => {
     expect(reportMessage?.payload.reportedUserId).toBe(reportedMessage.userId)
   })
 
-  test.only("should find a message from auto moderation report", async () => {
+  test("should find a message from auto moderation report", async () => {
     const messageText = "Test message to be reported"
     const modId = generateUUID()
     const reportChannel = INTERNAL_MODERATION_PREFIX + channel.id
