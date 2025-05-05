@@ -449,10 +449,12 @@ public final class com/pubnub/chat/membership/MembershipsResponse {
 }
 
 public final class com/pubnub/chat/message/GetUnreadMessagesCounts {
-	public fun <init> (Lcom/pubnub/chat/Channel;Lcom/pubnub/chat/Membership;J)V
+	public fun <init> (Lcom/pubnub/chat/Channel;Lcom/pubnub/chat/Membership;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;J)V
 	public final fun getChannel ()Lcom/pubnub/chat/Channel;
 	public final fun getCount ()J
 	public final fun getMembership ()Lcom/pubnub/chat/Membership;
+	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
+	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 }
 
 public final class com/pubnub/chat/message/MarkAllMessageAsReadResponse {
