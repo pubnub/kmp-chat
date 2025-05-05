@@ -328,6 +328,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
                 createJsObject<GetUnreadMessagesCountsJs> {
                     this.channel = unreadMessagesCount.channel.asJs(this@ChatJs)
                     this.membership = unreadMessagesCount.membership.asJs(this@ChatJs)
+                    this.page = MetadataPage(unreadMessagesCount.next, unreadMessagesCount.prev)
                     this.count = unreadMessagesCount.count.toDouble()
                 }
             }.toTypedArray()

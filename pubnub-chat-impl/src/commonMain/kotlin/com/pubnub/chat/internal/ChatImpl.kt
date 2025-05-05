@@ -854,7 +854,9 @@ class ChatImpl(
                                 GetUnreadMessagesCounts(
                                     channel = membershipMatchingChannel.channel,
                                     membership = membershipMatchingChannel,
-                                    count = messageCount
+                                    count = messageCount,
+                                    prev = membershipsResponse.prev,
+                                    next = membershipsResponse.next
                                 )
                             }
                         unreadMessageCounts.filter { unreadMessageCount -> unreadMessageCount.count > 0 }
