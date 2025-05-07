@@ -77,6 +77,8 @@ public abstract interface class com/pubnub/chat/Chat {
 	public abstract fun destroy ()V
 	public abstract fun emitEvent (Ljava/lang/String;Lcom/pubnub/chat/types/EventContent;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun emitEvent$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Lcom/pubnub/chat/types/EventContent;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun fetchUnreadMessagesCounts (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun fetchUnreadMessagesCounts$default (Lcom/pubnub/chat/Chat;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getChannel (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getChannels (Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getChannels$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
@@ -448,13 +450,18 @@ public final class com/pubnub/chat/membership/MembershipsResponse {
 	public final fun getTotal ()I
 }
 
+public final class com/pubnub/chat/message/FetchUnreadMessagesCountsResponse {
+	public fun <init> (Ljava/util/List;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;)V
+	public final fun getCounts ()Ljava/util/List;
+	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
+	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
+}
+
 public final class com/pubnub/chat/message/GetUnreadMessagesCounts {
-	public fun <init> (Lcom/pubnub/chat/Channel;Lcom/pubnub/chat/Membership;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;J)V
+	public fun <init> (Lcom/pubnub/chat/Channel;Lcom/pubnub/chat/Membership;J)V
 	public final fun getChannel ()Lcom/pubnub/chat/Channel;
 	public final fun getCount ()J
 	public final fun getMembership ()Lcom/pubnub/chat/Membership;
-	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
-	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 }
 
 public final class com/pubnub/chat/message/MarkAllMessageAsReadResponse {

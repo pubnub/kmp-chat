@@ -51,8 +51,12 @@ external interface ThreadMentionDataJs : UserMentionDataJs {
 external interface GetUnreadMessagesCountsJs {
     var channel: ChannelJs
     var membership: MembershipJs
-    var page: PubNub.MetadataPage
     var count: Double
+}
+
+external interface FetchUnreadMessagesCountsJs {
+    var page: PubNub.MetadataPage
+    var counts: Array<GetUnreadMessagesCountsJs>
 }
 
 external interface CreateGroupConversationResultJs {
