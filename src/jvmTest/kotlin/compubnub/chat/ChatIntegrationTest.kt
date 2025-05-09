@@ -16,6 +16,7 @@ import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.CustomPayloads
 import com.pubnub.chat.config.LogLevel
 import com.pubnub.chat.init
+import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.test.BaseIntegrationTest
@@ -229,5 +230,36 @@ class ChatIntegrationTest : BaseIntegrationTest() {
                 throw Exception("Exception initialising chat: ${exception.message}")
             }
         }
+    }
+
+    @Test
+    fun shouldReturnExpectedUnreadMessagesCounts() = runTest {
+        val chat = ChatImpl(ChatConfiguration(), pubnub).initialize().await()
+        val channel = chat.createPublicConversation().await()
+        val channel2 = chat.createPublicConversation().await()
+
+        channel.invite(chat.currentUser).await()
+        channel2.invite(chat.currentUser).await()
+        channel.sendText("Some text").await()
+        channel2.sendText("Some text").await()
+
+        val firstResults = chat.fetchUnreadMessagesCounts(limit = 1).await()
+        assertEquals(firstResults.countsByChannel.size, 1)
+        assertEquals(firstResults.countsByChannel[0].count, 1)
+        assertTrue(firstResults.countsByChannel[0].channel.id in setOf(channel.id, channel2.id))
+
+        val secondResults = chat.fetchUnreadMessagesCounts(page = firstResults.next).await()
+        assertEquals(secondResults.countsByChannel.size, 1)
+        assertEquals(secondResults.countsByChannel[0].count, 1)
+        assertTrue(secondResults.countsByChannel[0].channel.id in setOf(channel.id, channel2.id))
+
+        val thirdResults = chat.fetchUnreadMessagesCounts(page = secondResults.next).await()
+        assertTrue(thirdResults.countsByChannel.isEmpty())
+
+        channel.leave().await()
+        channel2.leave().await()
+        channel.delete().await()
+        channel2.delete().await()
+        chat.currentUser.delete().await()
     }
 }
