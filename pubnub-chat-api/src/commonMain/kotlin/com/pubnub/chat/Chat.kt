@@ -9,9 +9,9 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.chat.config.ChatConfiguration
-import com.pubnub.chat.message.FetchUnreadMessagesCountsResponse
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
+import com.pubnub.chat.message.UnreadMessagesCounts
 import com.pubnub.chat.mutelist.MutedUsersManager
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
@@ -444,14 +444,14 @@ interface Chat {
      * @param filter Expression used to filter the results. Returns only these channels whose properties satisfy the given expression are returned.
      * @param sort A collection to specify the sort order. Available options are id, name, and updated. Use asc or desc.
      *
-     * @return [PNFuture] containing list of [FetchUnreadMessagesCountsResponse]
+     * @return [PNFuture] containing list of [UnreadMessagesCounts]
      */
     fun fetchUnreadMessagesCounts(
         limit: Int? = null,
         page: PNPage? = null,
         filter: String? = null,
         sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
-    ): PNFuture<FetchUnreadMessagesCountsResponse>
+    ): PNFuture<UnreadMessagesCounts>
 
     /**
      * Allows you to mark as read all messages you didn't read on all joined channels.

@@ -83,9 +83,9 @@ import com.pubnub.chat.internal.util.nullOn404
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.cyrb53a
 import com.pubnub.chat.membership.MembershipsResponse
-import com.pubnub.chat.message.FetchUnreadMessagesCountsResponse
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
+import com.pubnub.chat.message.UnreadMessagesCounts
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.restrictions.RestrictionType
 import com.pubnub.chat.types.ChannelMentionData
@@ -836,7 +836,7 @@ class ChatImpl(
         sort: Collection<PNSortKey<PNMembershipKey>>
     ): PNFuture<List<GetUnreadMessagesCounts>> {
         return fetchUnreadMessagesCounts(limit, page, filter, sort).then {
-            it.counts
+            it.countsByChannel
         }
     }
 
@@ -845,12 +845,12 @@ class ChatImpl(
         page: PNPage?,
         filter: String?,
         sort: Collection<PNSortKey<PNMembershipKey>>
-    ): PNFuture<FetchUnreadMessagesCountsResponse> {
+    ): PNFuture<UnreadMessagesCounts> {
         return currentUser.getMemberships(limit = limit, page = page, filter = filter, sort = sort)
             .thenAsync { membershipsResponse: MembershipsResponse ->
                 val memberships = membershipsResponse.memberships
                 if (memberships.isEmpty()) {
-                    return@thenAsync FetchUnreadMessagesCountsResponse(emptyList(), null, null).asFuture()
+                    return@thenAsync UnreadMessagesCounts(emptyList(), null, null).asFuture()
                 }
                 val channels = memberships.map { membership -> membership.channel.id }
                 val channelsTimetoken = memberships.map { membership -> membership.lastReadMessageTimetoken ?: 0 }
@@ -868,8 +868,8 @@ class ChatImpl(
                                     count = messageCount,
                                 )
                             }
-                        FetchUnreadMessagesCountsResponse(
-                            counts = unreadMessageCounts.filter { unreadMessageCount -> unreadMessageCount.count > 0 },
+                        UnreadMessagesCounts(
+                            countsByChannel = unreadMessageCounts.filter { unreadMessageCount -> unreadMessageCount.count > 0 },
                             prev = membershipsResponse.prev,
                             next = membershipsResponse.next
                         )

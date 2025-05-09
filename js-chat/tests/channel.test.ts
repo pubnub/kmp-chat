@@ -112,17 +112,17 @@ describe("Channel test", () => {
     await channel2.sendText("Some text")
 
     const firstResults = await chat.fetchUnreadMessagesCounts({ limit: 1 })
-    expect(firstResults.counts.length).toEqual(1)
-    expect(firstResults.counts.at(0).count).toEqual(1)
-    expect(firstResults.counts.at(0).channel.id in arrayOf(channel1.id, channel2.id)).toBeTruthy()
+    expect(firstResults.countsByChannel.length).toEqual(1)
+    expect(firstResults.countsByChannel.at(0).count).toEqual(1)
+    expect(firstResults.countsByChannel.at(0).channel.id in arrayOf(channel1.id, channel2.id)).toBeTruthy()
 
     const secondResults = await chat.fetchUnreadMessagesCounts({ page: { next: firstResults.page.next } })
-    expect(secondResults.counts.length).toEqual(1)
-    expect(secondResults.counts.at(0).count).toEqual(1)
-    expect(secondResults.counts.at(0).channel.id in arrayOf(channel1.id, channel2.id)).toBeTruthy()
+    expect(secondResults.countsByChannel.length).toEqual(1)
+    expect(secondResults.countsByChannel.at(0).count).toEqual(1)
+    expect(secondResults.countsByChannel.at(0).channel.id in arrayOf(channel1.id, channel2.id)).toBeTruthy()
 
     const thirdResults = await chat.fetchUnreadMessagesCounts({ page: { next: secondResults.page.next } })
-    expect(thirdResults.counts.length).toEqual(0)
+    expect(thirdResults.countsByChannel.length).toEqual(0)
 
     await channel1.leave()
     await channel2.leave()

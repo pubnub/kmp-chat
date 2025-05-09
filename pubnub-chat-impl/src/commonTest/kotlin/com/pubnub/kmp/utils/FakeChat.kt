@@ -20,9 +20,9 @@ import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.internal.timer.createTimerManager
-import com.pubnub.chat.message.FetchUnreadMessagesCountsResponse
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
+import com.pubnub.chat.message.UnreadMessagesCounts
 import com.pubnub.chat.mutelist.MutedUsersManager
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
@@ -257,7 +257,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         page: PNPage?,
         filter: String?,
         sort: Collection<PNSortKey<PNMembershipKey>>
-    ): PNFuture<FetchUnreadMessagesCountsResponse> {
+    ): PNFuture<UnreadMessagesCounts> {
         TODO("Not yet implemented")
     }
 

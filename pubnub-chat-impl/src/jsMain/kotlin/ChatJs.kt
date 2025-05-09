@@ -335,15 +335,15 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         }.asPromise()
     }
 
-    fun fetchUnreadMessagesCounts(params: PubNub.GetMembershipsParametersv2?): Promise<FetchUnreadMessagesCountsResponseJs> {
+    fun fetchUnreadMessagesCounts(params: PubNub.GetMembershipsParametersv2?): Promise<UnreadMessagesCountsJs> {
         return chat.fetchUnreadMessagesCounts(
             params?.limit?.toInt(),
             params?.page?.toKmp(),
             params?.filter,
             extractSortKeys(params?.sort)
         ).then { result ->
-            createJsObject<FetchUnreadMessagesCountsResponseJs> {
-                this.counts = result.counts.map { it.toJs() }.toTypedArray()
+            createJsObject<UnreadMessagesCountsJs> {
+                this.countsByChannel = result.countsByChannel.map { it.toJs() }.toTypedArray()
                 this.page = MetadataPage(result.next, result.prev)
             }
         }.asPromise()
