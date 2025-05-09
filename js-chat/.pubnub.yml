@@ -1,10 +1,17 @@
 name: pubnub-js-chat
-version: 0.11.7
+version: 0.12.0
 scm: github.com/pubnub/js-chat
 schema: 1
 files:
   - lib/dist/index.js
 changelog:
+  - date: 2025-05-09
+    version: 0.12.0
+    changes:
+      - type: feature
+        text: "Add possibility to invite users to public channels."
+      - type: feature
+        text: "Add new Chat method returning unread message counts with pagination tokens."
   - date: 2025-03-12
     version: 0.11.7
     changes:
