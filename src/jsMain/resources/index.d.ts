@@ -763,10 +763,6 @@ declare class Chat {
     getUnreadMessagesCounts(params?: Omit<AppContext.GetMembershipsParameters, "include">): Promise<{
         channel: Channel;
         membership: Membership;
-        page: {
-            next: string | undefined;
-            prev: string | undefined;
-        };
         count: number;
     }[]>;
     fetchUnreadMessagesCounts(params?: Omit<AppContext.GetMembershipsParameters, "include">): Promise<{
