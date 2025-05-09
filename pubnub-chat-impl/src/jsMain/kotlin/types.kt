@@ -54,6 +54,11 @@ external interface GetUnreadMessagesCountsJs {
     var count: Double
 }
 
+external interface UnreadMessagesCountsJs {
+    var page: PubNub.MetadataPage
+    var countsByChannel: Array<GetUnreadMessagesCountsJs>
+}
+
 external interface CreateGroupConversationResultJs {
     var channel: ChannelJs
     var hostMembership: MembershipJs

@@ -22,6 +22,7 @@ import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.internal.timer.createTimerManager
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
+import com.pubnub.chat.message.UnreadMessagesCounts
 import com.pubnub.chat.mutelist.MutedUsersManager
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
@@ -248,6 +249,15 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     }
 
     override fun getThreadChannel(message: Message): PNFuture<ThreadChannel> {
+        TODO("Not yet implemented")
+    }
+
+    override fun fetchUnreadMessagesCounts(
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNMembershipKey>>
+    ): PNFuture<UnreadMessagesCounts> {
         TODO("Not yet implemented")
     }
 

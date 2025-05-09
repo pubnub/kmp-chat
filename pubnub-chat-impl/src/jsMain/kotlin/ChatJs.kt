@@ -7,6 +7,7 @@ import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.PUBNUB_CHAT_VERSION
 import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_CUSTOM
 import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelMentionData
 import com.pubnub.chat.types.ChannelType
@@ -333,6 +334,27 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             }.toTypedArray()
         }.asPromise()
     }
+
+    fun fetchUnreadMessagesCounts(params: PubNub.GetMembershipsParametersv2?): Promise<UnreadMessagesCountsJs> {
+        return chat.fetchUnreadMessagesCounts(
+            params?.limit?.toInt(),
+            params?.page?.toKmp(),
+            params?.filter,
+            extractSortKeys(params?.sort)
+        ).then { result ->
+            createJsObject<UnreadMessagesCountsJs> {
+                this.countsByChannel = result.countsByChannel.map { it.toJs() }.toTypedArray()
+                this.page = MetadataPage(result.next, result.prev)
+            }
+        }.asPromise()
+    }
+
+    private fun GetUnreadMessagesCounts.toJs() =
+        createJsObject<GetUnreadMessagesCountsJs> {
+            this.channel = this@toJs.channel.asJs(this@ChatJs)
+            this.membership = this@toJs.membership.asJs(this@ChatJs)
+            this.count = this@toJs.count.toDouble()
+        }
 
     fun markAllMessagesAsRead(params: PubNub.GetMembershipsParametersv2?): Promise<MarkAllMessageAsReadResponseJs> {
         return chat.markAllMessagesAsRead(
