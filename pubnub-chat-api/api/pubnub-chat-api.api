@@ -450,13 +450,6 @@ public final class com/pubnub/chat/membership/MembershipsResponse {
 	public final fun getTotal ()I
 }
 
-public final class com/pubnub/chat/message/FetchUnreadMessagesCountsResponse {
-	public fun <init> (Ljava/util/List;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;)V
-	public final fun getCounts ()Ljava/util/List;
-	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
-	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
-}
-
 public final class com/pubnub/chat/message/GetUnreadMessagesCounts {
 	public fun <init> (Lcom/pubnub/chat/Channel;Lcom/pubnub/chat/Membership;J)V
 	public final fun getChannel ()Lcom/pubnub/chat/Channel;
@@ -471,6 +464,13 @@ public final class com/pubnub/chat/message/MarkAllMessageAsReadResponse {
 	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getStatus ()I
 	public final fun getTotal ()I
+}
+
+public final class com/pubnub/chat/message/UnreadMessagesCounts {
+	public fun <init> (Ljava/util/List;Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;)V
+	public final fun getCountsByChannel ()Ljava/util/List;
+	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
+	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 }
 
 public abstract interface class com/pubnub/chat/mutelist/MutedUsersManager {
