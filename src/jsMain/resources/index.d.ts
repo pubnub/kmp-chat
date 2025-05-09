@@ -770,11 +770,11 @@ declare class Chat {
         count: number;
     }[]>;
     fetchUnreadMessagesCounts(params?: Omit<AppContext.GetMembershipsParameters, "include">): Promise<{
-        counts: {
+        counts: Array<{
             channel: Channel;
             membership: Membership;
             count: number;
-        }[];
+        }>;
         page: {
             next: string | undefined;
             prev: string | undefined;

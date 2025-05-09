@@ -54,7 +54,7 @@ external interface GetUnreadMessagesCountsJs {
     var count: Double
 }
 
-external interface FetchUnreadMessagesCountsJs {
+external interface FetchUnreadMessagesCountsResponseJs {
     var page: PubNub.MetadataPage
     var counts: Array<GetUnreadMessagesCountsJs>
 }

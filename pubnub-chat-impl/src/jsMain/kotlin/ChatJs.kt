@@ -319,20 +319,30 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     }
 
     fun getUnreadMessagesCounts(params: PubNub.GetMembershipsParametersv2?): Promise<Array<GetUnreadMessagesCountsJs>> {
-        return fetchUnreadMessagesCounts(params).then {
-                result ->
-            result.counts
-        }
+        return chat.getUnreadMessagesCounts(
+            params?.limit?.toInt(),
+            params?.page?.toKmp(),
+            params?.filter,
+            extractSortKeys(params?.sort)
+        ).then { result ->
+            result.map { unreadMessagesCount ->
+                createJsObject<GetUnreadMessagesCountsJs> {
+                    this.channel = unreadMessagesCount.channel.asJs(this@ChatJs)
+                    this.membership = unreadMessagesCount.membership.asJs(this@ChatJs)
+                    this.count = unreadMessagesCount.count.toDouble()
+                }
+            }.toTypedArray()
+        }.asPromise()
     }
 
-    fun fetchUnreadMessagesCounts(params: PubNub.GetMembershipsParametersv2?): Promise<FetchUnreadMessagesCountsJs> {
+    fun fetchUnreadMessagesCounts(params: PubNub.GetMembershipsParametersv2?): Promise<FetchUnreadMessagesCountsResponseJs> {
         return chat.fetchUnreadMessagesCounts(
             params?.limit?.toInt(),
             params?.page?.toKmp(),
             params?.filter,
             extractSortKeys(params?.sort)
         ).then { result ->
-            createJsObject<FetchUnreadMessagesCountsJs> {
+            createJsObject<FetchUnreadMessagesCountsResponseJs> {
                 this.counts = result.counts.map { it.toJs() }.toTypedArray()
                 this.page = MetadataPage(result.next, result.prev)
             }

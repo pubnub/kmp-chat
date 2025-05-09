@@ -102,6 +102,34 @@ describe("Channel test", () => {
     expect(secondPage.messages.length).toBeGreaterThanOrEqual(1)
   })
 
+  test("should fetch unread messages counts with pagination", async () => {
+    const channel1 = await createRandomChannel()
+    const channel2 = await createRandomChannel()
+
+    await channel1.invite(chat.currentUser)
+    await channel2.invite(chat.currentUser)
+    await channel1.sendText("Some text")
+    await channel2.sendText("Some text")
+
+    const firstResults = await chat.fetchUnreadMessagesCounts({ limit: 1 })
+    expect(firstResults.counts.length).toEqual(1)
+    expect(firstResults.counts.at(0).count).toEqual(1)
+    expect(firstResults.counts.at(0).channel.id in arrayOf(channel1.id, channel2.id)).toBeTruthy()
+
+    const secondResults = await chat.fetchUnreadMessagesCounts({ page: { next: firstResults.page.next } })
+    expect(secondResults.counts.length).toEqual(1)
+    expect(secondResults.counts.at(0).count).toEqual(1)
+    expect(secondResults.counts.at(0).channel.id in arrayOf(channel1.id, channel2.id)).toBeTruthy()
+
+    const thirdResults = await chat.fetchUnreadMessagesCounts({ page: { next: secondResults.page.next } })
+    expect(thirdResults.counts.length).toEqual(0)
+
+    await channel1.leave()
+    await channel2.leave()
+    await channel1.delete()
+    await channel2.delete()
+  })
+
   test("should fail when trying to send a message to a non-existent channel", async () => {
     const nonExistentChannel = (await chat.getChannel("non-existing-channel")) as Channel
 
