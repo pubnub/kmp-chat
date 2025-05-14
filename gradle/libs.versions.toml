@@ -6,8 +6,8 @@ ktlint = "12.1.0"
 dokka = "1.9.20"
 kotlinx_serialization = "1.7.3"
 kotlinx_coroutines = "1.9.0"
-pubnub = "10.4.6"
-pubnub_swift = "9.0.1"
+pubnub = "10.5.1"
+pubnub_swift = "9.1.0"
 
 [libraries]
 pubnub-kotlin-api = { module = "com.pubnub:pubnub-kotlin-api", version.ref = "pubnub" }
