@@ -1092,35 +1092,83 @@ class ChatImpl(
         pubNub.destroy()
     }
 
-    override fun getMessageFromReport(reportEvent: Event<EventContent.Report>, lookupBefore: Duration, lookupAfter: Duration): PNFuture<Message?> {
+    override fun getMessageFromReport(
+        reportEvent: Event<EventContent.Report>,
+        lookupBefore: Duration,
+        lookupAfter: Duration
+    ): PNFuture<Message?> {
         val report = reportEvent.payload
         val channel = ChannelImpl(this, id = requireNotNull(report.reportedMessageChannelId))
-        return report.reportedMessageTimetoken?.let { messageTimetoken ->
-            channel.getMessage(messageTimetoken)
-        } ?: report.autoModerationId?.let { autoModerationId ->
-            val reportTimetoken = reportEvent.timetoken
-            val maxTimetoken = TimetokenUtil.instantToTimetoken(TimetokenUtil.timetokenToInstant(reportTimetoken) + lookupAfter)
-            val minTimetoken = TimetokenUtil.instantToTimetoken(TimetokenUtil.timetokenToInstant(reportTimetoken) - lookupBefore)
-            val predicate = { message: Message -> message.meta?.get(METADATA_AUTO_MODERATION_ID) == report.autoModerationId }
-            // let's try to optimize by first getting messages right after the know timetoken
-            channel.getHistory(endTimetoken = reportTimetoken, count = 50).thenAsync { historyResponse ->
-                val result = historyResponse.messages.firstOrNull(predicate)
-                result?.asFuture()
-                    // if that fails, let's check the time range
-                    ?: findMessageBetween(channel, maxTimetoken, end = minTimetoken, match = predicate)
+
+        return when {
+            report.reportedMessageTimetoken != null -> {
+                channel.getMessage(report.reportedMessageTimetoken!!)
             }
-        } ?: null.asFuture()
+
+            report.autoModerationId != null -> {
+                val reportTimetoken = reportEvent.timetoken
+                val maxTimetoken =
+                    TimetokenUtil.instantToTimetoken(TimetokenUtil.timetokenToInstant(reportTimetoken) + lookupAfter)
+                val minTimetoken =
+                    TimetokenUtil.instantToTimetoken(TimetokenUtil.timetokenToInstant(reportTimetoken) - lookupBefore)
+                val predicate = { message: Message ->
+                    message.meta?.get(METADATA_AUTO_MODERATION_ID) == report.autoModerationId
+                }
+                // let's try to optimize by first getting messages right after the know timetoken
+                channel.getHistory(endTimetoken = reportTimetoken, count = 50).thenAsync { historyResponse ->
+                    val result = historyResponse.messages.firstOrNull(predicate)
+                    result?.asFuture()
+                        // if that fails, let's check the time range
+                        ?: findMessageBetween(
+                            channel = channel,
+                            start = maxTimetoken,
+                            end = minTimetoken,
+                            lastStart = Long.MAX_VALUE,
+                            iterationNumber = 0,
+                            match = predicate
+                        )
+                }
+            }
+
+            else -> null.asFuture()
+        }
     }
 
-    internal fun findMessageBetween(channel: Channel, start: Long, end: Long, countPerRequest: Int = 100, match: (Message) -> Boolean): PNFuture<Message?> {
-        return channel.getHistory(startTimetoken = start, endTimetoken = end, count = countPerRequest).thenAsync { historyResponse ->
-            val result = historyResponse.messages.firstOrNull(match)
-            return@thenAsync result?.asFuture() ?: if (historyResponse.messages.isEmpty()) {
-                null.asFuture()
-            } else {
-                findMessageBetween(channel, historyResponse.messages.minOf { it.timetoken }, end, countPerRequest, match)
-            }
+    internal fun findMessageBetween(
+        channel: Channel,
+        start: Long,
+        end: Long,
+        lastStart: Long,
+        iterationNumber: Int,
+        countPerRequest: Int = 100,
+        match: (Message) -> Boolean
+    ): PNFuture<Message?> {
+        val currentIterationNumber = iterationNumber + 1
+        if (start >= lastStart || currentIterationNumber >= 10) {
+            // Timetoken hasn't moved or got stuck or 10 iteration occurred(maybe someone doesn't set autoModerationId when creating moderation event)  – stop recursion
+            return null.asFuture()
         }
+
+        return channel.getHistory(startTimetoken = start, endTimetoken = end, count = countPerRequest)
+            .thenAsync { historyResponse ->
+                val result = historyResponse.messages.firstOrNull(match)
+                if (result != null) {
+                    result.asFuture()
+                } else if (historyResponse.messages.isEmpty()) {
+                    null.asFuture()
+                } else {
+                    val newStart = historyResponse.messages.minOf { it.timetoken }
+                    findMessageBetween(
+                        channel,
+                        start = newStart,
+                        end = end,
+                        lastStart = start,
+                        iterationNumber = currentIterationNumber,
+                        countPerRequest = countPerRequest,
+                        match = match
+                    )
+                }
+            }
     }
 
     private fun getTimetokenFromHistoryMessage(
