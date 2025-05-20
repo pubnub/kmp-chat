@@ -717,6 +717,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
                 it.timetoken
             },
             end = tts.minOf { it.timetoken },
+            lastStart = Long.MAX_VALUE,
+            iterationNumber = 0,
             countPerRequest = 3
         ) {
             it.text == "11"
