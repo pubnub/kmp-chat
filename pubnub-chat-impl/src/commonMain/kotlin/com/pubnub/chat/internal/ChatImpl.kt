@@ -33,6 +33,7 @@ import com.pubnub.api.models.consumer.push.PNPushListProvisionsResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.api.utils.Clock
 import com.pubnub.api.utils.Instant
+import com.pubnub.api.utils.TimetokenUtil
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
@@ -113,6 +114,7 @@ import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import encodeForSending
 import kotlin.reflect.KClass
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class ChatImpl(
@@ -1088,6 +1090,85 @@ class ChatImpl(
     override fun destroy() {
         timerManager.destroy()
         pubNub.destroy()
+    }
+
+    override fun getMessageFromReport(
+        reportEvent: Event<EventContent.Report>,
+        lookupBefore: Duration,
+        lookupAfter: Duration
+    ): PNFuture<Message?> {
+        val report = reportEvent.payload
+        val channel = ChannelImpl(this, id = requireNotNull(report.reportedMessageChannelId))
+
+        return when {
+            report.reportedMessageTimetoken != null -> {
+                channel.getMessage(report.reportedMessageTimetoken!!)
+            }
+
+            report.autoModerationId != null -> {
+                val reportTimetoken = reportEvent.timetoken
+                val maxTimetoken =
+                    TimetokenUtil.instantToTimetoken(TimetokenUtil.timetokenToInstant(reportTimetoken) + lookupAfter)
+                val minTimetoken =
+                    TimetokenUtil.instantToTimetoken(TimetokenUtil.timetokenToInstant(reportTimetoken) - lookupBefore)
+                val predicate = { message: Message ->
+                    message.meta?.get(METADATA_AUTO_MODERATION_ID) == report.autoModerationId
+                }
+                // let's try to optimize by first getting messages right after the know timetoken
+                channel.getHistory(endTimetoken = reportTimetoken, count = 50).thenAsync { historyResponse ->
+                    val result = historyResponse.messages.firstOrNull(predicate)
+                    result?.asFuture()
+                        // if that fails, let's check the time range
+                        ?: findMessageBetween(
+                            channel = channel,
+                            start = maxTimetoken,
+                            end = minTimetoken,
+                            lastStart = Long.MAX_VALUE,
+                            iterationNumber = 0,
+                            match = predicate
+                        )
+                }
+            }
+
+            else -> null.asFuture()
+        }
+    }
+
+    internal fun findMessageBetween(
+        channel: Channel,
+        start: Long,
+        end: Long,
+        lastStart: Long,
+        iterationNumber: Int,
+        countPerRequest: Int = 100,
+        match: (Message) -> Boolean
+    ): PNFuture<Message?> {
+        val currentIterationNumber = iterationNumber + 1
+        if (start >= lastStart || currentIterationNumber >= 10) {
+            // Timetoken hasn't moved or got stuck or 10 iteration occurred(maybe someone doesn't set autoModerationId when creating moderation event)  – stop recursion
+            return null.asFuture()
+        }
+
+        return channel.getHistory(startTimetoken = start, endTimetoken = end, count = countPerRequest)
+            .thenAsync { historyResponse ->
+                val result = historyResponse.messages.firstOrNull(match)
+                if (result != null) {
+                    result.asFuture()
+                } else if (historyResponse.messages.isEmpty()) {
+                    null.asFuture()
+                } else {
+                    val newStart = historyResponse.messages.minOf { it.timetoken }
+                    findMessageBetween(
+                        channel,
+                        start = newStart,
+                        end = end,
+                        lastStart = start,
+                        iterationNumber = currentIterationNumber,
+                        countPerRequest = countPerRequest,
+                        match = match
+                    )
+                }
+            }
     }
 
     private fun getTimetokenFromHistoryMessage(

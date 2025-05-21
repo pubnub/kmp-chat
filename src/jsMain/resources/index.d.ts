@@ -176,6 +176,7 @@ type ReportEventPayload = {
     reportedMessageTimetoken?: string;
     reportedMessageChannelId?: string;
     reportedUserId?: string;
+    autoModerationId?: string;
 };
 type ReceiptEventPayload = {
     messageTimetoken: string;
