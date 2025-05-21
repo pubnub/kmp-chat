@@ -6,7 +6,7 @@ sdks:
   - 
       type: library
       full-name: Kotlin Chat SDK
-      short-name: Chat
+      short-name: Kotlin Chat
       artifacts:
         -
           language: kotlin
