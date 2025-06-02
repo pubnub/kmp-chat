@@ -68,5 +68,8 @@ interface ChatInternal : Chat {
      */
     fun getUserSuggestions(text: String, limit: Int = 10): PNFuture<List<User>>
 
+    /**
+    * Internal use with functions
+    */
     fun getMessageFromReport(reportEvent: Event<EventContent.Report>, lookupBefore: Duration = 3.seconds, lookupAfter: Duration = 5.seconds): PNFuture<Message?>
 }
