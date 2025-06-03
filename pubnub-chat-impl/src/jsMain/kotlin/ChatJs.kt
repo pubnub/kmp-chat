@@ -4,6 +4,7 @@ import com.pubnub.api.PubNubImpl
 import com.pubnub.api.createJsonElement
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
+import com.pubnub.chat.internal.EventImpl
 import com.pubnub.chat.internal.PUBNUB_CHAT_VERSION
 import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_CUSTOM
 import com.pubnub.chat.internal.serialization.PNDataEncoder
@@ -23,6 +24,7 @@ import com.pubnub.kmp.toMap
 import kotlin.js.Json
 import kotlin.js.Promise
 import kotlin.js.json
+import kotlin.time.Duration.Companion.milliseconds
 
 @JsExport
 @JsName("Chat")
@@ -417,6 +419,23 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         val cacheKey = MessageElementsUtils.getChannelPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<ChannelJs>())
         return chat.getChannelSuggestions(cacheKey, limit?.toInt() ?: 10).then { channels ->
             channels.map { it.asJs(this@ChatJs) }.toTypedArray()
+        }.asPromise()
+    }
+
+    fun getMessageFromReport(eventJs: EventJs, lookupBeforeMillis: Int = 3000, lookupAfterMillis: Int = 5000): Promise<MessageJs?> {
+        val event = EventImpl(
+            chat,
+            eventJs.timetoken.toLong(),
+            PNDataEncoder.decode<EventContent.Report>(createJsonElement(eventJs.payload.unsafeCast<JsMap<Any>>())),
+            eventJs.channelId,
+            eventJs.userId
+        )
+        return chat.getMessageFromReport(
+            event,
+            lookupBeforeMillis.milliseconds,
+            lookupAfterMillis.milliseconds,
+        ).then {
+            it?.asJs(this)
         }.asPromise()
     }
 

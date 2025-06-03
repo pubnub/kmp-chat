@@ -674,8 +674,9 @@ public final class com/pubnub/chat/types/EventContent$Receipt$Companion {
 
 public final class com/pubnub/chat/types/EventContent$Report : com/pubnub/chat/types/EventContent {
 	public static final field Companion Lcom/pubnub/chat/types/EventContent$Report$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAutoModerationId ()Ljava/lang/String;
 	public final fun getReason ()Ljava/lang/String;
 	public final fun getReportedMessageChannelId ()Ljava/lang/String;
 	public final fun getReportedMessageTimetoken ()Ljava/lang/Long;
