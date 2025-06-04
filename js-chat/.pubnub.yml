@@ -5,39 +5,37 @@ schema: 1
 files:
   - lib/dist/index.js
 supported-platforms:
-  supported-browsers:
+  - version: "JavaScript Chat SDK"
     frameworks:
       - 'React'
       - 'React Native'
       - 'Vue'
       - 'Angular'
-    minimum-supported-version:
-      - Chrome iOS 86.0.4240
-      - Chrome Android 86.0.4240
-      - Chrome Linux 86.0.4240
-      - Chrome macOS 86.0.4240
-      - Chrome Windows 86.0.4240
-      - Firefox Linux desktop 83.0 (x64)
-      - Firefox Linux desktop 83.0 (IA-32)
-      - Firefox iOS 29.0
-      - Firefox Windows 83.0 (IA-32)
-      - Firefox Windows 83.0 (x64)
-      - Firefox Windows 83.0 (ARM64)
-      - Firefox macOS 83.0
-      - Firefox Android 83.0 (x64)
-      - Firefox Android 83.0 (ARM64)
-      - Firefox Android 83.0 (IA-32 and ARMv7)
-      - Firefox OpenBSD 83.0 (IA-32,x64,ARM64)
-      - Microsoft Edge 87.0.664.60"
-      - Safari 13.0
+    platforms:
+      - 'Chrome iOS 86.0.4240'
+      - 'Chrome Android 86.0.4240'
+      - 'Chrome Linux 86.0.4240'
+      - 'Chrome macOS 86.0.4240'
+      - 'Chrome Windows 86.0.4240'
+      - 'Firefox Linux desktop 83.0 (x64)'
+      - 'Firefox Linux desktop 83.0 (IA-32)'
+      - 'Firefox iOS 29.0'
+      - 'Firefox Windows 83.0 (IA-32)'
+      - 'Firefox Windows 83.0 (x64)'
+      - 'Firefox Windows 83.0 (ARM64)'
+      - 'Firefox macOS 83.0'
+      - 'Firefox Android 83.0 (x64)'
+      - 'Firefox Android 83.0 (ARM64)'
+      - 'Firefox Android 83.0 (IA-32 and ARMv7)'
+      - 'Firefox OpenBSD 83.0 (IA-32,x64,ARM64)'
+      - 'Microsoft Edge 87.0.664.60"'
+      - 'Safari 13.0'
 sdks:
-  -
-    type: library
+  - type: library
     full-name: JavaScript Chat SDK
     short-name: Chat
     artifacts:
-      -
-        language: TypeScript
+      - language: TypeScript
         tags:
           - Web
         source-repository: https://github.com/pubnub/kmp-chat
@@ -45,7 +43,7 @@ sdks:
         distributions:
           - distribution-type: library
             distribution-repository: GitHub release
-            package-name: @pubnub/chat
+            package-name: '@pubnub/chat'
             location: https://www.npmjs.com/package/@pubnub/chat/v/0.12.0
             requires:
               - name: 'pubnub'
@@ -62,6 +60,27 @@ sdks:
                 location: 'Shipped within library'
                 location-url: 'https://www.npmjs.com/package/format-util'
                 is-required: 'Required'
+            supported-platforms:
+              supported-browsers:
+                minimun-supported-version:
+                  - 'Chrome iOS 86.0.4240'
+                  - 'Chrome Android 86.0.4240'
+                  - 'Chrome Linux 86.0.4240'
+                  - 'Chrome macOS 86.0.4240'
+                  - 'Chrome Windows 86.0.4240'
+                  - 'Firefox Linux desktop 83.0 (x64)'
+                  - 'Firefox Linux desktop 83.0 (IA-32)'
+                  - 'Firefox iOS 29.0'
+                  - 'Firefox Windows 83.0 (IA-32)'
+                  - 'Firefox Windows 83.0 (x64)'
+                  - 'Firefox Windows 83.0 (ARM64)'
+                  - 'Firefox macOS 83.0'
+                  - 'Firefox Android 83.0 (x64)'
+                  - 'Firefox Android 83.0 (ARM64)'
+                  - 'Firefox Android 83.0 (IA-32 and ARMv7)'
+                  - 'Firefox OpenBSD 83.0 (IA-32,x64,ARM64)'
+                  - 'Microsoft Edge 87.0.664.60"'
+                  - 'Safari 13.0'
 changelog:
   - date: 2025-05-09
     version: 0.12.0
@@ -153,7 +172,7 @@ changelog:
     version: 0.9.1
     changes:
       - type: bug
-        text: "Fix ES module named imports."  
+        text: "Fix ES module named imports."
   - date: 2024-12-06
     version: 0.9.0-dev
     changes:
