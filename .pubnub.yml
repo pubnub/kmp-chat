@@ -77,11 +77,11 @@ sdks:
                   license-url: https://github.com/pubnub/kotlin/blob/master/LICENSE
                   is-required: Required
 changelog:
-  - date: 2025-06-03
+  - date: 2025-06-04
     version: 0.13.3
     changes:
       - type: bug
-        text: "Adds an internal function workaround to get messages from an auto moderation report, which doesn't contain a message timetoken.  ."
+        text: "Adds an internal function workaround to get messages from an auto moderation report, which doesn't contain a message timetoken."
   - date: 2025-05-16
     version: 0.13.2
     changes:
