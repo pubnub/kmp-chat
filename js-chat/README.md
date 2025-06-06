@@ -1,4 +1,12 @@
-# PubNub JavaScript Chat SDK
+<!-- js-chat/README.md -->
+
+# PubNub JavaScript Chat SDK (Kotlin Multiplatform Chat, JS Target)
+**⚠️ NOTE:** This directory contains the **JavaScript/TypeScript artifacts** automatically generated from the KMP Kotlin code.
+- **Don’t edit these `.ts` files directly.**
+- If you want to change any logic, update the Kotlin sources in the root modules (e.g. `commonMain`, `jsMain`) and then run build task to regenerate the JS/TS output.
+
+---
+
 
 Chat SDK offers a set of handy methods to create your own feature-rich chat or add a chat to your existing application.
 
