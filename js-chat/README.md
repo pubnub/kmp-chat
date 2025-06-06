@@ -1,4 +1,12 @@
-# PubNub JavaScript Chat SDK
+<!-- js-chat/README.md -->
+
+# PubNub JavaScript Chat SDK (Kotlin Multiplatform Chat, JS Target)
+**⚠️ NOTE:** This directory contains the **JavaScript/TypeScript artifacts** automatically generated from the KMP Kotlin code.
+- **Don’t edit these `.ts` files directly.**
+- If you want to change any logic, update the Kotlin sources in the root modules (e.g. `commonMain`, `jsMain`) and then run build task to regenerate the JS/TS output.
+
+---
+
 
 Chat SDK offers a set of handy methods to create your own feature-rich chat or add a chat to your existing application.
 
@@ -32,6 +40,9 @@ Test our TypeScript sample chat apps created in various JavaScript frameworks:
 | [Direct chat](https://github.com/pubnub/js-chat/tree/master/samples/getting-started)        | React        | Basic 1:1 support chat letting you exchange messages between a user and a support agent. |
 | [Group chat](https://github.com/pubnub/js-chat/tree/master/samples/react-native-group-chat) | React Native | Feature-full group chat letting you test most of the features offered by the Chat SDK.   |
 
+## Tutorial
+[Chat SDK Tutorial for React](https://www.pubnub.com/tutorials/chat-sdk-react/)
+
 ## Chat SDK docs
 
-You'll find all the information about working with Chat SDK in the official [PubNub Chat SDK documentation](pubnub.com/docs/chat/chat-sdk/overview).
+You'll find all the information about working with Chat SDK in the official [PubNub Chat SDK documentation](https://pubnub.com/docs/chat/chat-sdk/overview).

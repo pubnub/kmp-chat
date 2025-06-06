@@ -35,10 +35,11 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         if (PLATFORM == "iOS") { // TODO investigate why it doesn't work
             return@runTest
         }
+        val fileName = "name.txt"
         val tt = channel01.sendText(
             "message",
             files = listOf(
-                InputFile("name.txt", "text/plain", generateFileContent())
+                InputFile(fileName, "text/plain", generateFileContent(fileName))
             )
         ).await()
 
@@ -268,4 +269,6 @@ private fun Message.asImpl(): MessageImpl {
     return this as MessageImpl
 }
 
-expect fun generateFileContent(): Uploadable
+expect fun generateFileContent(fileName: String): Uploadable
+
+expect fun generateFileContentFromImage(): Uploadable

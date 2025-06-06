@@ -18,9 +18,12 @@ import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
+import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.internal.PLATFORM
+import com.pubnub.kmp.Uploadable
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
@@ -735,6 +738,64 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         join01.disconnect?.close()
         join02.disconnect?.close()
+    }
+
+    @Test
+    fun test_downloading_image() = runTest {
+        if (PLATFORM == "iOS") { // todo enable for iOS
+            return@runTest
+        }
+        val fileName = "TestImage01.png"
+        val type = "image/png"
+        val data: Uploadable = generateFileContentFromImage()
+        val file = InputFile(name = fileName, type = type, source = data)
+
+        // Upload file
+        channel01.sendText(text = "messageWithImage", files = listOf(file)).await()
+
+        delayInMillis(3000) // Wait for file to be processed
+
+        // Get file metadata
+        val filesResult = channel01.getFiles().await()
+        assertTrue(filesResult.files.isNotEmpty())
+        val uploadedFile = filesResult.files.first { it.name == fileName }
+        assertEquals(fileName, uploadedFile.name)
+        assertNotNull(uploadedFile.url)
+
+        println("Image File URL: ${uploadedFile.url}")
+
+        // Clean up
+        channel01.deleteFile(uploadedFile.id, uploadedFile.name).await()
+    }
+
+    @Test
+    fun test_downloading_file_via_history() = runTest {
+        if (PLATFORM == "iOS") { // todo enable for iOS
+            return@runTest
+        }
+        val fileName = "test_download_history.txt"
+        val type = "text/plain"
+        val data = generateFileContent(fileName = fileName)
+        val file = InputFile(name = fileName, type = type, source = data)
+
+        // Upload file and get timetoken
+        val publishResult = channel01.sendText(text = "messageWithFile", files = listOf(file)).await()
+        val sentTimetoken = publishResult.timetoken
+
+        // Get message via history
+        val history = channel01.getHistory(startTimetoken = sentTimetoken + 1, endTimetoken = sentTimetoken, count = 1).await()
+        assertTrue(history.messages.isNotEmpty())
+        val message = history.messages.first()
+        assertEquals(1, message.files.size)
+        val first = message.content.files?.first()
+        println(first)
+        val uploadedFile = message.files.first()
+        assertEquals(fileName, uploadedFile.name)
+        assertNotNull(uploadedFile.url)
+        println("File URL from history: ${uploadedFile.url}")
+
+        // Clean up
+        channel01.deleteFile(uploadedFile.id, uploadedFile.name).await()
     }
 
     @Test

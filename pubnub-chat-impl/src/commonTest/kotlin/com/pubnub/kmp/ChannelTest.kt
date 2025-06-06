@@ -535,7 +535,7 @@ class ChannelTest : BaseTest() {
         val getFileUrl: GetFileUrl = mock(MockMode.autofill)
         val fileName = "name.txt"
         val fileType = "text/plain"
-        val fileSource = generateFileContent()
+        val fileSource = generateFileContent(fileName)
         every { pubNub.publish(any(), any(), any(), any(), any(), any(), any()) } returns publish
         every { pubNub.sendFile(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns sendFile
         every { sendFile.async(any()) } calls { (callback1: Consumer<Result<PNFileUploadResult>>) ->
@@ -702,7 +702,7 @@ class ChannelTest : BaseTest() {
         val getFileUrl: GetFileUrl = mock(MockMode.autofill)
         val fileName = "name.txt"
         val fileType = "text/plain"
-        val fileSource = generateFileContent()
+        val fileSource = generateFileContent(fileName)
         every { pubNub.publish(any(), any(), any(), any(), any(), any(), any()) } returns publish
         every { pubNub.sendFile(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns sendFile
         every { sendFile.async(any()) } calls { (callback1: Consumer<Result<PNFileUploadResult>>) ->

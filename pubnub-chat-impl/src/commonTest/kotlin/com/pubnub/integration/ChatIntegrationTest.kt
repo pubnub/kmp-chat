@@ -73,7 +73,15 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun test_storeUserActivityInterval_and_storeUserActivityTimestamps() = runTest {
         val chat =
-            createChat { ChatImpl(ChatConfiguration(storeUserActivityInterval = 100.seconds, storeUserActivityTimestamps = true), pubnub) }
+            createChat {
+                ChatImpl(
+                    config = ChatConfiguration(
+                        storeUserActivityInterval = 100.seconds,
+                        storeUserActivityTimestamps = true
+                    ),
+                    pubNub = pubnub,
+                )
+            }
         chat.initialize().await()
 
         val user: User = chat.getUser(chat.currentUser.id).await()!!
@@ -567,7 +575,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
                     event.complete(it)
                 }
             }
-            tt = chat.emitEvent(channel.id, EventContent.Custom(mapOf("abc" to "def"), EmitEventMethod.PUBLISH)).await().timetoken
+            tt = chat.emitEvent(channel.id, EventContent.Custom(mapOf("abc" to "def"), EmitEventMethod.PUBLISH))
+                .await().timetoken
             assertEquals(mapOf("abc" to "def"), event.await().payload.data)
             assertFalse(channel.getMembers().await().members.any { it.user.id == chat.currentUser.id })
             unsubscribe?.close()
@@ -590,7 +599,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
                     event.complete(it)
                 }
             }
-            tt = chat.emitEvent(channel.id, EventContent.Custom(mapOf("abc" to "def"), EmitEventMethod.SIGNAL)).await().timetoken
+            tt = chat.emitEvent(channel.id, EventContent.Custom(mapOf("abc" to "def"), EmitEventMethod.SIGNAL))
+                .await().timetoken
             assertEquals(mapOf("abc" to "def"), event.await().payload.data)
             assertFalse(channel.getMembers().await().members.any { it.user.id == chat.currentUser.id })
             unsubscribe?.close()
@@ -651,7 +661,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val banned = CompletableDeferred<Unit>()
         val unbanned = CompletableDeferred<Unit>()
         val restrictionBan = Restriction(userId = userId, channelId = channelId, ban = true, reason = "rude")
-        val restrictionUnban = Restriction(userId = userId, channelId = channelId, ban = false, mute = false, reason = "ok")
+        val restrictionUnban =
+            Restriction(userId = userId, channelId = channelId, ban = false, mute = false, reason = "ok")
         pubnubPamServer.test(backgroundScope, checkAllEvents = false) {
             var removeListenerAndUnsubscribe: AutoCloseable? = null
             pubnubPamServer.awaitSubscribe(channels = listOf(INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId)) {
