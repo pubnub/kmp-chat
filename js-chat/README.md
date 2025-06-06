@@ -32,6 +32,9 @@ Test our TypeScript sample chat apps created in various JavaScript frameworks:
 | [Direct chat](https://github.com/pubnub/js-chat/tree/master/samples/getting-started)        | React        | Basic 1:1 support chat letting you exchange messages between a user and a support agent. |
 | [Group chat](https://github.com/pubnub/js-chat/tree/master/samples/react-native-group-chat) | React Native | Feature-full group chat letting you test most of the features offered by the Chat SDK.   |
 
+## Tutorial
+[Chat SDK Tutorial for React](https://www.pubnub.com/tutorials/chat-sdk-react/)
+
 ## Chat SDK docs
 
-You'll find all the information about working with Chat SDK in the official [PubNub Chat SDK documentation](pubnub.com/docs/chat/chat-sdk/overview).
+You'll find all the information about working with Chat SDK in the official [PubNub Chat SDK documentation](https://pubnub.com/docs/chat/chat-sdk/overview).
