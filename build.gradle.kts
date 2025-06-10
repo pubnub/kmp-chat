@@ -16,6 +16,7 @@ plugins {
     id("pubnub.multiplatform")
     alias(libs.plugins.kotlinx.compatibility.validator)
     alias(libs.plugins.npm.publish)
+    alias(libs.plugins.apple.privacy.manifest)
 }
 
 nexusPublishing {
@@ -36,6 +37,11 @@ npmPublish {
 }
 
 kotlin {
+    privacyManifest {
+        embed(
+            privacyManifest = layout.projectDirectory.file("PrivacyInfo.xcprivacy").asFile
+        )
+    }
     sourceSets {
         val commonMain by getting {
             dependencies {
