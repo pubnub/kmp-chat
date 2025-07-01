@@ -42,7 +42,7 @@ interface ChannelGroup {
      *
      * @param channels Channel entities to add.
      */
-    fun add(channels: List<Channel>): PNFuture<Unit>
+    fun addChannels(channels: List<Channel>): PNFuture<Unit>
 
     /**
      * Adds channels to a channel group.
@@ -52,14 +52,14 @@ interface ChannelGroup {
      * the channels with the given IDs exist — responsibility for ensuring
      * validity lies with the caller.
      *
-     * @param channels [Channel] identifiers to add.
+     * @param ids [Channel] identifiers to add.
      */
-    fun add(channels: List<String>): PNFuture<Unit>
+    fun addChannelIdentifiers(ids: List<String>): PNFuture<Unit>
 
     /**
      * Remove [Channel] entities from a channel group.
      */
-    fun remove(channels: List<Channel>): PNFuture<Unit>
+    fun removeChannels(channels: List<Channel>): PNFuture<Unit>
 
     /**
      * Remove channels from a channel group.
@@ -71,7 +71,7 @@ interface ChannelGroup {
      *
      * @param channels Channel identifiers to add.
      */
-    fun remove(channels: List<String>): PNFuture<Unit>
+    fun removeChannelIdentifiers(ids: List<String>): PNFuture<Unit>
 
     /**
      * Returns a collection of users currently present in any channel within the given [ChannelGroup]

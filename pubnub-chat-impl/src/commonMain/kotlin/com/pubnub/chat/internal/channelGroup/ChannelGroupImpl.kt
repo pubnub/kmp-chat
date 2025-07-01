@@ -15,12 +15,13 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_HANDLING_ONMESSAG
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.types.GetChannelsResponse
 import com.pubnub.kmp.PNFuture
+import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.remember
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 
-data class ChannelGroupImpl(
+data class ChannelGroupImpl internal constructor(
     override val id: String,
     override val chat: ChatInternal
 ) : ChannelGroup {
@@ -35,18 +36,27 @@ data class ChannelGroupImpl(
         page: PNPage?
     ): PNFuture<GetChannelsResponse> {
         return chat.pubNub.listChannelsForChannelGroup(id).thenAsync { response ->
-            chat.getChannels(
-                createFinalFilterToApply(filter, response.channels),
-                sort,
-                limit,
-                page
-            )
+            if (response.channels.isEmpty()) {
+                GetChannelsResponse(
+                    emptyList(),
+                    null,
+                    null,
+                    0
+                ).asFuture()
+            } else {
+                chat.getChannels(
+                    createFinalFilterToApply(filter, response.channels),
+                    sort,
+                    limit,
+                    page
+                )
+            }
         }
     }
 
     private fun createFinalFilterToApply(currentFilter: String? = null, channelIdentifiers: List<String>): String? {
         val channelsFilter = channelIdentifiers.joinToString(" || ") {
-            "channel.id == $it"
+            "id == '$it'"
         }
         return currentFilter?.let {
             it.plus(" && ($channelsFilter)")
@@ -55,20 +65,20 @@ data class ChannelGroupImpl(
         }
     }
 
-    override fun add(channels: List<Channel>): PNFuture<Unit> {
+    override fun addChannels(channels: List<Channel>): PNFuture<Unit> {
         return chat.pubNub.addChannelsToChannelGroup(channels.map { it.id }, id).then {}
     }
 
-    override fun add(channels: List<String>): PNFuture<Unit> {
-        return chat.pubNub.addChannelsToChannelGroup(channels, id).then {}
+    override fun addChannelIdentifiers(ids: List<String>): PNFuture<Unit> {
+        return chat.pubNub.addChannelsToChannelGroup(ids, id).then {}
     }
 
-    override fun remove(channels: List<Channel>): PNFuture<Unit> {
+    override fun removeChannels(channels: List<Channel>): PNFuture<Unit> {
         return chat.pubNub.removeChannelsFromChannelGroup(channels.map { it.id }, id).then {}
     }
 
-    override fun remove(channels: List<String>): PNFuture<Unit> {
-        return chat.pubNub.removeChannelsFromChannelGroup(channels, id).then {}
+    override fun removeChannelIdentifiers(ids: List<String>): PNFuture<Unit> {
+        return chat.pubNub.removeChannelsFromChannelGroup(ids, id).then {}
     }
 
     override fun whoIsPresent(): PNFuture<Map<String, List<String>>> {
@@ -85,7 +95,7 @@ data class ChannelGroupImpl(
             ids.putAll(whoIsPresentResponse.mapValues { it.value.toMutableSet() })
             callback(whoIsPresentResponse)
         }.then {
-            chat.pubNub.channel(id).subscription(SubscriptionOptions.receivePresenceEvents())
+            chat.pubNub.channelGroup(id).subscription(SubscriptionOptions.receivePresenceEvents())
                 .also { subscription ->
                     subscription.addListener(
                         createEventListener(

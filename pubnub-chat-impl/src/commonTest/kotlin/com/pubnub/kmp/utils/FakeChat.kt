@@ -11,6 +11,7 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.chat.Channel
+import com.pubnub.chat.ChannelGroup
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
@@ -305,6 +306,10 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     }
 
     override fun restoreThreadChannel(message: Message): PNFuture<PNMessageAction?> {
+        TODO("Not yet implemented")
+    }
+
+    override fun channelGroup(id: String): ChannelGroup {
         TODO("Not yet implemented")
     }
 }
