@@ -1,7 +1,10 @@
+@file:OptIn(ExperimentalJsExport::class)
+
 import com.pubnub.chat.ChannelGroup
+import com.pubnub.kmp.createJsObject
+import com.pubnub.kmp.then
 import kotlin.js.Promise
 
-@OptIn(ExperimentalJsExport::class)
 @JsExport
 @JsName("ChannelGroup")
 class ChannelGroupJs internal constructor(
@@ -9,6 +12,21 @@ class ChannelGroupJs internal constructor(
     private val channelGroup: ChannelGroup
 ) {
     val id: String by channelGroup::id
+
+    fun listChannels(params: PubNub.GetAllMetadataParameters?): Promise<GetChannelsResponseJs> {
+        return channelGroup.listChannels(
+            params?.filter,
+            extractSortKeys(params?.sort),
+            params?.limit?.toInt(),
+            params?.page?.toKmp()
+        ).then { result ->
+            createJsObject<GetChannelsResponseJs> {
+                this.channels = result.channels.map { it.asJs(this@ChannelGroupJs.chatJs) }.toTypedArray()
+                this.page = MetadataPage(result.next, result.prev)
+                this.total = result.total
+            }
+        }.asPromise()
+    }
 
     fun addChannels(channels: Array<ChannelJs>): Promise<Any> {
         return channelGroup.addChannels(channels.map { it.channel }).asPromise()
