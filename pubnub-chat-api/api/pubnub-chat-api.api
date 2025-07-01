@@ -60,8 +60,23 @@ public abstract interface class com/pubnub/chat/Channel {
 public final class com/pubnub/chat/Channel$Companion {
 }
 
+public abstract interface class com/pubnub/chat/ChannelGroup {
+	public abstract fun addChannelIdentifiers (Ljava/util/List;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun addChannels (Ljava/util/List;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun connect (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun getChat ()Lcom/pubnub/chat/Chat;
+	public abstract fun getId ()Ljava/lang/String;
+	public abstract fun listChannels (Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun listChannels$default (Lcom/pubnub/chat/ChannelGroup;Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun removeChannelIdentifiers (Ljava/util/List;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun removeChannels (Ljava/util/List;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun streamPresence (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun whoIsPresent ()Lcom/pubnub/kmp/PNFuture;
+}
+
 public abstract interface class com/pubnub/chat/Chat {
 	public static final field Companion Lcom/pubnub/chat/Chat$Companion;
+	public abstract fun channelGroup (Ljava/lang/String;)Lcom/pubnub/chat/ChannelGroup;
 	public abstract fun createDirectConversation (Lcom/pubnub/chat/User;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun createDirectConversation$default (Lcom/pubnub/chat/Chat;Lcom/pubnub/chat/User;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun createGroupConversation (Ljava/util/Collection;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
