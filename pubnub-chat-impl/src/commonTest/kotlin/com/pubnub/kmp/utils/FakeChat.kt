@@ -309,7 +309,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun channelGroup(id: String): ChannelGroup {
+    override fun getChannelGroup(id: String): ChannelGroup {
         TODO("Not yet implemented")
     }
 }

@@ -145,7 +145,7 @@ data class ChannelGroupImpl internal constructor(
         }
     }
 
-    override fun connect(callback: (Message) -> Unit): AutoCloseable? {
+    override fun connect(callback: (Message) -> Unit): AutoCloseable {
         val channelGroupEntity = chat.pubNub.channelGroup(id)
         val subscription = channelGroupEntity.subscription()
         val listener = createEventListener(

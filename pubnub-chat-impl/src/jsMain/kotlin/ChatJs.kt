@@ -439,8 +439,8 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         }.asPromise()
     }
 
-    fun channelGroup(id: String): ChannelGroupJs {
-        return ChannelGroupJs(this, chat.channelGroup(id))
+    fun getChannelGroup(id: String): ChannelGroupJs {
+        return ChannelGroupJs(this, chat.getChannelGroup(id))
     }
 
     companion object {

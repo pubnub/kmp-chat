@@ -89,5 +89,5 @@ interface ChannelGroup {
      * @param callback custom behavior whenever a message is received
      * @return AutoCloseable interface you can call to stop listening for new messages by invoking the close() method.
      */
-    fun connect(callback: (Message) -> Unit): AutoCloseable?
+    fun connect(callback: (Message) -> Unit): AutoCloseable
 }

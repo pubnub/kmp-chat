@@ -1089,7 +1089,7 @@ class ChatImpl(
             }
     }
 
-    override fun channelGroup(id: String): ChannelGroup {
+    override fun getChannelGroup(id: String): ChannelGroup {
         return ChannelGroupImpl(id, this)
     }
 

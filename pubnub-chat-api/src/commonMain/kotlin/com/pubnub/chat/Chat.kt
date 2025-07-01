@@ -520,7 +520,7 @@ interface Chat {
      *  This does **not** create a group on the server. If the group exists, the reference points to it.
      *  If the group does not exist, it serves as a handle to create and modify it via channel changes.
      */
-    fun channelGroup(id: String): ChannelGroup
+    fun getChannelGroup(id: String): ChannelGroup
 
     /**
      * Clears resources of Chat instance and related PubNub SDK instance.
