@@ -76,29 +76,31 @@ describe("Channel group test", () => {
     expect(channelListResponseAfterRemoval.channels).toHaveLength(0)
   })
 
-//   test("should receive a message", async () => {
-//     const messages: string[] = []
-//     const unicodeMessages = ["Some message"]
-//
-//     const disconnect = channelGroup.connect((message) => {
-//       if (message.content.text !== undefined) {
-//         messages.push(message.content.text)
-//       }
-//     })
-//     await sleep(200)
-//
-//     for (const unicodeMessage of unicodeMessages) {
-//       await channel.sendText(unicodeMessage)
-//       const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
-//       await sleep(2000)
-//     }
-//
-//     await waitForAllMessagesToBeDelivered(messages, unicodeMessages)
-//
-//     for (const unicodeMessage of unicodeMessages) {
-//       expect(messages).toContain(unicodeMessage)
-//     }
-//
-//     disconnect()
-//   }, 30000)
+  test("should receive a message", async () => {
+    const messages: string[] = []
+    const messagesToSend = ["Some text"]
+    await channelGroup.addChannels([firstChannel, secondChannel])
+
+    const disconnect = channelGroup.connect((message) => {
+      if (message.content.text !== undefined) {
+        messages.push(message.content.text)
+      }
+    })
+
+    await sleep(1000)
+
+    for (const message of messagesToSend) {
+      await firstChannel.sendText(message)
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+      await sleep(3000)
+    }
+
+    await waitForAllMessagesToBeDelivered(messages, messagesToSend)
+
+    for (const message of messagesToSend) {
+      expect(messages).toContain(message)
+    }
+
+    disconnect()
+  }, 30000)
 })
