@@ -2,11 +2,10 @@ package com.pubnub.integration
 
 import com.pubnub.chat.Message
 import com.pubnub.test.await
-import com.pubnub.test.test
 import com.pubnub.test.randomString
+import com.pubnub.test.test
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -50,7 +49,6 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
         chat.createChannel(channel02.id).await()
 
         val channelGroup = chat.getChannelGroup(randomString())
-
         channelGroup.addChannels(listOf(channel01, channel02)).await()
         channelGroup.removeChannels(listOf(channel01, channel02)).await()
 
@@ -112,12 +110,11 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    @Ignore
     @Test
     fun streamPresence() = runTest {
-        val completable = CompletableDeferred<Map<String, List<String>>>()
         val channelGroup = chat.getChannelGroup(randomString())
         channelGroup.addChannels(listOf(channel01, channel02)).await()
+        val completable = CompletableDeferred<Map<String, List<String>>>()
 
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var closeable: AutoCloseable? = null
@@ -129,12 +126,14 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
                 }
             }
 
-            val completableValue = completable.await()
-            assertTrue { completableValue.containsKey(channel01.id) || completableValue.containsKey(channel02.id) }
-            assertTrue { completableValue.containsValue(listOf(chat.currentUser.id)) }
+            val closeable2 = channel01Chat02.connect {}
+            val completableRes = completable.await()
 
+            assertTrue { completableRes.containsKey(channel01.id) || completableRes.containsKey(channel02.id) }
+            assertTrue { completableRes.containsValue(listOf(chat02.currentUser.id)) || completableRes.containsValue(listOf(chat.currentUser.id)) }
             chat.pubNub.deleteChannelGroup(channelGroup.id).await()
             closeable?.close()
+            closeable2.close()
         }
     }
 }
