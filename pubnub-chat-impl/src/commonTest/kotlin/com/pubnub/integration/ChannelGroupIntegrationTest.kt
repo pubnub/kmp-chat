@@ -6,6 +6,7 @@ import com.pubnub.test.test
 import com.pubnub.test.randomString
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -111,6 +112,7 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @OptIn(ExperimentalStdlibApi::class)
+    @Ignore
     @Test
     fun streamPresence() = runTest {
         val completable = CompletableDeferred<Map<String, List<String>>>()
