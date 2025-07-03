@@ -1093,6 +1093,10 @@ class ChatImpl(
         return ChannelGroupImpl(id, this)
     }
 
+    override fun removeChannelGroup(id: String): PNFuture<Unit> {
+        return pubNub.deleteChannelGroup(id).then { }
+    }
+
     override fun destroy() {
         timerManager.destroy()
         pubNub.destroy()
