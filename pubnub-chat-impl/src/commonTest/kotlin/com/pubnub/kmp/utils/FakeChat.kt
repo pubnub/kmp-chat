@@ -312,4 +312,8 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     override fun getChannelGroup(id: String): ChannelGroup {
         TODO("Not yet implemented")
     }
+
+    override fun removeChannelGroup(id: String): PNFuture<Unit> {
+        TODO("Not yet implemented")
+    }
 }

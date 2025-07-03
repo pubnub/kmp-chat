@@ -519,8 +519,16 @@ interface Chat {
      *
      *  This does **not** create a group on the server. If the group exists, the reference points to it.
      *  If the group does not exist, it serves as a handle to create and modify it via channel changes.
+     *  For example, [ChannelGroup.addChannels], [ChannelGroup.addChannelIdentifiers], [ChannelGroup.removeChannels].
      */
     fun getChannelGroup(id: String): ChannelGroup
+
+    /**
+     * Removes a channel group with the specified [id].
+     *
+     * @param id The unique identifier of the channel group to remove.
+     */
+    fun removeChannelGroup(id: String): PNFuture<Unit>
 
     /**
      * Clears resources of Chat instance and related PubNub SDK instance.

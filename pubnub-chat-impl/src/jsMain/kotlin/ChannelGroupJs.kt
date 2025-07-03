@@ -1,8 +1,11 @@
 @file:OptIn(ExperimentalJsExport::class)
 
 import com.pubnub.chat.ChannelGroup
+import com.pubnub.kmp.JsMap
+import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
+import com.pubnub.kmp.toJsMap
 import kotlin.js.Promise
 
 @JsExport
@@ -21,7 +24,8 @@ class ChannelGroupJs internal constructor(
             params?.page?.toKmp()
         ).then { result ->
             createJsObject<GetChannelsResponseJs> {
-                this.channels = result.channels.map { it.asJs(this@ChannelGroupJs.chatJs) }.toTypedArray()
+                this.channels =
+                    result.channels.map { it.asJs(this@ChannelGroupJs.chatJs) }.toTypedArray()
                 this.page = MetadataPage(result.next, result.prev)
                 this.total = result.total
             }
@@ -48,5 +52,29 @@ class ChannelGroupJs internal constructor(
         return channelGroup.connect {
             callback(it.asJs(chatJs))
         }::close
+    }
+
+    fun whoIsPresent(): Promise<JsMap<Array<String>>> {
+        return channelGroup.whoIsPresent().then {
+            it
+                .mapKeys { entry -> entry.key.toString() }
+                .mapValues { entry -> entry.value.toTypedArray() }
+                .toJsMap()
+        }.asPromise()
+    }
+
+    fun streamPresence(callback: (JsMap<Array<String>>) -> Unit): Promise<() -> Unit> {
+        return channelGroup.streamPresence {
+            println("StreamPresence keys ${it.keys}")
+            println("StreamPresence values ${it.values}")
+            callback(
+                it
+                    .mapKeys { entry -> entry.key.toString() }
+                    .mapValues { entry -> entry.value.toTypedArray() }
+                    .toJsMap()
+            )
+        }.let { autoCloseable ->
+            autoCloseable::close.asFuture().asPromise()
+        }
     }
 }

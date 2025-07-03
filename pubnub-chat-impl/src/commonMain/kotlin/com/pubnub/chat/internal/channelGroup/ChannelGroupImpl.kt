@@ -89,7 +89,7 @@ data class ChannelGroupImpl internal constructor(
         }
     }
 
-    override fun streamPresence(callback: (userIds: Map<String, List<String>>) -> Unit): AutoCloseable {
+    override fun streamPresence(callback: (presenceByChannels: Map<String, List<String>>) -> Unit): AutoCloseable {
         val ids = mutableMapOf<String, MutableSet<String>>()
         val future = whoIsPresent().then { whoIsPresentResponse ->
             ids.putAll(whoIsPresentResponse.mapValues { it.value.toMutableSet() })
@@ -101,17 +101,16 @@ data class ChannelGroupImpl internal constructor(
                         createEventListener(
                             chat.pubNub,
                             onPresence = { _, event ->
-                                val leaveUuids = event.leave ?: emptyList<String>()
-                                val joinUuids = event.join ?: emptyList<String>()
-                                val timedOutUuids = event.timeout ?: emptyList<String>()
+                                val leaveUuids = event.leave ?: emptyList()
+                                val joinUuids = event.join ?: emptyList()
+                                val timedOutUuids = event.timeout ?: emptyList()
 
-                                joinUuids.forEach { id ->
-                                    if (ids.contains(event.channel)) {
-                                        ids[event.channel]?.add(id)
-                                    } else {
-                                        ids[event.channel] = joinUuids.toMutableSet()
-                                    }
+                                if (ids.contains(event.channel)) {
+                                    ids[event.channel]?.addAll(joinUuids)
+                                } else {
+                                    ids[event.channel] = joinUuids.toMutableSet()
                                 }
+
                                 leaveUuids.forEach { id ->
                                     ids[event.channel]?.remove(id)
                                 }
@@ -121,13 +120,12 @@ data class ChannelGroupImpl internal constructor(
 
                                 when (event.event) {
                                     "join" -> {
-                                        event.uuid.let { uuid ->
-                                            ids[event.channel]?.plus(uuid)
+                                        event.uuid?.let { uuid ->
+                                            ids[event.channel]?.add(uuid)
                                         }
                                     }
-
                                     "leave", "timeout" -> {
-                                        event.uuid.let { uuid ->
+                                        event.uuid?.let { uuid ->
                                             ids[event.uuid]?.remove(uuid)
                                         }
                                     }

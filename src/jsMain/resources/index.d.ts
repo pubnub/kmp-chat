@@ -798,6 +798,7 @@ declare class Chat {
      * Channel group
      */
     getChannelGroup(id: string): ChannelGroup;
+    removeChannelGroup(id: String): Promise<any>;
 }
 declare class ThreadMessage extends Message {
     readonly parentChannelId: string;
@@ -855,6 +856,10 @@ declare class ChannelGroup {
     removeChannels(channels: Channel[]): Promise<any>;
     removeChannelIdentifiers(ids: string[]): Promise<any>;
     connect(callback: (message: Message) => void): () => void;
+    whoIsPresent(): Promise<{ [key: string]: string[] }>
+    streamPresence(callback: (presenceByChannels: {
+        [key: string]: string[];
+    }) => unknown): Promise<() => void>;
     listChannels(params?: Omit<AppContext.GetAllMetadataParameters<AppContext.ChannelMetadataObject<AppContext.CustomData>>, "include">): Promise<{
         channels: Channel[];
         page: {

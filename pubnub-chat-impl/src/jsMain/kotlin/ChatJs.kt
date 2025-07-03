@@ -443,6 +443,10 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         return ChannelGroupJs(this, chat.getChannelGroup(id))
     }
 
+    fun removeChannelGroup(id: String): Promise<Any> {
+        return chat.removeChannelGroup(id).asPromise()
+    }
+
     companion object {
         @JsStatic
         fun init(config: ChatConstructor): Promise<ChatJs> {

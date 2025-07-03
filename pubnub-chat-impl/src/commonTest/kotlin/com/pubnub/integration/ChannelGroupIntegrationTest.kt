@@ -1,12 +1,11 @@
 package com.pubnub.integration
 
 import com.pubnub.chat.Message
-import com.pubnub.chat.internal.channelGroup.ChannelGroupImpl
 import com.pubnub.test.await
+import com.pubnub.test.test
 import com.pubnub.test.randomString
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -17,9 +16,7 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
         chat.createChannel(channel01.id).await()
         chat.createChannel(channel02.id).await()
 
-        val channelGroupId = randomString()
-        val channelGroup = ChannelGroupImpl(channelGroupId, chat)
-
+        val channelGroup = chat.getChannelGroup(randomString())
         channelGroup.addChannels(listOf(channel01, channel02)).await()
 
         val expectedChannelIds = setOf(channel01.id, channel02.id).toSet()
@@ -27,7 +24,7 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
         val actualChannelIds = getChannelsResponse.channels.map { it.id }.toSet()
 
         assertEquals(expectedChannelIds, actualChannelIds)
-        chat.pubNub.deleteChannelGroup(channelGroupId).await()
+        chat.pubNub.deleteChannelGroup(channelGroup.id).await()
     }
 
     @Test
@@ -35,9 +32,7 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
         chat.createChannel(channel01.id).await()
         chat.createChannel(channel02.id).await()
 
-        val channelGroupId = randomString()
-        val channelGroup = ChannelGroupImpl(channelGroupId, chat)
-
+        val channelGroup = chat.getChannelGroup(randomString())
         channelGroup.addChannelIdentifiers(listOf(channel01.id, channel02.id)).await()
 
         val expectedChannelIds = setOf(channel01.id, channel02.id).toSet()
@@ -45,7 +40,7 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
         val actualChannelIds = getChannelsResponse.channels.map { it.id }.toSet()
 
         assertEquals(expectedChannelIds, actualChannelIds)
-        chat.pubNub.deleteChannelGroup(channelGroupId).await()
+        chat.pubNub.deleteChannelGroup(channelGroup.id).await()
     }
 
     @Test
@@ -53,15 +48,14 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
         chat.createChannel(channel01.id).await()
         chat.createChannel(channel02.id).await()
 
-        val channelGroupId = randomString()
-        val channelGroup = ChannelGroupImpl(channelGroupId, chat)
+        val channelGroup = chat.getChannelGroup(randomString())
 
         channelGroup.addChannels(listOf(channel01, channel02)).await()
         channelGroup.removeChannels(listOf(channel01, channel02)).await()
 
         val getChannelsResponse = channelGroup.listChannels().await()
         assertTrue { getChannelsResponse.channels.isEmpty() }
-        chat.pubNub.deleteChannelGroup(channelGroupId).await()
+        chat.pubNub.deleteChannelGroup(channelGroup.id).await()
     }
 
     @Test
@@ -69,24 +63,21 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
         chat.createChannel(channel01.id).await()
         chat.createChannel(channel02.id).await()
 
-        val channelGroupId = randomString()
-        val channelGroup = ChannelGroupImpl(channelGroupId, chat)
-
+        val channelGroup = chat.getChannelGroup(randomString())
         channelGroup.addChannels(listOf(channel01, channel02)).await()
         channelGroup.removeChannelIdentifiers(listOf(channel01.id, channel02.id)).await()
 
         val getChannelsResponse = channelGroup.listChannels().await()
         assertTrue { getChannelsResponse.channels.isEmpty() }
-        chat.pubNub.deleteChannelGroup(channelGroupId).await()
+        chat.pubNub.deleteChannelGroup(channelGroup.id).await()
     }
 
     @Test
     fun whoIsPresent() = runTest {
-        val channelGroupId = randomString()
-        val channelGroup = ChannelGroupImpl(channelGroupId, chat)
-
+        val channelGroup = chat.getChannelGroup(randomString())
         channelGroup.addChannels(listOf(channel01, channel02)).await()
         delayInMillis(1000)
+
         val autoCloseable = channelGroup.connect { message -> }
         delayInMillis(3000)
 
@@ -95,15 +86,13 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(whoIsPresent[channel01.id], listOf(chat.currentUser.id))
         assertEquals(whoIsPresent[channel02.id], listOf(chat.currentUser.id))
 
-        chat.pubNub.deleteChannelGroup(channelGroupId).await()
+        chat.pubNub.deleteChannelGroup(channelGroup.id).await()
         autoCloseable?.close()
     }
 
     @Test
     fun connect() = runTest {
-        val channelGroupId = randomString()
-        val channelGroup = ChannelGroupImpl(channelGroupId, chat)
-
+        val channelGroup = chat.getChannelGroup(randomString())
         channelGroup.addChannels(listOf(channel01, channel02)).await()
         delayInMillis(1000)
 
@@ -117,30 +106,33 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
         assertEquals("Some message", message.text)
         assertEquals(channel01.id, message.channelId)
 
-        chat.pubNub.deleteChannelGroup(channelGroupId).await()
+        chat.pubNub.deleteChannelGroup(channelGroup.id).await()
         autoCloseable?.close()
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
     @Test
-    @Ignore
     fun streamPresence() = runTest {
-        val channelGroupId = randomString()
-        val channelGroup = ChannelGroupImpl(channelGroupId, chat)
-
-        channelGroup.addChannels(listOf(channel01, channel02)).await()
-        delayInMillis(2000)
-
         val completable = CompletableDeferred<Map<String, List<String>>>()
-        val connectCloseable = channelGroup.connect { }
-        val autoCloseable = channelGroup.streamPresence { completable.complete(it) }
+        val channelGroup = chat.getChannelGroup(randomString())
+        channelGroup.addChannels(listOf(channel01, channel02)).await()
 
-        val whoIsPresent = completable.await()
-        assertEquals(2, whoIsPresent.count())
-        assertEquals(whoIsPresent[channel01.id], listOf(chat.currentUser.id))
-        assertEquals(whoIsPresent[channel02.id], listOf(chat.currentUser.id))
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var closeable: AutoCloseable? = null
+            pubnub.awaitSubscribe(channelGroups = listOf(channelGroup.id)) {
+                closeable = channelGroup.streamPresence {
+                    if (it.isNotEmpty()) {
+                        completable.complete(it)
+                    }
+                }
+            }
 
-        chat.pubNub.deleteChannelGroup(channelGroupId).await()
-        connectCloseable?.close()
-        autoCloseable?.close()
+            val completableValue = completable.await()
+            assertTrue { completableValue.containsKey(channel01.id) || completableValue.containsKey(channel02.id) }
+            assertTrue { completableValue.containsValue(listOf(chat.currentUser.id)) }
+
+            chat.pubNub.deleteChannelGroup(channelGroup.id).await()
+            closeable?.close()
+        }
     }
 }

@@ -69,7 +69,7 @@ interface ChannelGroup {
      * the channels with the given IDs exist — responsibility for ensuring
      * validity lies with the caller.
      *
-     * @param channels Channel identifiers to add.
+     * @param ids Channel identifiers to add.
      */
     fun removeChannelIdentifiers(ids: List<String>): PNFuture<Unit>
 
@@ -81,7 +81,7 @@ interface ChannelGroup {
     /**
      * Enables real-time tracking of users connecting to or disconnecting from the given [ChannelGroup]
      */
-    fun streamPresence(callback: (userIds: Map<String, List<String>>) -> Unit): AutoCloseable
+    fun streamPresence(callback: (presenceByChannels: Map<String, List<String>>) -> Unit): AutoCloseable
 
     /**
      * Watch the [ChannelGroup] content.
