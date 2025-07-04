@@ -32,8 +32,7 @@ describe("Channel group test", () => {
   afterEach(async () => {
     await firstChannel.delete()
     await secondChannel.delete()
-
-    chat.sdk.channelGroups.deleteGroup({
+    await chat.sdk.channelGroups.deleteGroup({
       channelGroup: channelGroup.id,
     })
   })
@@ -102,5 +101,44 @@ describe("Channel group test", () => {
     }
 
     disconnect()
+  }, 30000)
+
+  test("get present users", async () => {
+    await channelGroup.addChannels([firstChannel, secondChannel])
+    const disconnect = firstChannel.connect(() => null)
+    const secondDisconnect = secondChannel.connect(() => null)
+    await sleep(3000)
+
+    const presenceByChannels = await channelGroup.whoIsPresent()
+
+    expect(presenceByChannels[firstChannel.id]).toEqual([chat.currentUser.id])
+    expect(presenceByChannels[secondChannel.id]).toEqual([chat.currentUser.id])
+
+    disconnect()
+    secondDisconnect()
+  })
+
+  test("presence stream", async () => {
+    await channelGroup.addChannels([firstChannel, secondChannel])
+    const presencePromise = new Promise<{ [key: string]: string[] }>((resolve) => {
+      const presenceDisconnect = channelGroup.streamPresence((presenceByChannels) => {
+        if (Object.keys(presenceByChannels).length > 0) {
+          resolve(presenceByChannels)
+        }
+      })
+    })
+
+    const presenceByChannels = await presencePromise
+    const containsFirstChannel = presenceByChannels[firstChannel.id] != null
+    const containsSecondChannel = presenceByChannels[secondChannel.id] != null
+
+    expect(containsFirstChannel || containsSecondChannel).toBeTruthy()
+
+    if (containsFirstChannel) {
+      expect(presenceByChannels[firstChannel.id]).toEqual([chat.currentUser.id])
+    }
+    if (containsSecondChannel) {
+      expect(presenceByChannels[secondChannel.id]).toEqual([chat.currentUser.id])
+    }
   }, 30000)
 })

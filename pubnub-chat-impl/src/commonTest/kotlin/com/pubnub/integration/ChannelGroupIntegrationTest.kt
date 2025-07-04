@@ -10,6 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@Suppress("UndocumentedPublicClass")
 class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun addChannels() = runTest {

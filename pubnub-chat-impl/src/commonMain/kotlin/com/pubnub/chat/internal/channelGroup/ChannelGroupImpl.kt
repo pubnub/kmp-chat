@@ -150,25 +150,25 @@ data class ChannelGroupImpl internal constructor(
         val listener = createEventListener(
             chat.pubNub,
             onMessage = { _, pnMessageResult ->
-                if (pnMessageResult.publisher in chat.mutedUsersManager.mutedUsers) {
-                    return@createEventListener
-                }
-                try {
-                    if (
-                        (
-                            chat.config.customPayloads?.getMessageResponseBody?.invoke(
-                                pnMessageResult.message,
-                                pnMessageResult.channel,
-                                ::defaultGetMessageResponseBody
-                            )
-                                ?: defaultGetMessageResponseBody(pnMessageResult.message)
-                        ) == null
-                    ) {
-                        return@createEventListener
+                if (!chat.mutedUsersManager.mutedUsers.contains(pnMessageResult.publisher)) {
+                    @Suppress("TooGenericExceptionCaught")
+                    try {
+                        if (
+                            (
+                                chat.config.customPayloads?.getMessageResponseBody?.invoke(
+                                    pnMessageResult.message,
+                                    pnMessageResult.channel,
+                                    ::defaultGetMessageResponseBody
+                                )
+                                    ?: defaultGetMessageResponseBody(pnMessageResult.message)
+                            ) == null
+                        ) {
+                            return@createEventListener
+                        }
+                        callback(MessageImpl.fromDTO(chat, pnMessageResult))
+                    } catch (e: Exception) {
+                        log.e(throwable = e) { ERROR_HANDLING_ONMESSAGE_EVENT }
                     }
-                    callback(MessageImpl.fromDTO(chat, pnMessageResult))
-                } catch (e: Exception) {
-                    log.e(throwable = e) { ERROR_HANDLING_ONMESSAGE_EVENT }
                 }
             },
         )
