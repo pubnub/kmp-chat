@@ -21,6 +21,7 @@ import com.pubnub.kmp.remember
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 
+@Suppress("UndocumentedPublicClass")
 data class ChannelGroupImpl internal constructor(
     override val id: String,
     override val chat: ChatInternal
