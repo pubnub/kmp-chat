@@ -10,6 +10,7 @@ import kotlin.js.Promise
 
 @JsExport
 @JsName("ChannelGroup")
+@Suppress("UndocumentedPublicClass")
 class ChannelGroupJs internal constructor(
     private val chatJs: ChatJs,
     private val channelGroup: ChannelGroup
@@ -65,8 +66,6 @@ class ChannelGroupJs internal constructor(
 
     fun streamPresence(callback: (JsMap<Array<String>>) -> Unit): Promise<() -> Unit> {
         return channelGroup.streamPresence {
-            println("StreamPresence keys ${it.keys}")
-            println("StreamPresence values ${it.values}")
             callback(
                 it
                     .mapKeys { entry -> entry.key.toString() }
