@@ -144,31 +144,32 @@ data class ChannelGroupImpl internal constructor(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught", "LabeledExpression")
     override fun connect(callback: (Message) -> Unit): AutoCloseable {
         val channelGroupEntity = chat.pubNub.channelGroup(id)
         val subscription = channelGroupEntity.subscription()
         val listener = createEventListener(
             chat.pubNub,
             onMessage = { _, pnMessageResult ->
-                if (!chat.mutedUsersManager.mutedUsers.contains(pnMessageResult.publisher)) {
-                    @Suppress("TooGenericExceptionCaught")
-                    try {
-                        if (
-                            (
-                                chat.config.customPayloads?.getMessageResponseBody?.invoke(
-                                    pnMessageResult.message,
-                                    pnMessageResult.channel,
-                                    ::defaultGetMessageResponseBody
-                                )
-                                    ?: defaultGetMessageResponseBody(pnMessageResult.message)
-                            ) == null
-                        ) {
-                            return@createEventListener
-                        }
-                        callback(MessageImpl.fromDTO(chat, pnMessageResult))
-                    } catch (e: Exception) {
-                        log.e(throwable = e) { ERROR_HANDLING_ONMESSAGE_EVENT }
+                if (pnMessageResult.publisher in chat.mutedUsersManager.mutedUsers) {
+                    return@createEventListener
+                }
+                try {
+                    if (
+                        (
+                            chat.config.customPayloads?.getMessageResponseBody?.invoke(
+                                pnMessageResult.message,
+                                pnMessageResult.channel,
+                                ::defaultGetMessageResponseBody
+                            )
+                                ?: defaultGetMessageResponseBody(pnMessageResult.message)
+                        ) == null
+                    ) {
+                        return@createEventListener
                     }
+                    callback(MessageImpl.fromDTO(chat, pnMessageResult))
+                } catch (e: Exception) {
+                    log.e(throwable = e) { ERROR_HANDLING_ONMESSAGE_EVENT }
                 }
             },
         )
