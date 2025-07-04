@@ -19,6 +19,7 @@ import kotlin.js.json
 
 @JsExport
 @JsName("Channel")
+@Suppress("UndocumentedPublicClass")
 open class ChannelJs internal constructor(internal val channel: Channel, internal val chatJs: ChatJs) : ChannelFields {
     override val id: String by channel::id
     override val name: String? by channel::name
