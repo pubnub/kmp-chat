@@ -339,6 +339,48 @@ describe("Send message test", () => {
     await new Promise((resolve) => setTimeout(resolve, 2000))
   }, 30000)
 
+  test("should not receive updates after unsubscribing from Message.streamUpdatesOn", async () => {
+    await channel.sendText("Test message for unsubscribe")
+    await sleep(150) // history calls have around 130ms of cache time
+
+    const history = await channel.getHistory()
+    const sentMessage = history.messages[history.messages.length - 1]
+
+    // Use a real array to track callback invocations
+    const updates: Message[][] = []
+    const callback = (msgs) => {
+      const summary = msgs.map(m => ({
+        timetoken: m.timetoken,
+        text: m.text,
+        actions: m.actions,
+      }))
+
+      // Optionally, push a deep copy to avoid mutation issues:
+      updates.push(msgs.map(m => ({ ...m })))
+    }
+
+    // Subscribe to updates
+    const unsubscribe = Message.streamUpdatesOn([sentMessage], callback)
+    await sleep(1000)
+
+    // Edit the message to trigger the callback
+    await sentMessage.editText("First edit after subscribe")
+    await sleep(2000)
+
+    expect(updates.length).toBeGreaterThan(0)
+    const updatesCountAfterFirstEdit = updates.length
+
+    // Unsubscribe
+    unsubscribe()
+
+    // Edit the message again
+    await sentMessage.editText("Second edit after unsubscribe")
+    await sleep(2000)
+
+    // The callback should not be called again
+    expect(updates.length).toBe(updatesCountAfterFirstEdit)
+  }, 15000)
+
   test("should render URLs correctly", async () => {
     const messageDraft = channel.createMessageDraft()
     let someUser = await chat.getUser("Przemek")
