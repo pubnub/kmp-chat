@@ -40,48 +40,48 @@ interface ChannelGroup {
     /**
      * Adds [Channel] entities to a channel group.
      *
-     * @param channels Channel entities to add.
+     * @param channels [Channel] entities to add.
      */
-    fun addChannels(channels: List<Channel>): PNFuture<Unit>
+    fun addChannels(channels: Collection<Channel>): PNFuture<Unit>
 
     /**
-     * Adds channels to a channel group.
+     * Adds channel identifiers to a channel group.
      *
-     * This method reduces the overhead of fetching full Channel entities when
+     * This method reduces the overhead of fetching full [Channel] entities when
      * only the IDs are known. It does not perform validation to check whether
      * the channels with the given IDs exist — responsibility for ensuring
      * validity lies with the caller.
      *
      * @param ids [Channel] identifiers to add.
      */
-    fun addChannelIdentifiers(ids: List<String>): PNFuture<Unit>
+    fun addChannelIdentifiers(ids: Collection<String>): PNFuture<Unit>
 
     /**
      * Remove [Channel] entities from a channel group.
      */
-    fun removeChannels(channels: List<Channel>): PNFuture<Unit>
+    fun removeChannels(channels: Collection<Channel>): PNFuture<Unit>
 
     /**
-     * Remove channels from a channel group.
+     * Remove channel identifiers from a channel group.
      *
-     * This method reduces the overhead of fetching full Channel entities when
+     * This method reduces the overhead of fetching full [Channel] entities when
      * only the IDs are known. It does not perform validation to check whether
      * the channels with the given IDs exist — responsibility for ensuring
      * validity lies with the caller.
      *
-     * @param ids Channel identifiers to add.
+     * @param ids [Channel] identifiers to add.
      */
-    fun removeChannelIdentifiers(ids: List<String>): PNFuture<Unit>
+    fun removeChannelIdentifiers(ids: Collection<String>): PNFuture<Unit>
 
     /**
      * Returns a collection of users currently present in any channel within the given [ChannelGroup]
      */
-    fun whoIsPresent(): PNFuture<Map<String, List<String>>>
+    fun whoIsPresent(): PNFuture<Map<String, Collection<String>>>
 
     /**
      * Enables real-time tracking of users connecting to or disconnecting from the given [ChannelGroup]
      */
-    fun streamPresence(callback: (presenceByChannels: Map<String, List<String>>) -> Unit): AutoCloseable
+    fun streamPresence(callback: (presenceByChannels: Map<String, Collection<String>>) -> Unit): AutoCloseable
 
     /**
      * Watch the [ChannelGroup] content.

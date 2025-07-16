@@ -115,7 +115,7 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
     fun streamPresence() = runTest {
         val channelGroup = chat.getChannelGroup(randomString())
         channelGroup.addChannels(listOf(channel01, channel02)).await()
-        val completable = CompletableDeferred<Map<String, List<String>>>()
+        val completable = CompletableDeferred<Map<String, Collection<String>>>()
 
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var closeable: AutoCloseable? = null

@@ -66,20 +66,20 @@ data class ChannelGroupImpl internal constructor(
         }
     }
 
-    override fun addChannels(channels: List<Channel>): PNFuture<Unit> {
+    override fun addChannels(channels: Collection<Channel>): PNFuture<Unit> {
         return chat.pubNub.addChannelsToChannelGroup(channels.map { it.id }, id).then {}
     }
 
-    override fun addChannelIdentifiers(ids: List<String>): PNFuture<Unit> {
-        return chat.pubNub.addChannelsToChannelGroup(ids, id).then {}
+    override fun addChannelIdentifiers(ids: Collection<String>): PNFuture<Unit> {
+        return chat.pubNub.addChannelsToChannelGroup(ids.toList(), id).then {}
     }
 
-    override fun removeChannels(channels: List<Channel>): PNFuture<Unit> {
+    override fun removeChannels(channels: Collection<Channel>): PNFuture<Unit> {
         return chat.pubNub.removeChannelsFromChannelGroup(channels.map { it.id }, id).then {}
     }
 
-    override fun removeChannelIdentifiers(ids: List<String>): PNFuture<Unit> {
-        return chat.pubNub.removeChannelsFromChannelGroup(ids, id).then {}
+    override fun removeChannelIdentifiers(ids: Collection<String>): PNFuture<Unit> {
+        return chat.pubNub.removeChannelsFromChannelGroup(ids.toList(), id).then {}
     }
 
     override fun whoIsPresent(): PNFuture<Map<String, List<String>>> {
@@ -90,7 +90,7 @@ data class ChannelGroupImpl internal constructor(
         }
     }
 
-    override fun streamPresence(callback: (presenceByChannels: Map<String, List<String>>) -> Unit): AutoCloseable {
+    override fun streamPresence(callback: (presenceByChannels: Map<String, Collection<String>>) -> Unit): AutoCloseable {
         val ids = mutableMapOf<String, MutableSet<String>>()
         val future = whoIsPresent().then { whoIsPresentResponse ->
             ids.putAll(whoIsPresentResponse.mapValues { it.value.toMutableSet() })
