@@ -36,6 +36,7 @@ import com.pubnub.api.utils.Instant
 import com.pubnub.api.utils.TimetokenUtil
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
+import com.pubnub.chat.ChannelGroup
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
@@ -48,6 +49,7 @@ import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.channel.ThreadChannelImpl
+import com.pubnub.chat.internal.channelGroup.ChannelGroupImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
@@ -1085,6 +1087,14 @@ class ChatImpl(
             .then { userMentionDataList: List<UserMentionData> ->
                 GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList, isMore = isMore)
             }
+    }
+
+    override fun getChannelGroup(id: String): ChannelGroup {
+        return ChannelGroupImpl(id, this)
+    }
+
+    override fun removeChannelGroup(id: String): PNFuture<Unit> {
+        return pubNub.deleteChannelGroup(id).then { }
     }
 
     override fun destroy() {

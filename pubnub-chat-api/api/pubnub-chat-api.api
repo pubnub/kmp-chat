@@ -60,6 +60,20 @@ public abstract interface class com/pubnub/chat/Channel {
 public final class com/pubnub/chat/Channel$Companion {
 }
 
+public abstract interface class com/pubnub/chat/ChannelGroup {
+	public abstract fun addChannelIdentifiers (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun addChannels (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun connect (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun getChat ()Lcom/pubnub/chat/Chat;
+	public abstract fun getId ()Ljava/lang/String;
+	public abstract fun listChannels (Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun listChannels$default (Lcom/pubnub/chat/ChannelGroup;Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun removeChannelIdentifiers (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun removeChannels (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun streamPresence (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun whoIsPresent ()Lcom/pubnub/kmp/PNFuture;
+}
+
 public abstract interface class com/pubnub/chat/Chat {
 	public static final field Companion Lcom/pubnub/chat/Chat$Companion;
 	public abstract fun createDirectConversation (Lcom/pubnub/chat/User;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
@@ -80,6 +94,7 @@ public abstract interface class com/pubnub/chat/Chat {
 	public abstract fun fetchUnreadMessagesCounts (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun fetchUnreadMessagesCounts$default (Lcom/pubnub/chat/Chat;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getChannel (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun getChannelGroup (Ljava/lang/String;)Lcom/pubnub/chat/ChannelGroup;
 	public abstract fun getChannels (Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getChannels$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getConfig ()Lcom/pubnub/chat/config/ChatConfiguration;
@@ -102,6 +117,7 @@ public abstract interface class com/pubnub/chat/Chat {
 	public abstract fun markAllMessagesAsRead (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun markAllMessagesAsRead$default (Lcom/pubnub/chat/Chat;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun registerPushChannels (Ljava/util/List;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun removeChannelGroup (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun setRestrictions (Lcom/pubnub/chat/restrictions/Restriction;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun unregisterAllPushChannels ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun unregisterPushChannels (Ljava/util/List;)Lcom/pubnub/kmp/PNFuture;

@@ -6,7 +6,7 @@ ktlint = "12.1.0"
 dokka = "1.9.20"
 kotlinx_serialization = "1.7.3"
 kotlinx_coroutines = "1.9.0"
-pubnub = "10.5.2"
+pubnub = "10.5.3"
 pubnub_swift = "9.2.0"
 
 [libraries]
