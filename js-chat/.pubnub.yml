@@ -1,5 +1,5 @@
 name: pubnub-js-chat
-version: 0.12.1
+version: 0.13.0
 scm: github.com/pubnub/js-chat
 schema: 1
 files:
@@ -82,6 +82,11 @@ sdks:
                   - 'Microsoft Edge 87.0.664.60"'
                   - 'Safari 13.0'
 changelog:
+  - date: 2025-07-21
+    version: 0.13.0
+    changes:
+      - type: feature
+        text: "Add suport for channel groups."
   - date: 2025-06-04
     version: 0.12.1
     changes:
