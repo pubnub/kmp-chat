@@ -41,6 +41,8 @@ kotlin {
             dependencies {
                 implementation(libs.pubnub.kotlin)
                 implementation(kotlin("test-junit"))
+                implementation(libs.logback.classic)
+                implementation(libs.logback.core)
             }
         }
 

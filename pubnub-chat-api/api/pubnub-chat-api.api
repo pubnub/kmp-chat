@@ -76,6 +76,7 @@ public abstract interface class com/pubnub/chat/ChannelGroup {
 
 public abstract interface class com/pubnub/chat/Chat {
 	public static final field Companion Lcom/pubnub/chat/Chat$Companion;
+	public abstract fun addConnectionStatusListener (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun createDirectConversation (Lcom/pubnub/chat/User;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun createDirectConversation$default (Lcom/pubnub/chat/Chat;Lcom/pubnub/chat/User;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun createGroupConversation (Ljava/util/Collection;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
@@ -89,6 +90,7 @@ public abstract interface class com/pubnub/chat/Chat {
 	public abstract fun deleteUser (Ljava/lang/String;Z)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun deleteUser$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;ZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun destroy ()V
+	public abstract fun disconnectSubscriptions ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun emitEvent (Ljava/lang/String;Lcom/pubnub/chat/types/EventContent;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun emitEvent$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Lcom/pubnub/chat/types/EventContent;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun fetchUnreadMessagesCounts (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
@@ -116,6 +118,7 @@ public abstract interface class com/pubnub/chat/Chat {
 	public static synthetic fun listenForEvents$default (Lcom/pubnub/chat/Chat;Lkotlin/reflect/KClass;Ljava/lang/String;Lcom/pubnub/chat/types/EmitEventMethod;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/AutoCloseable;
 	public abstract fun markAllMessagesAsRead (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun markAllMessagesAsRead$default (Lcom/pubnub/chat/Chat;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun reconnectSubscriptions ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun registerPushChannels (Ljava/util/List;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun removeChannelGroup (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun setRestrictions (Lcom/pubnub/chat/restrictions/Restriction;)Lcom/pubnub/kmp/PNFuture;
@@ -446,6 +449,22 @@ public final class com/pubnub/chat/config/PushNotificationsConfig {
 	public final fun getDeviceGateway ()Lcom/pubnub/api/enums/PNPushType;
 	public final fun getDeviceToken ()Ljava/lang/String;
 	public final fun getSendPushes ()Z
+}
+
+public final class com/pubnub/chat/listeners/ConnectionStatus {
+	public fun <init> (Lcom/pubnub/chat/listeners/ConnectionStatusCategory;Lcom/pubnub/api/PubNubException;)V
+	public synthetic fun <init> (Lcom/pubnub/chat/listeners/ConnectionStatusCategory;Lcom/pubnub/api/PubNubException;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getCategory ()Lcom/pubnub/chat/listeners/ConnectionStatusCategory;
+	public final fun getException ()Lcom/pubnub/api/PubNubException;
+}
+
+public final class com/pubnub/chat/listeners/ConnectionStatusCategory : java/lang/Enum {
+	public static final field PN_CONNECTION_ERROR Lcom/pubnub/chat/listeners/ConnectionStatusCategory;
+	public static final field PN_CONNECTION_OFFLINE Lcom/pubnub/chat/listeners/ConnectionStatusCategory;
+	public static final field PN_CONNECTION_ONLINE Lcom/pubnub/chat/listeners/ConnectionStatusCategory;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/pubnub/chat/listeners/ConnectionStatusCategory;
+	public static fun values ()[Lcom/pubnub/chat/listeners/ConnectionStatusCategory;
 }
 
 public final class com/pubnub/chat/membership/MembersResponse {

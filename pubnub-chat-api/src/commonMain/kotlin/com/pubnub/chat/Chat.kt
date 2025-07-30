@@ -9,6 +9,7 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.push.PNPushAddChannelResult
 import com.pubnub.api.models.consumer.push.PNPushRemoveChannelResult
 import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.listeners.ConnectionStatus
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
 import com.pubnub.chat.message.UnreadMessagesCounts
@@ -513,6 +514,40 @@ interface Chat {
         endTimetoken: Long? = null,
         count: Int = 100
     ): PNFuture<GetCurrentUserMentionsResult>
+
+    /**
+     * Adds a connection status listener to monitor subscription connectivity.
+     *
+     * This listener will be notified when the connection status changes between:
+     * - CONNECTED: Successfully connected and subscriptions are working
+     * - DISCONNECTED: Disconnected but no error occurred (manual disconnect)
+     * - CONNECTION_ERROR: Connection lost due to an error (network issues, auth problems, etc.)
+     * If the same listener is added multiple times, only one instance will be registered.
+     *
+     * @param listener The connection status listener to add
+     */
+    fun addConnectionStatusListener(callback: (ConnectionStatus) -> Unit): AutoCloseable
+
+    /**
+     * Reconnects all subscriptions that were previously established.
+     *
+     * This method restores previous subscriptions with all subscribed channels and added listeners.
+     * It's a passthrough to the PubNub reconnect() method and should be called when recovering
+     * from connection errors.
+     *
+     * @return [PNFuture] that completes when reconnection attempt finishes
+     */
+    fun reconnectSubscriptions(): PNFuture<Unit>
+
+    /**
+     * Disconnects all active subscriptions.
+     *
+     * This method stops all subscriptions but keeps the Chat instance active for future use.
+     * It's a passthrough to the PubNub disconnect() method.
+     *
+     * @return [PNFuture] that completes when disconnection finishes
+     */
+    fun disconnectSubscriptions(): PNFuture<Unit>
 
     /**
      * Returns a reference to a [ChannelGroup] with the specified [id].

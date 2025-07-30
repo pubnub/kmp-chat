@@ -15,6 +15,8 @@ import com.pubnub.chat.internal.PINNED_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.listeners.ConnectionStatus
+import com.pubnub.chat.listeners.ConnectionStatusCategory
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
@@ -783,7 +785,8 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val sentTimetoken = publishResult.timetoken
 
         // Get message via history
-        val history = channel01.getHistory(startTimetoken = sentTimetoken + 1, endTimetoken = sentTimetoken, count = 1).await()
+        val history =
+            channel01.getHistory(startTimetoken = sentTimetoken + 1, endTimetoken = sentTimetoken, count = 1).await()
         assertTrue(history.messages.isNotEmpty())
         val message = history.messages.first()
         assertEquals(1, message.files.size)
@@ -825,6 +828,164 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
                 elements
             )
         }
+    }
+
+    @Test
+    fun canAddAndRemoveStatusListenerAndReceiveStatuses() = runTest {
+        val statusReceivedOnline = CompletableDeferred<ConnectionStatusCategory>()
+        val statusReceivedOffline = CompletableDeferred<ConnectionStatusCategory>()
+
+        val connectionStatusListener = { status: ConnectionStatus ->
+            when (status.category) {
+                ConnectionStatusCategory.PN_CONNECTION_ONLINE -> {
+                    if (!statusReceivedOnline.isCompleted) {
+                        statusReceivedOnline.complete(status.category)
+                    }
+                }
+
+                ConnectionStatusCategory.PN_CONNECTION_OFFLINE -> {
+                    if (!statusReceivedOffline.isCompleted) {
+                        statusReceivedOffline.complete(status.category)
+                    }
+                }
+
+                else -> {
+                    // do nothing for other statuses
+                }
+            }
+            Unit
+        }
+
+        val statusListener: AutoCloseable = chat.addConnectionStatusListener(connectionStatusListener)
+        delayInMillis(300)
+
+        // we need to call connect to start EE that result triggering the online status
+        val connect = channel01.connect {
+            // no need to handle messages in this test
+        }
+
+        // Wait for online status first
+        assertEquals(ConnectionStatusCategory.PN_CONNECTION_ONLINE, statusReceivedOnline.await())
+
+        // Then disconnect and wait for offline status
+        chat.disconnectSubscriptions().await()
+
+        // Wait for offline status before removing the listener
+        assertEquals(ConnectionStatusCategory.PN_CONNECTION_OFFLINE, statusReceivedOffline.await())
+
+        statusListener.close()
+    }
+
+    @Test
+    fun canAddAndRemoveStatusListenerAndReceiveStatusesForReconnectAndDisconnect() = runTest {
+        val firstStatusReceivedOnline = CompletableDeferred<ConnectionStatusCategory>()
+        val secondStatusReceivedOnline = CompletableDeferred<ConnectionStatusCategory>()
+        val statusReceivedOffline = CompletableDeferred<ConnectionStatusCategory>()
+        var onlineStatusCount = 0
+
+        val connectionStatusListener = { status: ConnectionStatus ->
+            when (status.category) {
+                ConnectionStatusCategory.PN_CONNECTION_ONLINE -> {
+                    println("-=Received online status PN_CONNECTION_ONLINE: ${status.category}")
+                    onlineStatusCount++
+                    when (onlineStatusCount) {
+                        1 -> firstStatusReceivedOnline.complete(status.category)
+                        2 -> secondStatusReceivedOnline.complete(status.category)
+                    }
+                }
+
+                ConnectionStatusCategory.PN_CONNECTION_OFFLINE -> {
+                    println("-=Received online status PN_CONNECTION_OFFLINE: ${status.category}")
+                    statusReceivedOffline.complete(status.category)
+                }
+
+                else -> {
+                    // do nothing for other statuses
+                }
+            }
+            Unit
+        }
+
+        val statusListener: AutoCloseable = chat.addConnectionStatusListener(connectionStatusListener)
+
+        // we need to call connect to start EE that result triggering the online status
+        val connect = channel01.connect {
+            // no need to handle messages in this test
+        }
+
+        // Wait for online status first
+        assertEquals(ConnectionStatusCategory.PN_CONNECTION_ONLINE, firstStatusReceivedOnline.await())
+
+        chat.disconnectSubscriptions().await()
+        assertEquals(ConnectionStatusCategory.PN_CONNECTION_OFFLINE, statusReceivedOffline.await())
+
+        chat.reconnectSubscriptions().await()
+        assertEquals(ConnectionStatusCategory.PN_CONNECTION_ONLINE, secondStatusReceivedOnline.await())
+
+        statusListener.close()
+        connect.close()
+
+        assertEquals(2, onlineStatusCount)
+    }
+
+    @Test
+    fun canHandleMultipleConnectionStatusListeners() = runTest {
+        val statusReceivedOnline01 = CompletableDeferred<ConnectionStatusCategory>()
+        val statusReceivedOnline02 = CompletableDeferred<ConnectionStatusCategory>()
+        val statusReceivedOffline01 = CompletableDeferred<ConnectionStatusCategory>()
+        val statusReceivedOffline02 = CompletableDeferred<ConnectionStatusCategory>()
+
+        val connectionStatusListener01 = { status: ConnectionStatus ->
+            when (status.category) {
+                ConnectionStatusCategory.PN_CONNECTION_ONLINE -> {
+                    statusReceivedOnline01.complete(status.category)
+                }
+
+                ConnectionStatusCategory.PN_CONNECTION_OFFLINE -> {
+                    statusReceivedOffline01.complete(status.category)
+                }
+
+                else -> {
+                    // do nothing for other statuses
+                }
+            }
+            Unit
+        }
+
+        val connectionStatusListener02 = { status: ConnectionStatus ->
+            when (status.category) {
+                ConnectionStatusCategory.PN_CONNECTION_ONLINE -> {
+                    statusReceivedOnline02.complete(status.category)
+                }
+
+                ConnectionStatusCategory.PN_CONNECTION_OFFLINE -> {
+                    statusReceivedOffline02.complete(status.category)
+                }
+
+                else -> {
+                    // do nothing for other statuses
+                }
+            }
+            Unit
+        }
+
+        val statusListener01: AutoCloseable = chat.addConnectionStatusListener(connectionStatusListener01)
+        val statusListener02: AutoCloseable = chat.addConnectionStatusListener(connectionStatusListener02)
+
+        // we need to call connect to start EE that result triggering the online status
+        val connect = channel01.connect {
+            // no need to handle messages in this test
+        }
+        assertEquals(ConnectionStatusCategory.PN_CONNECTION_ONLINE, statusReceivedOnline01.await())
+        assertEquals(ConnectionStatusCategory.PN_CONNECTION_ONLINE, statusReceivedOnline02.await())
+
+        chat.disconnectSubscriptions().await()
+        assertEquals(ConnectionStatusCategory.PN_CONNECTION_OFFLINE, statusReceivedOffline01.await())
+        assertEquals(ConnectionStatusCategory.PN_CONNECTION_OFFLINE, statusReceivedOffline02.await())
+
+        statusListener01.close()
+        statusListener02.close()
+        connect.close()
     }
 }
 

@@ -4,9 +4,10 @@ kotlin = "2.1.0"
 vanniktech = "0.29.0"
 ktlint = "12.1.0"
 dokka = "1.9.20"
+logback = "1.2.11"
 kotlinx_serialization = "1.7.3"
 kotlinx_coroutines = "1.9.0"
-pubnub = "10.5.5"
+pubnub = "10.5.6"
 pubnub_swift = "9.3.0"
 
 [libraries]
@@ -17,8 +18,8 @@ kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 touchlab-kermit = { module = "co.touchlab:kermit", version = "2.0.4" }
 
 ## tests
-#logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
-#logback-core = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+logback-core = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
 #junit4 = { module = "junit:junit", version = "4.13.2" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx_coroutines"}
 

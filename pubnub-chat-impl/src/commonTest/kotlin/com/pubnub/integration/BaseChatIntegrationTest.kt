@@ -4,6 +4,7 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.config.LogLevel
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.channel.ThreadChannelImpl
@@ -46,16 +47,16 @@ abstract class BaseChatIntegrationTest : BaseIntegrationTest() {
     }
 
     val chat: ChatImpl by lazy(LazyThreadSafetyMode.NONE) {
-        ChatImpl(ChatConfiguration(), pubnub).also { usersToRemove.add(it.currentUser.id) }
+        ChatImpl(ChatConfiguration(logLevel = LogLevel.DEBUG), pubnub).also { usersToRemove.add(it.currentUser.id) }
     }
     val chat02: ChatImpl by lazy(LazyThreadSafetyMode.NONE) {
-        ChatImpl(ChatConfiguration(), pubnub02).also { usersToRemove.add(it.currentUser.id) }
+        ChatImpl(ChatConfiguration(logLevel = LogLevel.DEBUG), pubnub02).also { usersToRemove.add(it.currentUser.id) }
     }
     val chatPamServer: ChatImpl by lazy(LazyThreadSafetyMode.NONE) {
-        ChatImpl(ChatConfiguration(), pubnubPamServer).also { usersToRemovePam.add(it.currentUser.id) }
+        ChatImpl(ChatConfiguration(logLevel = LogLevel.DEBUG), pubnubPamServer).also { usersToRemovePam.add(it.currentUser.id) }
     }
     val chatPamClient: ChatImpl by lazy(LazyThreadSafetyMode.NONE) {
-        ChatImpl(ChatConfiguration(), pubnubPamClient).also { usersToRemovePam.add(it.currentUser.id) }
+        ChatImpl(ChatConfiguration(logLevel = LogLevel.DEBUG), pubnubPamClient).also { usersToRemovePam.add(it.currentUser.id) }
     }
     val channel01: Channel by lazy(LazyThreadSafetyMode.NONE) {
         ChannelImpl(
