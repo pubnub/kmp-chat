@@ -48,6 +48,7 @@ import com.pubnub.api.utils.PatchValue
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.api.v2.callbacks.StatusListener
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
@@ -59,6 +60,7 @@ import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_USER_MODERATION_CHANNEL_PREFIX
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.timer.TimerManager
+import com.pubnub.chat.listeners.ConnectionStatus
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.restrictions.RestrictionType
@@ -67,7 +69,7 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.utils.BaseTest
-import com.pubnub.kmp.utils.get
+import com.pubnub.kmp.utils.get // this is needed
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -79,6 +81,7 @@ import dev.mokkery.matcher.capture.capture
 import dev.mokkery.matcher.capture.get
 import dev.mokkery.mock
 import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode.Companion.exactly
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -1482,6 +1485,92 @@ class ChatTest : BaseTest() {
         assertEquals("banned", actualEncodedMessageSlot["restriction"])
         assertEquals("PUBNUB_INTERNAL_MODERATION_$restrictedChannelId", actualRestrictedChannelId)
         assertEquals(INTERNAL_USER_MODERATION_CHANNEL_PREFIX + restrictedUserId, actualModerationEventChannelId)
+    }
+
+    @Test
+    fun addConnectionStatusListenerShouldReturnAutoCloseable() {
+        // given
+        val callback: (ConnectionStatus) -> Unit = { }
+        every { pubnub.addListener(any<StatusListener>()) } returns Unit
+
+        // when
+        val result = objectUnderTest.addConnectionStatusListener(callback)
+
+        // then
+        assertNotNull(result)
+        assertTrue(result is AutoCloseable)
+    }
+
+    @Test
+    fun addConnectionStatusListenerShouldAddStatusListenerToPubNub() {
+        // given
+        val callback: (ConnectionStatus) -> Unit = { }
+        every { pubnub.addListener(any<StatusListener>()) } returns Unit
+
+        // when
+        objectUnderTest.addConnectionStatusListener(callback)
+
+        // then
+        verify { pubnub.addListener(any<StatusListener>()) }
+    }
+
+    @Test
+    fun addConnectionStatusListenerShouldNotAddSameCallbackTwice() {
+        // given
+        val callback: (ConnectionStatus) -> Unit = { }
+        every { pubnub.addListener(any<StatusListener>()) } returns Unit
+
+        // when
+        val closeable1 = objectUnderTest.addConnectionStatusListener(callback)
+        val closeable2 = objectUnderTest.addConnectionStatusListener(callback)
+
+        // then
+        assertNotNull(closeable1)
+        assertNotNull(closeable2)
+        // Should only add one listener to PubNub
+        verify(exactly(2)) { pubnub.addListener(any<StatusListener>()) }
+    }
+
+    @Test
+    fun addConnectionStatusListener_shouldAddListenerAndReturnAutoCloseable() {
+        // given
+        val callback: (ConnectionStatus) -> Unit = { }
+
+        every { pubnub.addListener(any<StatusListener>()) } returns Unit
+
+        // when
+        val closeable = objectUnderTest.addConnectionStatusListener(callback)
+
+        // then
+        assertNotNull(closeable)
+        assertTrue(closeable is AutoCloseable)
+        verify { pubnub.addListener(any<StatusListener>()) }
+    }
+
+    @Test
+    fun reconnectSubscriptions_shouldCallPubNubReconnect() {
+        every { pubnub.reconnect() } returns Unit
+        val result = objectUnderTest.reconnectSubscriptions()
+        // The method is synchronous, so we can check immediately
+        verify { pubnub.reconnect() }
+
+        result.async { r ->
+            assertTrue(r.isSuccess)
+            assertEquals(Unit, r.getOrNull())
+        }
+    }
+
+    @Test
+    fun disconnectSubscriptions_shouldCallPubNubDisconnect() {
+        every { pubnub.disconnect() } returns Unit
+        val result = objectUnderTest.disconnectSubscriptions()
+        // The method is synchronous, so we can check immediately
+        verify { pubnub.disconnect() }
+
+        result.async { r ->
+            assertTrue(r.isSuccess)
+            assertEquals(Unit, r.getOrNull())
+        }
     }
 
     private fun createMessage(chId: String = channelId, uId: String = userId): Message {

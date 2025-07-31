@@ -21,6 +21,7 @@ import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.internal.timer.createTimerManager
+import com.pubnub.chat.listeners.ConnectionStatus
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
 import com.pubnub.chat.message.UnreadMessagesCounts
@@ -314,6 +315,18 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     }
 
     override fun removeChannelGroup(id: String): PNFuture<Unit> {
+        TODO("Not yet implemented")
+    }
+
+    override fun addConnectionStatusListener(callback: (ConnectionStatus) -> Unit): AutoCloseable {
+        TODO("Not yet implemented")
+    }
+
+    override fun reconnectSubscriptions(): PNFuture<Unit> {
+        TODO("Not yet implemented")
+    }
+
+    override fun disconnectSubscriptions(): PNFuture<Unit> {
         TODO("Not yet implemented")
     }
 }

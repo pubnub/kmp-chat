@@ -21,6 +21,7 @@ import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
 import com.pubnub.kmp.toMap
+import listeners.ConnectionStatusJs
 import kotlin.js.Json
 import kotlin.js.Promise
 import kotlin.js.json
@@ -416,13 +417,33 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
     @Deprecated("Only for internal MessageDraft V1 use")
     fun getChannelSuggestions(text: String, options: GetSuggestionsParams?): Promise<Array<ChannelJs>> {
         val limit = options?.limit
-        val cacheKey = MessageElementsUtils.getChannelPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<ChannelJs>())
+        val cacheKey =
+            MessageElementsUtils.getChannelPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<ChannelJs>())
         return chat.getChannelSuggestions(cacheKey, limit?.toInt() ?: 10).then { channels ->
             channels.map { it.asJs(this@ChatJs) }.toTypedArray()
         }.asPromise()
     }
 
-    fun getMessageFromReport(eventJs: EventJs, lookupBeforeMillis: Int = 3000, lookupAfterMillis: Int = 5000): Promise<MessageJs?> {
+    fun addConnectionStatusListener(callback: (ConnectionStatusJs) -> Unit): () -> Unit {
+        val closeable = chat.addConnectionStatusListener { status ->
+            callback(ConnectionStatusJs(status))
+        }
+        return closeable::close
+    }
+
+    fun reconnectSubscriptions(): Promise<Any> {
+        return chat.reconnectSubscriptions().asPromise()
+    }
+
+    fun disconnectSubscriptions(): Promise<Any> {
+        return chat.disconnectSubscriptions().asPromise()
+    }
+
+    fun getMessageFromReport(
+        eventJs: EventJs,
+        lookupBeforeMillis: Int = 3000,
+        lookupAfterMillis: Int = 5000
+    ): Promise<MessageJs?> {
         val event = EventImpl(
             chat,
             eventJs.timetoken.toLong(),

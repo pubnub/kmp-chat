@@ -119,6 +119,16 @@ declare enum MessageActionType {
     DELETED = "deleted",
     EDITED = "edited"
 }
+declare class ConnectionStatusCategory {
+    readonly value: string;
+    toString(): string;
+    equals(other: ConnectionStatusCategory): boolean;
+    
+    static readonly PN_CONNECTION_ONLINE: ConnectionStatusCategory;
+    static readonly PN_CONNECTION_OFFLINE: ConnectionStatusCategory;
+    static readonly PN_CONNECTION_ERROR: ConnectionStatusCategory;
+}
+
 type TextMessageContent = {
     type: MessageType.TEXT;
     text: string;
@@ -799,6 +809,23 @@ declare class Chat {
      */
     getChannelGroup(id: string): ChannelGroup;
     removeChannelGroup(id: String): Promise<any>;
+
+    /**
+     * Add a listener for connection status changes
+     * @param callback Function to be called when connection status changes
+     * @returns Function to remove the listener
+     */
+    addConnectionStatusListener(callback: (status: ConnectionStatus) => void): () => void;
+
+    /**
+     * Reconnect all subscriptions
+     */
+    reconnectSubscriptions(): Promise<void>;
+
+    /**
+     * Disconnect all subscriptions
+     */
+    disconnectSubscriptions(): Promise<void>;
 }
 declare class ThreadMessage extends Message {
     readonly parentChannelId: string;
@@ -870,9 +897,14 @@ declare class ChannelGroup {
     }>;
 }
 
+declare class ConnectionStatus {
+    readonly category: ConnectionStatusCategory;
+    readonly exception?: PubNub.PubNubError; // PubNub.PubNubError is the JavaScript equivalent of Kotlin's PubNubException
+}
+
 declare const MESSAGE_THREAD_ID_PREFIX = "PUBNUB_INTERNAL_THREAD";
 declare const INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_";
 declare const INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL";
 declare const ERROR_LOGGER_KEY_PREFIX = "PUBNUB_INTERNAL_ERROR_LOGGER";
 declare const CryptoModule: typeof PubNub.CryptoModule;
-export { ChatConfig, Chat, ChannelFields, Channel, ChannelGroup, UserFields, User, MessageFields, Message, MembershipFields, Membership, ThreadChannel, ThreadMessage, MessageDraft, EventFields, Event, ChannelType, MessageType, MessageActionType, TextMessageContent, EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams, MessageActions, DeleteParameters, MessageMentionedUsers, MessageReferencedChannels, MessageDraftOptions, SendTextOptionParams, EnhancedMessageEvent, MessageDTOParams, ThreadMessageDTOParams, MembershipResponse, OptionalAllBut, ChannelDTOParams, ThreadChannelDTOParams, MessageDraftConfig, TextLink, GetLinkedTextParams, PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement, ErrorLoggerSetParams, ErrorLoggerImplementation, ChannelMentionData, ThreadMentionData, UserMentionData, TimetokenUtils, CryptoUtils, MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX, CryptoModule };
+export { ChatConfig, Chat, ChannelFields, Channel, ChannelGroup, ConnectionStatusCategory, ConnectionStatus, UserFields, User, MessageFields, Message, MembershipFields, Membership, ThreadChannel, ThreadMessage, MessageDraft, EventFields, Event, ChannelType, MessageType, MessageActionType, TextMessageContent, EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams, MessageActions, DeleteParameters, MessageMentionedUsers, MessageReferencedChannels, MessageDraftOptions, SendTextOptionParams, EnhancedMessageEvent, MessageDTOParams, ThreadMessageDTOParams, MembershipResponse, OptionalAllBut, ChannelDTOParams, ThreadChannelDTOParams, MessageDraftConfig, TextLink, GetLinkedTextParams, PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement, ErrorLoggerSetParams, ErrorLoggerImplementation, ChannelMentionData, ThreadMentionData, UserMentionData, TimetokenUtils, CryptoUtils, MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX, CryptoModule };

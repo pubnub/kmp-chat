@@ -1405,4 +1405,46 @@ describe("Channel test", () => {
     })
     expect(channelMetadata).toBeDefined()
   })
+
+  test("should properly disconnect from channel and stop receiving messages", async () => {
+    const testUser = await createRandomUser()
+    const directConversation = await chat.createDirectConversation({
+      user: testUser,
+      channelData: { name: "Test Direct Channel" }
+    })
+
+    const receivedMessages: Message[] = []
+    let callbackCount = 0
+    const messageCallback = (message: Message) => {
+      receivedMessages.push(message)
+      callbackCount++
+    }
+
+    const disconnect = directConversation.channel.connect(messageCallback)
+    await sleep(2000) // Increased wait time for connection to establish
+
+    // Send first message - should be received
+    const message1 = "Test message 1"
+    await directConversation.channel.sendText(message1)
+    await sleep(1000) // Increased wait time for message processing
+
+    expect(callbackCount).toBe(1)
+    expect(receivedMessages[0].content.text).toBe(message1)
+
+    disconnect()
+    await sleep(2000) // Increased wait time for disconnect to take effect
+
+    // Send second message - should NOT be received if disconnect works properly
+    const message2 = "Test message 2"
+    await directConversation.channel.sendText(message2)
+    await sleep(1000) // Increased wait time for message processing
+    expect(callbackCount).toBe(1)
+    expect(receivedMessages.length).toBe(1)
+    expect(receivedMessages[0].content.text).toBe(message1)
+
+    // Cleanup
+    await testUser.delete()
+    await directConversation.channel.delete()
+  }, 30000) // Added 30 second timeout
+
 })
