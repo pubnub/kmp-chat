@@ -1406,73 +1406,45 @@ describe("Channel test", () => {
     expect(channelMetadata).toBeDefined()
   })
 
-  test("should properly disconnect from channel and stop receiving messages with console logs", async () => {
-    console.log("\n=== Channel Disconnect Test ===")
-
-    // Create a test user and direct conversation
-    console.log("1. Creating test user...")
+  test("should properly disconnect from channel and stop receiving messages", async () => {
     const testUser = await createRandomUser()
-    console.log(`2. Test user created with ID: ${testUser.id}`)
-
-    console.log("3. Creating direct conversation...")
     const directConversation = await chat.createDirectConversation({
       user: testUser,
       channelData: { name: "Test Direct Channel" }
     })
-    console.log(`4. Direct conversation created with ID: ${directConversation.channel.id}`)
 
-    // Track received messages
     const receivedMessages: Message[] = []
     let callbackCount = 0
     const messageCallback = (message: Message) => {
-      console.log(`Received message: "${message.content.text}" at ${new Date().toISOString()}`)
       receivedMessages.push(message)
       callbackCount++
     }
 
-    // Connect to channel and setup message listener
-    console.log("5. Connecting to channel...")
     const disconnect = directConversation.channel.connect(messageCallback)
     await sleep(2000) // Increased wait time for connection to establish
-    console.log("6. Connection established")
 
     // Send first message - should be received
     const message1 = "Test message 1"
-    console.log(`7. Sending first message: "${message1}"`)
     await directConversation.channel.sendText(message1)
     await sleep(1000) // Increased wait time for message processing
 
-    console.log(`8. First message received. Callback called ${callbackCount} times`)
     expect(callbackCount).toBe(1)
     expect(receivedMessages[0].content.text).toBe(message1)
 
-    // Call disconnect
-    console.log("9. Calling disconnect...")
     disconnect()
     await sleep(2000) // Increased wait time for disconnect to take effect
-    console.log("10. Disconnect called")
 
     // Send second message - should NOT be received if disconnect works properly
     const message2 = "Test message 2"
-    console.log(`11. Sending second message: "${message2} t"`)
     await directConversation.channel.sendText(message2)
     await sleep(1000) // Increased wait time for message processing
-
-    // If disconnect works properly, callback should not be called again
-    // and receivedMessages should still only contain the first message
-    console.log(`12. Test complete. Final callback count: ${callbackCount}`)
-    console.log(`13. Total messages received: ${receivedMessages.length}`)
-    console.log("14. Messages received:", receivedMessages.map(m => m.content.text))
-
     expect(callbackCount).toBe(1)
     expect(receivedMessages.length).toBe(1)
     expect(receivedMessages[0].content.text).toBe(message1)
 
     // Cleanup
-    console.log("15. Cleaning up...")
     await testUser.delete()
     await directConversation.channel.delete()
-    console.log("=== Test Complete ===\n")
   }, 30000) // Added 30 second timeout
 
 })

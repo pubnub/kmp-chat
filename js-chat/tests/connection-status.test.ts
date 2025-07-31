@@ -38,7 +38,6 @@ describe("Connection Status test", () => {
             const interval = setInterval(() => {
                 if (predicate()) {
                     clearInterval(interval)
-                    console.log(`✅ Condition met: ${description} (${Date.now() - startTime}ms)`)
                     resolve()
                 } else if (Date.now() - startTime > timeoutMs) {
                     clearInterval(interval)
@@ -60,21 +59,17 @@ describe("Connection Status test", () => {
             eventCount++
             const statusValue = status.category.value
             eventHistory.push(statusValue)
-            console.log(`[${eventCount}] Status received: ${statusValue}`)
 
             // Track events based on sequence
             if (statusValue === ConnectionStatusCategory.PN_CONNECTION_ONLINE.value) {
                 if (!firstOnlineReceived) {
                     firstOnlineReceived = true
-                    console.log("  → First ONLINE event received")
                 } else if (offlineReceived && !secondOnlineReceived) {
                     secondOnlineReceived = true
-                    console.log("  → Second ONLINE event received (after reconnect)")
                 }
             }
             if (statusValue === ConnectionStatusCategory.PN_CONNECTION_OFFLINE.value) {
                 offlineReceived = true
-                console.log("  → OFFLINE event received")
             }
 
             // Validate ConnectionStatus object structure
@@ -154,7 +149,6 @@ describe("Connection Status test", () => {
                     await channelToDelete.delete()
                 }
             } catch (error) {
-                console.log("Error cleaning up channel:", error)
             }
         }
     }, 30000) // 30 second timeout for this comprehensive test
@@ -173,16 +167,13 @@ describe("Connection Status test", () => {
             eventCountFirstListener++
             const statusValue = status.category.value
             eventHistory.push(statusValue)
-            console.log(`[Listener 1] [${eventCountFirstListener}] Status received: ${statusValue}`)
 
             if (statusValue === ConnectionStatusCategory.PN_CONNECTION_ONLINE.value) {
                 onlineReceivedFirstListener = true
-                console.log("  → First ONLINE event received in Listener 1")
             }
 
             if (statusValue === ConnectionStatusCategory.PN_CONNECTION_OFFLINE.value) {
                 offlineReceivedFirstListener = true
-                console.log("  → First OFFLINE event received in Listener 1")
             }
 
             expect(status).toHaveProperty('category')
@@ -194,16 +185,13 @@ describe("Connection Status test", () => {
             eventCountSecondListener++
             const statusValue = status.category.value
             eventHistory.push(statusValue)
-            console.log(`[Listener 1] [${eventCountSecondListener}] Status received: ${statusValue}`)
 
             if (statusValue === ConnectionStatusCategory.PN_CONNECTION_ONLINE.value) {
                 onlineReceivedSecondListener = true
-                console.log("  → First ONLINE event received in Listener 1")
             }
 
             if (statusValue === ConnectionStatusCategory.PN_CONNECTION_OFFLINE.value) {
                 offlineReceivedSecondListener = true
-                console.log("  → First OFFLINE event received in Listener 1")
             }
 
             expect(status).toHaveProperty('category')
@@ -250,7 +238,6 @@ describe("Connection Status test", () => {
                     await channelToDelete.delete()
                 }
             } catch (error) {
-                console.log("Error cleaning up channel:", error)
             }
         }
     }, 30000) // 30 second timeout for this comprehensive test
