@@ -7,8 +7,10 @@ import com.pubnub.api.asMap
 import com.pubnub.api.asString
 import com.pubnub.api.decode
 import com.pubnub.api.enums.PNPushType
+import com.pubnub.api.enums.PNStatusCategory
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.PNStatus
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
@@ -35,6 +37,7 @@ import com.pubnub.api.utils.Clock
 import com.pubnub.api.utils.Instant
 import com.pubnub.api.utils.TimetokenUtil
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.api.v2.callbacks.StatusListener
 import com.pubnub.chat.Channel
 import com.pubnub.chat.ChannelGroup
 import com.pubnub.chat.Chat
@@ -85,6 +88,10 @@ import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.nullOn404
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.cyrb53a
+import com.pubnub.chat.listeners.ConnectionStatus
+import com.pubnub.chat.listeners.ConnectionStatusCategory.PN_CONNECTION_ERROR
+import com.pubnub.chat.listeners.ConnectionStatusCategory.PN_CONNECTION_OFFLINE
+import com.pubnub.chat.listeners.ConnectionStatusCategory.PN_CONNECTION_ONLINE
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.message.GetUnreadMessagesCounts
 import com.pubnub.chat.message.MarkAllMessageAsReadResponse
@@ -112,9 +119,12 @@ import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.catch
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.createEventListener
+import com.pubnub.kmp.createStatusListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import encodeForSending
+import kotlinx.atomicfu.locks.synchronized
+import kotlin.concurrent.Volatile
 import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -141,6 +151,10 @@ class ChatImpl(
 
     private var lastSavedActivityInterval: PlatformTimer? = null
     private var runWithDelayTimer: PlatformTimer? = null
+
+    @Volatile
+    private var connectionStatusListenersMap: Map<String, StatusListener> = emptyMap()
+    private val connectionStatusListenersLock = kotlinx.atomicfu.locks.SynchronizedObject()
 
     init {
         Logger.setMinSeverity(mapLogLevelFromConfigToKmLogging())
@@ -1141,6 +1155,76 @@ class ChatImpl(
             }
 
             else -> null.asFuture()
+        }
+    }
+
+    override fun addConnectionStatusListener(callback: (ConnectionStatus) -> Unit): AutoCloseable {
+        val listenerId: String = generateRandomUuid()
+        log.d { "Adding connection status listener [ID: $listenerId]" }
+
+        synchronized(connectionStatusListenersLock) {
+            val statusListener: StatusListener = createStatusListener(pubNub) { _, status: PNStatus ->
+                val logMessageBase =
+                    "Received PNStatus: ${status.category} for listener [ID: $listenerId] that resolves to"
+                when (status.category) {
+                    PNStatusCategory.PNConnectedCategory -> {
+                        log.d { "$logMessageBase $PN_CONNECTION_ONLINE" }
+                        callback(ConnectionStatus(PN_CONNECTION_ONLINE))
+                    }
+
+                    PNStatusCategory.PNSubscriptionChanged -> {
+                        // no action in this case
+                    }
+
+                    PNStatusCategory.PNUnexpectedDisconnectCategory, PNStatusCategory.PNConnectionError -> {
+                        log.d { "$logMessageBase $PN_CONNECTION_ERROR" }
+                        callback(
+                            ConnectionStatus(
+                                PN_CONNECTION_ERROR,
+                                status.exception
+                            )
+                        )
+                    }
+
+                    PNStatusCategory.PNDisconnectedCategory -> {
+                        log.d { "$logMessageBase $PN_CONNECTION_OFFLINE" }
+                        callback(ConnectionStatus(PN_CONNECTION_OFFLINE))
+                    }
+
+                    else -> {
+                        // Ignore other categories
+                    }
+                }
+            }
+            // Copy-on-write: create new map with the added listener
+            connectionStatusListenersMap = connectionStatusListenersMap + (listenerId to statusListener)
+            pubNub.addListener(statusListener)
+        }
+        return AutoCloseable {
+            removeConnectionStatusListener(listenerId)
+        }
+    }
+
+    override fun reconnectSubscriptions(): PNFuture<Unit> {
+        log.d { "Reconnecting PubNub subscriptions" }
+        pubNub.reconnect()
+        return Unit.asFuture()
+    }
+
+    override fun disconnectSubscriptions(): PNFuture<Unit> {
+        log.d { "Disconnecting PubNub subscriptions" }
+        pubNub.disconnect()
+        return Unit.asFuture()
+    }
+
+    private fun removeConnectionStatusListener(listenerId: String) {
+        log.d { "Removing connection status listener [ID: $listenerId]" }
+        synchronized(connectionStatusListenersLock) {
+            connectionStatusListenersMap[listenerId]?.let { statusListener ->
+                pubNub.removeListener(statusListener)
+                // Copy-on-write: create new map without the removed listener
+                connectionStatusListenersMap = connectionStatusListenersMap - listenerId
+            }
         }
     }
 
