@@ -193,10 +193,10 @@ class PubNubTest(
                     pnStatus.affectedChannels.containsAll(channels) && pnStatus.affectedChannelGroups.containsAll(
                         channelGroups
                     ) || (
-                            getSubscribedChannels().containsAll(channels) && getSubscribedChannelGroups().containsAll(
-                                channelGroups
-                            )
-                            )
+                        getSubscribedChannels().containsAll(channels) && getSubscribedChannelGroups().containsAll(
+                            channelGroups
+                        )
+                    )
                 ) {
                     if (!cont.isCompleted) {
                         cont.resume(Unit)
@@ -238,10 +238,10 @@ class PubNubTest(
                         }
                         if ((pnStatus.category == PNStatusCategory.PNDisconnectedCategory || pnStatus.category == PNStatusCategory.PNSubscriptionChanged) &&
                             (
-                                    pnStatus.affectedChannels.containsAll(channels) && pnStatus.affectedChannelGroups.containsAll(
-                                        channelGroups
-                                    )
-                                    )
+                                pnStatus.affectedChannels.containsAll(channels) && pnStatus.affectedChannelGroups.containsAll(
+                                    channelGroups
+                                )
+                            )
                         ) {
                             cont.resume(Unit)
                         }
