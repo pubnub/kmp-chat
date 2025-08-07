@@ -18,6 +18,7 @@ import {
 } from "./utils"
 
 import { jest } from "@jest/globals"
+import PubNub from "pubnub";
 
 describe("Channel test", () => {
   jest.retryTimes(3)
@@ -29,7 +30,8 @@ describe("Channel test", () => {
   let messageDraft: MessageDraft
 
   beforeAll(async () => {
-    chat = await createChatInstance()
+    // chat = await createChatInstance()
+    chat = await createChatInstance({config: { logLevel: PubNub.LogLevel.Debug }})
     chatPamServer = await createChatInstance( { shouldCreateNewInstance: true, clientType: 'PamServer' })
     chatPamServerWithRefIntegrity = await createChatInstance( { shouldCreateNewInstance: true, clientType: 'PamServerWithRefIntegrity' })
   })
@@ -1406,7 +1408,7 @@ describe("Channel test", () => {
     expect(channelMetadata).toBeDefined()
   })
 
-  test("should properly disconnect from channel and stop receiving messages", async () => {
+  test("should properly disconnect from channel and stop receiving messages (with connection status monitoring)", async () => {
     const testUser = await createRandomUser()
     const directConversation = await chat.createDirectConversation({
       user: testUser,
@@ -1416,35 +1418,182 @@ describe("Channel test", () => {
     const receivedMessages: Message[] = []
     let callbackCount = 0
     const messageCallback = (message: Message) => {
+      console.log(`[${new Date().toISOString()}] Message received:`, message.content.text)
       receivedMessages.push(message)
       callbackCount++
     }
 
+    // Add connection status listener
+    let connectionStatus = "unknown"
+    const removeStatusListener = chat.addConnectionStatusListener((status) => {
+      const newStatus = status.category.value
+      console.log(`[${new Date().toISOString()}] Connection status changed from ${connectionStatus} to ${newStatus}`)
+      connectionStatus = newStatus
+    })
+
+    console.log(`[${new Date().toISOString()}] Starting channel connect`)
     const disconnect = directConversation.channel.connect(messageCallback)
-    await sleep(2000) // Increased wait time for connection to establish
+    console.log(`[${new Date().toISOString()}] Channel connect returned, waiting for connection to establish`)
+    await sleep(5000) // Wait for connection to establish
 
     // Send first message - should be received
     const message1 = "Test message 1"
+    console.log(`[${new Date().toISOString()}] Sending first message: ${message1}`)
     await directConversation.channel.sendText(message1)
-    await sleep(1000) // Increased wait time for message processing
+    await sleep(2000) // Wait for message processing
 
     expect(callbackCount).toBe(1)
     expect(receivedMessages[0].content.text).toBe(message1)
 
+    console.log(`[${new Date().toISOString()}] Calling disconnect`)
     disconnect()
-    await sleep(2000) // Increased wait time for disconnect to take effect
+    console.log(`[${new Date().toISOString()}] Disconnect called, waiting for effect`)
+    await sleep(5000) // Wait for disconnect to take effect
 
     // Send second message - should NOT be received if disconnect works properly
     const message2 = "Test message 2"
+    console.log(`[${new Date().toISOString()}] Sending second message: ${message2}`)
     await directConversation.channel.sendText(message2)
-    await sleep(1000) // Increased wait time for message processing
-    expect(callbackCount).toBe(1)
-    expect(receivedMessages.length).toBe(1)
-    expect(receivedMessages[0].content.text).toBe(message1)
+    await sleep(2000) // Wait for message processing
+
+    console.log(`[${new Date().toISOString()}] Final state - received messages:`, receivedMessages.map(m => m.content.text))
+    expect(callbackCount).toBe(1),// "Should not receive messages after disconnect")
+    expect(receivedMessages.length).toBe(1), // "Should have only one message")
+    expect(receivedMessages[0].content.text).toBe(message1), // "Should only have first message")
 
     // Cleanup
+    removeStatusListener()
     await testUser.delete()
     await directConversation.channel.delete()
-  }, 30000) // Added 30 second timeout
+  }, 30000) // 30 second timeout
+
+  test("should handle React-like connect/disconnect scenario with timing analysis", async () => {
+    // Create a test channel with unique ID
+    const uniqueChannelId = `test-react-channel-${Date.now()}-${Math.random().toString(36).substring(2)}`
+    console.log(`[${new Date().toISOString()}] Creating test channel with ID:`, uniqueChannelId)
+    
+    // First check if channel exists and delete it
+    const existingChannel = await chat.getChannel(uniqueChannelId)
+    if (existingChannel) {
+      console.log(`[${new Date().toISOString()}] Found existing channel, deleting it`)
+      await existingChannel.delete()
+    }
+    
+    let channel;
+    try {
+      channel = await chat.createPublicConversation({
+        channelId: uniqueChannelId,
+        channelData: { name: "Test React Channel" }
+      });
+      console.log(`[${new Date().toISOString()}] Successfully created channel:`, uniqueChannelId);
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Failed to create channel:`, error);
+      throw error;
+    }
+
+    // Function to simulate React's useCallback hook behavior
+    const handleGetChannel = async () => {
+      console.log(`[${new Date().toISOString()}] start channel get`)
+      const channelResponse = await chat.getChannel(uniqueChannelId)
+      
+      if (channelResponse) {
+        console.log(`[${new Date().toISOString()}] successfully get channel:`, channelResponse.id)
+
+        
+        // Track messages with timestamps
+        const receivedMessages: Array<{text: string, timestamp: string, timeSinceDisconnect?: number}> = []
+        let disconnectTime: string | null = null
+        
+        const disconnect = channelResponse.connect(message => {
+          const timestamp = new Date().toISOString()
+          console.log(`[${timestamp}] message received:`, message.content.text)
+          const msgData = {
+            text: message.content.text,
+            timestamp,
+            timeSinceDisconnect: disconnectTime ? 
+              new Date(timestamp).getTime() - new Date(disconnectTime).getTime() : 
+              undefined
+          }
+          receivedMessages.push(msgData)
+          console.log('Message timing data:', msgData)
+        })
+        await sleep(2000)
+
+        // Test message sequence with different timing patterns
+        const sendMessageAndWait = async (text: string, waitMs: number) => {
+          const sendTime = new Date().toISOString()
+          console.log(`[${sendTime}] Sending message: ${text}`)
+          await channelResponse.sendText(text)
+          await sleep(waitMs)
+          return sendTime
+        }
+
+        // Send pre-disconnect messages
+        await sendMessageAndWait("Message 1 (pre-disconnect)", 2000)
+        await sendMessageAndWait("Message 2 (pre-disconnect)", 2000)
+        
+        // Call disconnect and track timing
+        console.log(`[${new Date().toISOString()}] Calling disconnect()`)
+        disconnectTime = new Date().toISOString()
+        disconnect()
+        
+        // Send post-disconnect messages at different intervals
+        const postDisconnectTiming = [0, 2000, 5000, 10000] // Delays in ms
+        for (let i = 0; i < postDisconnectTiming.length; i++) {
+          const delay = postDisconnectTiming[i]
+          if (delay > 0) await sleep(delay - (i > 0 ? postDisconnectTiming[i-1] : 0))
+          
+          await sendMessageAndWait(
+            `Message ${i + 3} (${delay}ms after disconnect)`, 
+            1000
+          )
+        }
+        
+        // Final wait to ensure no more messages arrive
+        await sleep(5000)
+        
+        // Analyze results
+        console.log('\nTest Results Analysis:')
+        console.log('Disconnect was called at:', disconnectTime)
+        console.log('\nReceived Messages:')
+        receivedMessages.forEach(msg => {
+          console.log(`- "${msg.text}"`)
+          console.log(`  Received at: ${msg.timestamp}`)
+          if (msg.timeSinceDisconnect !== undefined) {
+            console.log(`  Time since disconnect: ${msg.timeSinceDisconnect}ms`)
+          }
+        })
+
+        // Verify results
+        const messagesAfterDisconnect = receivedMessages.filter(msg => 
+          disconnectTime && new Date(msg.timestamp) > new Date(disconnectTime)
+        )
+        
+        if (messagesAfterDisconnect.length > 0) {
+          console.log('\nWARNING: Received messages after disconnect:')
+          messagesAfterDisconnect.forEach(msg => {
+            console.log(`- "${msg.text}" received ${msg.timeSinceDisconnect}ms after disconnect`)
+          })
+        }
+
+        expect(receivedMessages.length).toBeLessThanOrEqual(2, 
+          "Should only receive messages sent before disconnect")
+        
+        removeStatusListener()
+        return channelResponse
+      }
+      return null
+    }
+
+    // Simulate React's useEffect
+    await handleGetChannel()
+    
+    // Cleanup
+    const channelToDelete = await chat.getChannel(uniqueChannelId)
+    if (channelToDelete) {
+      console.log(`[${new Date().toISOString()}] Cleaning up - deleting test channel:`, uniqueChannelId)
+      await channelToDelete.delete()
+    }
+  }, 45000) // 45 second timeout
 
 })
