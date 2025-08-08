@@ -9,6 +9,8 @@ node_modules
 js-chat/dist
 js-chat/dist-test
 test.properties
+local.properties
+Sample\ Chat\ app/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
