@@ -643,7 +643,7 @@ type ChatConfig = {
     pushNotifications: {
         sendPushes: boolean;
         deviceToken?: string;
-        deviceGateway: "apns2" | "gcm";
+        deviceGateway: "apns2" | "fcm";
         apnsTopic?: string;
         apnsEnvironment: "development" | "production";
     };
