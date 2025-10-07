@@ -198,6 +198,100 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun streamUpdatesAndStreamUpdatesOnWithSoftDelete() = runTest {
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let { createCustomObject(it) },
+            channel01.type,
+            channel01.status
+        ).await()
+
+        // Send two messages
+        val tt1 = channel01.sendText("message1").await()
+        val tt2 = channel01.sendText("message2").await()
+        delayForHistory()
+
+        val message1 = channel01.getMessage(tt1.timetoken).await()!!
+        val message2 = channel01.getMessage(tt2.timetoken).await()!!
+
+        // Track updates from individual streamUpdates calls
+        val message1Updates = mutableListOf<Message>()
+        val message2Updates = mutableListOf<Message>()
+
+        // Track updates from streamUpdatesOn
+        val streamUpdatesOnCallbacks = mutableListOf<List<Message>>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var disposeStreamUpdates1: AutoCloseable? = null
+            var disposeStreamUpdates2: AutoCloseable? = null
+            var disposeStreamUpdatesOn: AutoCloseable? = null
+
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                // Set up individual streamUpdates for message1
+                disposeStreamUpdates1 = message1.streamUpdates<Message> { updatedMessage ->
+                    message1Updates.add(updatedMessage)
+                }
+
+                // Set up individual streamUpdates for message2
+                disposeStreamUpdates2 = message2.streamUpdates<Message> { updatedMessage ->
+                    message2Updates.add(updatedMessage)
+                }
+
+                // Set up streamUpdatesOn for both messages
+                disposeStreamUpdatesOn = BaseMessage.streamUpdatesOn(listOf(message1, message2)) { messages ->
+                    streamUpdatesOnCallbacks.add(messages.sortedBy { it.timetoken })
+                }
+            }
+
+            // Soft delete message1 - should trigger callbacks
+            message1.delete(soft = true).await()
+            delayInMillis(500)
+
+            // Soft delete message2 - should trigger callbacks
+            message2.delete(soft = true).await()
+            delayInMillis(1000)
+
+            // Clean up listeners
+            disposeStreamUpdates1?.close()
+            disposeStreamUpdates2?.close()
+            disposeStreamUpdatesOn?.close()
+        }
+
+        // Verify that streamUpdates callbacks were triggered
+        assertEquals(1, message1Updates.size, "message1.streamUpdates should receive 1 update")
+        assertEquals(1, message2Updates.size, "message2.streamUpdates should receive 1 update")
+
+        // Verify the deleted flag is set on individual updates
+        assertTrue(message1Updates[0].deleted, "message1 should be marked as deleted")
+        assertTrue(message2Updates[0].deleted, "message2 should be marked as deleted")
+
+        // Verify timetokens are preserved
+        assertEquals(message1.timetoken, message1Updates[0].timetoken)
+        assertEquals(message2.timetoken, message2Updates[0].timetoken)
+
+        // Verify that streamUpdatesOn callbacks were triggered
+        assertEquals(2, streamUpdatesOnCallbacks.size, "streamUpdatesOn should receive 2 updates (one for each delete)")
+
+        // First callback: message1 deleted, message2 not deleted yet
+        val firstUpdate = streamUpdatesOnCallbacks[0]
+        assertEquals(2, firstUpdate.size)
+        val firstUpdateMsg1 = firstUpdate.find { it.timetoken == message1.timetoken }!!
+        val firstUpdateMsg2 = firstUpdate.find { it.timetoken == message2.timetoken }!!
+        assertTrue(firstUpdateMsg1.deleted, "message1 should be deleted in first update")
+        assertFalse(firstUpdateMsg2.deleted, "message2 should not be deleted in first update")
+
+        // Second callback: both messages deleted
+        val secondUpdate = streamUpdatesOnCallbacks[1]
+        assertEquals(2, secondUpdate.size)
+        val secondUpdateMsg1 = secondUpdate.find { it.timetoken == message1.timetoken }!!
+        val secondUpdateMsg2 = secondUpdate.find { it.timetoken == message2.timetoken }!!
+        assertTrue(secondUpdateMsg1.deleted, "message1 should be deleted in second update")
+        assertTrue(secondUpdateMsg2.deleted, "message2 should be deleted in second update")
+    }
+
+    @Test
     fun addReactionToMessageThenCheckIfPresent() = runTest {
         val reactionValue = "wow"
         val messageText = "messageText_${randomString()}"
