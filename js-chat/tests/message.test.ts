@@ -1760,4 +1760,98 @@ describe("Send message test", () => {
     expect(historyObject.messages[0].text).toBe("Hello encrypted world!")
     expect(historyObject.messages[1].text).toBe("Hello encrypted world! Number 2")
   })
+
+  test("should receive streamUpdates and streamUpdatesOn callbacks when soft deleting messages", async () => {
+    // Establish a connection to the channel first
+    const receivedMessages: Message[] = []
+    const disconnect = channel.connect((message) => {
+      receivedMessages.push(message)
+    })
+    await sleep(500)
+
+    // Send two messages
+    await channel.sendText("message1")
+    await channel.sendText("message2")
+    await sleep(500)
+
+    // Get messages from history
+    const history = await channel.getHistory()
+    const message1 = history.messages[history.messages.length - 2]
+    const message2 = history.messages[history.messages.length - 1]
+
+    // Track updates from individual streamUpdates calls
+    const message1Updates: Message[] = []
+    const message2Updates: Message[] = []
+
+    // Track updates from streamUpdatesOn
+    const streamUpdatesOnCallbacks: Message[][] = []
+
+    // Set up individual streamUpdates for both messages
+    const unsubscribe1 = message1.streamUpdates((updatedMessage: Message) => {
+      message1Updates.push(updatedMessage)
+    })
+
+    const unsubscribe2 = message2.streamUpdates((updatedMessage: Message) => {
+      message2Updates.push(updatedMessage)
+    })
+
+    // Set up streamUpdatesOn for both messages
+    const unsubscribeOn = Message.streamUpdatesOn([message1, message2], (messages: Message[]) => {
+      streamUpdatesOnCallbacks.push([...messages].sort((a, b) => Number(a.timetoken) - Number(b.timetoken)))
+    })
+
+    // Wait significantly longer for subscriptions to be fully established
+    // streamUpdatesOn creates internal subscriptions that need time to connect
+    await sleep(5000)
+
+    // Soft delete message1 - should trigger callbacks
+    await message1.delete({ soft: true })
+    await sleep(2000)
+
+    // Soft delete message2 - should trigger callbacks
+    await message2.delete({ soft: true })
+    await sleep(3000)
+
+    // Clean up listeners
+    unsubscribe1()
+    unsubscribe2()
+    unsubscribeOn()
+    disconnect()
+
+    console.log("message1Updates.length:", message1Updates.length)
+    console.log("message2Updates.length:", message2Updates.length)
+    console.log("streamUpdatesOnCallbacks.length:", streamUpdatesOnCallbacks.length)
+
+    // Verify that streamUpdates callbacks were triggered
+    expect(message1Updates.length).toBeGreaterThanOrEqual(1)
+    expect(message2Updates.length).toBeGreaterThanOrEqual(1)
+
+    // Verify the deleted flag is set on individual updates
+    expect(message1Updates[message1Updates.length - 1].deleted).toBe(true)
+    expect(message2Updates[message2Updates.length - 1].deleted).toBe(true)
+
+    // Verify timetokens are preserved
+    expect(message1Updates[message1Updates.length - 1].timetoken).toBe(message1.timetoken)
+    expect(message2Updates[message2Updates.length - 1].timetoken).toBe(message2.timetoken)
+
+    // Verify that streamUpdatesOn callbacks were triggered
+    expect(streamUpdatesOnCallbacks.length).toBeGreaterThanOrEqual(2)
+
+    // Verify the progression: first update shows message1 deleted, second shows both deleted
+    if (streamUpdatesOnCallbacks.length >= 2) {
+      const firstUpdate = streamUpdatesOnCallbacks[0]
+      expect(firstUpdate.length).toBe(2)
+      const firstMsg1 = firstUpdate.find((m) => m.timetoken === message1.timetoken)
+      const firstMsg2 = firstUpdate.find((m) => m.timetoken === message2.timetoken)
+      expect(firstMsg1?.deleted).toBe(true)
+      expect(firstMsg2?.deleted).toBe(false)
+
+      const secondUpdate = streamUpdatesOnCallbacks[1]
+      expect(secondUpdate.length).toBe(2)
+      const secondMsg1 = secondUpdate.find((m) => m.timetoken === message1.timetoken)
+      const secondMsg2 = secondUpdate.find((m) => m.timetoken === message2.timetoken)
+      expect(secondMsg1?.deleted).toBe(true)
+      expect(secondMsg2?.deleted).toBe(true)
+    }
+  }, 35000)
 })

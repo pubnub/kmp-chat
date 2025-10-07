@@ -67,7 +67,7 @@ open class MessageJs internal constructor(internal val message: Message, interna
         }.toJsMap()
 
     fun streamUpdates(callback: (MessageJs?) -> Unit): () -> Unit {
-        return message.streamUpdates<Message> { it.asJs(chatJs) }::close
+        return message.streamUpdates<Message> { callback(it.asJs(chatJs)) }::close
     }
 
     fun getLinkedText() = getMessageElements()
