@@ -55,8 +55,10 @@ import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.serialization.ExperimentalSerializationApi
 import tryInt
+import kotlin.concurrent.Volatile
 
 typealias Actions = Map<String, Map<String, List<PNFetchMessageItem.Action>>>
 
@@ -343,6 +345,73 @@ abstract class BaseMessage<T : Message>(
     companion object {
         private val log = Logger.withTag("BaseMessageImpl")
 
+        // Reference counting for subscriptions per chat instance and channel
+        // Map: Chat instance -> (Channel ID -> Subscription Info)
+        // Using @Volatile for thread-safe publication and copy-on-write pattern for updates
+        @Volatile
+        private var subscriptionRegistry: Map<ChatInternal, Map<String, SubscriptionInfo>> = emptyMap()
+        private val subscriptionRegistryLock = kotlinx.atomicfu.locks.SynchronizedObject()
+
+        private data class SubscriptionInfo(
+            val refCount: Int,
+            val subscriptionSet: com.pubnub.api.v2.subscriptions.SubscriptionSet
+        )
+
+        /**
+         * Acquires a subscription for the given channel.
+         * @return true if this is the first reference and subscription needs to be established
+         */
+        private fun acquireSubscription(chat: ChatInternal, channelId: String): Boolean {
+            return synchronized(subscriptionRegistryLock) {
+                val chatRegistry = subscriptionRegistry[chat] ?: emptyMap()
+                val info = chatRegistry[channelId]
+
+                if (info != null) {
+                    // Already have a subscription, increment ref count (copy-on-write)
+                    val updatedInfo = info.copy(refCount = info.refCount + 1)
+                    val updatedChatRegistry = chatRegistry + (channelId to updatedInfo)
+                    subscriptionRegistry = subscriptionRegistry + (chat to updatedChatRegistry)
+                    false // Don't need to subscribe
+                } else {
+                    // First reference, create subscription info
+                    val subscriptionSet = chat.pubNub.subscriptionSetOf(setOf(channelId))
+                    val newInfo = SubscriptionInfo(1, subscriptionSet)
+                    val updatedChatRegistry = chatRegistry + (channelId to newInfo)
+                    subscriptionRegistry = subscriptionRegistry + (chat to updatedChatRegistry)
+                    true // Need to subscribe
+                }
+            }
+        }
+
+        /**
+         * Releases a subscription for the given channel.
+         * @return SubscriptionSet if this was the last reference and it should be unsubscribed, null otherwise
+         */
+        private fun releaseSubscription(chat: ChatInternal, channelId: String): com.pubnub.api.v2.subscriptions.SubscriptionSet? {
+            return synchronized(subscriptionRegistryLock) {
+                val chatRegistry = subscriptionRegistry[chat] ?: return@synchronized null
+                val info = chatRegistry[channelId] ?: return@synchronized null
+
+                val newRefCount = info.refCount - 1
+                if (newRefCount == 0) {
+                    // Last reference, remove from registry (copy-on-write)
+                    val updatedChatRegistry = chatRegistry - channelId
+                    subscriptionRegistry = if (updatedChatRegistry.isEmpty()) {
+                        subscriptionRegistry - chat
+                    } else {
+                        subscriptionRegistry + (chat to updatedChatRegistry)
+                    }
+                    info.subscriptionSet // Return for unsubscription
+                } else {
+                    // Still have other references, update count (copy-on-write)
+                    val updatedInfo = info.copy(refCount = newRefCount)
+                    val updatedChatRegistry = chatRegistry + (channelId to updatedInfo)
+                    subscriptionRegistry = subscriptionRegistry + (chat to updatedChatRegistry)
+                    null // Don't unsubscribe
+                }
+            }
+        }
+
         fun <T : Message> streamUpdatesOn(
             messages: Collection<T>,
             callback: (messages: Collection<T>) -> Unit,
@@ -351,7 +420,7 @@ abstract class BaseMessage<T : Message>(
                 log.pnError(CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST)
             }
             var latestMessages = messages
-            val chat = messages.first().chat
+            val chat = (messages.first() as BaseMessage<*>).chat
             val listener = createEventListener(chat.pubNub, onMessageAction = { _, event ->
                 val message =
                     latestMessages.find { it.timetoken == event.messageAction.messageTimetoken }
@@ -381,12 +450,39 @@ abstract class BaseMessage<T : Message>(
                 callback(latestMessages)
             })
 
-            val subscriptionSet = chat.pubNub.subscriptionSetOf(
-                messages.map { it.channelId }.toSet()
-            )
-            subscriptionSet.addListener(listener)
-            subscriptionSet.subscribe()
-            return subscriptionSet
+            val channelIds = messages.map { it.channelId }.toSet()
+
+            // Acquire subscriptions (increments ref count, returns true if needs to subscribe)
+            val needsSubscription = mutableListOf<String>()
+            channelIds.forEach { channelId ->
+                if (acquireSubscription(chat, channelId)) {
+                    needsSubscription.add(channelId)
+                }
+            }
+
+            // Subscribe for channels that need it (first reference)
+            if (needsSubscription.isNotEmpty()) {
+                needsSubscription.forEach { channelId ->
+                    // Get the subscription info and subscribe
+                    subscriptionRegistry[chat]?.get(channelId)?.subscriptionSet?.subscribe()
+                }
+            }
+
+            // Add listener to PubNub instance (receives events from any subscription)
+            chat.pubNub.addListener(listener)
+
+            // Return AutoCloseable that removes listener and releases subscriptions
+            return AutoCloseable {
+                chat.pubNub.removeListener(listener)
+
+                // Release subscriptions (decrements ref count, returns subscription if last reference)
+                channelIds.forEach { channelId ->
+                    releaseSubscription(chat, channelId)?.let { subscriptionSet ->
+                        // Last reference, unsubscribe
+                        subscriptionSet.unsubscribe()
+                    }
+                }
+            }
         }
 
         internal fun JsonElement?.extractMentionedUsers(): MessageMentionedUsers? {
