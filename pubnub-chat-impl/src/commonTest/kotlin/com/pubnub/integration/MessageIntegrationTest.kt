@@ -292,6 +292,83 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun streamUpdatesOnWithIncrementalSubscription() = runTest {
+        // Simulate the React useEffect pattern: receive messages and set up streamUpdatesOn for each as it arrives
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let { createCustomObject(it) },
+            channel01.type,
+            channel01.status
+        ).await()
+
+        val receivedMessages = mutableListOf<Message>()
+        val allUpdates = mutableListOf<Pair<Long, String>>() // Track (timetoken, text) updates
+        val updateListeners = mutableMapOf<Long, AutoCloseable>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var disconnect: AutoCloseable? = null
+
+            // Set up message listener
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                disconnect = channel01.connect { message ->
+                    receivedMessages.add(message)
+
+                    // For each message as it arrives, set up streamUpdatesOn (mimicking React useEffect)
+                    if (!updateListeners.containsKey(message.timetoken)) {
+                        val stop = BaseMessage.streamUpdatesOn(listOf(message)) { updatedMessages ->
+                            updatedMessages.forEach { msg ->
+                                allUpdates.add(Pair(msg.timetoken, msg.text))
+                            }
+                        }
+                        updateListeners[message.timetoken] = stop
+                    }
+                }
+            }
+
+            // Publisher sends messages with delays (simulating real-world scenario)
+            val message1 = channel01.sendText("Message 0 published").await()
+            delayInMillis(500)
+            val message2 = channel01.sendText("Message 1 published").await()
+            delayInMillis(500)
+            val message3 = channel01.sendText("Message 2 published").await()
+            delayInMillis(500)
+            val message4 = channel01.sendText("Message 3 published").await()
+            delayInMillis(500)
+            val message5 = channel01.sendText("Message 4 published ").await()
+
+            // Wait for all messages to be received
+            delayInMillis(2000)
+            assertEquals(5, receivedMessages.size, "Should receive all 5 messages")
+            assertEquals(5, updateListeners.size, "Should have 5 streamUpdatesOn listeners")
+
+            // Now edit two of the messages
+            val msg1 = receivedMessages[0]
+            val msg2 = receivedMessages[1]
+
+            msg1.editText("Edited message 0").await()
+            delayInMillis(1000)
+            msg2.editText("Edited message 1").await()
+            delayInMillis(1000)
+
+            // Verify we received update callbacks
+            assertTrue(allUpdates.size >= 2, "Should receive at least 2 updates, got ${allUpdates.size}")
+
+            // Verify the updates contain edited text
+            val hasEditedMsg0 = allUpdates.any { it.first == msg1.timetoken && it.second == "Edited message 0" }
+            val hasEditedMsg1 = allUpdates.any { it.first == msg2.timetoken && it.second == "Edited message 1" }
+
+            assertTrue(hasEditedMsg0, "Should receive update for edited message 0")
+            assertTrue(hasEditedMsg1, "Should receive update for edited message 1")
+
+            // Clean up
+            updateListeners.values.forEach { it.close() }
+            disconnect?.close()
+        }
+    }
+
+    @Test
     fun addReactionToMessageThenCheckIfPresent() = runTest {
         val reactionValue = "wow"
         val messageText = "messageText_${randomString()}"
