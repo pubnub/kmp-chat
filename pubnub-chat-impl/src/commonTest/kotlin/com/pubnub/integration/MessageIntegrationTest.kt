@@ -1,5 +1,6 @@
 package com.pubnub.integration
 
+import com.pubnub.api.enums.PNStatusCategory
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
@@ -17,10 +18,12 @@ import com.pubnub.chat.types.MessageActionType
 import com.pubnub.internal.PLATFORM
 import com.pubnub.kmp.Uploadable
 import com.pubnub.kmp.createCustomObject
+import com.pubnub.kmp.createStatusListener
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
 import delayForHistory
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -292,6 +295,365 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun streamUpdateOn_onTheSameChannelShouldNotCallSubscribe() = runTest {
+        if (PLATFORM == "iOS") { // Swift core doesn't send PNSubscriptionChangeCategory if subscribing to already subscribed channel
+            return@runTest
+        }
+        if (PLATFORM == "JS") { // JS doesn't have EventEngine enabled by default
+            return@runTest
+        }
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let { createCustomObject(it) },
+            channel01.type,
+            channel01.status
+        ).await()
+
+        val receivedMessages = mutableListOf<Message>()
+        val updateListeners = mutableMapOf<Long, AutoCloseable>()
+        val receivedSubscriptionChangeEvents = atomic(0)
+
+        chat.pubNub.addListener(
+            createStatusListener(
+                chat.pubNub,
+                onStatus = { _, status ->
+                    // Handle connection status updates
+                    println("Connection Status: ${status.category}")
+                    if (status.category == PNStatusCategory.PNSubscriptionChanged) {
+                        receivedSubscriptionChangeEvents.incrementAndGet()
+                    }
+                }
+            )
+        )
+
+        val disconnect: AutoCloseable = channel01.connect { message ->
+            println("-= received ${message.text}")
+            receivedMessages.add(message)
+
+            // For each message as it arrives, set up streamUpdatesOn (mimicking React useEffect)
+            if (!updateListeners.containsKey(message.timetoken)) {
+                val stop = BaseMessage.streamUpdatesOn(
+                    listOf(message)
+                ) { updatedMessages ->
+                    updatedMessages.forEach { msg ->
+                        println("-= Update: timetoken=${msg.timetoken}, text=${msg.text}, deleted=${msg.deleted}")
+                    }
+                }
+                updateListeners[message.timetoken] = stop
+            }
+        }
+
+        // Publisher sends messages with delays (simulating real-world scenario)
+        delayInMillis(2000)
+        val message1 = channel01.sendText("Message 0 published").await()
+        delayInMillis(500)
+        val message2 = channel01.sendText("Message 1 published").await()
+        delayInMillis(500)
+        val message3 = channel01.sendText("Message 2 published").await()
+        delayInMillis(500)
+        val message4 = channel01.sendText("Message 3 published").await()
+        delayInMillis(500)
+        val message5 = channel01.sendText("Message 4 published ").await()
+
+        // Wait for all messages to be received
+        delayInMillis(2000)
+        assertEquals(5, receivedMessages.size, "Should receive all 5 messages")
+        assertEquals(5, updateListeners.size, "Should have 5 streamUpdatesOn listeners")
+        assertEquals(1, receivedSubscriptionChangeEvents.value)
+
+        // Clean up
+        updateListeners.values.forEach { it.close() }
+        disconnect?.close()
+    }
+
+    @Test
+    fun streamUpdatesOnWithIncrementalSubscription() = runTest {
+        // Simulate the React useEffect pattern: receive messages and set up streamUpdatesOn for each as it arrives
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let { createCustomObject(it) },
+            channel01.type,
+            channel01.status
+        ).await()
+
+        val receivedMessages = mutableListOf<Message>()
+        val allUpdates = mutableListOf<Pair<Long, String>>() // Track (timetoken, text) updates
+        val updateListeners = mutableMapOf<Long, AutoCloseable>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var disconnect: AutoCloseable? = null
+
+            // Set up message listener
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                disconnect = channel01.connect { message ->
+                    receivedMessages.add(message)
+
+                    // For each message as it arrives, set up streamUpdatesOn (mimicking React useEffect)
+                    if (!updateListeners.containsKey(message.timetoken)) {
+                        val stop = BaseMessage.streamUpdatesOn(listOf(message)) { updatedMessages ->
+                            updatedMessages.forEach { msg ->
+                                allUpdates.add(Pair(msg.timetoken, msg.text))
+                            }
+                        }
+                        updateListeners[message.timetoken] = stop
+                    }
+                }
+            }
+
+            // Publisher sends messages with delays (simulating real-world scenario)
+            val message1 = channel01.sendText("Message 0 published").await()
+            delayInMillis(500)
+            val message2 = channel01.sendText("Message 1 published").await()
+            delayInMillis(500)
+            val message3 = channel01.sendText("Message 2 published").await()
+            delayInMillis(500)
+            val message4 = channel01.sendText("Message 3 published").await()
+            delayInMillis(500)
+            val message5 = channel01.sendText("Message 4 published ").await()
+
+            // Wait for all messages to be received
+            delayInMillis(2000)
+            assertEquals(5, receivedMessages.size, "Should receive all 5 messages")
+            assertEquals(5, updateListeners.size, "Should have 5 streamUpdatesOn listeners")
+
+            // Now edit two of the messages
+            val msg1 = receivedMessages[0]
+            val msg2 = receivedMessages[1]
+
+            msg1.editText("Edited message 0").await()
+            delayInMillis(1000)
+            msg2.editText("Edited message 1").await()
+            delayInMillis(1000)
+
+            // Verify we received update callbacks
+            assertTrue(allUpdates.size >= 2, "Should receive at least 2 updates, got ${allUpdates.size}")
+
+            // Verify the updates contain edited text
+            val hasEditedMsg0 = allUpdates.any { it.first == msg1.timetoken && it.second == "Edited message 0" }
+            val hasEditedMsg1 = allUpdates.any { it.first == msg2.timetoken && it.second == "Edited message 1" }
+
+            assertTrue(hasEditedMsg0, "Should receive update for edited message 0")
+            assertTrue(hasEditedMsg1, "Should receive update for edited message 1")
+
+            // Clean up
+            updateListeners.values.forEach { it.close() }
+            disconnect?.close()
+        }
+    }
+
+    @Test
+    fun streamUpdatesOn_withMessagesFromTwoDifferentChannels() = runTest {
+        // Create two different channels
+        val channel02Id = "channel_${randomString()}"
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let { createCustomObject(it) },
+            channel01.type,
+            channel01.status
+        ).await()
+        val channel02 = chat.createChannel(
+            channel02Id,
+            "Channel 02",
+            "Second test channel"
+        ).await()
+
+        // Send messages to both channels
+        val tt1Channel01 = channel01.sendText("Message on channel 1").await()
+        val tt2Channel02 = channel02.sendText("Message on channel 2").await()
+        delayForHistory()
+
+        val messageChannel01 = channel01.getMessage(tt1Channel01.timetoken).await()!!
+        val messageChannel02 = channel02.getMessage(tt2Channel02.timetoken).await()!!
+
+        // Track callback invocations to verify proper listener scoping
+        val callbackCount = atomic(0)
+        val allUpdates = mutableListOf<List<Message>>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+
+            // Subscribe to both channels
+            pubnub.awaitSubscribe(listOf(channel01.id, channel02Id)) {
+                // Call streamUpdatesOn with messages from BOTH channels
+                dispose = BaseMessage.streamUpdatesOn(listOf(messageChannel01, messageChannel02)) { messages ->
+                    callbackCount.incrementAndGet()
+                    allUpdates.add(messages.toList())
+                }
+            }
+
+            // Edit message on channel 1
+            messageChannel01.editText("Edited on channel 1").await()
+            delayInMillis(500)
+
+            // Edit message on channel 2
+            messageChannel02.editText("Edited on channel 2").await()
+            delayInMillis(500)
+
+            // Verify callback was invoked twice (once per edit)
+            assertEquals(2, callbackCount.value, "Callback should be invoked twice (once per channel edit)")
+
+            // Verify the messages in the updates
+            assertTrue(allUpdates.size >= 2, "Should have at least 2 callback invocations")
+            val firstUpdate = allUpdates[0]
+            val secondUpdate = allUpdates[1]
+
+            // Each callback should contain both messages (the full collection)
+            assertEquals(2, firstUpdate.size, "Each callback should receive all tracked messages")
+            assertEquals(2, secondUpdate.size, "Each callback should receive all tracked messages")
+
+            // Verify at least one message was edited to the expected text
+            assertTrue(
+                allUpdates.any { update -> update.any { it.text == "Edited on channel 1" } },
+                "Should have update with 'Edited on channel 1'"
+            )
+            assertTrue(
+                allUpdates.any { update -> update.any { it.text == "Edited on channel 2" } },
+                "Should have update with 'Edited on channel 2'"
+            )
+
+            // Clear tracking to test post-cleanup behavior
+            callbackCount.value = 0
+            allUpdates.clear()
+
+            // Close the AutoCloseable - this should:
+            // 1. Remove listeners from both subscriptions
+            // 2. Unsubscribe from both channels (as this is the only reference)
+            dispose?.close()
+
+            // Wait a bit to ensure cleanup is complete
+            delayInMillis(500)
+
+            // Edit messages again - NO updates should be received after cleanup
+            messageChannel01.editText("Should not be received 1").await()
+            delayInMillis(500)
+            messageChannel02.editText("Should not be received 2").await()
+            delayInMillis(500)
+
+            // Verify NO updates were received after closing
+            assertEquals(
+                0,
+                callbackCount.value,
+                "No callbacks should be invoked after cleanup"
+            )
+            assertEquals(
+                0,
+                allUpdates.size,
+                "No updates should be received after cleanup"
+            )
+        }
+    }
+
+    @Test
+    fun streamUpdatesOn_independentCleanupForTwoDifferentChannels() = runTest {
+        // Create two different channels
+        val channel02Id = "channel_${randomString()}"
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let { createCustomObject(it) },
+            channel01.type,
+            channel01.status
+        ).await()
+        val channel02 = chat.createChannel(
+            channel02Id,
+            "Channel 02",
+            "Second test channel"
+        ).await()
+
+        // Send messages to both channels
+        val tt1Channel01 = channel01.sendText("Message on channel 1").await()
+        val tt2Channel02 = channel02.sendText("Message on channel 2").await()
+        delayForHistory()
+
+        val messageChannel01 = channel01.getMessage(tt1Channel01.timetoken).await()!!
+        val messageChannel02 = channel02.getMessage(tt2Channel02.timetoken).await()!!
+
+        // Track updates per channel
+        val channel01Updates = mutableListOf<Message>()
+        val channel02Updates = mutableListOf<Message>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose1: AutoCloseable? = null
+            var dispose2: AutoCloseable? = null
+
+            // Subscribe to both channels
+            pubnub.awaitSubscribe(listOf(channel01.id, channel02Id)) {
+                // Call streamUpdatesOn SEPARATELY for each channel - this tests reference counting!
+                dispose1 = BaseMessage.streamUpdatesOn(listOf(messageChannel01)) { messages ->
+                    messages.forEach { msg -> channel01Updates.add(msg) }
+                }
+
+                dispose2 = BaseMessage.streamUpdatesOn(listOf(messageChannel02)) { messages ->
+                    messages.forEach { msg -> channel02Updates.add(msg) }
+                }
+            }
+
+            // Edit both messages - both should receive updates
+            messageChannel01.editText("Edit 1 on channel 1").await()
+            delayInMillis(500)
+            messageChannel02.editText("Edit 1 on channel 2").await()
+            delayInMillis(500)
+
+            assertEquals(1, channel01Updates.size, "Channel 1 should receive 1 update")
+            assertEquals(1, channel02Updates.size, "Channel 2 should receive 1 update")
+            assertEquals("Edit 1 on channel 1", channel01Updates[0].text)
+            assertEquals("Edit 1 on channel 2", channel02Updates[0].text)
+
+            // Clear for next phase
+            channel01Updates.clear()
+            channel02Updates.clear()
+
+            // CRITICAL TEST: Close dispose1 (channel01) but keep dispose2 (channel02) active
+            dispose1?.close()
+            delayInMillis(500)
+
+            // Edit both messages again
+            messageChannel01.editText("Edit 2 on channel 1").await()
+            delayInMillis(500)
+            messageChannel02.editText("Edit 2 on channel 2").await()
+            delayInMillis(500)
+
+            // Channel01 should NOT receive update (closed), but channel02 SHOULD (still active)
+            assertEquals(
+                0,
+                channel01Updates.size,
+                "Channel 1 should NOT receive updates after dispose1.close()"
+            )
+            assertEquals(
+                1,
+                channel02Updates.size,
+                "Channel 2 SHOULD still receive updates (dispose2 still active)"
+            )
+            assertEquals("Edit 2 on channel 2", channel02Updates[0].text)
+
+            // Clear for final phase
+            channel02Updates.clear()
+
+            // Now close dispose2 (channel02)
+            dispose2?.close()
+            delayInMillis(500)
+
+            // Edit channel02 message again
+            messageChannel02.editText("Edit 3 on channel 2").await()
+            delayInMillis(500)
+
+            // Channel02 should now also NOT receive updates
+            assertEquals(
+                0,
+                channel02Updates.size,
+                "Channel 2 should NOT receive updates after dispose2.close()"
+            )
+        }
+    }
+
+    @Test
     fun addReactionToMessageThenCheckIfPresent() = runTest {
         val reactionValue = "wow"
         val messageText = "messageText_${randomString()}"
@@ -305,7 +667,8 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         assertTrue(messageWithReaction.hasUserReaction(reactionValue))
 
         delayForHistory()
-        val messageWithReactionFromHistory: Message = channel01.getHistory(publishTimetoken + 1, publishTimetoken).await().messages.first()
+        val messageWithReactionFromHistory: Message =
+            channel01.getHistory(publishTimetoken + 1, publishTimetoken).await().messages.first()
 
         assertTrue(messageWithReactionFromHistory.hasUserReaction(reactionValue))
     }
