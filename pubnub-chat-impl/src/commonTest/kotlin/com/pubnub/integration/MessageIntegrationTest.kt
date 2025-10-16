@@ -1,6 +1,10 @@
 package com.pubnub.integration
 
+import com.pubnub.api.PubNub
+import com.pubnub.api.enums.PNStatusCategory
+import com.pubnub.api.models.consumer.PNStatus
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
+import com.pubnub.api.v2.callbacks.StatusListener
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
@@ -21,6 +25,7 @@ import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
 import delayForHistory
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -289,6 +294,70 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val secondUpdateMsg2 = secondUpdate.find { it.timetoken == message2.timetoken }!!
         assertTrue(secondUpdateMsg1.deleted, "message1 should be deleted in second update")
         assertTrue(secondUpdateMsg2.deleted, "message2 should be deleted in second update")
+    }
+
+    @Test
+    fun streamUpdateOn_onTheSameChannelShouldNotCallSubscribe() = runTest {
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let { createCustomObject(it) },
+            channel01.type,
+            channel01.status
+        ).await()
+
+        val receivedMessages = mutableListOf<Message>()
+        val updateListeners = mutableMapOf<Long, AutoCloseable>()
+        val receivedSubscriptionChangeEvents = atomic(0)
+
+        chat.pubNub.addListener(object : StatusListener {
+            override fun status(pubnub: PubNub, status: PNStatus) {
+                // Handle connection status updates
+                println("Connection Status: ${status.category}")
+                if( status.category == PNStatusCategory.PNSubscriptionChanged){
+                    receivedSubscriptionChangeEvents.incrementAndGet()
+                }
+            }
+        })
+
+
+        val disconnect: AutoCloseable = channel01.connect { message ->
+            receivedMessages.add(message)
+
+            // For each message as it arrives, set up streamUpdatesOn (mimicking React useEffect)
+            if (!updateListeners.containsKey(message.timetoken)) {
+                val stop = BaseMessage.streamUpdatesOn(
+                    listOf(message)
+                ) { updatedMessages ->
+                    updatedMessages.forEach { msg ->
+                        println("-= Update: timetoken=${msg.timetoken}, text=${msg.text}, deleted=${msg.deleted}")
+                    }
+                }
+                updateListeners[message.timetoken] = stop
+            }
+        }
+
+        // Publisher sends messages with delays (simulating real-world scenario)
+        val message1 = channel01.sendText("Message 0 published").await()
+        delayInMillis(500)
+        val message2 = channel01.sendText("Message 1 published").await()
+        delayInMillis(500)
+        val message3 = channel01.sendText("Message 2 published").await()
+        delayInMillis(500)
+        val message4 = channel01.sendText("Message 3 published").await()
+        delayInMillis(500)
+        val message5 = channel01.sendText("Message 4 published ").await()
+
+        // Wait for all messages to be received
+        delayInMillis(2000)
+        assertEquals(5, receivedMessages.size, "Should receive all 5 messages")
+        assertEquals(5, updateListeners.size, "Should have 5 streamUpdatesOn listeners")
+        assertEquals(1, receivedSubscriptionChangeEvents.value)
+
+        // Clean up
+        updateListeners.values.forEach { it.close() }
+        disconnect?.close()
     }
 
     @Test

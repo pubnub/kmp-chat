@@ -354,7 +354,7 @@ abstract class BaseMessage<T : Message>(
 
         private data class SubscriptionInfo(
             val refCount: Int,
-            val subscriptionSet: com.pubnub.api.v2.subscriptions.SubscriptionSet
+            val subscription: com.pubnub.api.v2.subscriptions.Subscription
         )
 
         /**
@@ -364,7 +364,7 @@ abstract class BaseMessage<T : Message>(
         private fun acquireSubscription(chat: ChatInternal, channelId: String): Boolean {
             return synchronized(subscriptionRegistryLock) {
                 val chatRegistry = subscriptionRegistry[chat] ?: emptyMap()
-                val info = chatRegistry[channelId]
+                val info: SubscriptionInfo? = chatRegistry[channelId]
 
                 if (info != null) {
                     // Already have a subscription, increment ref count (copy-on-write)
@@ -374,8 +374,8 @@ abstract class BaseMessage<T : Message>(
                     false // Don't need to subscribe
                 } else {
                     // First reference, create subscription info
-                    val subscriptionSet = chat.pubNub.subscriptionSetOf(setOf(channelId))
-                    val newInfo = SubscriptionInfo(1, subscriptionSet)
+                    val subscription = chat.pubNub.channel(channelId).subscription()
+                    val newInfo = SubscriptionInfo(1, subscription)
                     val updatedChatRegistry = chatRegistry + (channelId to newInfo)
                     subscriptionRegistry = subscriptionRegistry + (chat to updatedChatRegistry)
                     true // Need to subscribe
@@ -385,9 +385,9 @@ abstract class BaseMessage<T : Message>(
 
         /**
          * Releases a subscription for the given channel.
-         * @return SubscriptionSet if this was the last reference and it should be unsubscribed, null otherwise
+         * @return Subscription if this was the last reference and it should be unsubscribed, null otherwise
          */
-        private fun releaseSubscription(chat: ChatInternal, channelId: String): com.pubnub.api.v2.subscriptions.SubscriptionSet? {
+        private fun releaseSubscription(chat: ChatInternal, channelId: String): com.pubnub.api.v2.subscriptions.Subscription? {
             return synchronized(subscriptionRegistryLock) {
                 val chatRegistry = subscriptionRegistry[chat] ?: return@synchronized null
                 val info = chatRegistry[channelId] ?: return@synchronized null
@@ -401,7 +401,7 @@ abstract class BaseMessage<T : Message>(
                     } else {
                         subscriptionRegistry + (chat to updatedChatRegistry)
                     }
-                    info.subscriptionSet // Return for unsubscription
+                    info.subscription // Return for unsubscription
                 } else {
                     // Still have other references, update count (copy-on-write)
                     val updatedInfo = info.copy(refCount = newRefCount)
@@ -464,7 +464,7 @@ abstract class BaseMessage<T : Message>(
             if (needsSubscription.isNotEmpty()) {
                 needsSubscription.forEach { channelId ->
                     // Get the subscription info and subscribe
-                    subscriptionRegistry[chat]?.get(channelId)?.subscriptionSet?.subscribe()
+                    subscriptionRegistry[chat]?.get(channelId)?.subscription?.subscribe()
                 }
             }
 
@@ -477,9 +477,9 @@ abstract class BaseMessage<T : Message>(
 
                 // Release subscriptions (decrements ref count, returns subscription if last reference)
                 channelIds.forEach { channelId ->
-                    releaseSubscription(chat, channelId)?.let { subscriptionSet ->
+                    releaseSubscription(chat, channelId)?.let { subscription ->
                         // Last reference, unsubscribe
-                        subscriptionSet.unsubscribe()
+                        subscription.unsubscribe()
                     }
                 }
             }
