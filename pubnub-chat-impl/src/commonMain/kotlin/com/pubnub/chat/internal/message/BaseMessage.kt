@@ -11,6 +11,7 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
+import com.pubnub.api.v2.callbacks.EventListener
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
@@ -421,42 +422,50 @@ abstract class BaseMessage<T : Message>(
             }
             var latestMessages = messages
             val chat = (messages.first() as BaseMessage<*>).chat
-            val listener = createEventListener(chat.pubNub, onMessageAction = { _, event ->
-                val message =
-                    latestMessages.find { it.timetoken == event.messageAction.messageTimetoken }
-                        ?: return@createEventListener
-                if (message.channelId != event.channel) {
-                    return@createEventListener
-                }
-                val actions = if (event.event == "added") {
-                    assignAction(
-                        message.actions,
-                        event.messageAction
-                    )
-                } else {
-                    filterAction(
-                        message.actions,
-                        event.messageAction
-                    )
-                }
-                val newMessage = (message as BaseMessage<T>).copyWithActions(actions)
-                latestMessages = latestMessages.map {
-                    if (it.timetoken == newMessage.timetoken) {
-                        newMessage
-                    } else {
-                        it
-                    }
-                }
-                callback(latestMessages)
-            })
-
             val channelIds = messages.map { it.channelId }.toSet()
 
-            // Acquire subscriptions (increments ref count, returns true if needs to subscribe)
+            // Create a separate listener for each channel
+            // Each listener is added to its specific subscription for automatic channel filtering
+            val listenersByChannel: Map<String, EventListener> = channelIds.associateWith { channelId ->
+                createEventListener(chat.pubNub, onMessageAction = { _, event ->
+                    // No manual channel filtering needed - subscription automatically filters by channel!
+                    val message =
+                        latestMessages.find { it.timetoken == event.messageAction.messageTimetoken }
+                            ?: return@createEventListener
+                    val actions = if (event.event == "added") {
+                        assignAction(
+                            message.actions,
+                            event.messageAction
+                        )
+                    } else {
+                        filterAction(
+                            message.actions,
+                            event.messageAction
+                        )
+                    }
+                    val newMessage = (message as BaseMessage<T>).copyWithActions(actions)
+                    latestMessages = latestMessages.map {
+                        if (it.timetoken == newMessage.timetoken) {
+                            newMessage
+                        } else {
+                            it
+                        }
+                    }
+                    callback(latestMessages)
+                })
+            }
+
+            // Acquire subscriptions and add listeners to subscriptions
             val needsSubscription = mutableListOf<String>()
             channelIds.forEach { channelId ->
                 if (acquireSubscription(chat, channelId)) {
                     needsSubscription.add(channelId)
+                }
+
+                // Add listener directly to the subscription for automatic channel filtering
+                val subscription = subscriptionRegistry[chat]?.get(channelId)?.subscription
+                listenersByChannel[channelId]?.let { listener ->
+                    subscription?.addListener(listener)
                 }
             }
 
@@ -468,12 +477,15 @@ abstract class BaseMessage<T : Message>(
                 }
             }
 
-            // Add listener to PubNub instance (receives events from any subscription)
-            chat.pubNub.addListener(listener)
-
-            // Return AutoCloseable that removes listener and releases subscriptions
+            // Return AutoCloseable that removes listeners from subscriptions and releases subscriptions
             return AutoCloseable {
-                chat.pubNub.removeListener(listener)
+                // Remove listeners from their subscriptions
+                channelIds.forEach { channelId ->
+                    val subscription = subscriptionRegistry[chat]?.get(channelId)?.subscription
+                    listenersByChannel[channelId]?.let { listener ->
+                        subscription?.removeListener(listener)
+                    }
+                }
 
                 // Release subscriptions (decrements ref count, returns subscription if last reference)
                 channelIds.forEach { channelId ->
