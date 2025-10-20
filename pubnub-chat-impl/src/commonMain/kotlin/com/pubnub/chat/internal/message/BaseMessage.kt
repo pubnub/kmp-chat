@@ -358,11 +358,7 @@ abstract class BaseMessage<T : Message>(
             val subscription: com.pubnub.api.v2.subscriptions.Subscription
         )
 
-        /**
-         * Acquires a subscription for the given channel.
-         * @return true if this is the first reference and subscription needs to be established
-         */
-        private fun acquireSubscription(chat: ChatInternal, channelId: String): Boolean {
+        private fun shouldSubscribeAfterAddingReference(chat: ChatInternal, channelId: String): Boolean {
             return synchronized(subscriptionRegistryLock) {
                 val chatRegistry = subscriptionRegistry[chat] ?: emptyMap()
                 val info: SubscriptionInfo? = chatRegistry[channelId]
@@ -390,25 +386,29 @@ abstract class BaseMessage<T : Message>(
          */
         private fun releaseSubscription(chat: ChatInternal, channelId: String): com.pubnub.api.v2.subscriptions.Subscription? {
             return synchronized(subscriptionRegistryLock) {
-                val chatRegistry = subscriptionRegistry[chat] ?: return@synchronized null
-                val info = chatRegistry[channelId] ?: return@synchronized null
+                val chatRegistry = subscriptionRegistry[chat]
+                val info = chatRegistry?.get(channelId)
 
-                val newRefCount = info.refCount - 1
-                if (newRefCount == 0) {
-                    // Last reference, remove from registry (copy-on-write)
-                    val updatedChatRegistry = chatRegistry - channelId
-                    subscriptionRegistry = if (updatedChatRegistry.isEmpty()) {
-                        subscriptionRegistry - chat
-                    } else {
-                        subscriptionRegistry + (chat to updatedChatRegistry)
-                    }
-                    info.subscription // Return for unsubscription
+                if (chatRegistry == null || info == null) {
+                    null
                 } else {
-                    // Still have other references, update count (copy-on-write)
-                    val updatedInfo = info.copy(refCount = newRefCount)
-                    val updatedChatRegistry = chatRegistry + (channelId to updatedInfo)
-                    subscriptionRegistry = subscriptionRegistry + (chat to updatedChatRegistry)
-                    null // Don't unsubscribe
+                    val newRefCount = info.refCount - 1
+                    if (newRefCount == 0) {
+                        // Last reference, remove from registry (copy-on-write)
+                        val updatedChatRegistry = chatRegistry - channelId
+                        subscriptionRegistry = if (updatedChatRegistry.isEmpty()) {
+                            subscriptionRegistry - chat
+                        } else {
+                            subscriptionRegistry + (chat to updatedChatRegistry)
+                        }
+                        info.subscription // Return for unsubscription
+                    } else {
+                        // Still have other references, update count (copy-on-write)
+                        val updatedInfo = info.copy(refCount = newRefCount)
+                        val updatedChatRegistry = chatRegistry + (channelId to updatedInfo)
+                        subscriptionRegistry = subscriptionRegistry + (chat to updatedChatRegistry)
+                        null // Don't unsubscribe
+                    }
                 }
             }
         }
@@ -428,7 +428,6 @@ abstract class BaseMessage<T : Message>(
             // Each listener is added to its specific subscription for automatic channel filtering
             val listenersByChannel: Map<String, EventListener> = channelIds.associateWith { channelId ->
                 createEventListener(chat.pubNub, onMessageAction = { _, event ->
-                    // No manual channel filtering needed - subscription automatically filters by channel!
                     val message =
                         latestMessages.find { it.timetoken == event.messageAction.messageTimetoken }
                             ?: return@createEventListener
@@ -458,7 +457,7 @@ abstract class BaseMessage<T : Message>(
             // Acquire subscriptions and add listeners to subscriptions
             val needsSubscription = mutableListOf<String>()
             channelIds.forEach { channelId ->
-                if (acquireSubscription(chat, channelId)) {
+                if (shouldSubscribeAfterAddingReference(chat, channelId)) {
                     needsSubscription.add(channelId)
                 }
 
