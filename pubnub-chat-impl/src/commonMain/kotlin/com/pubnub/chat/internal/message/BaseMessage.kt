@@ -3,6 +3,7 @@ package com.pubnub.chat.internal.message
 import co.touchlab.kermit.Logger
 import com.pubnub.api.JsonElement
 import com.pubnub.api.PubNubError
+import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
 import com.pubnub.api.decode
 import com.pubnub.api.endpoints.message_actions.RemoveMessageAction
@@ -413,6 +414,54 @@ abstract class BaseMessage<T : Message>(
             }
         }
 
+        /**
+         * Streams real-time updates for a collection of messages via PubNub message actions.
+         *
+         * Subscribes to changes to messages and invokes the callback
+         * whenever any of the provided messages are updated. Uses **reference-counted subscription sharing**
+         * to efficiently reuse subscriptions when multiple callers target the same channels.
+         *
+         * ## Key Features
+         * - **Subscription Sharing**: Multiple calls for the same channel share a single PubNub subscription
+         * - **Reference Counting**: Subscription stays active until all callers close their AutoCloseable
+         * - **Multi-Channel**: Automatically handles messages across different channels
+         * - **Thread-Safe**: Safe for concurrent use across threads
+         *
+         * ## Usage Example
+         * ```kotlin
+         * val messages = listOf(message1, message2)
+         * val closeable = Message.streamUpdatesOn(messages) { updatedMessages ->
+         *     updatedMessages.forEach { msg ->
+         *         println("${msg.text} - ${msg.reactions}")
+         *     }
+         * }
+         *
+         * // CRITICAL: Always close to prevent leaks!
+         * closeable.close()
+         * ```
+         *
+         * ## Subscription Lifecycle
+         * ```kotlin
+         * // Both on "channel-A"
+         * val c1 = msg1.streamUpdates { ... }  // Creates subscription (refCount=1)
+         * val c2 = msg2.streamUpdates { ... }  // Reuses subscription (refCount=2)
+         * c1.close()                           // refCount: 2->1, stays active
+         * c2.close()                           // refCount: 1->0, unsubscribes
+         * ```
+         *
+         * ## Important Notes
+         * - **MUST close**: Failing to close causes subscription leaks
+         * - **Callback invocation**: Contains entire collection with updated message(s)
+         * - **Listener isolation**: Each call gets independent listener and callback
+         * - **Empty collection**: Throws error immediately
+         *
+         * @param messages Collection of messages to stream updates for. Must not be empty.
+         * @param callback Invoked when any message receives an action. Receives full collection with updates.
+         *                 May be called from background threads.
+         * @return AutoCloseable that MUST be closed. When last reference closes, subscription is unsubscribed.
+         * @throws PubNubException if messages collection is empty
+         * @see Message.streamUpdates for single-message convenience
+         */
         fun <T : Message> streamUpdatesOn(
             messages: Collection<T>,
             callback: (messages: Collection<T>) -> Unit,
