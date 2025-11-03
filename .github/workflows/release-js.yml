@@ -7,12 +7,27 @@ on:
     paths:
       - 'js-chat/.pubnub.yml'
 
+permissions:
+  actions: write
+  attestations: write
+  checks: write
+  contents: write
+  deployments: write
+  discussions: write
+  issues: write
+  id-token: write
+  packages: write
+  pull-requests: write
+  repository-projects: write
+  security-events: write
+  statuses: write
+
 jobs:
   check-release:
     name: Check release required
     if: github.event.pull_request.merged && endsWith(github.repository, '-private') != true
     runs-on:
-      group: macos-gh
+      group: organization/Default
     outputs:
       release: ${{ steps.check.outputs.ready }}
     steps:
@@ -60,6 +75,7 @@ jobs:
         uses: ./.github/.release/actions/actions/services/npm
         with:
           token: ${{ secrets.GH_TOKEN }}
+          npm-auth-type: oidc
           npm-token: ${{ secrets.NPM_TOKEN }}
           check-ownership: false
           package-path: package.json
