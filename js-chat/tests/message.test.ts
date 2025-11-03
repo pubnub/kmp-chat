@@ -34,7 +34,9 @@ describe("Send message test", () => {
   let messageDraft
 
   beforeAll(async () => {
-    chat = await createChatInstance()
+    chat = await createChatInstance({
+      config: { logLevel: 0 },
+    })
   })
 
   beforeEach(async () => {
@@ -895,7 +897,7 @@ describe("Send message test", () => {
 
     const chat = await createChatInstance({
       shouldCreateNewInstance: true,
-      config: { rateLimitFactor: factor, rateLimitPerChannel: { public: timeout } },
+      config: { rateLimitFactor: factor, rateLimitPerChannel: { public: timeout }, logLevel: 0 },
     })
 
     const channel = await chat.createPublicConversation({
@@ -1854,4 +1856,84 @@ describe("Send message test", () => {
       expect(secondMsg2?.deleted).toBe(true)
     }
   }, 35000)
+
+  test("should simulate full publisher-subscriber flow with streamUpdatesOn", async () => {
+    let publisherChat: Chat = await createChatInstance({
+      shouldCreateNewInstance: true,
+      userId: "test-publisher",
+      // config: { logLevel: 0 },
+    })
+    let publisherChannel: Channel = await publisherChat.getChannel(channel.id)
+
+
+    const receivedMessages: Message[] = []
+    const updateListeners = new Map<string, () => void>()
+    const allUpdates: { timetoken: string; text: string }[] = []
+
+    // Subscriber: Connect and set up streamUpdatesOn for each message
+    const disconnect = channel.connect((message) => {
+      receivedMessages.push(message)
+      console.log(`Subscriber received message: ${message.text}`)
+
+      // Set up update listener (mimics React useEffect)
+      if (!updateListeners.has(message.timetoken)) {
+        const stop = Message.streamUpdatesOn([message], (updatedMessages) => {
+          updatedMessages.forEach(msg => {
+            console.log(`Update received for message ${msg.timetoken}: ${msg.text}`)
+            allUpdates.push({ timetoken: msg.timetoken, text: msg.text })
+          })
+        })
+        updateListeners.set(message.timetoken, stop)
+      }
+    })
+
+    await sleep(1000)
+
+    // Publisher: Send messages at regular intervals
+    const messagesPerSecond = 2
+    const intervalMs = 1000 / messagesPerSecond
+    const totalMessages = 5
+
+    for (let i = 0; i < totalMessages; i++) {
+      const timestamp = Date.now()
+      await publisherChannel.sendText(
+          `Message ${i} published at ${timestamp}`
+      )
+      console.log(`Publisher sent message ${i}`)
+
+      if (i < totalMessages - 1) {
+        await sleep(intervalMs)
+      }
+    }
+
+    // Wait for all messages to be received
+    await sleep(3000)
+
+    // Verify all messages received
+    expect(receivedMessages.length).toBe(totalMessages)
+    expect(updateListeners.size).toBe(totalMessages)
+
+    // Edit some messages to trigger updates
+    if (receivedMessages.length >= 2) {
+      await receivedMessages[0].editText("Edited message 0")
+      await sleep(1000)
+      await receivedMessages[1].editText("Edited message 1")
+      await sleep(2000)
+
+      // Verify updates were received
+      expect(allUpdates.length).toBeGreaterThan(0)
+
+      const update0 = allUpdates.find(u => u.timetoken === receivedMessages[0].timetoken)
+      const update1 = allUpdates.find(u => u.timetoken === receivedMessages[1].timetoken)
+
+      expect(update0).toBeDefined()
+      expect(update0?.text).toBe("Edited message 0")
+      expect(update1).toBeDefined()
+      expect(update1?.text).toBe("Edited message 1")
+    }
+
+    // Clean up
+    updateListeners.forEach(stop => stop())
+    disconnect()
+  }, 40000)
 })
