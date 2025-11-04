@@ -33,7 +33,7 @@ describe("Access Manager test test", () => {
         jest.clearAllMocks()
     })
 
-    // test is skipped because it has 65sec sleep to wait for token expiration
+    // Test is skipped because it has 65 seconds sleep to wait for token expiration
     test.skip("when token is updated then client can use API", async () => {
         const user1Id = `user1_${Date.now()}`
         const userToChatWith = await chatPamServer.createUser(user1Id, { name: "User1" })
@@ -64,7 +64,7 @@ describe("Access Manager test test", () => {
         let message = await channelRetrievedByClient.getMessage(publishResult.timetoken);
         await message.toggleReaction("one")
 
-        // sleep so that token expires
+        // Sleep so that token expires
         await sleep(65000)
         token = await _grantTokenForChannel(1, chatPamServer, channelId);
         await chatPamClient.sdk.setToken(token)
@@ -73,7 +73,7 @@ describe("Access Manager test test", () => {
         await chatPamClient.getChannel(channelRetrievedByClient?.id);
 
         await chatPamServer.deleteChannel(channelId)
-    }, 100000); // this long timeout is needed so we can wait 65sec for token to expire
+    }, 100000); // This long timeout is needed so we can wait for token to expire
 
     async function _grantTokenForUserId(chatPamServer, chatClientUserId) {
         return chatPamServer.sdk.grantToken({
@@ -97,7 +97,7 @@ describe("Access Manager test test", () => {
                     [channelId]: {
                         read: true,
                         write: true,
-                        get: true, // this is important
+                        get: true,
                     }
                 }
             }
