@@ -1960,16 +1960,19 @@ describe("Send message test", () => {
     await sleep(150)
 
     const threadChannel = await parentMessage.createThread()
-    const threadMessage = await threadChannel.sendText("Thread message to unpin")
-    await sleep(150)
+    await threadChannel.sendText("Thread message to unpin")
+    await sleep(300)
 
-    await threadMessage.pinToParentChannel()
+    const history = await threadChannel.getHistory()
+    const message = history.messages[0]
+
+    await message.pinToParentChannel()
     await sleep(150)
 
     let pinnedInParent = await channel.getPinnedMessage()
     expect(pinnedInParent).toBeDefined()
 
-    await threadMessage.unpinFromParentChannel()
+    await message.unpinFromParentChannel()
     await sleep(150)
 
     pinnedInParent = await channel.getPinnedMessage()
