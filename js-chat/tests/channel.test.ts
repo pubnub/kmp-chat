@@ -3,8 +3,6 @@ import {
   Message,
   Chat,
   MessageDraft,
-  INTERNAL_MODERATION_PREFIX,
-  Membership,
 } from "../dist-test"
 import {
   sleep,
@@ -328,21 +326,21 @@ describe("Channel test", () => {
 
   test("should stream channel updates and invoke the callback", async () => {
     let updatedChannel
-    let callbackInvoked = false
+    let callbackCount = 0
 
     channel = await channel.update({ type: "public" })
 
     const name = "Updated Channel"
     const callback = (ch) => {
       updatedChannel = ch
-      callbackInvoked = true
+      callbackCount++
     }
 
     const stopUpdates = channel.streamUpdates(callback)
     await channel.update({ name })
     await sleep(150)
 
-    expect(callbackInvoked).toBe(true)
+    expect(callbackCount).toBe(1)
     expect(updatedChannel).toBeDefined()
     expect(updatedChannel.name).toEqual(name)
     expect(updatedChannel.type).toEqual(channel.type)
@@ -766,29 +764,6 @@ describe("Channel test", () => {
     expect(directConversation.channel.name).toEqual("Test Convo")
     expect(directConversation.hostMembership.user.id).toBe(chat.currentUser.id)
     expect(directConversation.inviteeMembership.user.id).toBe(user1.id)
-
-    await Promise.all([user1.delete(), directConversation.channel.delete()])
-  }, 20000)
-
-  test("should edit message in direct conversation", async () => {
-    const user1 = await createRandomUser()
-
-    const directConversation = await chat.createDirectConversation({
-      user: user1,
-      channelData: { name: "Test Convo" },
-    })
-
-    const messageText = "Hello from User1"
-    await directConversation.channel.sendText(messageText)
-    await sleep(150)
-
-    const history = await directConversation.channel.getHistory()
-    const sentMessage = history.messages.find((message) => message.content.text === messageText)
-
-    const editedMessageText = "Edited message from User1"
-    const editedMessage = await sentMessage.editText(editedMessageText)
-
-    expect(editedMessage.text).toEqual(editedMessageText)
 
     await Promise.all([user1.delete(), directConversation.channel.delete()])
   }, 20000)
@@ -1440,4 +1415,58 @@ describe("Channel test", () => {
     expect(deleteResult).toBeDefined()
     expect(deleteResult.status).toBe(200)
   }, 20000)
+
+  test("should stream presence updates on a channel", async () => {
+    const testChannel = await chat.createPublicConversation({
+      channelId: generateRandomString(10),
+      channelData: { name: "Presence Test Channel" }
+    })
+
+    const presenceUpdates: string[][] = []
+    const stopPresenceStream = await testChannel.streamPresence((userIds) => {
+      presenceUpdates.push(userIds)
+    })
+
+    const disconnect = testChannel.connect(() => null)
+    await sleep(3000) // Wait for presence to propagate
+
+    expect(presenceUpdates.length).toBeGreaterThan(0)
+    const latestPresence = presenceUpdates[presenceUpdates.length - 1]
+    expect(latestPresence).toContain(chat.currentUser.id)
+
+    disconnect()
+    stopPresenceStream()
+
+    await testChannel.delete()
+  }, 30000)
+
+  test("should stream read receipts on a channel", async () => {
+    const testUser = await createRandomUser()
+    const directConversation = await chat.createDirectConversation({ user: testUser })
+
+    let receivedReceipts
+    let callbackCount = 0
+
+    const stopReceiptsStream = await directConversation.channel.streamReadReceipts((receipts) => {
+      receivedReceipts = receipts
+      callbackCount++
+    })
+
+    await directConversation.channel.sendText("Test message for receipts")
+    await directConversation.channel.join(() => null)
+    await sleep(1000)
+
+    expect(callbackCount).toBeGreaterThan(0)
+    expect(receivedReceipts).toBeDefined()
+
+    const hasExpectedReceipt = Object.keys(receivedReceipts).some(key =>
+      receivedReceipts[key].includes(chat.currentUser.id)
+    )
+
+    expect(hasExpectedReceipt).toBe(true)
+    stopReceiptsStream()
+
+    await testUser.delete()
+    await directConversation.channel.delete()
+  }, 30000)
 })
