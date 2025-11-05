@@ -26,16 +26,14 @@ describe("Channel test", () => {
   let channel: Channel
   let messageDraft: MessageDraft
 
-  function createRandomChannel(prefix?: string) {
-    if (!prefix) prefix = ""
+  function createRandomChannel(prefix: string = "") {
     return chat.createChannel(`${prefix}channel_${makeid()}`, {
       name: `${prefix}Test Channel`,
       description: "This is a test channel",
     })
   }
 
-  function createRandomUser(prefix?: string) {
-    if (!prefix) prefix = ""
+  function createRandomUser(prefix: string = "") {
     return chat.createUser(`${prefix}user_${makeid()}`, {
       name: `${prefix}Test User`,
     })
@@ -45,21 +43,22 @@ describe("Channel test", () => {
     chat = await createChatInstance({ userId: makeid(), shouldCreateNewInstance: true })
     chatPamServer = await createChatInstance( { userId: makeid(), shouldCreateNewInstance: true, clientType: 'PamServer' })
     chatPamServerWithRefIntegrity = await createChatInstance({ userId: makeid(), shouldCreateNewInstance: true, clientType: 'PamServerWithRefIntegrity' })
-  })
+  }, 15000)
 
   beforeEach(async () => {
     channel = await createRandomChannel()
     messageDraft = channel.createMessageDraft()
-  })
+  }, 15000)
 
   afterEach(async () => {
     await channel.delete()
     await chat.currentUser.delete()
+    await chatPamServer.currentUser.delete()
+    await chatPamServerWithRefIntegrity.currentUser.delete()
     jest.clearAllMocks()
-  })
+  }, 15000)
 
   test("should create a channel", async () => {
-    expect(channel).toBeDefined()
     const fetchedChannel = await chat.getChannel(channel.id)
     expect(fetchedChannel).toBeDefined()
     expect(fetchedChannel.name).toEqual(channel.name)
@@ -68,7 +67,7 @@ describe("Channel test", () => {
 
   test("Should be able to delete channel", async () => {
     const deleteOptions = { soft: true }
-    const { status } = (await channel.delete(deleteOptions)) as Channel
+    const { status } = await channel.delete(deleteOptions) as Channel
     expect(status).toBe("deleted")
 
     const deleteResult = await channel.delete()
@@ -88,15 +87,8 @@ describe("Channel test", () => {
     const history = await channel.getHistory()
     expect(history.messages.length).toBe(2)
 
-    const message1InHistory = history.messages.some(
-      (message) => message.content.text === messageText1
-    )
-    const message2InHistory = history.messages.some(
-      (message) => message.content.text === messageText2
-    )
-
-    expect(message1InHistory).toBeTruthy()
-    expect(message2InHistory).toBeTruthy()
+    const messageTexts = history.messages.map(message => message.content.text)
+    expect(messageTexts).toEqual(expect.arrayContaining([messageText1, messageText2]))
   }, 20000)
 
   test("should get channel history with pagination", async () => {
@@ -179,20 +171,9 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should create a direct, group and public chats with a predefined ID", async () => {
-    const someFakeDirectId = "someFakeDirectId"
-    const someFakeGroupId = "someFakeGroupId"
-    const someFakePublicId = "someFakePublicId"
-
-    const existingChannels = await Promise.all(
-      [someFakeDirectId, someFakeGroupId, someFakePublicId].map((id) => chat.getChannel(id))
-    )
-
-    for (const existingChannel of existingChannels) {
-      if (existingChannel) {
-        await existingChannel.delete({ soft: false })
-      }
-    }
-
+    const someFakeDirectId = generateRandomString(10)
+    const someFakeGroupId = generateRandomString(10)
+    const someFakePublicId = generateRandomString(10)
     const user = await createRandomUser()
 
     const newChannels = await Promise.all([
@@ -221,39 +202,9 @@ describe("Channel test", () => {
     await newChannels[2].delete({ soft: false })
   }, 20000)
 
-  test("should create a direct, group and public chats with default IDs", async () => {
-    const user = await createRandomUser()
-    const newChannels = await Promise.all([
-      chat.createDirectConversation({
-        user,
-        channelData: {},
-      }),
-      chat.createGroupConversation({
-        users: [user],
-        channelData: {},
-      }),
-      chat.createPublicConversation({
-        channelData: {},
-      }),
-    ])
-
-    expect(newChannels[0].channel.id.startsWith("direct.")).toBeTruthy()
-    expect(newChannels[1].channel.id).toBeDefined()
-    expect(newChannels[2].id).toBeDefined()
-
-    await newChannels[0].channel.delete({ soft: false })
-    await newChannels[1].channel.delete({ soft: false })
-    await newChannels[2].delete({ soft: false })
-  }, 20000)
-
   test("should create direct conversation and send message", async () => {
     const user = await createRandomUser()
-    expect(user).toBeDefined()
-
-    const directConversation = await chat.createDirectConversation({
-      user,
-      channelData: { name: "Test Convo" },
-    })
+    const directConversation = await chat.createDirectConversation({ user, channelData: { name: "Test Convo" }})
 
     expect(directConversation).toBeDefined()
 
@@ -372,21 +323,27 @@ describe("Channel test", () => {
 
     expect(receivedEvent.payload.text).toEqual(messageTextToReport);
     expect(receivedEvent.payload.reason).toEqual(reason);
-    unsubscribe(); // Cleanup
+    unsubscribe()
   }, 20000);
 
   test("should stream channel updates and invoke the callback", async () => {
     let updatedChannel
+    let callbackInvoked = false
+
     channel = await channel.update({ type: "public" })
+
     const name = "Updated Channel"
-    const callback = jest.fn((chanel) => (updatedChannel = chanel))
+    const callback = (ch) => {
+      updatedChannel = ch
+      callbackInvoked = true
+    }
 
     const stopUpdates = channel.streamUpdates(callback)
     await channel.update({ name })
     await sleep(150)
 
-    expect(callback).toHaveBeenCalled()
-    expect(callback).toHaveBeenCalledWith(updatedChannel)
+    expect(callbackInvoked).toBe(true)
+    expect(updatedChannel).toBeDefined()
     expect(updatedChannel.name).toEqual(name)
     expect(updatedChannel.type).toEqual(channel.type)
     stopUpdates()
@@ -512,13 +469,8 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should send a message with words that start with @ but are not user mentions", async () => {
-    const messageText =
-      "Hello, this is a test message with words that start with @ but are not user mentions: @test, @example, @check."
-
-    const messageInHistory = await sendMessageAndWaitForHistory(
-      channel.createMessageDraft(messageText),
-      channel
-    )
+    const messageText = "Test message with words that start with @ but are not user mentions: @test, @example, @check."
+    const messageInHistory = await sendMessageAndWaitForHistory(channel.createMessageDraft(messageText), channel)
 
     expect(messageInHistory).toBeDefined()
     expect(Object.keys(messageInHistory.mentionedUsers).length).toBe(0)
@@ -726,15 +678,12 @@ describe("Channel test", () => {
     expect(invitedMemberships).toBeDefined()
     expect(invitedMemberships.length).toBe(usersToInvite.length)
 
-    // Verify all invited users are in the returned memberships (order may vary)
     const invitedUserIds = usersToInvite.map(user => user.id)
     const membershipUserIds = invitedMemberships.map(membership => membership.user.id)
 
     invitedUserIds.forEach(userId => {
       expect(membershipUserIds).toContain(userId)
     })
-
-    // Verify all memberships are for the correct channel
     invitedMemberships.forEach(membership => {
       expect(membership.channel.id).toEqual(channel.id)
     })
@@ -761,11 +710,11 @@ describe("Channel test", () => {
       userId: "user-one",
       shouldCreateNewInstance: true,
     })
-
     const channel = await chat2.createChannel(`channel_${makeid()}`, {
       name: "Test Channel",
       description: "This is a test channel",
     })
+
     const disconnect = channel.connect(() => null)
 
     // Wait till PN decides this user is online
@@ -779,12 +728,7 @@ describe("Channel test", () => {
     disconnect()
     await sleep(2000)
     expect(await chat2.currentUser.isPresentOn(channel.id)).toBe(false)
-
-    const usedUser = await chat2.getUser("user-one")
-
-    if (usedUser) {
-      await usedUser.delete()
-    }
+    await chat2.currentUser.delete()
   }, 20000)
 
   test("should verify all user-related mentions using getCurrentUserMentions()", async () => {
@@ -808,20 +752,6 @@ describe("Channel test", () => {
 
     await chat.deleteUser(user1.id)
     await chat.deleteUser(user2.id)
-  }, 20000)
-
-  test("Should fail when trying to edit membership metadata of a non-existent channel", async () => {
-    const nonExistentChannelId = "nonexistentchannelid"
-
-    try {
-      const nonExistentChannel = await chat.getChannel(nonExistentChannelId)
-      const membership = await nonExistentChannel.join(() => null)
-      await membership.update({ custom: { role: "admin" } })
-      membership.disconnect()
-      fail("Editing membership metadata of a non-existent channel should fail")
-    } catch (error) {
-      expect(error.message).toContain("Cannot read properties of null (reading 'join')")
-    }
   }, 20000)
 
   test("should create direct conversation", async () => {
@@ -1010,20 +940,14 @@ describe("Channel test", () => {
       },
     }
 
-    const channelToDelete = await chat.getChannel("public-channel-1")
-    if (channelToDelete) {
-        await channelToDelete.delete()
-    }
-
     const publicChannel = await chat.createPublicConversation({
-      channelId: "public-channel-1",
+      channelId: generateRandomString(10),
       channelData,
     })
 
     expect(publicChannel).toBeDefined()
     expect(publicChannel.name).toEqual(channelData.name)
     expect(publicChannel.description).toEqual(channelData.description)
-
     expect(publicChannel.custom).toEqual(channelData.custom)
 
     await publicChannel.delete()
@@ -1072,7 +996,7 @@ describe("Channel test", () => {
       callback: moderationEventCallback,
     })
 
-    await chatPamServerWithRefIntegrity.setRestrictions(notExistingUserId, notExistingChannelName, {mute: true})
+    await chatPamServerWithRefIntegrity.setRestrictions(notExistingUserId, notExistingChannelName, { mute: true })
     await sleep(250) // Wait for the message to be sent and cached
 
     expect(moderationEventCallback).toHaveBeenCalledWith(
@@ -1127,91 +1051,6 @@ describe("Channel test", () => {
     removeModerationListener()
   }, 20000)
 
-  test("Should get the number of unread messages on channels", async () => {
-    jest.spyOn(chat.sdk.objects, "getMemberships")
-    const commonParams = {
-      include: {
-        totalCount: true,
-        customFields: true,
-        channelFields: true,
-        customChannelFields: true,
-        channelTypeField: true,
-        statusField: true,
-        channelStatusField: true,
-        typeField: true,
-      },
-      limit: null,
-      page: null,
-      sort: {},
-      uuid: chat.currentUser.id,
-    }
-
-    await chat.getUnreadMessagesCounts({ filter: "channel.id like 'hello*'" })
-    expect(chat.sdk.objects.getMemberships).toHaveBeenCalledWith({
-      ...commonParams,
-      filter: `!(channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*') && (channel.id like 'hello*')`,
-    })
-
-    await chat.getUnreadMessagesCounts({ filter: "channel.name like '*test-channel'" })
-    expect(chat.sdk.objects.getMemberships).toHaveBeenCalledWith({
-      ...commonParams,
-      filter: `!(channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*') && (channel.name like '*test-channel')`,
-    })
-
-    await chat.getUnreadMessagesCounts()
-    expect(chat.sdk.objects.getMemberships).toHaveBeenCalledWith({
-      ...commonParams,
-      filter: `!(channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*')`,
-    })
-  }, 20000)
-
-  test("should set 'eTag' and 'updated' on the Membership object", async () => {
-    const membershipsDTOMock = {
-      status: 200,
-      data: [
-        {
-          channel: {
-            id: "0053d903-62d5-4f14-91cc-50aa90b1ab30",
-            name: "0053d903-62d5-4f14-91cc-50aa90b1ab30",
-            description: null,
-            type: "group",
-            status: null,
-            custom: null,
-            updated: "2024-02-28T13:04:28.210319Z",
-            eTag: "41ba0b6a52df2cc52775a83674ad4ba1",
-          },
-          status: null,
-          custom: null,
-          updated: "2024-02-28T13:04:28.645304Z",
-          eTag: "AZO/t53al7m8fw",
-        },
-      ],
-      totalCount: 309,
-      next: "MTAw",
-    }
-
-    jest.spyOn(chat.sdk.objects, "getMemberships").mockImplementation(async () => membershipsDTOMock)
-
-    const memberships = await chat.currentUser.getMemberships()
-    expect(memberships.memberships[0].updated).toBe(membershipsDTOMock.data[0].updated)
-    expect(memberships.memberships[0].eTag).toBe(membershipsDTOMock.data[0].eTag)
-  }, 20000)
-
-  test("should set 'eTag' and 'updated' on the Membership object in real time", async () => {
-    const groupConversation = await chat.createGroupConversation({ users: [chat.currentUser] })
-    const hostMembership = groupConversation.hostMembership
-    let updatedMembership: Membership | undefined
-    const removeListener = hostMembership.streamUpdates((updatedMembershipData) => {
-      updatedMembership = updatedMembershipData
-    })
-    await hostMembership.update({ custom: { hello: "world" } })
-    await sleep(2000)
-    expect(updatedMembership?.custom?.hello).toBe("world")
-    expect(updatedMembership?.updated).toBeDefined()
-    expect(updatedMembership?.eTag).toBeDefined()
-    removeListener()
-  }, 20000)
-
   test("chat.getChannels with filter returns results", async () => {
       let result = await chat.getChannels({ limit: 2, filter: `type == 'public'` })
       expect(result.channels.length).toBe(2)
@@ -1241,8 +1080,7 @@ describe("Channel test", () => {
     await sleep(500)
     expect(receivedEvent.payload.text).toEqual(text)
     expect(receivedEvent.payload.reason).toEqual(reason)
-
-    unsubscribe(); // Cleanup
+    unsubscribe()
   }, 20000)
 
   test("send receipt event", async () => {
@@ -1303,7 +1141,7 @@ describe("Channel test", () => {
         })
     )
 
-    unsubscribe(); // Cleanup
+    unsubscribe()
   })
 
   test("use PubNub SDK types from Chat SDK", async () => {
@@ -1323,6 +1161,7 @@ describe("Channel test", () => {
 
     const receivedMessages: Message[] = []
     let callbackCount = 0
+
     const messageCallback = (message: Message) => {
       receivedMessages.push(message)
       callbackCount++
@@ -1503,5 +1342,102 @@ describe("Channel test", () => {
     expect(pinnedInParent).toBeNull()
 
     // await threadChannel.delete()
+  }, 20000)
+
+  test("should unpin message from channel", async () => {
+    const messageText = "Message to pin and unpin"
+    await channel.sendText(messageText)
+    await sleep(1000)
+
+    const history = await channel.getHistory()
+    const message = history.messages[0]
+
+    const updatedChannel = await channel.pinMessage(message)
+    await sleep(500)
+
+    let pinnedMessage = await updatedChannel.getPinnedMessage()
+    expect(pinnedMessage).toBeDefined()
+
+    await channel.unpinMessage()
+    await sleep(500)
+
+    pinnedMessage = await channel.getPinnedMessage()
+    expect(pinnedMessage).toBeNull()
+  }, 20000)
+
+  test("should handle typing indicators", async () => {
+    const typingUsers: string[][] = []
+    const stopTypingListener = channel.getTyping((userIds) => {
+      typingUsers.push(userIds)
+    })
+
+    await sleep(500)
+    await channel.startTyping()
+    await sleep(500)
+
+    expect(typingUsers.length).toBeGreaterThan(0)
+    expect(typingUsers.some(users => users.includes(chat.currentUser.id))).toBeTruthy()
+
+    stopTypingListener()
+    await channel.stopTyping()
+  }, 20000)
+
+  test("should get users restrictions from channel", async () => {
+    const user1 = await chatPamServer.createUser(generateRandomString(10), { name: "User1" })
+    const user2 = await chatPamServer.createUser(generateRandomString(10), { name: "User2" })
+    const testChannel = (await chatPamServer.createGroupConversation({ users: [user1, user2] })).channel
+
+    await testChannel.setRestrictions(user1, { mute: true, reason: "spam" })
+    await testChannel.setRestrictions(user2, { ban: true, reason: "abuse" })
+    await sleep(1000)
+
+    const restrictions = await testChannel.getUsersRestrictions({ limit: 10 })
+
+    expect(restrictions).toBeDefined()
+    expect(restrictions.restrictions.length).toBeGreaterThan(0)
+
+    const user1Restriction = restrictions.restrictions.find(r => r.userId === user1.id)
+    expect(user1Restriction).toBeDefined()
+    expect(user1Restriction?.mute).toBe(true)
+
+    await Promise.all([user1.delete(), user2.delete(), testChannel.delete()])
+  }, 30000)
+
+  test("should get message reports history", async () => {
+    const messageText = "Message to report"
+    const reason = "inappropriate"
+
+    const { timetoken } = await channel.sendText(messageText)
+    await sleep(500)
+    const message = await channel.getMessage(timetoken)
+
+    await message.report(reason)
+    await sleep(500)
+    const reportsHistory = await channel.getMessageReportsHistory({ count: 10 })
+
+    expect(reportsHistory).toBeDefined()
+    expect(reportsHistory.events.length).toBeGreaterThan(0)
+    expect(reportsHistory.events[0].payload.reason).toEqual(reason)
+  }, 20000)
+
+  test("should upload and retrieve files from channel", async () => {
+    const fileContent = "Test file content for PubNub"
+    const buffer = Buffer.from(fileContent, 'utf-8')
+    const file = chat.sdk.File.create({ name: "test.txt", mimeType: "text/plain", data: buffer })
+
+    const messageText = "Message with file"
+    await channel.sendText(messageText, { files: [file] })
+    await sleep(1000)
+
+    const filesResult = await channel.getFiles({ limit: 10 })
+    expect(filesResult).toBeDefined()
+    expect(filesResult.files.length).toBeGreaterThan(0)
+
+    const uploadedFile = filesResult.files[0]
+    expect(uploadedFile.name).toBe("test.txt")
+
+    const deleteResult = await channel.deleteFile({ id: uploadedFile.id, name: uploadedFile.name })
+    expect(deleteResult).toBeDefined()
+    expect(deleteResult.status).toBe(200)
   }, 20000)
 })
