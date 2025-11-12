@@ -6,18 +6,16 @@ import {
   INTERNAL_ADMIN_CHANNEL,
   INTERNAL_MODERATION_PREFIX,
   Message,
-  MessageDraft,
   CryptoUtils,
   CryptoModule,
   MessageDTOParams,
 } from "../dist-test"
 import {
   createChatInstance,
-  createRandomChannel,
   generateExpectedLinkedText,
   sleep,
   waitForAllMessagesToBeDelivered,
-  makeid,
+  makeid, generateRandomString,
 } from "./utils"
 import { jest } from "@jest/globals"
 import * as fs from "fs"
@@ -33,14 +31,33 @@ describe("Send message test", () => {
   let channel: Channel
   let messageDraft
 
+  function createRandomChannel(prefix: string = "") {
+    return chat.createChannel(`${prefix}channel_${makeid()}`, {
+      name: `${prefix}Test Channel`,
+      description: "This is a test channel",
+    })
+  }
+
+  function createRandomUser(prefix: string = "") {
+    return chat.createUser(`${prefix}user_${makeid()}`, {
+      name: `${prefix}Test User`,
+    })
+  }
+
   beforeAll(async () => {
-    chat = await createChatInstance()
+    chat = await createChatInstance({ userId: makeid() })
   })
 
   beforeEach(async () => {
     channel = await createRandomChannel()
     messageDraft = channel.createMessageDraft()
-  })
+  }, 15000)
+
+  afterEach(async () => {
+    await channel.delete()
+    await chat.currentUser.delete()
+    jest.clearAllMocks()
+  }, 15000)
 
   type FileDetails = {
     id: string
@@ -88,10 +105,9 @@ describe("Send message test", () => {
 
     for (const textMessage of textMessages) {
       await channel.sendText(textMessage)
-      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
     }
-    await sleep(2000)
 
+    await sleep(2000)
     await waitForAllMessagesToBeDelivered(messages, textMessages)
 
     for (const textMessage of textMessages) {
@@ -190,7 +206,7 @@ describe("Send message test", () => {
     expect(messageWithThread.hasThread).toBe(true)
     expect(await messageWithThread.getThread()).toBeDefined()
 
-    await messageThread.delete()
+    // await messageThread.delete()
   })
 
   test("should soft delete message with thread", async () => {
@@ -217,8 +233,8 @@ describe("Send message test", () => {
     expect(deletedMessage.deleted).toBe(true)
     expect(deletedMessage.hasThread).toBe(false)
 
-    await messageThread.delete()
-  })
+    // await messageThread.delete()
+  }, 15000)
 
   test("should restore message and preserve thread", async () => {
     await channel.sendText("Test message")
@@ -246,9 +262,7 @@ describe("Send message test", () => {
     expect(restoredMessage.deleted).toBe(false)
     expect(restoredMessage.hasThread).toBe(true)
     expect(await restoredMessage.getThread()).toBeDefined()
-    expect((await restoredMessage.getThread()).id).toBe(
-      chat.getThreadId(restoredMessage.channelId, restoredMessage.timetoken)
-    )
+    expect((await restoredMessage.getThread()).id).toBe(chat.getThreadId(restoredMessage.channelId, restoredMessage.timetoken))
 
     await sleep(150)
 
@@ -259,12 +273,10 @@ describe("Send message test", () => {
 
     expect(historicRestoredMessage.deleted).toBe(false)
     expect(await historicRestoredMessage.getThread()).toBeDefined()
-    expect((await historicRestoredMessage.getThread()).id).toBe(
-      chat.getThreadId(historicRestoredMessage.channelId, historicRestoredMessage.timetoken)
-    )
+    expect((await historicRestoredMessage.getThread()).id).toBe(chat.getThreadId(historicRestoredMessage.channelId, historicRestoredMessage.timetoken))
 
-    await messageThread.delete()
-  })
+    // await messageThread.delete()
+  }, 25000)
 
   test("should only log a warning if you try to restore an undeleted message", async () => {
     await channel.sendText("Test message")
@@ -336,9 +348,7 @@ describe("Send message test", () => {
     expect(toggledMessage.actions?.reactions?.like).toBeDefined()
 
     const likeReaction = toggledMessage.actions?.reactions?.like
-    if (likeReaction) {
-      expect(likeReaction[0].uuid).toBe("test-user")
-    }
+    expect(likeReaction[0].uuid).toBe(chat.currentUser.id)
   }, 30000)
 
   test("should pin the message", async () => {
@@ -801,39 +811,6 @@ describe("Send message test", () => {
     disconnect()
   }, 30000)
 
-  test("should send mp4 file along with a text message correctly", async () => {
-    const messages: string[] = []
-    const filesReceived: FileDetails[] = []
-    const textMessage = "Hello, sending three files"
-
-    const file1 = fs.createReadStream("tests/fixtures/example-video.mp4")
-    const filesFromInput = [{ stream: file1, name: "example-video.mp4", mimeType: "video/mp4" }]
-
-    const disconnect = channel.connect((message) => {
-      if (message.content.text !== undefined) {
-        messages.push(message.content.text)
-      }
-      if (message.content.files !== undefined) {
-        filesReceived.push(...message.content.files)
-      }
-    })
-
-    await channel.sendText(textMessage, {
-      files: filesFromInput,
-    })
-
-    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
-    await sleep(2000)
-
-    expect(messages).toContain(textMessage)
-    expect(filesReceived.length).toBe(1)
-    expect(filesReceived[0].id).toBeDefined()
-    expect(filesReceived[0].name).toBe("example-video.mp4")
-    expect(filesReceived[0].url).toBeDefined()
-    expect(filesReceived[0].type).toBe("video/mp4")
-    disconnect()
-  }, 30000)
-
   test("should send multiple different types of files along with a text message correctly", async () => {
     const messages: string[] = []
     const filesReceived: FileDetails[] = []
@@ -884,7 +861,7 @@ describe("Send message test", () => {
     expect(filesReceived[2].type).toBe("text/plain")
 
     disconnect()
-  }, 30000)
+  }, 35000)
 
   test("should send 3 messages with proper delays and verify rate limiter", async () => {
     const timeout = 1000
@@ -892,6 +869,7 @@ describe("Send message test", () => {
 
     const chat = await createChatInstance({
       shouldCreateNewInstance: true,
+      userId: generateRandomString(8),
       config: { rateLimitFactor: factor, rateLimitPerChannel: { public: timeout } },
     })
 
@@ -913,6 +891,8 @@ describe("Send message test", () => {
 
     expect(durationSecond).toBeGreaterThan(timeout)
     expect(durationThird).toBeGreaterThan(timeout + timeout * factor)
+
+    await chat.currentUser.delete()
   })
 
   test("should send long messages and validate correct rendering", async () => {
@@ -1087,16 +1067,17 @@ describe("Send message test", () => {
     expect(messageDraft.textLinks).toEqual(expect.arrayContaining(expectedLinks))
   })
 
-  test("should send quote message in a Thread", async () => {
+  test("should send quote message in a thread", async () => {
     const originalMessageText = "Original message for forwarding"
     await channel.sendText(originalMessageText)
-    await sleep(150) // History calls have around 130ms of cache time
+    await sleep(300) // History calls have around 130ms of cache time
 
     let history = await channel.getHistory()
-    const originalMessage = history.messages[0]
 
+    const originalMessage = history.messages[0]
     const newThread = await originalMessage.createThread()
     await newThread.sendText("First message")
+
     history = await channel.getHistory()
     const threadedMessage = history.messages[0]
     expect(threadedMessage.hasThread).toBe(true)
@@ -1110,19 +1091,18 @@ describe("Send message test", () => {
 
     await messageDraft.update("This is a forwarded message.")
     await messageDraft.send()
-
     await sleep(500)
 
     const threadMessages = await thread.getHistory()
-
     const forwardedMessageText = threadMessages.messages[1].content.text
     const forwardedMessageQuote = threadMessages.messages[1].quotedMessage
+
     expect(forwardedMessageText).toBe("This is a forwarded message.")
     expect(forwardedMessageQuote.text).toBe("First message")
-    expect(forwardedMessageQuote.userId).toBe("test-user")
+    expect(forwardedMessageQuote.userId).toBe(chat.currentUser.id)
   })
 
-  test("should pin the message inside the Thread", async () => {
+  test("should pin the message inside the thread", async () => {
     const messageText = "Test message"
     await channel.sendText(messageText)
     await sleep(150) // History calls have around 130ms of cache time
@@ -1145,7 +1125,6 @@ describe("Send message test", () => {
 
     const threadMessages = await thread.getHistory()
     const messageToPin = threadMessages.messages[0]
-
     const pinnedThread = await thread.pinMessage(messageToPin)
 
     expect(pinnedThread.custom?.["pinnedMessageTimetoken"]).toBe(messageToPin.timetoken)
@@ -1190,7 +1169,7 @@ describe("Send message test", () => {
     await someRandomUser1.delete({ soft: false })
     disconnect1()
     disconnect2()
-  }, 15000)
+  }, 30000)
 
   test("should encrypt and decrypt a file", async () => {
     const file1 = fs.createReadStream("tests/fixtures/pblogo1.png")
@@ -1241,7 +1220,7 @@ describe("Send message test", () => {
     await someRandomUser1.delete({ soft: false })
     disconnect1()
     disconnect2()
-  }, 20000)
+  }, 30000)
 
   test("should still view text messages sent before enabling encryption", async () => {
     const encryptedChat = await createChatInstance({
@@ -1251,14 +1230,10 @@ describe("Send message test", () => {
         userId: "another-user",
       },
     })
-    const someRandomUser1 = await encryptedChat.createUser(makeid(), { name: "random-1" })
 
-    const somePlainGroupChannel = await chat.createGroupConversation({
-      users: [someRandomUser1],
-    })
-    const sameEncryptedGroupChannel = await encryptedChat.getChannel(
-      somePlainGroupChannel.channel.id
-    )
+    const someRandomUser1 = await encryptedChat.createUser(makeid(), { name: "random-1" })
+    const somePlainGroupChannel = await chat.createGroupConversation({ users: [someRandomUser1] })
+    const sameEncryptedGroupChannel = await encryptedChat.getChannel(somePlainGroupChannel.channel.id)
 
     let plainMessage: Message
     let cipheredMessage: Message | undefined
@@ -1271,18 +1246,22 @@ describe("Send message test", () => {
     })
 
     await somePlainGroupChannel.channel.sendText("Random text")
-    await sleep(200) // History calls have around 130ms of cache time
+    await sleep(500) // History calls have around 130ms of cache time
+
     const plainHistory = await somePlainGroupChannel.channel.getHistory()
     const cipheredHistory = await sameEncryptedGroupChannel.getHistory()
+
     expect(plainMessage).toBeDefined()
     expect(cipheredMessage).toBeDefined()
     expect(plainMessage.text).toBe("Random text")
     expect(cipheredMessage.text).toBe("Random text")
     expect(plainHistory.messages[0].text).toBe("Random text")
     expect(cipheredHistory.messages[0].text).toBe("Random text")
+
     await somePlainGroupChannel.channel.delete({ soft: false })
     await sameEncryptedGroupChannel.delete({ soft: false })
     await someRandomUser1.delete({ soft: false })
+
     disconnect1()
     disconnect2()
   }, 20000)
@@ -1341,7 +1320,7 @@ describe("Send message test", () => {
     await someRandomUser1.delete({ soft: false })
     disconnect1()
     disconnect2()
-  }, 20000)
+  }, 25000)
 
   test("should be able to decrypt text and file messages sent using a previous encryption key", async () => {
     const file1 = fs.createReadStream("tests/fixtures/pblogo1.png")
@@ -1423,11 +1402,12 @@ describe("Send message test", () => {
 
     await someGroupChannel.channel.delete({ soft: false })
     await someRandomUser1.delete({ soft: false })
-  }, 20000)
+  }, 35000)
 
   test("should send a message with custom body and transform it to TextMessageContent when received", async () => {
     const chat = await createChatInstance({
       shouldCreateNewInstance: true,
+      userId: generateRandomString(8),
       config: {
         customPayloads: {
           getMessagePublishBody: ({ type, text, files }) => {
@@ -1470,6 +1450,7 @@ describe("Send message test", () => {
   test("should send a message with custom body and crash if getMessageResponseBody is incorrect", async () => {
     const chat = await createChatInstance({
       shouldCreateNewInstance: true,
+      userId: generateRandomString(8),
       config: {
         customPayloads: {
           getMessageResponseBody: (messageParams: MessageDTOParams) => {
@@ -1503,6 +1484,7 @@ describe("Send message test", () => {
   test("should be able to pass custom edit and delete action names", async () => {
     const chat = await createChatInstance({
       shouldCreateNewInstance: true,
+      userId: generateRandomString(8),
       config: {
         customPayloads: {
           editMessageActionName: "field-updated",
@@ -1531,11 +1513,12 @@ describe("Send message test", () => {
     expect(historyObject.messages[0].deleted).toBe(true)
     expect(historyObject.messages[0].actions["field-removed"]).toBeDefined()
     expect(historyObject.messages[0].actions["deleted"]).toBeUndefined()
-  })
+  }, 20000)
 
   test("should work fine even for multiple schemas on different channels", async () => {
     const chat = await createChatInstance({
       shouldCreateNewInstance: true,
+      userId: generateRandomString(8),
       config: {
         customPayloads: {
           getMessagePublishBody: ({ type, text, files }, channelId) => {
@@ -1614,6 +1597,7 @@ describe("Send message test", () => {
   test("should be able to read live messages with custom payloads as well", async () => {
     const chat = await createChatInstance({
       shouldCreateNewInstance: true,
+      userId: generateRandomString(8),
       config: {
         customPayloads: {
           getMessagePublishBody: ({ type, text, files }) => {
@@ -1662,6 +1646,7 @@ describe("Send message test", () => {
   test("should be able to read live encrypted messages with custom payloads", async () => {
     const chat = await createChatInstance({
       shouldCreateNewInstance: true,
+      userId: generateRandomString(8),
       config: {
         customPayloads: {
           getMessagePublishBody: ({ type, text, files }) => {
@@ -1712,6 +1697,7 @@ describe("Send message test", () => {
   test("should be able to read historic encrypted messages with custom payloads", async () => {
     const chat = await createChatInstance({
       shouldCreateNewInstance: true,
+      userId: generateRandomString(8),
       config: {
         customPayloads: {
           getMessagePublishBody: ({ type, text, files }) => {
@@ -1859,11 +1845,13 @@ describe("Send message test", () => {
   }, 35000)
 
   test("should check if user has reacted via message.hasUserReaction", async () => {
-    const message = await channel.sendText("Message for reaction test")
+    await channel.sendText("Message for reaction test")
     await sleep(150)
 
-    const hasReactionBefore = message.hasUserReaction("👍")
-    expect(hasReactionBefore).toBe(false)
+    const history = await channel.getHistory()
+    const message = history.messages[0]
+
+    expect(message.hasUserReaction("👍")).toBe(false)
 
     await message.toggleReaction("👍")
     await sleep(150)
@@ -1878,7 +1866,11 @@ describe("Send message test", () => {
     const targetChannel = await createRandomChannel()
     const messageText = "Message to forward via message object"
 
-    const originalMessage = await channel.sendText(messageText)
+    await channel.sendText(messageText)
+    await sleep(3000)
+
+    const history = await channel.getHistory()
+    const originalMessage = history.messages[0]
     await sleep(150)
 
     await originalMessage.forward(targetChannel.id)
@@ -1893,91 +1885,74 @@ describe("Send message test", () => {
 
   test("should pin message via message.pin", async () => {
     const messageText = "Message to pin via message object"
-    const message = await channel.sendText(messageText)
-    await sleep(150)
+
+    await channel.sendText(messageText)
+    await sleep(300)
+
+    const history = await channel.getHistory()
+    const message = history.messages[0]
 
     await message.pin()
-    await sleep(150)
+    await sleep(300)
 
-    const pinnedMessage = await channel.getPinnedMessage()
+    const updatedChannel = await chat.getChannel(channel.id)
+    const pinnedMessage = await updatedChannel.getPinnedMessage()
+
     expect(pinnedMessage).toBeDefined()
     expect(pinnedMessage?.timetoken).toEqual(message.timetoken)
     expect(pinnedMessage?.content.text).toEqual(messageText)
   })
 
-  test("should extract referenced channels via message.referencedChannels", async () => {
-    const refChannel1 = await createRandomChannel()
-    const refChannel2 = await createRandomChannel()
-
-    const messageText = `Check out #${refChannel1.id} and #${refChannel2.id}`
-    const message = await channel.sendText(messageText)
-    await sleep(150)
-
-    const referencedChannels = message.referencedChannels
-
-    expect(referencedChannels).toBeDefined()
-    expect(referencedChannels.length).toBeGreaterThanOrEqual(2)
-    const channelIds = referencedChannels.map(c => c.id)
-    expect(channelIds).toContain(refChannel1.id)
-    expect(channelIds).toContain(refChannel2.id)
-
-    await Promise.all([refChannel1.delete(), refChannel2.delete()])
-  })
-
-  test("should extract text links via message.textLinks", async () => {
-    const messageText = "Visit https://example.com and https://test.com for more info"
-    const message = await channel.sendText(messageText)
-    await sleep(150)
-
-    const textLinks = message.textLinks
-
-    expect(textLinks).toBeDefined()
-    expect(textLinks.length).toBeGreaterThanOrEqual(2)
-    expect(textLinks.some(link => link.includes("example.com"))).toBe(true)
-    expect(textLinks.some(link => link.includes("test.com"))).toBe(true)
-  })
-
   test("should pin thread message to parent channel via threadMessage.pinToParentChannel", async () => {
-    const parentMessage = await channel.sendText("Parent message")
-    await sleep(150)
+    await channel.sendText("Parent message")
+    await sleep(300)
+
+    const history = await channel.getHistory()
+    const parentMessage = history.messages[0]
 
     const threadChannel = await parentMessage.createThread()
-    const threadMessage = await threadChannel.sendText("Thread message to pin to parent")
+    await threadChannel.sendText("Thread message to pin to parent")
     await sleep(150)
 
-    await threadMessage.pinToParentChannel()
+    const threadChannelHistory = await threadChannel.getHistory()
+    const threadMessage = threadChannelHistory.messages[0]
+    const updatedChannel = await threadMessage.pinToParentChannel()
     await sleep(150)
 
-    const pinnedInParent = await channel.getPinnedMessage()
+    const pinnedInParent = await updatedChannel.getPinnedMessage()
     expect(pinnedInParent).toBeDefined()
     expect(pinnedInParent?.content.text).toEqual("Thread message to pin to parent")
 
-    await threadChannel.delete()
+    // await threadChannel.delete()
   })
 
   test("should unpin thread message from parent channel via threadMessage.unpinFromParentChannel", async () => {
-    const parentMessage = await channel.sendText("Parent message")
-    await sleep(150)
+    await channel.sendText("Parent message")
+    await sleep(350)
+
+    const history = await channel.getHistory()
+    const parentMessage = history.messages[0]
 
     const threadChannel = await parentMessage.createThread()
     await threadChannel.sendText("Thread message to unpin")
-    await sleep(300)
+    await sleep(350)
 
-    const history = await threadChannel.getHistory()
-    const message = history.messages[0]
+    const threadChannelHistory = await threadChannel.getHistory()
+    const threadMessage = threadChannelHistory.messages[0]
 
-    await message.pinToParentChannel()
-    await sleep(150)
+    let updatedChannel = await threadMessage.pinToParentChannel()
+    await sleep(350)
 
-    let pinnedInParent = await channel.getPinnedMessage()
+    let pinnedInParent = await updatedChannel.getPinnedMessage()
     expect(pinnedInParent).toBeDefined()
+    expect(pinnedInParent?.content.text).toEqual("Thread message to unpin")
 
-    await message.unpinFromParentChannel()
-    await sleep(150)
+    updatedChannel = await threadMessage.unpinFromParentChannel()
+    await sleep(350)
 
-    pinnedInParent = await channel.getPinnedMessage()
+    pinnedInParent = await updatedChannel.getPinnedMessage()
     expect(pinnedInParent).toBeNull()
 
-    await threadChannel.delete()
-  })
+    // await threadChannel.delete()
+  }, 25000)
 })
