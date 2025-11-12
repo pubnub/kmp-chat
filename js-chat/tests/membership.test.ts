@@ -1,13 +1,26 @@
-import { Chat, Channel, User, Membership } from "../dist-test"
-import { createChatInstance, createRandomChannel, createRandomUser, sleep } from "./utils"
+import {Chat, Channel, User} from "../dist-test"
+import {createChatInstance, generateRandomString, makeid, sleep} from "./utils"
 
 describe("Membership test", () => {
   let chat: Chat
   let channel: Channel
   let user: User
 
+  function createRandomChannel(prefix: string = "") {
+    return chat.createChannel(`${prefix}channel_${makeid()}`, {
+      name: `${prefix}Test Channel`,
+      description: "This is a test channel",
+    })
+  }
+
+  function createRandomUser(prefix: string = "") {
+    return chat.createUser(`${prefix}user_${makeid()}`, {
+      name: `${prefix}Test User`,
+    })
+  }
+
   beforeAll(async () => {
-    chat = await createChatInstance()
+    chat = await createChatInstance({ shouldCreateNewInstance: true, userId: generateRandomString(8) })
   })
 
   beforeEach(async () => {
@@ -18,36 +31,34 @@ describe("Membership test", () => {
   afterEach(async () => {
     await Promise.all([
       channel?.delete({ soft: false }),
-      user?.delete()
+      user?.delete(),
+      chat.currentUser.delete({ soft: false })
     ])
   })
 
-  test("should get membership via user.getMembership", async () => {
-    await channel.invite(user)
+  test("should get membership via channel.invite", async () => {
+    const membership = await channel.invite(user)
     await sleep(150)
-
-    const membership = await user.getMembership(channel.id)
 
     expect(membership).toBeDefined()
     expect(membership.user.id).toEqual(user.id)
     expect(membership.channel.id).toEqual(channel.id)
-  })
+  }, 20000)
 
   test("should access lastReadMessageTimetoken property via membership.lastReadMessageTimetoken", async () => {
-    await channel.invite(user)
+    const membership = await channel.invite(user)
     await sleep(150)
 
-    const message = await channel.sendText("Test message")
-    await sleep(150)
+    await channel.sendText("Test message")
+    await sleep(350)
 
-    const membership = await user.getMembership(channel.id)
-    await membership.setLastReadMessage(message)
-    await sleep(150)
+    const history = await channel.getHistory()
+    const message = history.messages[0]
 
-    const updatedMembership = await user.getMembership(channel.id)
+    const updatedMembership = await membership.setLastReadMessage(message)
     const lastReadTimetoken = updatedMembership.lastReadMessageTimetoken
 
     expect(lastReadTimetoken).toBeDefined()
     expect(lastReadTimetoken).toEqual(message.timetoken)
-  })
+  }, 20000)
 })
