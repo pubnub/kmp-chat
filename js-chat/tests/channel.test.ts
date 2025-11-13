@@ -1,5 +1,6 @@
 import {
   Channel,
+  ThreadChannel,
   Message,
   Chat,
   MessageDraft,
@@ -49,10 +50,10 @@ describe("Channel test", () => {
   }, 15000)
 
   afterEach(async () => {
-    await channel.delete({ soft: false })
-    await chat.currentUser.delete( { soft: false })
-    await chatPamServer.currentUser.delete( { soft: false })
-    await chatPamServerWithRefIntegrity.currentUser.delete( { soft: false })
+    await channel.delete()
+    await chat.currentUser.delete()
+    await chatPamServer.currentUser.delete()
+    await chatPamServerWithRefIntegrity.currentUser.delete()
     jest.clearAllMocks()
   }, 15000)
 
@@ -197,6 +198,7 @@ describe("Channel test", () => {
     await newChannels[0].channel.delete({ soft: false })
     await newChannels[1].channel.delete({ soft: false })
     await newChannels[2].delete({ soft: false })
+    await user.delete()
   }, 20000)
 
   test("should create direct conversation and send message", async () => {
@@ -213,6 +215,7 @@ describe("Channel test", () => {
     const messageInHistory = history.messages.some((message: Message) => message.content.text === messageText)
     expect(messageInHistory).toBeTruthy()
 
+    await directConversation.channel.delete()
     await user.delete()
   }, 20000)
 
@@ -350,6 +353,66 @@ describe("Channel test", () => {
     expect(updatedChannel.type).toEqual(channel.type)
 
     stopUpdates()
+  }, 20000)
+
+  test("should stream channel updates via Channel.streamUpdatesOn", async () => {
+    let updatedChannels: Channel[] = []
+    let callbackCount = 0
+
+    channel = await channel.update({ type: "public" })
+
+    const name = "Updated Channel via streamUpdatesOn"
+    const callback = (channels: Channel[]) => {
+      updatedChannels = channels
+      callbackCount++
+    }
+
+    const stopUpdates = Channel.streamUpdatesOn([channel], callback)
+    await channel.update({ name })
+    await sleep(150)
+
+    expect(callbackCount).toBe(1)
+    expect(updatedChannels).toBeDefined()
+    expect(updatedChannels.length).toBe(1)
+    expect(updatedChannels[0].name).toEqual(name)
+    expect(updatedChannels[0].type).toEqual(channel.type)
+
+    stopUpdates()
+  }, 20000)
+
+  test("should stream thread channel updates via ThreadChannel.streamUpdatesOn", async () => {
+    let updatedThreadChannels: ThreadChannel[] = []
+    let callbackCount = 0
+
+    const messageText = "Parent message for thread updates"
+    await channel.sendText(messageText)
+    await sleep(150)
+
+    const history = await channel.getHistory()
+    const parentMessage = history.messages[0]
+
+    const threadChannel = await parentMessage.createThread()
+    await threadChannel.sendText("Initial thread message")
+    await sleep(150)
+
+    const callback = (channels: ThreadChannel[]) => {
+      updatedThreadChannels = channels
+      callbackCount++
+    }
+
+    const stopUpdates = ThreadChannel.streamUpdatesOn([threadChannel], callback)
+    const updatedName = "Updated Thread Channel"
+    await threadChannel.update({ name: updatedName })
+    await sleep(150)
+
+    expect(callbackCount).toBe(1)
+    expect(updatedThreadChannels).toBeDefined()
+    expect(updatedThreadChannels.length).toBe(1)
+    expect(updatedThreadChannels[0].name).toEqual(updatedName)
+
+    stopUpdates()
+
+    // await threadChannel.delete()
   }, 20000)
 
   test("should get unread messages count", async () => {
@@ -671,6 +734,7 @@ describe("Channel test", () => {
     expect(membership.user.id).toEqual(userToInvite.id)
     expect(membership.channel.id).toEqual(channel.id)
 
+    await channel.leave()
     await userToInvite.delete()
   }, 20000)
 
@@ -691,6 +755,7 @@ describe("Channel test", () => {
       expect(membership.channel.id).toEqual(channel.id)
     })
 
+    await Promise.all(invitedMemberships.map(membership => membership.user.leave(channel.id)))
     await Promise.all(usersToInvite.map((user) => user.delete()))
   }, 20000)
 
@@ -705,6 +770,8 @@ describe("Channel test", () => {
     expect(membership).toBeDefined()
     expect(membersData.members.find((member) => member.user.id === user.id)).toBeTruthy()
 
+    await channel.leave()
+    await channel.delete()
     await user.delete()
   }, 20000)
 
@@ -731,6 +798,8 @@ describe("Channel test", () => {
     disconnect()
     await sleep(2000)
     expect(await chat2.currentUser.isPresentOn(channel.id)).toBe(false)
+
+    await channel.delete()
     await chat2.currentUser.delete()
   }, 20000)
 
@@ -1315,8 +1384,11 @@ describe("Channel test", () => {
     const message = history.messages[0]
 
     const threadChannel = await message.createThread()
-    const threadMessage = await threadChannel.sendText("Thread message to unpin")
+    await threadChannel.sendText("Thread message to unpin")
     await sleep(150)
+
+    const threadChannelHistory = await threadChannel.getHistory()
+    const threadMessage = threadChannelHistory.messages[0]
 
     await threadChannel.pinMessageToParentChannel(threadMessage)
     await sleep(150)
@@ -1451,6 +1523,7 @@ describe("Channel test", () => {
     disconnect()
     stopPresenceStream()
 
+    await testChannel.leave()
     await testChannel.delete()
   }, 30000)
 
@@ -1480,6 +1553,7 @@ describe("Channel test", () => {
     expect(hasExpectedReceipt).toBe(true)
     stopReceiptsStream()
 
+    await directConversation.channel.leave()
     await testUser.delete()
     await directConversation.channel.delete()
   }, 30000)

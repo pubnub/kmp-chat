@@ -12,6 +12,7 @@ import {
   CryptoUtils,
   CryptoModule,
   MessageDTOParams,
+  ThreadMessage,
 } from "../dist-test"
 
 import {
@@ -293,6 +294,7 @@ describe("Send message test", () => {
     const sentMessage = historicMessages[historicMessages.length - 1]
     const logSpy = jest.spyOn(console, "warn")
     await sentMessage.restore()
+
     expect(sentMessage.deleted).toBe(false)
     expect(logSpy).toHaveBeenCalledWith("(BaseMessageImpl) This message has not been deleted")
   })
@@ -314,13 +316,10 @@ describe("Send message test", () => {
     const deletedMessage = messagesAfterDelete.find(
       (message: Message) => message.timetoken === sentMessage.timetoken
     )
-    let thrownExceptionString = ""
 
     await deletedMessage.createThread().catch((e) => {
-      thrownExceptionString = e
+      expect(e.message).toContain("You cannot create threads on deleted messages.")
     })
-
-    expect(thrownExceptionString.message).toContain("You cannot create threads on deleted messages.")
   })
 
   test("should edit the message", async () => {
@@ -456,18 +455,8 @@ describe("Send message test", () => {
 
   test("should render URLs correctly", async () => {
     const messageDraft = channel.createMessageDraft()
-    const existingUser = await chat.getUser("Przemek")
-    const existingUser2 = await chat.getUser("whatever")
-
-    if (existingUser) {
-      await existingUser.delete({ soft: false })
-    }
-    if (existingUser2) {
-      await existingUser2.delete({ soft: false })
-    }
-
-    const someUser = await chat.createUser("Przemek", { name: "Lukasz" })
-    const someUser2 = await chat.createUser("whatever", { name: "Anton" })
+    const someUser = await chat.createUser(generateRandomString(8), { name: "Lukasz" })
+    const someUser2 = await chat.createUser(generateRandomString(8), { name: "Anton" })
 
     const expectedLinkedText = generateExpectedLinkedText(messageDraft, someUser, someUser2)
     const messagePreview = messageDraft.getMessagePreview()
@@ -475,6 +464,9 @@ describe("Send message test", () => {
     expectedLinkedText.forEach((expectedElement) => {
       expect(messagePreview).toEqual(expect.arrayContaining([expectedElement]))
     })
+
+    await someUser.delete()
+    await someUser2.delete()
   })
 
   test("should add linked text correctly", () => {
@@ -491,6 +483,7 @@ describe("Send message test", () => {
     })
 
     const expectedText = `${initialText}${textToAdd}`
+
     expect(messageDraft.value).toBe(expectedText)
     expect(messageDraft.textLinks).toHaveLength(1)
     expect(messageDraft.textLinks[0]).toEqual({
@@ -899,8 +892,9 @@ describe("Send message test", () => {
     expect(durationSecond).toBeGreaterThan(timeout)
     expect(durationThird).toBeGreaterThan(timeout + timeout * factor)
 
+    await channel.delete()
     await chat.currentUser.delete()
-  })
+  }, 20000)
 
   test("should send long messages and validate correct rendering", async () => {
     const messages: string[] = []
@@ -1138,7 +1132,7 @@ describe("Send message test", () => {
     const pinnedThread = await thread.pinMessage(messageToPin)
 
     expect(pinnedThread.custom?.["pinnedMessageTimetoken"]).toBe(messageToPin.timetoken)
-  })
+  }, 20000)
 
   test("should encrypt and decrypt a message", async () => {
     const encryptedChat = await createChatInstance({
@@ -1148,6 +1142,7 @@ describe("Send message test", () => {
         userId: "another-user",
       },
     })
+
     const someRandomUser1 = await encryptedChat.createUser(makeid(), { name: "random-1" })
     const someEncryptedGroupChannel = await encryptedChat.createGroupConversation({ users: [someRandomUser1] })
 
@@ -1178,6 +1173,7 @@ describe("Send message test", () => {
     await someEncryptedGroupChannel.channel.delete({ soft: false })
     await sameCipheredGroupChannel.delete({ soft: false })
     await someRandomUser1.delete({ soft: false })
+    await encryptedChat.currentUser.delete()
 
     disconnect1()
     disconnect2()
@@ -1203,8 +1199,8 @@ describe("Send message test", () => {
     })
     const someRandomUser1 = await encryptedChat.createUser(makeid(), { name: "random-1" })
     const someEncryptedGroupChannel = await encryptedChat.createGroupConversation({ users: [someRandomUser1] })
-
     const sameCipheredGroupChannel = await chat.getChannel(someEncryptedGroupChannel.channel.id)
+
     let encryptedMessage: Message
     let cipheredMessage: Message | undefined
 
@@ -1230,6 +1226,7 @@ describe("Send message test", () => {
     await someEncryptedGroupChannel.channel.delete({ soft: false })
     await sameCipheredGroupChannel.delete({ soft: false })
     await someRandomUser1.delete({ soft: false })
+    await encryptedChat.currentUser.delete()
 
     disconnect1()
     disconnect2()
@@ -1271,12 +1268,13 @@ describe("Send message test", () => {
     expect(plainHistory.messages[0].text).toBe("Random text")
     expect(cipheredHistory.messages[0].text).toBe("Random text")
 
-    await somePlainGroupChannel.channel.delete({ soft: false })
-    await sameEncryptedGroupChannel.delete({ soft: false })
-    await someRandomUser1.delete({ soft: false })
-
     disconnect1()
     disconnect2()
+
+    await somePlainGroupChannel.channel.delete()
+    await sameEncryptedGroupChannel.delete()
+    await someRandomUser1.delete()
+    await encryptedChat.currentUser.delete()
   }, 20000)
 
   test("should still view files sent before enabling encryption", async () => {
@@ -1326,13 +1324,14 @@ describe("Send message test", () => {
     expect(plainHistory.messages[0].files.length).toBe(3)
     expect(cipheredHistory.messages[0].files.length).toBe(3)
 
-    await somePlainGroupChannel.channel.delete({ soft: false })
-    await sameEncryptedGroupChannel.delete({ soft: false })
-    await someRandomUser1.delete({ soft: false })
-
     disconnect1()
     disconnect2()
-  }, 25000)
+
+    await somePlainGroupChannel.channel.delete()
+    await sameEncryptedGroupChannel.delete()
+    await someRandomUser1.delete()
+    await encryptedChat.currentUser.delete()
+  }, 30000)
 
   test("should be able to decrypt text and file messages sent using a previous encryption key", async () => {
     const file1 = fs.createReadStream("tests/fixtures/pblogo1.png")
@@ -1411,6 +1410,8 @@ describe("Send message test", () => {
 
     await someGroupChannel.channel.delete({ soft: false })
     await someRandomUser1.delete({ soft: false })
+    await encryptedChat1.currentUser.delete()
+    await encryptedChat2.currentUser.delete()
   }, 35000)
 
   test("should send a message with custom body and transform it to TextMessageContent when received", async () => {
@@ -1451,6 +1452,9 @@ describe("Send message test", () => {
     const historyObject = await someChannel.getHistory({ count: 1 })
     expect(historyObject.messages[0].text).toBe("Hello world!")
     expect(historyObject.messages[0].content.customKey).toBe("customValue")
+
+    await someChannel.delete()
+    await chat.currentUser.delete()
   })
 
   test("should send a message with custom body and crash if getMessageResponseBody is incorrect", async () => {
@@ -1483,6 +1487,9 @@ describe("Send message test", () => {
     }
 
     expect(thrownErrorMessage).toBeDefined()
+
+    await someChannel.delete()
+    await chat.currentUser.delete()
   })
 
   test("should be able to pass custom edit and delete action names", async () => {
@@ -1497,10 +1504,7 @@ describe("Send message test", () => {
       },
     })
 
-    const someChannel =
-      (await chat.getChannel("some-channel-custom-actions")) ||
-      (await chat.createChannel("some-channel-custom-actions", { name: "Custom actions channel" }))
-
+    const someChannel = await chat.createChannel(generateRandomString(10))
     await someChannel.sendText("Hello world!")
     await sleep(250)
 
@@ -1522,6 +1526,9 @@ describe("Send message test", () => {
     expect(historyAfterDelete.messages[0].deleted).toBe(true)
     expect(historyAfterDelete.messages[0].actions["field-removed"]).toBeDefined()
     expect(historyAfterDelete.messages[0].actions["deleted"]).toBeUndefined()
+
+    await someChannel.delete()
+    await chat.currentUser.delete()
   }, 20000)
 
   test("should work fine even for multiple schemas on different channels", async () => {
@@ -1591,6 +1598,10 @@ describe("Send message test", () => {
 
     expect(someChannelHistoryObject.messages[0].text).toBe("One type of schema")
     expect(someChannelWithDifferentSchemaHistoryObject.messages[0].text).toBe("Another type of schema")
+
+    await someChannel.delete()
+    await someChannelWithDifferentSchema.delete()
+    await chat.currentUser.delete()
   }, 25000)
 
   test("should be able to read live messages with custom payloads as well", async () => {
@@ -1642,7 +1653,10 @@ describe("Send message test", () => {
     expect(receivedMessages.length).toBeGreaterThanOrEqual(2)
 
     disconnect()
-  })
+
+    await someChannel.delete()
+    await chat.currentUser.delete()
+  }, 20000)
 
   test("should be able to read live encrypted messages with custom payloads", async () => {
     const chat = await createChatInstance({
@@ -1693,7 +1707,10 @@ describe("Send message test", () => {
     expect(receivedMessages.length).toBeGreaterThanOrEqual(2)
 
     disconnect()
-  })
+
+    await someChannel.delete()
+    await chat.currentUser.delete()
+  }, 20000)
 
   test("should be able to read historic encrypted messages with custom payloads", async () => {
     const chat = await createChatInstance({
@@ -1735,7 +1752,10 @@ describe("Send message test", () => {
     const historyObject = await someChannel.getHistory({ count: 2 })
     expect(historyObject.messages[0].text).toBe("Hello encrypted world!")
     expect(historyObject.messages[1].text).toBe("Hello encrypted world! Number 2")
-  })
+
+    await someChannel.delete()
+    await chat.currentUser.delete()
+  }, 20000)
 
   test("should receive streamUpdates callback when soft deleting message", async () => {
     const disconnect = channel.connect((message) => {  })
@@ -2035,7 +2055,7 @@ describe("Send message test", () => {
     const threadMessage2 = threadHistory.messages[1]
 
     const streamUpdatesOnCallbacks: any[] = []
-    const unsubscribeOn = (threadMessage1.constructor as any).streamUpdatesOn([threadMessage1, threadMessage2], (messages: any[]) => {
+    const unsubscribeOn = ThreadMessage.streamUpdatesOn([threadMessage1, threadMessage2], (messages: any[]) => {
       streamUpdatesOnCallbacks.push([...messages])
     })
 
@@ -2051,5 +2071,7 @@ describe("Send message test", () => {
     expect(streamUpdatesOnCallbacks.length).toBeGreaterThanOrEqual(2)
     expect(Array.isArray(streamUpdatesOnCallbacks[0])).toBe(true)
     expect(streamUpdatesOnCallbacks[0].length).toBe(2)
+
+    // await threadChannel.delete()
   }, 30000)
 })
