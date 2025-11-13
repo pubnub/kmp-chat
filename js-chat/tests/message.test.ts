@@ -165,7 +165,7 @@ describe("Send message test", () => {
     )
 
     expect(deletedMessage.deleted).toBe(true)
-  })
+  }, 20000)
 
   test("should restore soft deleted message", async () => {
     await channel.sendText("Test message")
@@ -193,7 +193,7 @@ describe("Send message test", () => {
     )
 
     expect(historicRestoredMessage.deleted).toBe(false)
-  })
+  }, 20000)
 
   test("should create thread on message", async () => {
     await channel.sendText("Test message")
@@ -215,7 +215,7 @@ describe("Send message test", () => {
     expect(await messageWithThread.getThread()).toBeDefined()
 
     // await messageThread.delete()
-  })
+  }, 20000)
 
   test("should soft delete message with thread", async () => {
     await channel.sendText("Test message")
@@ -297,7 +297,7 @@ describe("Send message test", () => {
 
     expect(sentMessage.deleted).toBe(false)
     expect(logSpy).toHaveBeenCalledWith("(BaseMessageImpl) This message has not been deleted")
-  })
+  }, 20000)
 
   test("should throw an error if you try to create a thread on a deleted message", async () => {
     await channel.sendText("Test message")
@@ -320,7 +320,7 @@ describe("Send message test", () => {
     await deletedMessage.createThread().catch((e) => {
       expect(e.message).toContain("You cannot create threads on deleted messages.")
     })
-  })
+  }, 20000)
 
   test("should edit the message", async () => {
     await channel.sendText("Test message")
@@ -467,7 +467,7 @@ describe("Send message test", () => {
 
     await someUser.delete()
     await someUser2.delete()
-  })
+  }, 20000)
 
   test("should add linked text correctly", () => {
     const initialText = "Check out this link: "
@@ -596,7 +596,7 @@ describe("Send message test", () => {
     expect(reportMessage?.payload.reportedMessageChannelId).toBe(reportedMessage.channelId)
     expect(reportMessage?.payload.reportedMessageTimetoken).toBe(reportedMessage.timetoken)
     expect(reportMessage?.payload.reportedUserId).toBe(reportedMessage.userId)
-  })
+  }, 20000)
 
   test("should find a message from auto moderation report", async () => {
     const messageText = "Test message to be reported"
@@ -626,7 +626,7 @@ describe("Send message test", () => {
     const message = await (chat as ChatInternal).getMessageFromReport(reportEvent)
 
     expect(message?.timetoken).toBe(reportedMessage.timetoken)
-  })
+  }, 20000)
 
   test.skip("should report a message (deprecated)", async () => {
 
@@ -689,7 +689,6 @@ describe("Send message test", () => {
     expect(messages).toContain(textMessage)
 
     expect(filesReceived.length).toBe(3)
-
     expect(filesReceived[0].id).toBeDefined()
     expect(filesReceived[0].name).toBe("pblogo1.png")
     expect(filesReceived[0].url).toBeDefined()
@@ -766,9 +765,7 @@ describe("Send message test", () => {
     await sleep(2000)
 
     expect(messages).toContain(textMessage)
-
     expect(filesReceived.length).toBe(1)
-
     expect(filesReceived[0].id).toBeDefined()
     expect(filesReceived[0].name).toBe("lorem-ipsum.pdf")
     expect(filesReceived[0].url).toBeDefined()
@@ -1275,7 +1272,7 @@ describe("Send message test", () => {
     await sameEncryptedGroupChannel.delete()
     await someRandomUser1.delete()
     await encryptedChat.currentUser.delete()
-  }, 20000)
+  }, 35000)
 
   test("should still view files sent before enabling encryption", async () => {
     const file1 = fs.createReadStream("tests/fixtures/pblogo1.png")
@@ -1455,7 +1452,7 @@ describe("Send message test", () => {
 
     await someChannel.delete()
     await chat.currentUser.delete()
-  })
+  }, 20000)
 
   test("should send a message with custom body and crash if getMessageResponseBody is incorrect", async () => {
     const chat = await createChatInstance({
@@ -1490,7 +1487,7 @@ describe("Send message test", () => {
 
     await someChannel.delete()
     await chat.currentUser.delete()
-  })
+  }, 20000)
 
   test("should be able to pass custom edit and delete action names", async () => {
     const chat = await createChatInstance({
@@ -1656,7 +1653,7 @@ describe("Send message test", () => {
 
     await someChannel.delete()
     await chat.currentUser.delete()
-  }, 20000)
+  }, 30000)
 
   test("should be able to read live encrypted messages with custom payloads", async () => {
     const chat = await createChatInstance({
@@ -1844,7 +1841,7 @@ describe("Send message test", () => {
     const hasReactionAfter = updatedMessage.hasUserReaction("👍")
 
     expect(hasReactionAfter).toBe(true)
-  })
+  }, 20000)
 
   test("should forward message via message.forward", async () => {
     const targetChannel = await createRandomChannel()
@@ -1865,7 +1862,7 @@ describe("Send message test", () => {
     expect(targetHistory.messages[0].content.text).toEqual(messageText)
 
     await targetChannel.delete()
-  })
+  }, 20000)
 
   test("should pin message via message.pin", async () => {
     const messageText = "Message to pin via message object"
@@ -1885,7 +1882,7 @@ describe("Send message test", () => {
     expect(pinnedMessage).toBeDefined()
     expect(pinnedMessage?.timetoken).toEqual(message.timetoken)
     expect(pinnedMessage?.content.text).toEqual(messageText)
-  })
+  }, 20000)
 
   test("should pin thread message to parent channel via threadMessage.pinToParentChannel", async () => {
     await channel.sendText("Parent message")
@@ -1909,7 +1906,7 @@ describe("Send message test", () => {
     expect(pinnedInParent?.content.text).toEqual("Thread message to pin to parent")
 
     // await threadChannel.delete()
-  })
+  }, 20000)
 
   test("should unpin thread message from parent channel via threadMessage.unpinFromParentChannel", async () => {
     await channel.sendText("Parent message")

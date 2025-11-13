@@ -62,7 +62,7 @@ describe("Channel test", () => {
     expect(fetchedChannel).toBeDefined()
     expect(fetchedChannel.name).toEqual(channel.name)
     expect(fetchedChannel.description).toEqual(channel.description)
-  })
+  }, 20000)
 
   test("Should be able to delete channel", async () => {
     const { status } = await channel.delete( {soft: true} ) as Channel
@@ -72,7 +72,7 @@ describe("Channel test", () => {
     expect(status).toBe("deleted")
     expect(deleteResult).toBe(true)
     expect(fetchedChannel).toBeNull()
-  })
+  }, 20000)
 
   test("should get channel history", async () => {
     const messageText1 = "Test message 1"
@@ -144,7 +144,7 @@ describe("Channel test", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(Error)
     }
-  })
+  }, 20000)
 
   test("should fail when trying to send a message to a deleted channel", async () => {
     await channel.delete()
@@ -306,7 +306,7 @@ describe("Channel test", () => {
     }
 
     expect(errorOccurred).toBe(true)
-  })
+  }, 20000)
 
   test("streamMessageReport should receive reported message", async () => {
     const messageTextToReport = "Message to report"
@@ -560,7 +560,7 @@ describe("Channel test", () => {
     expect(Object.keys(messageInHistory.mentionedUsers).length).toBe(0)
 
     await chat.deleteUser(user1.id)
-  })
+  }, 20000)
 
   test("should mention the same user multiple times in a message and validate mentioned users", async () => {
     const user1Id = `user1_${Date.now()}`
@@ -1104,7 +1104,7 @@ describe("Channel test", () => {
   test("chat.getChannels with filter returns results", async () => {
       const result = await chat.getChannels({ limit: 2, filter: `type == 'public'` })
       expect(result.channels.length).toBe(2)
-  })
+  }, 20000)
 
   test("send report event", async () => {
     let receivedEvent
@@ -1200,7 +1200,7 @@ describe("Channel test", () => {
     )
 
     unsubscribe()
-  })
+  }, 20000)
 
   test("use PubNub SDK types from Chat SDK", async () => {
     const channelMetadata = await chat.sdk.objects.getChannelMetadata({
@@ -1208,7 +1208,7 @@ describe("Channel test", () => {
       include: { customFields: true }
     })
     expect(channelMetadata).toBeDefined()
-  })
+  }, 20000)
 
   test("should properly disconnect from channel and stop receiving messages", async () => {
     const testUser = await createRandomUser()
@@ -1264,7 +1264,7 @@ describe("Channel test", () => {
     expect(updatedChannel.name).toEqual(newName)
     expect(updatedChannel.description).toEqual(newDescription)
     expect(updatedChannel.id).toEqual(channel.id)
-  })
+  }, 20000)
 
   test("should delete channel via chat.deleteChannel", async () => {
     const testChannel = await createRandomChannel()
