@@ -755,7 +755,7 @@ describe("Channel test", () => {
       expect(membership.channel.id).toEqual(channel.id)
     })
 
-    await Promise.all(invitedMemberships.map(membership => membership.user.leave(channel.id)))
+    await Promise.all(invitedMemberships.map(membership => membership.channel.leave()))
     await Promise.all(usersToInvite.map((user) => user.delete()))
   }, 20000)
 
@@ -1520,8 +1520,8 @@ describe("Channel test", () => {
     const latestPresence = presenceUpdates[presenceUpdates.length - 1]
     expect(latestPresence).toContain(chat.currentUser.id)
 
-    disconnect()
     stopPresenceStream()
+    disconnect()
 
     await testChannel.leave()
     await testChannel.delete()
