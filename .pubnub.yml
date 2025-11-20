@@ -1,5 +1,5 @@
 name: kmp-chat
-version: 0.15.3
+version: 0.15.4
 schema: 1
 scm: github.com/pubnub/kmp-chat
 sdks:
@@ -21,8 +21,8 @@ sdks:
             -
               distribution-type: library
               distribution-repository: maven
-              package-name: pubnub-chat-0.15.3
-              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.15.3/
+              package-name: pubnub-chat-0.15.4
+              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.15.4/
               supported-platforms:
                 supported-operating-systems:
                   Android:
@@ -77,6 +77,11 @@ sdks:
                   license-url: https://github.com/pubnub/kotlin/blob/master/LICENSE
                   is-required: Required
 changelog:
+  - date: 2025-11-20
+    version: 0.15.4
+    changes:
+      - type: bug
+        text: "Update PubNub kotlin SDK version ."
   - date: 2025-11-10
     version: 0.15.3
     changes:
