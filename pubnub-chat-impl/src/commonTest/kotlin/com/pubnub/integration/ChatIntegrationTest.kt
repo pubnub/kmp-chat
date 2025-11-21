@@ -216,6 +216,38 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun createGroupConversation_withEmptyUserList_shouldSucceedWithOnlyHost() = runTest {
+        // given
+        val emptyUserList = emptyList<User>()
+
+        // when
+        val result = chat.createGroupConversation(emptyUserList).await()
+
+        // then
+        assertNotNull(result.channel)
+        assertNotNull(result.channel.id)
+
+        assertEquals(
+            chat.currentUser,
+            result.hostMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null)
+        )
+        assertEquals(result.channel, result.hostMembership.channel)
+
+        // Verify inviteeMemberships is empty when no users are invited
+        // This was a bug that returned ALL members when empty filter was passed
+        // Fixed by adding guard clause in BaseChannel.inviteMultiple() that returns early for empty lists
+        assertTrue(
+            result.inviteeMemberships.isEmpty(),
+            "inviteeMemberships should be empty when no users are invited"
+        )
+
+        // verify the channel exists and is accessible
+        val fetchedChannel = chat.getChannel(result.channel.id).await()
+        assertNotNull(fetchedChannel, "Created channel should be fetchable")
+        assertEquals(result.channel.id, fetchedChannel?.id)
+    }
+
+    @Test
     fun can_markAllMessagesAsRead() = runTest {
         // create two membership for user one with "lastReadMessageTimetoken" and second without.
         val lastReadMessageTimetokenValue: Long = 17195737006492403

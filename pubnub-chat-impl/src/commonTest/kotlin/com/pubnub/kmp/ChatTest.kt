@@ -1573,6 +1573,53 @@ class ChatTest : BaseTest() {
         }
     }
 
+    @Test
+    fun wherePresent_shouldReturnMultipleChannels() {
+        // given
+        val whereNowEndpoint: WhereNow = mock(MockMode.strict)
+        val channel01 = "channel1"
+        val channel02 = "channel2"
+        val channel03 = "channel3"
+        val pnWhereNowResult = PNWhereNowResult(listOf(channel01, channel02, channel03))
+        every { pubnub.whereNow(any()) } returns whereNowEndpoint
+        every { whereNowEndpoint.async(any()) } calls { (callback: Consumer<Result<PNWhereNowResult>>) ->
+            callback.accept(Result.success(pnWhereNowResult))
+        }
+
+        // when
+        objectUnderTest.wherePresent(userId).async { result: Result<List<String>> ->
+            // then
+            assertTrue(result.isSuccess)
+            val channels = result.getOrNull()!!
+            assertEquals(3, channels.size)
+            assertTrue(channels.contains(channel01))
+            assertTrue(channels.contains(channel02))
+            assertTrue(channels.contains(channel03))
+        }
+
+        verify { pubnub.whereNow(userId) }
+    }
+
+    @Test
+    fun wherePresent_whenNoChannels_shouldReturnEmptyList() {
+        // given
+        val whereNowEndpoint: WhereNow = mock(MockMode.strict)
+        val pnWhereNowResult = PNWhereNowResult(emptyList())
+        every { pubnub.whereNow(any()) } returns whereNowEndpoint
+        every { whereNowEndpoint.async(any()) } calls { (callback: Consumer<Result<PNWhereNowResult>>) ->
+            callback.accept(Result.success(pnWhereNowResult))
+        }
+
+        // when
+        objectUnderTest.wherePresent(userId).async { result: Result<List<String>> ->
+            // then
+            assertTrue(result.isSuccess)
+            assertTrue(result.getOrNull()!!.isEmpty())
+        }
+
+        verify { pubnub.whereNow(userId) }
+    }
+
     private fun createMessage(chId: String = channelId, uId: String = userId): Message {
         return MessageImpl(
             chat = chatMock,
@@ -1654,5 +1701,48 @@ class ChatTest : BaseTest() {
         objectUnderTest.destroy()
         verify { pubnub.destroy() }
         verify { timerManager.destroy() }
+    }
+
+    @Test
+    fun disconnectSubscriptions_shouldCompleteSuccessfully() {
+        // given
+        every { pubnub.disconnect() } returns Unit
+
+        // when
+        objectUnderTest.disconnectSubscriptions().async { result ->
+            // then
+            assertTrue(result.isSuccess)
+        }
+
+        verify { pubnub.disconnect() }
+    }
+
+    @Test
+    fun disconnectSubscriptions_withNoActiveSubscriptions_shouldStillWork() {
+        // given
+        every { pubnub.disconnect() } returns Unit
+        every { pubnub.getSubscribedChannels() } returns emptyList()
+
+        // when - should not throw exception
+        objectUnderTest.disconnectSubscriptions().async { result ->
+            // then
+            assertTrue(result.isSuccess)
+        }
+
+        verify { pubnub.disconnect() }
+    }
+
+    @Test
+    fun reconnectSubscriptions_shouldRestoreConnection() {
+        // given
+        every { pubnub.reconnect() } returns Unit
+
+        // when
+        objectUnderTest.reconnectSubscriptions().async { result ->
+            // then
+            assertTrue(result.isSuccess)
+        }
+
+        verify { pubnub.reconnect() }
     }
 }
