@@ -23,7 +23,6 @@ describe("Mute list test", () => {
 
   let chat: Chat
   let channel: Channel
-  let messageDraft: MessageDraft
 
   beforeAll(async () => {
     chat = await createChatInstance()
@@ -31,7 +30,6 @@ describe("Mute list test", () => {
 
   beforeEach(async () => {
     channel = await createRandomChannel()
-    messageDraft = channel.createMessageDraft()
   })
 
   afterEach(async () => {
@@ -44,12 +42,11 @@ describe("Mute list test", () => {
      expect(chat.mutedUsersManager.mutedUsers[0]).toBe("abc")
   })
 
-    test("should remove user from mute set", async () => {
-       await chat.mutedUsersManager.muteUser("abc")
-       await chat.mutedUsersManager.muteUser("def")
-       await chat.mutedUsersManager.unmuteUser("abc")
-       expect(chat.mutedUsersManager.mutedUsers[0]).toBe("def")
-       expect(chat.mutedUsersManager.mutedUsers.length).toBe(1)
-    })
-
+  test("should remove user from mute set", async () => {
+    await chat.mutedUsersManager.muteUser("abc")
+    await chat.mutedUsersManager.muteUser("def")
+    await chat.mutedUsersManager.unmuteUser("abc")
+    expect(chat.mutedUsersManager.mutedUsers[0]).toBe("def")
+    expect(chat.mutedUsersManager.mutedUsers.length).toBe(1)
+  })
 })

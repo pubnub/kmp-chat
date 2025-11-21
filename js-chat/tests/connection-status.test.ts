@@ -6,6 +6,7 @@ describe("Connection Status test", () => {
 
     let chat1: Chat
     let chat2: Chat
+
     const TEST_CHANNEL = "test-channel-" + Math.random().toString(36).substring(2, 15)
 
     beforeAll(async () => {
@@ -244,7 +245,6 @@ describe("Connection Status test", () => {
 
     test("should check if connection status methods are available", () => {
         // Check if the new methods are available on the chat instance
-
         expect(typeof chat1.addConnectionStatusListener).toBe('function')
         expect(typeof chat1.reconnectSubscriptions).toBe('function')
         expect(typeof chat1.disconnectSubscriptions).toBe('function')

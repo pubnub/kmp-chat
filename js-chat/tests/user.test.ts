@@ -272,4 +272,139 @@ describe("User test", () => {
       exampleResponse.data.map((m) => m.channel.id)
     )
   })
+
+  test("should get multiple users via chat.getUsers", async () => {
+    const user1 = await createRandomUser()
+    const user2 = await createRandomUser()
+    const user3 = await createRandomUser()
+
+    const filter = `id == '${user1.id}' || id == '${user2.id}' || id == '${user3.id}'`
+    const result = await chat.getUsers({ filter })
+
+    expect(result.users.length).toBeGreaterThanOrEqual(3)
+    const userIds = result.users.map(u => u.id)
+    expect(userIds).toContain(user1.id)
+    expect(userIds).toContain(user2.id)
+    expect(userIds).toContain(user3.id)
+
+    await Promise.all([user1.delete(), user2.delete(), user3.delete()])
+  })
+
+  test("should update user via chat.updateUser", async () => {
+    const newName = "Updated via wrapper"
+    const newProfileUrl = "https://example.com/profile.jpg"
+
+    const updatedUser = await chat.updateUser(user.id, {
+      name: newName,
+      profileUrl: newProfileUrl
+    })
+
+    expect(updatedUser.id).toBe(user.id)
+    expect(updatedUser.name).toEqual(newName)
+    expect(updatedUser.profileUrl).toEqual(newProfileUrl)
+  })
+
+  test("should get channels where user is present via user.wherePresent", async () => {
+    const channel1 = await chat.createChannel(`test-channel-${Date.now()}-1`, {
+      name: "Test Channel 1"
+    })
+    const channel2 = await chat.createChannel(`test-channel-${Date.now()}-2`, {
+      name: "Test Channel 2"
+    })
+
+    const disconnect1 = channel1.connect(() => {})
+    const disconnect2 = channel2.connect(() => {})
+
+    await sleep(2000)
+
+    const presentChannels = await chat.currentUser.wherePresent()
+
+    expect(presentChannels.length).toBeGreaterThan(0)
+    const channelIds = presentChannels.map(c => c.id)
+    expect(channelIds).toContain(channel1.id)
+    expect(channelIds).toContain(channel2.id)
+
+    disconnect1()
+    disconnect2()
+    await Promise.all([channel1.delete(), channel2.delete()])
+  })
+
+  test("should get channels where user is present via chat.wherePresent", async () => {
+    const channel = await chat.createChannel(`test-channel-${Date.now()}`, {
+      name: "Test Channel"
+    })
+
+    const disconnect = channel.connect(() => {})
+    await sleep(2000)
+    const presentChannels = await chat.wherePresent(chat.currentUser.id)
+
+    expect(presentChannels.length).toBeGreaterThan(0)
+    const channelIds = presentChannels.map(c => c.id)
+    expect(channelIds).toContain(channel.id)
+
+    disconnect()
+    await channel.delete()
+  })
+
+  test("should check if user is active via user.active property", async () => {
+    const channel = await chat.createChannel(`test-channel-${Date.now()}`, {
+      name: "Test Channel"
+    })
+
+    const disconnect = channel.connect(() => {})
+    await sleep(2000)
+    const isActive = await chat.currentUser.active()
+
+    expect(typeof isActive).toBe("boolean")
+    expect(isActive).toBe(true)
+    disconnect()
+
+    await channel.delete()
+  })
+
+  test("should get last active timestamp via user.lastActiveTimestamp property", async () => {
+    const channel = await chat.createChannel(`test-channel-${Date.now()}`, {
+      name: "Test Channel"
+    })
+
+    const disconnect = channel.connect(() => {})
+    await sleep(2000)
+    const timestamp = await chat.currentUser.lastActiveTimestamp()
+
+    expect(timestamp).toBeDefined()
+    expect(typeof timestamp).toBe("string")
+    disconnect()
+
+    await channel.delete()
+  })
+
+  test("should set restrictions on user via user.setRestrictions", async () => {
+    const channel = await chat.createChannel(`test-channel-${Date.now()}`, {
+      name: "Test Channel"
+    })
+
+    const testUser = await createRandomUser()
+    await testUser.setRestrictions(channel.id, { ban: true })
+    await sleep(150)
+
+    const restrictions = await channel.getUserRestrictions(testUser)
+    expect(restrictions.ban).toBe(true)
+
+    await Promise.all([testUser.delete(), channel.delete()])
+  })
+
+  test("should get channel restrictions for user via user.getChannelRestrictions", async () => {
+    const channel = await chat.createChannel(`test-channel-${Date.now()}`, {
+      name: "Test Channel"
+    })
+
+    const testUser = await createRandomUser()
+    await chat.setRestrictions(testUser.id, channel.id, { mute: true })
+    await sleep(150)
+
+    const restrictions = await testUser.getChannelRestrictions(channel.id)
+    expect(restrictions.mute).toBe(true)
+
+    await Promise.all([testUser.delete(), channel.delete()])
+  })
 })
