@@ -14,6 +14,7 @@ import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResul
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatImpl.Companion.getThreadId
 import com.pubnub.chat.internal.ChatInternal
@@ -281,8 +282,8 @@ abstract class BaseMessage<T : Message>(
     }
 
     override fun <M : Message> streamUpdates(callback: (message: M) -> Unit): AutoCloseable {
-        return streamUpdatesOn(listOf(this as M)) {
-            callback(it.first())
+        return streamUpdatesOn(listOf(this as M)) { messages: Collection<M> ->
+            callback(messages.first())
         }
     }
 
@@ -347,6 +348,24 @@ abstract class BaseMessage<T : Message>(
             messages: Collection<T>,
             callback: (messages: Collection<T>) -> Unit,
         ): AutoCloseable {
+            return streamUpdatesOnInternal(messages) { _, latestMessages ->
+                callback(latestMessages)
+            }
+        }
+
+        fun <T : Message> streamUpdatesOn(
+            messages: Collection<T>,
+            callback: (change: EntityChange<T>) -> Unit,
+        ): AutoCloseable {
+            return streamUpdatesOnInternal(messages) { updatedMessage, _ ->
+                callback(EntityChange.Updated(updatedMessage))
+            }
+        }
+
+        private fun <T : Message> streamUpdatesOnInternal(
+            messages: Collection<T>,
+            callback: (updatedMessage: T, latestMessages: Collection<T>) -> Unit,
+        ): AutoCloseable {
             if (messages.isEmpty()) {
                 log.pnError(CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST)
             }
@@ -378,7 +397,7 @@ abstract class BaseMessage<T : Message>(
                         it
                     }
                 }
-                callback(latestMessages)
+                callback(newMessage, latestMessages)
             })
 
             val subscriptionSet = chat.pubNub.subscriptionSetOf(

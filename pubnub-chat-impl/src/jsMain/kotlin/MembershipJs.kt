@@ -2,6 +2,7 @@
 
 import com.pubnub.chat.Membership
 import com.pubnub.chat.internal.MembershipImpl
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.kmp.then
 import com.pubnub.kmp.toJsMap
 import kotlin.js.Json
@@ -28,8 +29,8 @@ class MembershipJs internal constructor(internal val membership: Membership, int
     }
 
     fun streamUpdates(callback: (MembershipJs?) -> Unit): () -> Unit {
-        return streamUpdatesOn(arrayOf(this)) {
-            callback(it.firstOrNull())
+        return streamUpdatesOn(arrayOf(this)) { memberships: Array<MembershipJs> ->
+            callback(memberships.firstOrNull())
         }
     }
 
@@ -68,8 +69,22 @@ class MembershipJs internal constructor(internal val membership: Membership, int
         @JsStatic
         fun streamUpdatesOn(memberships: Array<MembershipJs>, callback: (Array<MembershipJs>) -> Unit): () -> Unit {
             val chatJs = memberships.first().chatJs
-            return MembershipImpl.streamUpdatesOn(memberships.map { it.membership }) {
-                callback(it.map { it.asJs(chatJs) }.toTypedArray())
+            return MembershipImpl.streamUpdatesOn(memberships.map { it.membership }) { kmpMemberships: Collection<Membership> ->
+                callback(kmpMemberships.map { it.asJs(chatJs) }.toTypedArray())
+            }.let {
+                it::close
+            }
+        }
+
+        @JsStatic
+        @JsName("streamUpdatesOnWithEntityChange")
+        fun streamUpdatesOn(memberships: Array<MembershipJs>, callback: (EntityChangeJs<MembershipJs>) -> Unit): () -> Unit {
+            val chatJs = memberships.first().chatJs
+            return MembershipImpl.streamUpdatesOn(memberships.map { it.membership }) { change: EntityChange<Membership> ->
+                when (change) {
+                    is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
+                    is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))
+                }
             }.let {
                 it::close
             }

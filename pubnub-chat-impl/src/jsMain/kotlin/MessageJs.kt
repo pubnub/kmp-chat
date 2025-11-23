@@ -5,6 +5,7 @@ import com.pubnub.api.adjustCollectionTypes
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.message.BaseMessage
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.kmp.JsMap
@@ -169,8 +170,20 @@ open class MessageJs internal constructor(internal val message: Message, interna
         @JsStatic
         fun streamUpdatesOn(messages: Array<MessageJs>, callback: (Array<MessageJs>) -> Unit): () -> Unit {
             val chatJs = messages.first().chatJs
-            return BaseMessage.streamUpdatesOn(messages.map { it.message }) { kmpMessages ->
+            return BaseMessage.streamUpdatesOn(messages.map { it.message }) { kmpMessages: Collection<Message> ->
                 callback(kmpMessages.map { kmpMessage -> kmpMessage.asJs(chatJs) }.toTypedArray())
+            }::close
+        }
+
+        @JsStatic
+        @JsName("streamUpdatesOnWithEntityChange")
+        fun streamUpdatesOn(messages: Array<MessageJs>, callback: (EntityChangeJs<MessageJs>) -> Unit): () -> Unit {
+            val chatJs = messages.first().chatJs
+            return BaseMessage.streamUpdatesOn(messages.map { it.message }) { change: EntityChange<Message> ->
+                when (change) {
+                    is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
+                    is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))
+                }
             }::close
         }
     }

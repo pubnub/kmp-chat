@@ -31,6 +31,7 @@ import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
@@ -190,8 +191,8 @@ data class UserImpl(
     }
 
     override fun streamUpdates(callback: (user: User?) -> Unit): AutoCloseable {
-        return streamUpdatesOn(listOf(this)) {
-            callback(it.firstOrNull())
+        return streamUpdatesOn(listOf(this)) { users: Collection<User> ->
+            callback(users.firstOrNull())
         }
     }
 
@@ -311,33 +312,52 @@ data class UserImpl(
         )
 
         fun streamUpdatesOn(users: Collection<User>, callback: (users: Collection<User>) -> Unit): AutoCloseable {
+            return streamUpdatesOnInternal(users) { _, _, latestUsers ->
+                callback(latestUsers)
+            }
+        }
+
+        fun streamUpdatesOn(users: Collection<User>, callback: (change: EntityChange<User>) -> Unit): AutoCloseable {
+            return streamUpdatesOnInternal(users) { updatedUser, deletedUserId, _ ->
+                when {
+                    updatedUser != null -> callback(EntityChange.Updated(updatedUser))
+                    deletedUserId != null -> callback(EntityChange.Removed(deletedUserId))
+                }
+            }
+        }
+
+        private fun streamUpdatesOnInternal(
+            users: Collection<User>,
+            callback: (updatedUser: User?, deletedUserId: String?, latestUsers: Collection<User>) -> Unit
+        ): AutoCloseable {
             if (users.isEmpty()) {
                 log.pnError(CAN_NOT_STREAM_USER_UPDATES_ON_EMPTY_LIST)
             }
             var latestUsers = users
             val chat = users.first().chat as ChatInternal
             val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
-                val (newUser, newUserId) = when (val message = event.extractedMessage) {
+                when (val message = event.extractedMessage) {
                     is PNSetUUIDMetadataEventMessage -> {
                         val newUserId = message.data.id
                         val previousUser = latestUsers.firstOrNull { it.id == newUserId }
                         val newUser = previousUser?.plus(message.data) ?: fromDTO(chat, message.data)
-                        newUser to newUserId
+
+                        latestUsers = latestUsers.asSequence().filter { user ->
+                            user.id != newUserId
+                        }.plus(newUser).toList()
+
+                        callback(newUser, null, latestUsers)
                     }
-                    is PNDeleteUUIDMetadataEventMessage -> null to message.uuid
+                    is PNDeleteUUIDMetadataEventMessage -> {
+                        val deletedUserId = message.uuid
+                        latestUsers = latestUsers.filter { user ->
+                            user.id != deletedUserId
+                        }
+
+                        callback(null, deletedUserId, latestUsers)
+                    }
                     else -> return@createEventListener
                 }
-
-                latestUsers = latestUsers.asSequence().filter { user ->
-                    user.id != newUserId
-                }.let { sequence ->
-                    if (newUser != null) {
-                        sequence + newUser
-                    } else {
-                        sequence
-                    }
-                }.toList()
-                callback(latestUsers)
             })
 
             val subscriptionSet = chat.pubNub.subscriptionSetOf(users.map { it.id }.toSet())

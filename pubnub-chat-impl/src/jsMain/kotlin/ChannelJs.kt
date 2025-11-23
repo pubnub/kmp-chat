@@ -5,6 +5,7 @@ import com.pubnub.chat.MessageDraft
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.types.InputFile
 import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.UploadableImpl
@@ -329,8 +330,21 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         @JsStatic
         fun streamUpdatesOn(channels: Array<ChannelJs>, callback: (Array<ChannelJs>) -> Unit): () -> Unit {
             val chatJs = channels.first().chatJs
-            val closeable = BaseChannel.streamUpdatesOn(channels.map { jsChannel -> jsChannel.channel }) {
-                callback(it.map { kmpChannel -> ChannelJs(kmpChannel, chatJs) }.toTypedArray())
+            val closeable = BaseChannel.streamUpdatesOn(channels.map { jsChannel -> jsChannel.channel }) { kmpChannels: Collection<Channel> ->
+                callback(kmpChannels.map { kmpChannel -> ChannelJs(kmpChannel, chatJs) }.toTypedArray())
+            }
+            return closeable::close
+        }
+
+        @JsStatic
+        @JsName("streamUpdatesOnWithEntityChange")
+        fun streamUpdatesOn(channels: Array<ChannelJs>, callback: (EntityChangeJs<ChannelJs>) -> Unit): () -> Unit {
+            val chatJs = channels.first().chatJs
+            val closeable = BaseChannel.streamUpdatesOn(channels.map { jsChannel -> jsChannel.channel }) { change: EntityChange<Channel> ->
+                when (change) {
+                    is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
+                    is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))
+                }
             }
             return closeable::close
         }

@@ -11,6 +11,7 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.NO_SUCH_MEMBERSHIP_EXISTS
@@ -106,8 +107,8 @@ data class MembershipImpl(
     }
 
     override fun streamUpdates(callback: (membership: Membership?) -> Unit): AutoCloseable {
-        return streamUpdatesOn(listOf(this)) {
-            callback(it.firstOrNull())
+        return streamUpdatesOn(listOf(this)) { memberships: Collection<Membership> ->
+            callback(memberships.firstOrNull())
         }
     }
 
@@ -156,6 +157,44 @@ data class MembershipImpl(
             memberships: Collection<Membership>,
             callback: (memberships: Collection<Membership>) -> Unit,
         ): AutoCloseable {
+            return streamUpdatesOnInternal(memberships) { _, _, latestMemberships ->
+                callback(latestMemberships)
+            }
+        }
+
+        /**
+         * Stream updates for a collection of memberships using individual change notifications.
+         *
+         * This method provides a more efficient API compared to the collection-based callback,
+         * emitting only the changed entity rather than the entire collection snapshot.
+         *
+         * Memberships support both update and removal events:
+         * - [EntityChange.Updated] is emitted when membership metadata changes
+         * - [EntityChange.Removed] is emitted when a membership is deleted (via metadata delete events)
+         *
+         * **Note:** Since Membership uses a composite key (channel + user), the id in [EntityChange.Removed]
+         * uses the format "channelId:userId".
+         *
+         * @param memberships Collection of memberships to monitor for changes
+         * @param callback Function invoked with [EntityChange] when a membership is updated or removed
+         * @return AutoCloseable subscription that can be closed to stop receiving updates
+         */
+        fun streamUpdatesOn(
+            memberships: Collection<Membership>,
+            callback: (change: EntityChange<Membership>) -> Unit,
+        ): AutoCloseable {
+            return streamUpdatesOnInternal(memberships) { updatedMembership, deletedMembershipId, _ ->
+                when {
+                    updatedMembership != null -> callback(EntityChange.Updated(updatedMembership))
+                    deletedMembershipId != null -> callback(EntityChange.Removed(deletedMembershipId))
+                }
+            }
+        }
+
+        private fun streamUpdatesOnInternal(
+            memberships: Collection<Membership>,
+            callback: (updatedMembership: Membership?, deletedMembershipId: String?, latestMemberships: Collection<Membership>) -> Unit
+        ): AutoCloseable {
             if (memberships.isEmpty()) {
                 log.pnError(CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST)
             }
@@ -169,10 +208,11 @@ data class MembershipImpl(
                 }
                 val membership = memberships.find { it.channel.id == event.channel && it.user.id == eventUuid }
                     ?: return@createEventListener
-                val newMembership = when (val message = event.extractedMessage) {
+
+                when (val message = event.extractedMessage) {
                     is PNSetMembershipEventMessage -> {
                         val previousMembership = latestMemberships.find { it.channel.id == event.channel && it.user.id == eventUuid }
-                        previousMembership?.let { it + message.data }
+                        val newMembership = previousMembership?.let { it + message.data }
                             ?: MembershipImpl(
                                 chat,
                                 channel = membership.channel,
@@ -183,22 +223,28 @@ data class MembershipImpl(
                                 status = message.data.status?.value,
                                 type = message.data.type?.value,
                             )
+
+                        latestMemberships = latestMemberships
+                            .asSequence()
+                            .filter { membership ->
+                                membership.channel.id != event.channel || membership.user.id != eventUuid
+                            }
+                            .plus(newMembership)
+                            .toList()
+
+                        callback(newMembership, null, latestMemberships)
                     }
-                    is PNDeleteMembershipEventMessage -> null
+                    is PNDeleteMembershipEventMessage -> {
+                        latestMemberships = latestMemberships
+                            .filter { membership ->
+                                membership.channel.id != event.channel || membership.user.id != eventUuid
+                            }
+
+                        // Use composite key format for membership identification
+                        callback(null, "${event.channel}:$eventUuid", latestMemberships)
+                    }
                     else -> return@createEventListener
                 }
-                latestMemberships = latestMemberships
-                    .asSequence()
-                    .filter { membership ->
-                        membership.channel.id != event.channel || membership.user.id != eventUuid
-                    }.let { sequence ->
-                        if (newMembership != null) {
-                            sequence + newMembership
-                        } else {
-                            sequence
-                        }
-                    }.toList()
-                callback(latestMemberships)
             })
 
             val subscriptionSet = chat.pubNub.subscriptionSetOf(memberships.map { it.channel.id }.toSet())

@@ -2,6 +2,7 @@
 
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.UserImpl
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
 import com.pubnub.kmp.toJsMap
@@ -128,8 +129,21 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
         @JsStatic
         fun streamUpdatesOn(users: Array<UserJs>, callback: (users: Array<UserJs>) -> Unit): () -> Unit {
             val chatJs = users.first().chatJs
-            val closeable = UserImpl.streamUpdatesOn(users.map { jsUser -> jsUser.user }) {
-                callback(it.map { kmpUser -> UserJs(kmpUser, chatJs) }.toTypedArray())
+            val closeable = UserImpl.streamUpdatesOn(users.map { jsUser -> jsUser.user }) { kmpUsers: Collection<User> ->
+                callback(kmpUsers.map { kmpUser -> UserJs(kmpUser, chatJs) }.toTypedArray())
+            }
+            return closeable::close
+        }
+
+        @JsStatic
+        @JsName("streamUpdatesOnWithEntityChange")
+        fun streamUpdatesOn(users: Array<UserJs>, callback: (EntityChangeJs<UserJs>) -> Unit): () -> Unit {
+            val chatJs = users.first().chatJs
+            val closeable = UserImpl.streamUpdatesOn(users.map { jsUser -> jsUser.user }) { change: EntityChange<User> ->
+                when (change) {
+                    is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
+                    is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))
+                }
             }
             return closeable::close
         }

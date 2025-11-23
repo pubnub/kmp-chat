@@ -35,6 +35,7 @@ import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.config.PushNotificationsConfig
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.internal.ChatImpl.Companion.pinOrUnpinMessageToChannel
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
@@ -233,8 +234,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable {
-        return streamUpdatesOn(listOf(this)) {
-            callback(it.firstOrNull())
+        return streamUpdatesOn(listOf(this)) { channels: Collection<Channel> ->
+            callback(channels.firstOrNull())
         }
     }
 
@@ -847,34 +848,57 @@ abstract class BaseChannel<C : Channel, M : Message>(
             channels: Collection<Channel>,
             callback: (channels: Collection<Channel>) -> Unit
         ): AutoCloseable {
+            return streamUpdatesOnInternal(channels) { _, _, latestChannels ->
+                callback(latestChannels)
+            }
+        }
+
+        fun streamUpdatesOn(
+            channels: Collection<Channel>,
+            callback: (change: EntityChange<Channel>) -> Unit
+        ): AutoCloseable {
+            return streamUpdatesOnInternal(channels) { updatedChannel, deletedChannelId, _ ->
+                when {
+                    updatedChannel != null -> callback(EntityChange.Updated(updatedChannel))
+                    deletedChannelId != null -> callback(EntityChange.Removed(deletedChannelId))
+                }
+            }
+        }
+
+        private fun streamUpdatesOnInternal(
+            channels: Collection<Channel>,
+            callback: (updatedChannel: Channel?, deletedChannelId: String?, latestChannels: Collection<Channel>) -> Unit
+        ): AutoCloseable {
             if (channels.isEmpty()) {
                 log.pnError(CAN_NOT_STREAM_CHANNEL_UPDATES_ON_EMPTY_LIST)
             }
             var latestChannels = channels
             val chat = channels.first().chat as ChatInternal
             val listener = createEventListener(chat.pubNub, onObjects = { _, event: PNObjectEventResult ->
-                val (newChannel, newChannelId) = when (val message = event.extractedMessage) {
+                when (val message = event.extractedMessage) {
                     is PNSetChannelMetadataEventMessage -> {
                         val newChannelId = message.data.id
                         val previousChannel = latestChannels.firstOrNull { it.id == newChannelId }
                         val newChannel = previousChannel?.plus(message.data) ?: ChannelImpl.fromDTO(chat, message.data)
-                        newChannel to newChannelId
+
+                        latestChannels = latestChannels.asSequence().filter { channel ->
+                            channel.id != newChannelId
+                        }.plus(newChannel).toList()
+
+                        callback(newChannel, null, latestChannels)
                     }
 
-                    is PNDeleteChannelMetadataEventMessage -> null to message.channel
+                    is PNDeleteChannelMetadataEventMessage -> {
+                        val deletedChannelId = message.channel
+                        latestChannels = latestChannels.filter { channel ->
+                            channel.id != deletedChannelId
+                        }
+
+                        callback(null, deletedChannelId, latestChannels)
+                    }
+
                     else -> return@createEventListener
                 }
-
-                latestChannels = latestChannels.asSequence().filter { channel ->
-                    channel.id != newChannelId
-                }.let { sequence ->
-                    if (newChannel != null) {
-                        sequence + newChannel
-                    } else {
-                        sequence
-                    }
-                }.toList()
-                callback(latestChannels)
             })
 
             val subscriptionSet = chat.pubNub.subscriptionSetOf(channels.map { it.id }.toSet())
