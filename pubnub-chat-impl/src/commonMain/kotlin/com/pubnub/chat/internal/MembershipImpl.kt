@@ -11,13 +11,13 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
-import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.NO_SUCH_MEMBERSHIP_EXISTS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.RECEIPT_EVENT_WAS_NOT_SENT_TO_CHANNEL
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.AccessManager
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -162,24 +162,7 @@ data class MembershipImpl(
             }
         }
 
-        /**
-         * Stream updates for a collection of memberships using individual change notifications.
-         *
-         * This method provides a more efficient API compared to the collection-based callback,
-         * emitting only the changed entity rather than the entire collection snapshot.
-         *
-         * Memberships support both update and removal events:
-         * - [EntityChange.Updated] is emitted when membership metadata changes
-         * - [EntityChange.Removed] is emitted when a membership is deleted (via metadata delete events)
-         *
-         * **Note:** Since Membership uses a composite key (channel + user), the id in [EntityChange.Removed]
-         * uses the format "channelId:userId".
-         *
-         * @param memberships Collection of memberships to monitor for changes
-         * @param callback Function invoked with [EntityChange] when a membership is updated or removed
-         * @return AutoCloseable subscription that can be closed to stop receiving updates
-         */
-        fun streamUpdatesOn(
+        fun streamUpdatesOnWithEntityChange(
             memberships: Collection<Membership>,
             callback: (change: EntityChange<Membership>) -> Unit,
         ): AutoCloseable {

@@ -14,7 +14,6 @@ import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResul
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
-import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatImpl.Companion.getThreadId
 import com.pubnub.chat.internal.ChatInternal
@@ -40,6 +39,7 @@ import com.pubnub.chat.internal.isInternalModerator
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.chat.types.InputFile
@@ -353,7 +353,7 @@ abstract class BaseMessage<T : Message>(
             }
         }
 
-        fun <T : Message> streamUpdatesOn(
+        fun <T : Message> streamUpdatesOnWithEntityChange(
             messages: Collection<T>,
             callback: (change: EntityChange<T>) -> Unit,
         ): AutoCloseable {

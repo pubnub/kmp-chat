@@ -41,10 +41,10 @@ fun Message.Companion.streamUpdatesOn(
  * @param callback Function that receives an [EntityChange] for each message that changes.
  * @return Interface that lets you stop receiving message-related updates by invoking the close() method
  */
-fun Message.Companion.streamUpdatesOn(
+fun Message.Companion.streamUpdatesOnWithEntityChange(
     messages: Collection<Message>,
     callback: (change: EntityChange<Message>) -> Unit,
-): AutoCloseable = BaseMessage.streamUpdatesOn(messages, callback)
+): AutoCloseable = BaseMessage.streamUpdatesOnWithEntityChange(messages, callback)
 
 /**
  * Receive updates when specific messages and related message reactions are updated or removed.
@@ -76,10 +76,10 @@ fun ThreadMessage.Companion.streamUpdatesOn(
  * @param callback Function that receives an [EntityChange] for each message that changes.
  * @return Interface that lets you stop receiving message-related updates by invoking the close() method
  */
-fun ThreadMessage.Companion.streamUpdatesOn(
+fun ThreadMessage.Companion.streamUpdatesOnWithEntityChange(
     messages: Collection<ThreadMessage>,
     callback: (change: EntityChange<ThreadMessage>) -> Unit,
-): AutoCloseable = BaseMessage.streamUpdatesOn(messages, callback)
+): AutoCloseable = BaseMessage.streamUpdatesOnWithEntityChange(messages, callback)
 
 /**
  * Receives updates on a list of [Channel] objects.
@@ -113,10 +113,10 @@ fun Channel.Companion.streamUpdatesOn(
  * @return [AutoCloseable] interface that lets you stop receiving channel-related updates (objects events)
  * and clean up resources by invoking the close() method.
  */
-fun Channel.Companion.streamUpdatesOn(
+fun Channel.Companion.streamUpdatesOnWithEntityChange(
     channels: Collection<Channel>,
     callback: (change: EntityChange<Channel>) -> Unit,
-): AutoCloseable = BaseChannel.streamUpdatesOn(channels, callback)
+): AutoCloseable = BaseChannel.streamUpdatesOnWithEntityChange(channels, callback)
 
 /**
  * Receives updates on a list of [ThreadChannel] objects.
@@ -150,10 +150,10 @@ fun ThreadChannel.Companion.streamUpdatesOn(
  * @return [AutoCloseable] interface that lets you stop receiving channel-related updates (objects events)
  * and clean up resources by invoking the close() method.
  */
-fun ThreadChannel.Companion.streamUpdatesOn(
+fun ThreadChannel.Companion.streamUpdatesOnWithEntityChange(
     channels: Collection<Channel>,
     callback: (change: EntityChange<Channel>) -> Unit,
-): AutoCloseable = BaseChannel.streamUpdatesOn(channels, callback)
+): AutoCloseable = BaseChannel.streamUpdatesOnWithEntityChange(channels, callback)
 
 /**
  * Receive updates when specific user-channel Membership object(s) are added, edited, or removed.
@@ -185,10 +185,10 @@ fun Membership.Companion.streamUpdatesOn(
  * @param callback Function that receives an [EntityChange] for each membership that changes or is removed.
  * @return An [AutoCloseable] that you can use to stop receiving objects events by invoking [AutoCloseable.close].
  */
-fun Membership.Companion.streamUpdatesOn(
+fun Membership.Companion.streamUpdatesOnWithEntityChange(
     memberships: Collection<Membership>,
     callback: (change: EntityChange<Membership>) -> Unit,
-): AutoCloseable = MembershipImpl.streamUpdatesOn(memberships, callback)
+): AutoCloseable = MembershipImpl.streamUpdatesOnWithEntityChange(memberships, callback)
 
 /**
  * Receive updates when specific user objects are updated or removed.
@@ -218,10 +218,10 @@ fun User.Companion.streamUpdatesOn(
  * @param callback Function that receives an [EntityChange] for each user that changes or is removed.
  * @return An [AutoCloseable] that you can use to stop receiving objects events by invoking [AutoCloseable.close].
  */
-fun User.Companion.streamUpdatesOn(
+fun User.Companion.streamUpdatesOnWithEntityChange(
     users: Collection<User>,
     callback: (change: EntityChange<User>) -> Unit
-): AutoCloseable = UserImpl.streamUpdatesOn(users, callback)
+): AutoCloseable = UserImpl.streamUpdatesOnWithEntityChange(users, callback)
 
 // Message draft v2
 

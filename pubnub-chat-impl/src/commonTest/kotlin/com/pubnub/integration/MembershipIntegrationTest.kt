@@ -52,7 +52,7 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id, channel02.id)) {
-                dispose = MembershipImpl.streamUpdatesOn(listOf(membership1, membership2)) { memberships ->
+                dispose = MembershipImpl.streamUpdatesOn(listOf(membership1, membership2)) { memberships: Collection<Membership> ->
                     actualUpdates.add(memberships.map { it.asImpl().copy(updated = null, eTag = null) }.sortedBy { it.channel.id })
                 }
             }

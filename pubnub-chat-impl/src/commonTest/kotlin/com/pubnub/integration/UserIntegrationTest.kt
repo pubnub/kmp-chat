@@ -242,7 +242,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(someUser.id)) {
-                dispose = UserImpl.streamUpdatesOn(listOf(someUser)) {
+                dispose = UserImpl.streamUpdatesOn(listOf(someUser)) { it: Collection<User> ->
                     actualUpdates.add(it.map { it.asImpl().copy(updated = null, eTag = null) })
                 }
             }

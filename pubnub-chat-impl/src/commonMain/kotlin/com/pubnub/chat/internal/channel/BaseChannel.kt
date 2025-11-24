@@ -35,7 +35,6 @@ import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.config.PushNotificationsConfig
-import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.internal.ChatImpl.Companion.pinOrUnpinMessageToChannel
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
@@ -71,6 +70,7 @@ import com.pubnub.chat.membership.MembersResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.chat.types.GetEventsHistoryResult
@@ -853,7 +853,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             }
         }
 
-        fun streamUpdatesOn(
+        fun streamUpdatesOnWithEntityChange(
             channels: Collection<Channel>,
             callback: (change: EntityChange<Channel>) -> Unit
         ): AutoCloseable {

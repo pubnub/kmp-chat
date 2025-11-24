@@ -29,10 +29,14 @@ class ThreadMessageJs internal constructor(internal val threadMessage: ThreadMes
         }
 
         @JsStatic
-        @JsName("streamUpdatesOnWithEntityChange")
-        fun streamUpdatesOn(threadMessages: Array<ThreadMessageJs>, callback: (EntityChangeJs<ThreadMessageJs>) -> Unit): () -> Unit {
+        fun streamUpdatesOnWithEntityChange(
+            threadMessages: Array<ThreadMessageJs>,
+            callback: (EntityChangeJs<ThreadMessageJs>) -> Unit
+        ): () -> Unit {
             val chatJs = threadMessages.first().chatJs
-            return BaseMessage.streamUpdatesOn(threadMessages.map { it.threadMessage }) { change: EntityChange<ThreadMessage> ->
+            return BaseMessage.streamUpdatesOnWithEntityChange(
+                threadMessages.map { it.threadMessage }
+            ) { change: EntityChange<ThreadMessage> ->
                 when (change) {
                     is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
                     is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))

@@ -11,6 +11,12 @@ public final class com/pubnub/chat/MediatorsKt {
 	public static final fun streamUpdatesOn (Lcom/pubnub/chat/ThreadChannel$Companion;Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public static final fun streamUpdatesOn (Lcom/pubnub/chat/ThreadMessage$Companion;Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public static final fun streamUpdatesOn (Lcom/pubnub/chat/User$Companion;Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public static final fun streamUpdatesOnWithEntityChange (Lcom/pubnub/chat/Channel$Companion;Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public static final fun streamUpdatesOnWithEntityChange (Lcom/pubnub/chat/Membership$Companion;Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public static final fun streamUpdatesOnWithEntityChange (Lcom/pubnub/chat/Message$Companion;Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public static final fun streamUpdatesOnWithEntityChange (Lcom/pubnub/chat/ThreadChannel$Companion;Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public static final fun streamUpdatesOnWithEntityChange (Lcom/pubnub/chat/ThreadMessage$Companion;Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public static final fun streamUpdatesOnWithEntityChange (Lcom/pubnub/chat/User$Companion;Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 }
 
 public final class com/pubnub/chat/Mediators_jvmKt {

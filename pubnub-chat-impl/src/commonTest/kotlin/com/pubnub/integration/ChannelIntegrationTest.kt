@@ -471,7 +471,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id, channel02.id)) {
-                dispose = BaseChannel.streamUpdatesOn(listOf(channel01, channel02)) { channels ->
+                dispose = BaseChannel.streamUpdatesOn(listOf(channel01, channel02)) { channels: Collection<Channel> ->
                     actualUpdates.add(channels.map { it.asImpl().copy(updated = null) }.sortedBy { it.id })
                 }
             }

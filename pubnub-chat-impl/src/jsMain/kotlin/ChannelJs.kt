@@ -330,17 +330,25 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         @JsStatic
         fun streamUpdatesOn(channels: Array<ChannelJs>, callback: (Array<ChannelJs>) -> Unit): () -> Unit {
             val chatJs = channels.first().chatJs
-            val closeable = BaseChannel.streamUpdatesOn(channels.map { jsChannel -> jsChannel.channel }) { kmpChannels: Collection<Channel> ->
+            val closeable = BaseChannel.streamUpdatesOn(
+                channels.map {
+                        jsChannel ->
+                    jsChannel.channel
+                }
+            ) { kmpChannels: Collection<Channel> ->
                 callback(kmpChannels.map { kmpChannel -> ChannelJs(kmpChannel, chatJs) }.toTypedArray())
             }
             return closeable::close
         }
 
-        @JsStatic
-        @JsName("streamUpdatesOnWithEntityChange")
-        fun streamUpdatesOn(channels: Array<ChannelJs>, callback: (EntityChangeJs<ChannelJs>) -> Unit): () -> Unit {
+        fun streamUpdatesOnWithEntityChange(channels: Array<ChannelJs>, callback: (EntityChangeJs<ChannelJs>) -> Unit): () -> Unit {
             val chatJs = channels.first().chatJs
-            val closeable = BaseChannel.streamUpdatesOn(channels.map { jsChannel -> jsChannel.channel }) { change: EntityChange<Channel> ->
+            val closeable = BaseChannel.streamUpdatesOnWithEntityChange(
+                channels.map {
+                        jsChannel ->
+                    jsChannel.channel
+                }
+            ) { change: EntityChange<Channel> ->
                 when (change) {
                     is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
                     is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))

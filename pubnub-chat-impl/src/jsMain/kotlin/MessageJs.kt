@@ -176,10 +176,9 @@ open class MessageJs internal constructor(internal val message: Message, interna
         }
 
         @JsStatic
-        @JsName("streamUpdatesOnWithEntityChange")
-        fun streamUpdatesOn(messages: Array<MessageJs>, callback: (EntityChangeJs<MessageJs>) -> Unit): () -> Unit {
+        fun streamUpdatesOnWithEntityChange(messages: Array<MessageJs>, callback: (EntityChangeJs<MessageJs>) -> Unit): () -> Unit {
             val chatJs = messages.first().chatJs
-            return BaseMessage.streamUpdatesOn(messages.map { it.message }) { change: EntityChange<Message> ->
+            return BaseMessage.streamUpdatesOnWithEntityChange(messages.map { it.message }) { change: EntityChange<Message> ->
                 when (change) {
                     is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
                     is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))

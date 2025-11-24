@@ -595,6 +595,31 @@ public final class com/pubnub/chat/types/EmitEventMethod : java/lang/Enum {
 	public static fun values ()[Lcom/pubnub/chat/types/EmitEventMethod;
 }
 
+public abstract class com/pubnub/chat/types/EntityChange {
+}
+
+public final class com/pubnub/chat/types/EntityChange$Removed : com/pubnub/chat/types/EntityChange {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/pubnub/chat/types/EntityChange$Removed;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/types/EntityChange$Removed;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/chat/types/EntityChange$Removed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/pubnub/chat/types/EntityChange$Updated : com/pubnub/chat/types/EntityChange {
+	public fun <init> (Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;)Lcom/pubnub/chat/types/EntityChange$Updated;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/types/EntityChange$Updated;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/chat/types/EntityChange$Updated;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEntity ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract class com/pubnub/chat/types/EventContent {
 	public static final field Companion Lcom/pubnub/chat/types/EventContent$Companion;
 	public fun <init> ()V

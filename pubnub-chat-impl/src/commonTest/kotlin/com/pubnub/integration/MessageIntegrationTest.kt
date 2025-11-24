@@ -175,7 +175,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id)) {
-                dispose = BaseMessage.streamUpdatesOn(listOf(message1, message2)) { messages ->
+                dispose = BaseMessage.streamUpdatesOn(listOf(message1, message2)) { messages: Collection<Message> ->
                     actualUpdates.add(messages.sortedBy { it.timetoken })
                 }
             }
@@ -240,7 +240,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
                 }
 
                 // Set up streamUpdatesOn for both messages
-                disposeStreamUpdatesOn = BaseMessage.streamUpdatesOn(listOf(message1, message2)) { messages ->
+                disposeStreamUpdatesOn = BaseMessage.streamUpdatesOn(listOf(message1, message2)) { messages: Collection<Message> ->
                     streamUpdatesOnCallbacks.add(messages.sortedBy { it.timetoken })
                 }
             }
