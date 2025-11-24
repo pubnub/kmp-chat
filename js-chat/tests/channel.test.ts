@@ -486,7 +486,7 @@ describe("Channel test", () => {
     await messageDraft.onChange(messageText)
 
     await messageDraft.send()
-    await sleep(150)
+    await sleep(150) // History calls have around 130ms of cache time
 
     const history = await channel.getHistory()
     const messageInHistory = history.messages.find(
@@ -846,7 +846,7 @@ describe("Channel test", () => {
   test("should create thread on message", async () => {
     const messageText = "Test message for thread creation"
     await channel.sendText(messageText)
-    await sleep(150)
+    await sleep(150) // History calls have around 130ms of cache time
 
     const historyBeforeThread = await channel.getHistory()
     const messageBeforeThread = historyBeforeThread.messages[0]
@@ -866,7 +866,7 @@ describe("Channel test", () => {
   test("should reply to thread", async () => {
     const messageText = "Test message for thread reply"
     await channel.sendText(messageText)
-    await sleep(150)
+    await sleep(150) // History calls have around 130ms of cache time
 
     const history = await channel.getHistory()
     const message = history.messages[0]
@@ -888,7 +888,7 @@ describe("Channel test", () => {
   test("should delete thread", async () => {
     const messageText = "Test message for thread deletion"
     await channel.sendText(messageText)
-    await sleep(150)
+    await sleep(150) // History calls have around 130ms of cache time
 
     const initialHistory = await channel.getHistory()
     const initialMessage = initialHistory.messages[0]

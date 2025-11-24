@@ -122,7 +122,7 @@ describe("User test", () => {
 //   test("should report a user", async () => {
 //     const reportReason = "Inappropriate behavior"
 //     await user.DEPRECATED_report(reportReason)
-//     await sleep(150) // history calls have around 130ms of cache time
+//     await sleep(150) // History calls have around 130ms of cache time
 //
 //     const adminChannel =
 //       (await chat.getChannel(INTERNAL_ADMIN_CHANNEL)) ||
