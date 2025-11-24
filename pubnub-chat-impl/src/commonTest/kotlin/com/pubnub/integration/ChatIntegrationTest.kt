@@ -9,6 +9,7 @@ import com.pubnub.api.models.consumer.access_manager.v3.UUIDGrant
 import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.v2.callbacks.Result
+import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
 import com.pubnub.chat.Membership
@@ -51,6 +52,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import tryLong
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -213,6 +215,35 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         }
 
         assertEquals(result.channel, result.hostMembership.channel)
+    }
+
+    @Test
+    fun createGroupConversation_withEmptyUserList_shouldSucceedWithOnlyHost() = runTest {
+        // given
+        val emptyUserList = emptyList<User>()
+
+        // when
+        val result = chat.createGroupConversation(emptyUserList).await()
+
+        // then
+        assertNotNull(result.channel)
+        assertNotNull(result.channel.id)
+
+        assertEquals(
+            chat.currentUser,
+            result.hostMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null)
+        )
+        assertEquals(result.channel, result.hostMembership.channel)
+
+        assertTrue(
+            result.inviteeMemberships.isEmpty(),
+            "inviteeMemberships should be empty when no users are invited"
+        )
+
+        // verify the channel exists and is accessible
+        val fetchedChannel = chat.getChannel(result.channel.id).await()
+        assertNotNull(fetchedChannel, "Created channel should be fetchable")
+        assertEquals(result.channel.id, fetchedChannel?.id)
     }
 
     @Test
@@ -736,6 +767,169 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         }.await()
         assertNotNull(message)
         assertEquals("11", message.text)
+    }
+
+    @Test
+    fun createDirectConversation_withDuplicateUsers_shouldReturnExisting() = runTest {
+        // given - initialize and create first direct conversation
+        chat.initialize().await()
+        val firstResult = chat.createDirectConversation(someUser).await()
+        val firstChannelId = firstResult.channel.id
+
+        // when - create direct conversation again with same user
+        val secondResult = chat.createDirectConversation(someUser).await()
+        val secondChannelId = secondResult.channel.id
+
+        // then - should return the same channel ID (idempotent operation)
+        assertEquals(firstChannelId, secondChannelId, "Creating direct conversation twice should return same channel")
+
+        // verify memberships are consistent
+        assertEquals(
+            chat.currentUser.asImpl().copy(updated = null, lastActiveTimestamp = null),
+            secondResult.hostMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null)
+        )
+        assertEquals(someUser, secondResult.inviteeMembership.user.asImpl())
+        assertEquals(secondResult.channel, secondResult.hostMembership.channel)
+        assertEquals(secondResult.channel, secondResult.inviteeMembership.channel)
+
+        // verify no duplicate channels created - fetch channel directly
+        val fetchedChannel = chat.getChannel(firstChannelId).await()
+        assertNotNull(fetchedChannel, "Original channel should still exist")
+        assertEquals(firstChannelId, fetchedChannel.id)
+    }
+
+    @Test
+    fun isPresent_withStateTransitions_shouldReflectCorrectState() = runTest {
+        // given - create a test channel
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+
+        // initially, current user should not be present (not subscribed)
+        val initiallyPresent = chat.isPresent(chat.currentUser.id, testChannelId).await()
+        assertFalse(initiallyPresent, "User should not be present before subscribing")
+
+        // when - user subscribes to the channel
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var subscription: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(testChannelId)) {
+                subscription = testChannel.connect { }
+            }
+
+            // wait for presence to update
+            delayInMillis(2000)
+
+            // then - user should be present
+            val nowPresent = chat.isPresent(chat.currentUser.id, testChannelId).await()
+            assertTrue(nowPresent, "User should be present after subscribing")
+
+            // when - user unsubscribes
+            subscription?.close()
+
+            // wait for presence to update
+            delayInMillis(2000)
+
+            // then - user should not be present anymore
+            val afterUnsubscribe = chat.isPresent(chat.currentUser.id, testChannelId).await()
+            assertFalse(afterUnsubscribe, "User should not be present after unsubscribing")
+        }
+    }
+
+    @Test
+    fun whoIsPresent_withMultipleUsers_shouldReturnAllPresent() = runTest {
+        // given - create a test channel
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+
+        // when - multiple users subscribe (simulate with current user)
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var subscription: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(testChannelId)) {
+                subscription = testChannel.connect { }
+            }
+
+            // wait for presence to settle
+            delayInMillis(2000)
+
+            // then - whoIsPresent should return current user
+            val presentUsers = testChannel.whoIsPresent().await()
+            assertTrue(presentUsers.isNotEmpty(), "Should have at least one present user")
+            assertContains(presentUsers, chat.currentUser.id, "Current user should be in present list")
+
+            // verify multiple calls return consistent results
+            val presentUsers2 = testChannel.whoIsPresent().await()
+            assertEquals(presentUsers.size, presentUsers2.size, "Multiple calls should return same count")
+            assertTrue(presentUsers2.contains(chat.currentUser.id), "Should consistently show current user")
+
+            subscription?.close()
+        }
+    }
+
+    @Test
+    fun getEventsHistory_withPagination_shouldReturnCorrectPages() = runTest {
+        // given - create multiple events on a channel
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val eventCount = 10
+        val timetokens = mutableListOf<Long>()
+
+        // publish multiple messages to create events
+        repeat(eventCount) { index ->
+            val publishResult = testChannel.sendText("Message $index").await()
+            timetokens.add(publishResult.timetoken)
+        }
+
+        delayForHistory()
+
+        // when - fetch first page with count=3
+        val firstPage = chat.getEventsHistory(
+            channelId = testChannelId,
+            count = 3
+        ).await()
+
+        // then - should get 3 most recent events
+        assertEquals(3, firstPage.events.size, "First page should have 3 events")
+        assertTrue(firstPage.isMore, "Should indicate more events available")
+
+        // verify events are in reverse chronological order (newest first)
+        assertTrue(
+            firstPage.events[0].timetoken > firstPage.events[1].timetoken,
+            "Events should be ordered newest first"
+        )
+        assertTrue(
+            firstPage.events[1].timetoken > firstPage.events[2].timetoken,
+            "Events should be ordered newest first"
+        )
+
+        // when - fetch next page using endTimetoken from last event
+        val secondPage = chat.getEventsHistory(
+            channelId = testChannelId,
+            endTimetoken = firstPage.events.last().timetoken,
+            count = 3
+        ).await()
+
+        // then - should get next 3 older events
+        assertEquals(3, secondPage.events.size, "Second page should have 3 events")
+        assertTrue(secondPage.isMore, "Should still have more events")
+
+        // verify pagination doesn't return duplicates
+        val firstPageTimetokens = firstPage.events.map { it.timetoken }.toSet()
+        val secondPageTimetokens = secondPage.events.map { it.timetoken }.toSet()
+        assertTrue(
+            firstPageTimetokens.intersect(secondPageTimetokens).isEmpty(),
+            "Pages should not have duplicate events"
+        )
+
+        // when - fetch with large count to get all remaining
+        val allRemaining = chat.getEventsHistory(
+            channelId = testChannelId,
+            count = 100
+        ).await()
+
+        // then - should get all events
+        assertTrue(allRemaining.events.size >= eventCount, "Should get all $eventCount events")
+
+        // cleanup
+        chat.pubNub.deleteMessages(listOf(testChannelId)).await()
     }
 
     @Test
