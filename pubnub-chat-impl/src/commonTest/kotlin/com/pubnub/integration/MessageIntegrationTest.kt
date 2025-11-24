@@ -350,6 +350,57 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         }
     }
 
+    @Test
+    fun threadChannel_getHistory_withCountLimit_shouldReturnLimitedResults() = runTest {
+        // given - create a message and thread with multiple messages
+        val messageText = "Parent message_${randomString()}"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = pnPublishResult.timetoken
+        delayForHistory()
+
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
+        val threadChannel: ThreadChannel = message.createThread("First thread message_${randomString()}").await()
+
+        // add more messages to thread
+        val additionalMessageCount = 5
+        val threadMessageTexts = (2..additionalMessageCount).map {
+            "Thread message $it - ${randomString()}"
+        }
+
+        threadMessageTexts.forEach { text ->
+            threadChannel.sendText(text).await()
+        }
+
+        delayForHistory()
+
+        // when - fetch with count limit of 3
+        val limitedHistory: HistoryResponse<ThreadMessage> = threadChannel.getHistory(count = 3).await()
+
+        // then - should get exactly 3 messages
+        assertEquals(3, limitedHistory.messages.size, "Should get 3 messages when count=3")
+        assertTrue(limitedHistory.isMore, "Should indicate more messages available")
+
+        // when - fetch all with large count
+        val allMessages: HistoryResponse<ThreadMessage> = threadChannel.getHistory(count = 100).await()
+
+        // then - should get all thread messages (including the first one from createThread)
+        assertTrue(
+            allMessages.messages.size >= additionalMessageCount,
+            "Should get at least $additionalMessageCount thread messages"
+        )
+
+        // verify all our test messages are present
+        val allTexts = allMessages.messages.map { it.text }.toSet()
+        assertTrue(
+            threadMessageTexts.all { it in allTexts },
+            "All thread messages should be in history"
+        )
+
+        // cleanup - we need to re-fetch the message to see update state that contains info that it "hasThread"
+        val messageWithThread = channel01.getMessage(publishTimetoken).await()!!
+        messageWithThread.removeThread().await()
+    }
+
     private fun getDeletedActionMap() = mapOf(
         MessageActionType.DELETED.toString() to mapOf(
             MessageActionType.DELETED.toString() to listOf(

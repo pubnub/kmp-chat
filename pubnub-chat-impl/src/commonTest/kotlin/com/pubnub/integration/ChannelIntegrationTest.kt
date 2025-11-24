@@ -1,5 +1,6 @@
 package com.pubnub.integration
 
+import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.utils.Clock
@@ -38,6 +39,7 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -986,6 +988,72 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         statusListener01.close()
         statusListener02.close()
         connect.close()
+    }
+
+    @Test
+    fun inviteSameUserTwice_shouldHandleGracefully() = runTest {
+        // given - a channel and a user to invite
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val userToInvite = chat.createUser(UserImpl(chat, randomString(), name = "Test User")).await()
+
+        // when - invite user the first time
+        val firstInvite = testChannel.invite(userToInvite).await()
+        assertNotNull(firstInvite, "First invite should succeed")
+        assertEquals(userToInvite.id, firstInvite.user.id)
+        assertEquals(testChannelId, firstInvite.channel.id)
+
+        // when - invite the same user again
+        val secondInvite = testChannel.invite(userToInvite).await()
+
+        // then - should handle gracefully (idempotent operation)
+        // The operation should either:
+        // 1. Return the existing membership (preferred)
+        // 2. Succeed without error
+        assertNotNull(secondInvite, "Second invite should handle gracefully")
+        assertEquals(userToInvite.id, secondInvite.user.id)
+        assertEquals(testChannelId, secondInvite.channel.id)
+
+        // verify - membership should exist and be consistent
+        val members = testChannel.getMembers().await()
+        val invitedUserMemberships = members.members.filter { it.user.id == userToInvite.id }
+        assertEquals(1, invitedUserMemberships.size, "Should have exactly one membership for the user")
+
+        // cleanup
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(userToInvite.id).await()
+    }
+
+    @Test
+    fun sendText_withTooLargeMessage_shouldFail() = runTest {
+        // given - a test channel
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+
+        // when - try to send a message that exceeds PubNub's message size limit (32KB)
+        // PubNub allows up to 32KB (32768 bytes) per message
+        val largeMessage = "x".repeat(33000) // > 32KB
+
+        // then - should fail with appropriate error
+        val exception = assertFailsWith<PubNubException> {
+            testChannel.sendText(largeMessage).await()
+        }
+
+        // verify error is 414 URI Too Long
+        // Since sendText uses usePost=false by default, large messages are sent via GET request
+        // and exceed the URI length limit, resulting in 414 (not 413 which would be for POST body)
+        assertEquals(
+            414,
+            exception.statusCode,
+            "Expected 414 (URI Too Long) because sendText uses GET by default. Got: ${exception.statusCode} - ${exception.message}"
+        )
+        assertTrue(
+            exception.message?.contains("too long", ignoreCase = true) == true,
+            "Exception message should mention 'too long': ${exception.message}"
+        )
+
+        // cleanup
+        chat.deleteChannel(testChannelId).await()
     }
 }
 
