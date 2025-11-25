@@ -27,7 +27,7 @@ declare class Membership {
     * Updates
     */
     static streamUpdatesOn(memberships: Membership[], callback: (memberships: Membership[]) => unknown): () => void;
-    static streamUpdatesOnWithEntityChange(memberships: Membership[], callback: (change: EntityChange<Membership>) => unknown): () => void;
+    static streamChangesOn(memberships: Membership[], callback: (change: EntityChange<Membership>) => unknown): () => void;
     streamUpdates(callback: (membership: Membership) => unknown): () => void;
     /*
     * Unread message counts
@@ -60,7 +60,7 @@ declare class User {
     * Updates
     */
     static streamUpdatesOn(users: User[], callback: (users: User[]) => unknown): () => void;
-    static streamUpdatesOnWithEntityChange(users: User[], callback: (change: EntityChange<User>) => unknown): () => void;
+    static streamChangesOn(users: User[], callback: (change: EntityChange<User>) => unknown): () => void;
     streamUpdates(callback: (user: User) => unknown): () => void;
     /*
     * Presence
@@ -384,7 +384,7 @@ declare class Message {
     * Updates
     */
     static streamUpdatesOn(messages: Message[], callback: (messages: Message[]) => unknown): () => void;
-    static streamUpdatesOnWithEntityChange(messages: Message[], callback: (change: EntityChange<Message>) => unknown): () => void;
+    static streamChangesOn(messages: Message[], callback: (change: EntityChange<Message>) => unknown): () => void;
     streamUpdates(callback: (message: Message) => unknown): () => void;
     /*
     * Message text
@@ -535,7 +535,7 @@ declare class Channel {
     * Updates
     */
     static streamUpdatesOn(channels: Channel[], callback: (channels: Channel[]) => unknown): () => void;
-    static streamUpdatesOnWithEntityChange(channels: Channel[], callback: (change: EntityChange<Channel>) => unknown): () => void;
+    static streamChangesOn(channels: Channel[], callback: (change: EntityChange<Channel>) => unknown): () => void;
     streamUpdates(callback: (channel: Channel) => unknown): () => void;
     sendText(text: string, options?: SendTextOptionParams): Promise<unknown>;
     forwardMessage(message: Message): Promise<Publish.PublishResponse>;
@@ -843,7 +843,7 @@ declare class Chat {
 declare class ThreadMessage extends Message {
     readonly parentChannelId: string;
     static streamUpdatesOn(threadMessages: ThreadMessage[], callback: (threadMessages: ThreadMessage[]) => unknown): () => void;
-    static streamUpdatesOnWithEntityChange(threadMessages: ThreadMessage[], callback: (change: EntityChange<ThreadMessage>) => unknown): () => void;
+    static streamChangesOn(threadMessages: ThreadMessage[], callback: (change: EntityChange<ThreadMessage>) => unknown): () => void;
     pinToParentChannel(): Promise<Channel>;
     unpinFromParentChannel(): Promise<Channel>;
 }

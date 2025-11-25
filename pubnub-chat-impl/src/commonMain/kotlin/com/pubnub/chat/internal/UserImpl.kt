@@ -317,7 +317,7 @@ data class UserImpl(
             }
         }
 
-        fun streamUpdatesOnWithEntityChange(users: Collection<User>, callback: (change: EntityChange<User>) -> Unit): AutoCloseable {
+        fun streamChangesOn(users: Collection<User>, callback: (change: EntityChange<User>) -> Unit): AutoCloseable {
             return streamUpdatesOnInternal(users) { updatedUser, deletedUserId, _ ->
                 when {
                     updatedUser != null -> callback(EntityChange.Updated(updatedUser))

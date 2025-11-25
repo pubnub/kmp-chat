@@ -853,7 +853,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             }
         }
 
-        fun streamUpdatesOnWithEntityChange(
+        fun streamChangesOn(
             channels: Collection<Channel>,
             callback: (change: EntityChange<Channel>) -> Unit
         ): AutoCloseable {

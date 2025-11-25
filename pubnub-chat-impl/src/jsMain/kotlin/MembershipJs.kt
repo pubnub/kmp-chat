@@ -77,12 +77,12 @@ class MembershipJs internal constructor(internal val membership: Membership, int
         }
 
         @JsStatic
-        fun streamUpdatesOnWithEntityChange(
+        fun streamChangesOn(
             memberships: Array<MembershipJs>,
             callback: (EntityChangeJs<MembershipJs>) -> Unit
         ): () -> Unit {
             val chatJs = memberships.first().chatJs
-            return MembershipImpl.streamUpdatesOnWithEntityChange(memberships.map { it.membership }) { change: EntityChange<Membership> ->
+            return MembershipImpl.streamChangesOn(memberships.map { it.membership }) { change: EntityChange<Membership> ->
                 when (change) {
                     is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
                     is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))

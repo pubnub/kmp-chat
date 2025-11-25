@@ -341,9 +341,9 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
             return closeable::close
         }
 
-        fun streamUpdatesOnWithEntityChange(channels: Array<ChannelJs>, callback: (EntityChangeJs<ChannelJs>) -> Unit): () -> Unit {
+        fun streamChangesOn(channels: Array<ChannelJs>, callback: (EntityChangeJs<ChannelJs>) -> Unit): () -> Unit {
             val chatJs = channels.first().chatJs
-            val closeable = BaseChannel.streamUpdatesOnWithEntityChange(
+            val closeable = BaseChannel.streamChangesOn(
                 channels.map {
                         jsChannel ->
                     jsChannel.channel

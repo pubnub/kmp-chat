@@ -162,7 +162,7 @@ data class MembershipImpl(
             }
         }
 
-        fun streamUpdatesOnWithEntityChange(
+        fun streamChangesOn(
             memberships: Collection<Membership>,
             callback: (change: EntityChange<Membership>) -> Unit,
         ): AutoCloseable {

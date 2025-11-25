@@ -136,9 +136,9 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
         }
 
         @JsStatic
-        fun streamUpdatesOnWithEntityChange(users: Array<UserJs>, callback: (EntityChangeJs<UserJs>) -> Unit): () -> Unit {
+        fun streamChangesOn(users: Array<UserJs>, callback: (EntityChangeJs<UserJs>) -> Unit): () -> Unit {
             val chatJs = users.first().chatJs
-            val closeable = UserImpl.streamUpdatesOnWithEntityChange(users.map { jsUser -> jsUser.user }) { change: EntityChange<User> ->
+            val closeable = UserImpl.streamChangesOn(users.map { jsUser -> jsUser.user }) { change: EntityChange<User> ->
                 when (change) {
                     is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
                     is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))

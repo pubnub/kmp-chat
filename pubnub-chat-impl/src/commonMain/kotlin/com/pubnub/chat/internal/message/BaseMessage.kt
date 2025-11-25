@@ -353,7 +353,7 @@ abstract class BaseMessage<T : Message>(
             }
         }
 
-        fun <T : Message> streamUpdatesOnWithEntityChange(
+        fun <T : Message> streamChangesOn(
             messages: Collection<T>,
             callback: (change: EntityChange<T>) -> Unit,
         ): AutoCloseable {
