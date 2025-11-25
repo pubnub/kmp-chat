@@ -180,8 +180,8 @@ export function generateExpectedLinkedText(
     {
       type: "mention",
       content: {
-        name: "Lukasz",
-        id: "Przemek",
+        name: someUser.name,
+        id: someUser.id,
       },
     },
     {
@@ -218,8 +218,8 @@ export function generateExpectedLinkedText(
     {
       type: "mention",
       content: {
-        name: "Anton",
-        id: "whatever",
+        name: someUser2.name,
+        id: someUser2.id,
       },
     },
   ]
