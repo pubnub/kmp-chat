@@ -21,8 +21,9 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
     override val custom: Any? get() = user.custom?.toJsMap()
     override val status get() = user.status
     override val type get() = user.type
+
     val updated get() = user.updated
-    val lastActiveTimestamp get() = user.lastActiveTimestamp?.toInt()
+    val lastActiveTimestamp get() = user.lastActiveTimestamp?.toDouble()
 
     fun update(data: UserFields): Promise<UserJs> {
         return user.update(
