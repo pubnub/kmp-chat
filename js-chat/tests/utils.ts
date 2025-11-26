@@ -102,29 +102,22 @@ export async function createChatInstance(
 }
 
 export function createRandomChannel(chat: Chat, prefix: string = testsPrefix) {
-  return chat.createChannel(generateRandomString(), {
-    name: `${prefix}Test Channel`,
-    description: "This is a test channel",
-  })
-}
-
-export function createChannel(chat: Chat, id: string) {
-  return chat.createChannel(id, {
+  return chat.createChannel(generateRandomString(10, prefix), {
     name: `${prefix}Test Channel`,
     description: "This is a test channel",
   })
 }
 
 export function createRandomUser(chat: Chat, prefix: string = testsPrefix) {
-  return chat.createUser(generateRandomString(), {
-    name: `${prefix}Test User`,
+  return chat.createUser(generateRandomString(10, prefix), {
+    name: `${prefix}Test User`
   })
 }
 
 export function generateRandomString(length: number = 10, prefix: string = testsPrefix): string {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const charactersLength = characters.length;
-  let result = '';
+  let result = prefix;
   for (let i = 0; i < length; i++) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }

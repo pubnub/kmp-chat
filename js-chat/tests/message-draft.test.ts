@@ -277,13 +277,25 @@ describe("MessageDraft", function () {
   })
 
   test("should mix every type of message part", async () => {
-    const [channel1, channel2] = await Promise.all([createRandomChannel(chat), createRandomChannel(chat)])
-    const [user1, user2, user4, user5] = await Promise.all([
-      createRandomUser(chat),
-      createRandomUser(chat),
-      createRandomUser(chat),
-      createRandomUser(chat),
+    const testId = `js-chat-${Date.now()}`
+    const channel1Id = `${testId}-channel-1`
+    const channel2Id = `${testId}-channel-2`
+    const user1Id = `${testId}-user-1`
+    const user2Id = `${testId}-user-2`
+    const user4Id = `${testId}-user-4`
+    const user5Id = `${testId}-user-5`
+
+    const [channel1, channel2] = await Promise.all([
+      chat.createChannel(channel1Id, { name: "Test Channel 1" }),
+      chat.createChannel(channel2Id, { name: "Test Channel 2" })
     ])
+    const [user1, user2, user4, user5] = await Promise.all([
+      chat.createUser(user1Id, { name: "Test User 1" }),
+      chat.createUser(user2Id, { name: "Test User 2" }),
+      chat.createUser(user4Id, { name: "Test User 3" }),
+      chat.createUser(user5Id, { name: "Test User 4" }),
+    ])
+
     messageDraft.onChange("Hello ")
     messageDraft.addLinkedText({
       text: "pubnub",
@@ -345,6 +357,7 @@ describe("MessageDraft", function () {
       user1.delete({ soft: false }),
       user2.delete({ soft: false }),
       user4.delete({ soft: false }),
+      user5.delete({ soft: false }),
     ])
   }, 20000)
 

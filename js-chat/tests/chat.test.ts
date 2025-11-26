@@ -411,13 +411,18 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should get channel suggestions", async () => {
-    const prefix = "suggest-ch-"
+    const prefix = "suggest-channel-"
+
+    const existingChannels = await chat.getChannels({ filter: `id LIKE '${prefix}%'` })
+    await Promise.all(existingChannels.channels.map(ch => ch.delete().catch(() => {})))
+    await sleep(200)
+
     const channel1 = await createRandomChannel(chat, prefix)
     const channel2 = await createRandomChannel(chat, prefix)
     const channel3 = await createRandomChannel(chat, prefix)
     await sleep(500)
 
-    const suggestions = await chat.getChannelSuggestions("#" + prefix, { limit: 10 })
+    const suggestions = await chat.getChannelSuggestions("#" + prefix)
     expect(Array.isArray(suggestions)).toBe(true)
     expect(suggestions.length).toBeGreaterThanOrEqual(3)
 
@@ -430,13 +435,18 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should get user suggestions", async () => {
-    const prefix = "suggest-usr-"
+    const prefix = "suggest-user-"
+
+    const existingUsers = await chat.getUsers({ filter: `id LIKE '${prefix}%'` })
+    await Promise.all(existingUsers.users.map(u => u.delete().catch(() => {})))
+    await sleep(200)
+
     const user1 = await createRandomUser(chat, prefix)
     const user2 = await createRandomUser(chat, prefix)
     const user3 = await createRandomUser(chat, prefix)
     await sleep(500)
 
-    const suggestions = await chat.getUserSuggestions("@" + prefix, { limit: 10 })
+    const suggestions = await chat.getUserSuggestions("@" + prefix)
     expect(Array.isArray(suggestions)).toBe(true)
     expect(suggestions.length).toBeGreaterThanOrEqual(3)
 

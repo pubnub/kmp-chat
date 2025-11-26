@@ -89,83 +89,87 @@ describe("MessageDraft2", function () {
   }, 20000)
 
   test("should mix every type of message part", async () => {
-    const [channel1, channel2] = await Promise.all([createRandomChannel(chat, generateRandomString()), createRandomChannel(chat, generateRandomString())])
-    const [user1, user2, user4, user5] = await Promise.all([
-      createRandomUser(chat, generateRandomString()),
-      createRandomUser(chat, generateRandomString()),
-      createRandomUser(chat, generateRandomString()),
-      createRandomUser(chat, generateRandomString()),
-    ])
-    messageDraft.update("Hello ")
-    messageDraft.addLinkedText({
-      text: "pubnub",
-      link: "https://pubnub.com",
-      positionInInput: messageDraft.value.length,
-    })
-    messageDraft.update("Hello pubnub at https://pubnub.com! Hello to ")
-    messageDraft.addLinkedText({
-      text: "google",
-      link: "https://google.com",
-      positionInInput: messageDraft.value.length,
-    })
+      const [channel1, channel2] = await Promise.all([
+          createRandomChannel(chat),
+          createRandomChannel(chat)
+      ])
+      const [user1, user2, user4, user5] = await Promise.all([
+          createRandomUser(chat),
+          createRandomUser(chat),
+          createRandomUser(chat),
+          createRandomUser(chat),
+      ])
 
-   let elements: MixedTextTypedElement[][] = []
-    let resolve, reject;
-    const promise = new Promise((res, rej) => {
-      resolve = res;
-      reject = rej;
-    });
+      messageDraft.update("Hello ")
+      messageDraft.addLinkedText({
+          text: "pubnub",
+          link: "https://pubnub.com",
+          positionInInput: messageDraft.value.length,
+      })
 
-    messageDraft.addChangeListener(async function(state) {
-      elements.push(state.messageElements)
-      let mentions = await state.suggestedMentions
-      if (mentions.length == 0) {
-          resolve()
-          return
-      }
-      messageDraft.insertSuggestedMention(mentions[0], mentions[0].replaceWith)
-    })
+      messageDraft.update("Hello pubnub at https://pubnub.com! Hello to ")
+      messageDraft.addLinkedText({
+          text: "google",
+          link: "https://google.com",
+          positionInInput: messageDraft.value.length,
+      })
 
+      let elements: MixedTextTypedElement[][] = []
+      let resolve, reject;
 
-    messageDraft.update(
-      `Hello pubnub at https://pubnub.com! Hello to google at https://google.com. Referencing #${channel1.name.substring(0,8)}, #${channel2.name.substring(0,8)}, #blankchannel, @${user1.name.substring(0,8)}, @${user2.name.substring(0,8)}, and mentioning @blankuser3 @${user4.name.substring(0,8)} @${user5.name.substring(0,8)}`
-    )
+      const promise = new Promise((res, rej) => {
+          resolve = res;
+          reject = rej;
+      });
 
-    await promise
-    const messagePreview = messageDraft.getMessagePreview()
+      messageDraft.addChangeListener(async function(state) {
+          elements.push(state.messageElements)
+          let mentions = await state.suggestedMentions
+          if (mentions.length == 0) {
+              resolve()
+              return
+          }
+          messageDraft.insertSuggestedMention(mentions[0], mentions[0].replaceWith)
+      })
 
-    expect(messagePreview.length).toBe(16)
-    expect(messagePreview[0].type).toBe("text")
-    expect(messagePreview[1].type).toBe("textLink")
-    expect(messagePreview[2].type).toBe("text")
-    expect(messagePreview[3].type).toBe("textLink")
-    expect(messagePreview[4].type).toBe("text")
-    expect(messagePreview[5].type).toBe("channelReference")
-    expect(messagePreview[6].type).toBe("text")
-    expect(messagePreview[7].type).toBe("channelReference")
-    expect(messagePreview[8].type).toBe("text")
-    expect(messagePreview[9].type).toBe("mention")
-    expect(messagePreview[10].type).toBe("text")
-    expect(messagePreview[11].type).toBe("mention")
-    expect(messagePreview[12].type).toBe("text")
-    expect(messagePreview[13].type).toBe("mention")
-    expect(messagePreview[14].type).toBe("text")
-    expect(messagePreview[15].type).toBe("mention")
-    expect(messagePreview.map(renderMessagePart).join("")).toBe(
-      `Hello pubnub at https://pubnub.com! Hello to google at https://google.com. Referencing #${channel1.name}, #${channel2.name}, #blankchannel, @${user1.name}, @${user2.name}, and mentioning @blankuser3 @${user4.name} @${user5.name}`
-    )
-    expect(messageDraft.value).toBe(
-      `Hello pubnub at https://pubnub.com! Hello to google at https://google.com. Referencing ${channel1.name}, ${channel2.name}, #blankchannel, ${user1.name}, ${user2.name}, and mentioning @blankuser3 ${user4.name} ${user5.name}`
-    )
+      messageDraft.update(
+          `Hello pubnub at https://pubnub.com! Hello to google at https://google.com. Referencing #${channel1.name.substring(0,8)}, #${channel2.name.substring(0,8)}, #blankchannel, @${user1.name.substring(0,8)}, @${user2.name.substring(0,8)}, and mentioning @blankuser3 @${user4.name.substring(0,8)} @${user5.name.substring(0,8)}`
+      )
 
-    await Promise.all([
-      channel1.delete({ soft: false }),
-      channel2.delete({ soft: false })
-    ])
-    await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false }),
-      user4.delete({ soft: false }),
-    ])
-  }, 20000)
+      await promise
+      const messagePreview = messageDraft.getMessagePreview()
+
+      expect(messagePreview.length).toBe(16)
+      expect(messagePreview[0].type).toBe("text")
+      expect(messagePreview[1].type).toBe("textLink")
+      expect(messagePreview[2].type).toBe("text")
+      expect(messagePreview[3].type).toBe("textLink")
+      expect(messagePreview[4].type).toBe("text")
+      expect(messagePreview[5].type).toBe("channelReference")
+      expect(messagePreview[6].type).toBe("text")
+      expect(messagePreview[7].type).toBe("channelReference")
+      expect(messagePreview[8].type).toBe("text")
+      expect(messagePreview[9].type).toBe("mention")
+      expect(messagePreview[10].type).toBe("text")
+      expect(messagePreview[11].type).toBe("mention")
+      expect(messagePreview[12].type).toBe("text")
+      expect(messagePreview[13].type).toBe("mention")
+      expect(messagePreview[14].type).toBe("text")
+      expect(messagePreview[15].type).toBe("mention")
+      expect(messagePreview.map(renderMessagePart).join("")).toBe(
+          `Hello pubnub at https://pubnub.com! Hello to google at https://google.com. Referencing #${channel1.name}, #${channel2.name}, #blankchannel, @${user1.name}, @${user2.name}, and mentioning @blankuser3 @${user4.name} @${user5.name}`
+      )
+      expect(messageDraft.value).toBe(
+          `Hello pubnub at https://pubnub.com! Hello to google at https://google.com. Referencing ${channel1.name}, ${channel2.name}, #blankchannel, ${user1.name}, ${user2.name}, and mentioning @blankuser3 ${user4.name} ${user5.name}`
+      )
+      await Promise.all([
+          channel1.delete({ soft: false }),
+          channel2.delete({ soft: false })
+      ])
+      await Promise.all([
+          user1.delete({ soft: false }),
+          user2.delete({ soft: false }),
+          user4.delete({ soft: false }),
+      ])
+    }, 25000)
 })
