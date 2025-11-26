@@ -10,8 +10,9 @@ import {
   extractMentionedUserIds,
   createChatInstance,
   sendMessageAndWaitForHistory,
-  makeid,
   generateRandomString,
+  createRandomChannel,
+  createRandomUser
 } from "./utils"
 
 import { jest } from "@jest/globals"
@@ -25,27 +26,14 @@ describe("Channel test", () => {
   let channel: Channel
   let messageDraft: MessageDraft
 
-  function createRandomChannel(prefix: string = "") {
-    return chat.createChannel(`${prefix}channel_${makeid()}`, {
-      name: `${prefix}Test Channel`,
-      description: "This is a test channel",
-    })
-  }
-
-  function createRandomUser(prefix: string = "") {
-    return chat.createUser(`${prefix}user_${makeid()}`, {
-      name: `${prefix}Test User`,
-    })
-  }
-
   beforeAll(async () => {
-    chat = await createChatInstance({ userId: makeid(), shouldCreateNewInstance: true })
-    chatPamServer = await createChatInstance( { userId: makeid(), shouldCreateNewInstance: true, clientType: 'PamServer' })
-    chatPamServerWithRefIntegrity = await createChatInstance({ userId: makeid(), shouldCreateNewInstance: true, clientType: 'PamServerWithRefIntegrity' })
+    chat = await createChatInstance({ userId: generateRandomString() })
+    chatPamServer = await createChatInstance( { userId: generateRandomString(), clientType: 'PamServer' })
+    chatPamServerWithRefIntegrity = await createChatInstance({ userId: generateRandomString(), clientType: 'PamServerWithRefIntegrity' })
   }, 15000)
 
   beforeEach(async () => {
-    channel = await createRandomChannel()
+    channel = await createRandomChannel(chat)
     messageDraft = channel.createMessageDraft()
   }, 15000)
 
@@ -108,8 +96,8 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should fetch unread messages counts with pagination", async () => {
-    const channel1 = await createRandomChannel()
-    const channel2 = await createRandomChannel()
+    const channel1 = await createRandomChannel(chat)
+    const channel2 = await createRandomChannel(chat)
 
     await channel1.invite(chat.currentUser)
     await channel2.invite(chat.currentUser)
@@ -169,10 +157,10 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should create a direct, group and public chats with a predefined ID", async () => {
-    const someFakeDirectId = generateRandomString(10)
-    const someFakeGroupId = generateRandomString(10)
-    const someFakePublicId = generateRandomString(10)
-    const user = await createRandomUser()
+    const someFakeDirectId = generateRandomString()
+    const someFakeGroupId = generateRandomString()
+    const someFakePublicId = generateRandomString()
+    const user = await createRandomUser(chat)
 
     const newChannels = await Promise.all([
       chat.createDirectConversation({
@@ -202,7 +190,7 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should create direct conversation and send message", async () => {
-    const user = await createRandomUser()
+    const user = await createRandomUser(chat)
     const directConversation = await chat.createDirectConversation({ user, channelData: { name: "Test Convo" }})
 
     expect(directConversation).toBeDefined()
@@ -221,12 +209,12 @@ describe("Channel test", () => {
 
   test("should create group conversation", async () => {
     const [user1, user2, user3] = await Promise.all([
-      createRandomUser(),
-      createRandomUser(),
-      createRandomUser(),
+      createRandomUser(chat),
+      createRandomUser(chat),
+      createRandomUser(chat),
     ])
 
-    const channelId = "group_channel_1234"
+    const channelId = generateRandomString()
     const channelData = {
       name: "Test Group Channel",
       description: "This is a test group channel.",
@@ -687,7 +675,7 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should throw an error when trying to quote a message from another channel", async () => {
-    const otherChannel = await createRandomChannel()
+    const otherChannel = await createRandomChannel(chat)
 
     try {
       const messageText = "Test message"
@@ -727,7 +715,7 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should invite a user to the channel", async () => {
-    const userToInvite = await createRandomUser()
+    const userToInvite = await createRandomUser(chat)
     const membership = await channel.invite(userToInvite)
 
     expect(membership).toBeDefined()
@@ -739,7 +727,7 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should invite multiple users to the channel", async () => {
-    const usersToInvite = await Promise.all([createRandomUser(), createRandomUser()])
+    const usersToInvite = await Promise.all([createRandomUser(chat), createRandomUser(chat)])
     const invitedMemberships = await channel.inviteMultiple(usersToInvite)
 
     expect(invitedMemberships).toBeDefined()
@@ -760,8 +748,8 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should verify if user is a member of a channel", async () => {
-    const user = await createRandomUser()
-    const channel = await createRandomChannel()
+    const user = await createRandomUser(chat)
+    const channel = await createRandomChannel(chat)
 
     const membership = await channel.invite(user)
     await sleep(200)
@@ -778,9 +766,8 @@ describe("Channel test", () => {
   test("should verify if user is online on a channel", async () => {
     const chat2 = await createChatInstance({
       userId: "user-one",
-      shouldCreateNewInstance: true,
     })
-    const channel = await chat2.createChannel(`channel_${makeid()}`, {
+    const channel = await chat2.createChannel(generateRandomString(), {
       name: "Test Channel",
       description: "This is a test channel",
     })
@@ -828,7 +815,7 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should create direct conversation", async () => {
-    const user1 = await createRandomUser()
+    const user1 = await createRandomUser(chat)
     const directConversation = await chat.createDirectConversation({
       user: user1,
       channelData: { name: "Test Convo" },
@@ -948,9 +935,9 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should create a group chat channel", async () => {
-    const user1 = await createRandomUser()
-    const user2 = await createRandomUser()
-    const user3 = await createRandomUser()
+    const user1 = await createRandomUser(chat)
+    const user2 = await createRandomUser(chat)
+    const user3 = await createRandomUser(chat)
 
     const channelId = "tg5984fd"
     const channelData = {
@@ -991,7 +978,7 @@ describe("Channel test", () => {
     }
 
     const publicChannel = await chat.createPublicConversation({
-      channelId: generateRandomString(10),
+      channelId: generateRandomString(),
       channelData,
     })
 
@@ -1004,7 +991,7 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should set user restrictions on channel", async() => {
-    const user = await chatPamServer.createUser(generateRandomString(10), { name: "User123" });
+    const user = await chatPamServer.createUser(generateRandomString(), { name: "User123" });
     const channel = (await chatPamServer.createDirectConversation({ user: user})).channel;
 
     await channel.setRestrictions(user, { mute: true, reason: "rude" })
@@ -1019,7 +1006,7 @@ describe("Channel test", () => {
   }, 30000)
 
   test("should get user restrictions from channel", async() => {
-    const userId = generateRandomString(10)
+    const userId = generateRandomString()
     const user = await chatPamServer.createUser(userId, { name: "User123" });
     const channel = (await chatPamServer.createDirectConversation({ user: user})).channel;
 
@@ -1036,9 +1023,9 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should set (or lift) restrictions on a user", async () => {
-    const notExistingUserId = generateRandomString(10)
+    const notExistingUserId = generateRandomString()
     const moderationEventCallback = jest.fn()
-    const notExistingChannelName = generateRandomString(10)
+    const notExistingChannelName = generateRandomString()
 
     const removeModerationListener = chatPamServerWithRefIntegrity.listenForEvents({
       channel: "PUBNUB_INTERNAL_MODERATION." + notExistingUserId,
@@ -1211,7 +1198,7 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should properly disconnect from channel and stop receiving messages", async () => {
-    const testUser = await createRandomUser()
+    const testUser = await createRandomUser(chat)
     const directConversation = await chat.createDirectConversation({
       user: testUser,
       channelData: { name: "Test Direct Channel" }
@@ -1267,7 +1254,7 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should delete channel via chat.deleteChannel", async () => {
-    const testChannel = await createRandomChannel()
+    const testChannel = await createRandomChannel(chat)
     const channelId = testChannel.id
     const result = await chat.deleteChannel(channelId)
 
@@ -1277,7 +1264,7 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should forward message to another channel", async () => {
-    const targetChannel = await createRandomChannel()
+    const targetChannel = await createRandomChannel(chat)
     const messageText = "Message to forward"
 
     await channel.sendText(messageText)
@@ -1528,7 +1515,7 @@ describe("Channel test", () => {
   }, 30000)
 
   test("should stream read receipts on a channel", async () => {
-    const testUser = await createRandomUser()
+    const testUser = await createRandomUser(chat)
     const directConversation = await chat.createDirectConversation({ user: testUser })
 
     let receivedReceipts

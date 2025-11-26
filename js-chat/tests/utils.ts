@@ -7,9 +7,9 @@ import PubNub from "pubnub"
 
 dotenv.config()
 
-let chat: Chat | undefined
+const testsPrefix = "js-chat"
 
-export function makeid(length = 8) {
+export function makeid(length = 10, prefix: string = testsPrefix): string {
   let result = ""
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
   const charactersLength = characters.length
@@ -94,37 +94,34 @@ const createChat = async (
 export async function createChatInstance(
   options: {
     userId?: string
-    shouldCreateNewInstance?: boolean
     config?: Partial<ChatConfig> & PubNub.PubnubConfig
     clientType?: ClientType
   } = {}
 ) {
-  if (options.shouldCreateNewInstance) {
-    return await createChat(options.userId || process.env.USER_ID!, options.config, options.clientType);
-  }
-  if (!chat) {
-    chat = await createChat(options.userId || process.env.USER_ID!, options.config, options.clientType);
-  }
-
-  return chat;
+  return await createChat(options.userId || process.env.USER_ID!, options.config, options.clientType);
 }
 
-export function createRandomChannel(prefix?: string) {
-  if (!prefix) prefix = ""
-  return chat.createChannel(`${prefix}channel_${makeid()}`, {
+export function createRandomChannel(chat: Chat, prefix: string = testsPrefix) {
+  return chat.createChannel(generateRandomString(), {
     name: `${prefix}Test Channel`,
     description: "This is a test channel",
   })
 }
 
-export function createRandomUser(prefix?: string) {
-  if (!prefix) prefix = ""
-  return chat.createUser(`${prefix}user_${makeid()}`, {
+export function createChannel(chat: Chat, id: string) {
+  return chat.createChannel(id, {
+    name: `${prefix}Test Channel`,
+    description: "This is a test channel",
+  })
+}
+
+export function createRandomUser(chat: Chat, prefix: string = testsPrefix) {
+  return chat.createUser(generateRandomString(), {
     name: `${prefix}Test User`,
   })
 }
 
-export function generateRandomString(length: number): string {
+export function generateRandomString(length: number = 10, prefix: string = testsPrefix): string {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const charactersLength = characters.length;
   let result = '';

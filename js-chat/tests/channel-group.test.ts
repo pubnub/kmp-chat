@@ -17,13 +17,13 @@ describe("Channel group test", () => {
   let channelGroup: ChannelGroup
 
   beforeAll(async () => {
-    chat = await createChatInstance({ userId: generateRandomString(10) })
+    chat = await createChatInstance({ userId: generateRandomString() })
   })
 
   beforeEach(async () => {
-    firstChannel = await createRandomChannel()
-    secondChannel = await createRandomChannel()
-    channelGroup = chat.getChannelGroup(generateRandomString(10))
+    firstChannel = await createRandomChannel(chat)
+    secondChannel = await createRandomChannel(chat)
+    channelGroup = chat.getChannelGroup(generateRandomString())
   })
 
   afterEach(async () => {

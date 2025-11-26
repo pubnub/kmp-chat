@@ -1,5 +1,5 @@
 import {Chat, ConnectionStatusCategory} from "../dist-test"
-import {createChatInstance, sleep} from "./utils";
+import {createChatInstance, generateRandomString, sleep} from "./utils";
 
 describe("Connection Status test", () => {
     jest.retryTimes(0) // Disable retries for this test
@@ -7,16 +7,17 @@ describe("Connection Status test", () => {
     let chat1: Chat
     let chat2: Chat
 
-    const TEST_CHANNEL = "test-channel-" + Math.random().toString(36).substring(2, 15)
+    const TEST_CHANNEL = generateRandomString()
 
     beforeAll(async () => {
         chat1 = await createChatInstance({
+            userId: generateRandomString(),
             config: {
                 enableEventEngine: true
             }
         })
         chat2 = await createChatInstance({
-            shouldCreateNewInstance: true,
+            userId: generateRandomString(),
             config: {
                 enableEventEngine: true
             }

@@ -1,5 +1,5 @@
 import { Chat, Channel, User, Event } from "../dist-test"
-import { createChatInstance, generateRandomString, makeid, sleep } from "./utils"
+import { createChatInstance, generateRandomString, sleep, createRandomChannel, createRandomUser } from "./utils"
 import { jest } from "@jest/globals"
 
 describe("Chat tests", () => {
@@ -7,23 +7,9 @@ describe("Chat tests", () => {
 
   let chat: Chat
 
-  function createRandomChannel(prefix: string = "") {
-    return chat.createChannel(`${prefix}channel_${makeid()}`, {
-      name: `${prefix}Test Channel`,
-      description: "This is a test channel",
-    })
-  }
-
-  function createRandomUser(prefix: string = "") {
-    return chat.createUser(`${prefix}user_${makeid()}`, {
-      name: `${prefix}Test User`,
-    })
-  }
-
   beforeAll(async () => {
     chat = await createChatInstance({
-      userId: makeid(),
-      shouldCreateNewInstance: true
+      userId: generateRandomString()
     })
   }, 15000)
 
@@ -36,7 +22,7 @@ describe("Chat tests", () => {
   }, 15000)
 
   test("should emit and listen for custom events", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
     let receivedEvent: any
 
     const unsubscribe = chat.listenForEvents({
@@ -63,7 +49,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should get events history", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
 
     await chat.emitEvent({
       channel: channel.id,
@@ -87,7 +73,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should create and get user via chat methods", async () => {
-    const userId = makeid()
+    const userId = generateRandomString()
     const userData = { name: "Test User", email: "test@example.com" }
 
     const createdUser = await chat.createUser(userId, userData)
@@ -102,7 +88,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should update user via chat.updateUser", async () => {
-    const user = await createRandomUser()
+    const user = await createRandomUser(chat)
     const newName = "Updated Name"
     const updatedUser = await chat.updateUser(user.id, { name: newName })
 
@@ -113,7 +99,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should delete user via chat.deleteUser", async () => {
-    const user = await createRandomUser()
+    const user = await createRandomUser(chat)
     const userId = user.id
 
     const result = await chat.deleteUser(userId)
@@ -123,8 +109,8 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should get multiple users with filter", async () => {
-    const user1 = await createRandomUser()
-    const user2 = await createRandomUser()
+    const user1 = await createRandomUser(chat)
+    const user2 = await createRandomUser(chat)
     await sleep(200)
 
     const filter = `id == '${user1.id}' || id == '${user2.id}'`
@@ -139,7 +125,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should get channel via chat.getChannel", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
     const fetchedChannel = await chat.getChannel(channel.id)
 
     expect(fetchedChannel).toBeDefined()
@@ -150,7 +136,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should update channel via chat.updateChannel", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
     const newName = "Updated Channel Name"
     const updatedChannel = await chat.updateChannel(channel.id, { name: newName })
 
@@ -161,7 +147,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should delete channel via chat.deleteChannel", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
     const channelId = channel.id
 
     const result = await chat.deleteChannel(channelId)
@@ -204,7 +190,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should create direct conversation", async () => {
-    const otherUser = await createRandomUser()
+    const otherUser = await createRandomUser(chat)
 
     const { channel, hostMembership, inviteeMembership } =
       await chat.createDirectConversation({
@@ -221,8 +207,8 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should create group conversation", async () => {
-    const user1 = await createRandomUser()
-    const user2 = await createRandomUser()
+    const user1 = await createRandomUser(chat)
+    const user2 = await createRandomUser(chat)
 
     const { channel, hostMembership, inviteesMemberships } =
       await chat.createGroupConversation({
@@ -239,7 +225,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should check presence via chat.isPresent", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
     const disconnect = channel.connect(() => {})
     await sleep(2000)
 
@@ -255,7 +241,7 @@ describe("Chat tests", () => {
   }, 25000)
 
   test("should get present users via chat.whoIsPresent", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
     const disconnect = channel.connect(() => {})
     await sleep(2000)
 
@@ -269,8 +255,8 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should get present channels via chat.wherePresent", async () => {
-    const channel1 = await createRandomChannel()
-    const channel2 = await createRandomChannel()
+    const channel1 = await createRandomChannel(chat)
+    const channel2 = await createRandomChannel(chat)
 
     const disconnect1 = channel1.connect(() => {})
     const disconnect2 = channel2.connect(() => {})
@@ -289,7 +275,7 @@ describe("Chat tests", () => {
   }, 25000)
 
   test("should get unread messages counts", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
     await channel.invite(chat.currentUser)
     await channel.sendText("Test message")
     await sleep(500)
@@ -307,7 +293,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should fetch unread messages counts with pagination", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
     await channel.invite(chat.currentUser)
     await channel.sendText("Test message")
     await sleep(500)
@@ -323,7 +309,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should mark all messages as read", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
     await channel.invite(chat.currentUser)
     await channel.sendText("Test message")
     await sleep(500)
@@ -340,8 +326,7 @@ describe("Chat tests", () => {
 
   test("should set restrictions via chat.setRestrictions", async () => {
     const chatPamServer = await createChatInstance({
-      userId: makeid(),
-      shouldCreateNewInstance: true,
+      userId: generateRandomString(),
       clientType: 'PamServer'
     })
     const testUser = await chatPamServer.createUser(generateRandomString(10), { name: "Test User" })
@@ -364,7 +349,7 @@ describe("Chat tests", () => {
   }, 25000)
 
   test("should get current user mentions", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
     const messageDraft = channel.createMessageDraft()
 
     await messageDraft.onChange(`Hello @${chat.currentUser.name}`)
@@ -383,9 +368,9 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should create and manage channel group", async () => {
-    const groupId = `group_${makeid()}`
-    const channel1 = await createRandomChannel()
-    const channel2 = await createRandomChannel()
+    const groupId = `group_${generateRandomString()}`
+    const channel1 = await createRandomChannel(chat)
+    const channel2 = await createRandomChannel(chat)
 
     const channelGroup = chat.getChannelGroup(groupId)
     await channelGroup.addChannels([channel1, channel2])
@@ -402,7 +387,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should mute and unmute users", async () => {
-    const userToMute = await createRandomUser()
+    const userToMute = await createRandomUser(chat)
     await chat.mutedUsersManager.muteUser(userToMute.id)
     await sleep(200)
 
@@ -427,9 +412,9 @@ describe("Chat tests", () => {
 
   test("should get channel suggestions", async () => {
     const prefix = "suggest-ch-"
-    const channel1 = await createRandomChannel(prefix)
-    const channel2 = await createRandomChannel(prefix)
-    const channel3 = await createRandomChannel(prefix)
+    const channel1 = await createRandomChannel(chat, prefix)
+    const channel2 = await createRandomChannel(chat, prefix)
+    const channel3 = await createRandomChannel(chat, prefix)
     await sleep(500)
 
     const suggestions = await chat.getChannelSuggestions("#" + prefix, { limit: 10 })
@@ -446,9 +431,9 @@ describe("Chat tests", () => {
 
   test("should get user suggestions", async () => {
     const prefix = "suggest-usr-"
-    const user1 = await createRandomUser(prefix)
-    const user2 = await createRandomUser(prefix)
-    const user3 = await createRandomUser(prefix)
+    const user1 = await createRandomUser(chat, prefix)
+    const user2 = await createRandomUser(chat, prefix)
+    const user3 = await createRandomUser(chat, prefix)
     await sleep(500)
 
     const suggestions = await chat.getUserSuggestions("@" + prefix, { limit: 10 })

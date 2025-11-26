@@ -2,7 +2,9 @@ import { Channel, Chat, MessageDraftV2, MixedTextTypedElement } from "../dist-te
 import {
   createChatInstance,
   renderMessagePart,
-  makeid
+  generateRandomString,
+  createRandomChannel,
+  createRandomUser
 } from "./utils"
 import { jest } from "@jest/globals"
 
@@ -13,30 +15,17 @@ describe("MessageDraft2", function () {
   let channel: Channel
   let messageDraft: MessageDraftV2
 
-  function createRandomChannel(prefix: string = "") {
-    return chat.createChannel(`${prefix}channel_${makeid()}`, {
-      name: `${prefix}Test Channel`,
-      description: "This is a test channel",
-    })
-  }
-
-  function createRandomUser(prefix: string = "") {
-    return chat.createUser(`${prefix}user_${makeid()}`, {
-      name: `${prefix}Test User`,
-    })
-  }
-
   beforeAll(async () => {
-    chat = await createChatInstance({ shouldCreateNewInstance: true, userId: makeid() })
+    chat = await createChatInstance({ userId: generateRandomString() })
   })
 
   beforeEach(async () => {
-    channel = await createRandomChannel()
+    channel = await createRandomChannel(chat)
     messageDraft = channel.createMessageDraftV2({ userSuggestionSource: "global" })
   })
 
   test("should mention 2 users", async () => {
-    const [user1, user2] = await Promise.all([createRandomUser(), createRandomUser()])
+    const [user1, user2] = await Promise.all([createRandomUser(chat), createRandomUser(chat)])
 
     messageDraft.update("Hello @user1 and @user2")
     messageDraft.addMention(6, 6, "mention", user1.id)
@@ -57,9 +46,9 @@ describe("MessageDraft2", function () {
 
   test("should mention 2 - 3 users next to each other", async () => {
     const [user1, user2, user3] = await Promise.all([
-      createRandomUser(),
-      createRandomUser(),
-      createRandomUser(),
+      createRandomUser(chat),
+      createRandomUser(chat),
+      createRandomUser(chat),
     ])
 
     let elements: MixedTextTypedElement[][] = []
@@ -84,6 +73,7 @@ describe("MessageDraft2", function () {
     await promise
 
     const messagePreview = messageDraft.getMessagePreview()
+
     expect(messagePreview.length).toBe(4)
     expect(messagePreview[0].type).toBe("text")
     expect(messagePreview[1].type).toBe("mention")
@@ -96,15 +86,15 @@ describe("MessageDraft2", function () {
       user2.delete({ soft: false }),
       user3.delete({ soft: false }),
     ])
-  })
+  }, 20000)
 
   test("should mix every type of message part", async () => {
-    const [channel1, channel2] = await Promise.all([createRandomChannel(makeid()), createRandomChannel(makeid())])
+    const [channel1, channel2] = await Promise.all([createRandomChannel(chat, generateRandomString()), createRandomChannel(chat, generateRandomString())])
     const [user1, user2, user4, user5] = await Promise.all([
-      createRandomUser(makeid()),
-      createRandomUser(makeid()),
-      createRandomUser(makeid()),
-      createRandomUser(makeid()),
+      createRandomUser(chat, generateRandomString()),
+      createRandomUser(chat, generateRandomString()),
+      createRandomUser(chat, generateRandomString()),
+      createRandomUser(chat, generateRandomString()),
     ])
     messageDraft.update("Hello ")
     messageDraft.addLinkedText({
@@ -140,8 +130,8 @@ describe("MessageDraft2", function () {
     messageDraft.update(
       `Hello pubnub at https://pubnub.com! Hello to google at https://google.com. Referencing #${channel1.name.substring(0,8)}, #${channel2.name.substring(0,8)}, #blankchannel, @${user1.name.substring(0,8)}, @${user2.name.substring(0,8)}, and mentioning @blankuser3 @${user4.name.substring(0,8)} @${user5.name.substring(0,8)}`
     )
-    await promise
 
+    await promise
     const messagePreview = messageDraft.getMessagePreview()
 
     expect(messagePreview.length).toBe(16)
@@ -177,5 +167,5 @@ describe("MessageDraft2", function () {
       user2.delete({ soft: false }),
       user4.delete({ soft: false }),
     ])
-  })
+  }, 20000)
 })

@@ -3,7 +3,7 @@ import {
 } from "../dist-test"
 import {
     createChatInstance,
-    makeid,
+    generateRandomString,
     sleep
 } from "./utils";
 
@@ -16,12 +16,11 @@ describe("Access Manager test test", () => {
     let chatPamServer: Chat
 
     beforeAll(async () => {
-        let chatClientUserId = makeid(8)
-        chatPamServer = await createChatInstance( { shouldCreateNewInstance: true, clientType: 'PamServer' })
+        let chatClientUserId = generateRandomString(8)
+        chatPamServer = await createChatInstance( { clientType: 'PamServer' })
         const token = await _grantTokenForUserId(chatPamServer, chatClientUserId);
         chatPamClient = await createChatInstance( {
             userId: chatClientUserId ,
-            shouldCreateNewInstance: true,
             clientType: 'PamClient',
             config: {
                 authKey: token
@@ -30,12 +29,14 @@ describe("Access Manager test test", () => {
     })
 
     afterEach(async () => {
+        await chatPamClient.currentUser.delete()
+        await chatPamServer.currentUser.delete()
         jest.clearAllMocks()
     })
 
-    // test is skipped because it has 65sec sleep to wait for token expiration
+    // Test is skipped because it has 65sec sleep to wait for token expiration
     test.skip("when token is updated then client can use API", async () => {
-        const user1Id = `user1_${Date.now()}`
+        const user1Id = generateRandomString()
         const userToChatWith = await chatPamServer.createUser(user1Id, { name: "User1" })
         const createDirectConversationResult = await chatPamServer.createDirectConversation(
             {
@@ -64,7 +65,7 @@ describe("Access Manager test test", () => {
         let message = await channelRetrievedByClient.getMessage(publishResult.timetoken);
         await message.toggleReaction("one")
 
-        // sleep so that token expires
+        // Sleep so that token expires
         await sleep(65000)
         token = await _grantTokenForChannel(1, chatPamServer, channelId);
         await chatPamClient.sdk.setToken(token)
@@ -73,7 +74,7 @@ describe("Access Manager test test", () => {
         await chatPamClient.getChannel(channelRetrievedByClient?.id);
 
         await chatPamServer.deleteChannel(channelId)
-    }, 100000); // this long timeout is needed so we can wait 65sec for token to expire
+    }, 100000)
 
     async function _grantTokenForUserId(chatPamServer, chatClientUserId) {
         return chatPamServer.sdk.grantToken({
@@ -97,7 +98,7 @@ describe("Access Manager test test", () => {
                     [channelId]: {
                         read: true,
                         write: true,
-                        get: true, // this is important
+                        get: true
                     }
                 }
             }

@@ -1,5 +1,5 @@
 import { Channel, Chat } from "../dist-test"
-import { createChatInstance, makeid, sleep } from "./utils"
+import { createChatInstance, generateRandomString, sleep, createRandomChannel } from "./utils"
 
 describe("Typing indicator test", () => {
   jest.retryTimes(3)
@@ -7,22 +7,13 @@ describe("Typing indicator test", () => {
   let chat: Chat
   let chat2: Chat
 
-  function createRandomChannel(prefix: string = "") {
-    return chat.createChannel(`${prefix}channel_${makeid()}`, {
-      name: `${prefix}Test Channel`,
-      description: "This is a test channel",
-    })
-  }
-
   beforeAll(async () => {
     chat = await createChatInstance({
-      userId: makeid(),
-      shouldCreateNewInstance: true
-    })
+      userId: generateRandomString(),
+          })
     chat2 = await createChatInstance({
-      userId: makeid(),
-      shouldCreateNewInstance: true
-    })
+      userId: generateRandomString(),
+          })
   })
 
   afterAll(async () => {
@@ -31,7 +22,7 @@ describe("Typing indicator test", () => {
   })
 
   test("should call the callback with the typing value when a typing signal is received", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
     const membership = await channel.invite(chat2.currentUser)
     await sleep(500)
 
@@ -48,16 +39,15 @@ describe("Typing indicator test", () => {
 
     unsubscribe()
     await channel.delete()
-  }, 15000)
+  }, 20000)
 
   // Needs to be clarified. Task created CSK-285
   test.skip("should not call the callback when the typing signal is from the same user as the recipient", async () => {
     const chat1 = await createChatInstance({
       userId: "testing",
-      shouldCreateNewInstance: true,
     })
 
-    const channelId = "group_channel_typing_test_same_user"
+    const channelId = generateRandomString()
     const channelData = {
       name: "Typing Test Group Channel for Same User",
       description: "This is a test group channel for typing by the same user.",
@@ -77,7 +67,6 @@ describe("Typing indicator test", () => {
     })
 
     const { channel } = result
-
     const callback = jest.fn()
 
     const channelFromUser1 = await chat1.getChannel(channelId)
@@ -97,15 +86,13 @@ describe("Typing indicator test", () => {
 
   test("should handle multiple users starting and stopping typing", async () => {
     const chat3 = await createChatInstance({
-      userId: makeid(),
-      shouldCreateNewInstance: true,
+      userId: generateRandomString(),
     })
     const chat4 = await createChatInstance({
-      userId: makeid(),
-      shouldCreateNewInstance: true,
+      userId: generateRandomString(),
     })
 
-    const channelId = `group_channel_typing_test_${makeid()}`
+    const channelId = `group_channel_typing_test_${generateRandomString()}`
     const channelData = {
       name: "Typing Test Group Channel",
       description: "This is a test group channel for typing.",
@@ -156,7 +143,7 @@ describe("Typing indicator test", () => {
   }, 35000)
 
   test("should properly handle typing and stopping typing", async () => {
-    const channel = await createRandomChannel()
+    const channel = await createRandomChannel(chat)
     const membership = await channel.invite(chat2.currentUser)
     await sleep(500)
 

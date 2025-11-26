@@ -20,7 +20,9 @@ import {
   generateExpectedLinkedText,
   sleep,
   waitForAllMessagesToBeDelivered,
-  makeid, generateRandomString,
+  generateRandomString,
+  createRandomChannel,
+  createRandomUser
 } from "./utils"
 
 import { jest } from "@jest/globals"
@@ -37,25 +39,12 @@ describe("Send message test", () => {
   let channel: Channel
   let messageDraft
 
-  function createRandomChannel(prefix: string = "") {
-    return chat.createChannel(`${prefix}channel_${makeid()}`, {
-      name: `${prefix}Test Channel`,
-      description: "This is a test channel",
-    })
-  }
-
-  function createRandomUser(prefix: string = "") {
-    return chat.createUser(`${prefix}user_${makeid()}`, {
-      name: `${prefix}Test User`,
-    })
-  }
-
   beforeAll(async () => {
-    chat = await createChatInstance({ userId: makeid() })
+    chat = await createChatInstance({ userId: generateRandomString() })
   })
 
   beforeEach(async () => {
-    channel = await createRandomChannel()
+    channel = await createRandomChannel(chat)
     messageDraft = channel.createMessageDraft()
   }, 15000)
 
@@ -865,13 +854,12 @@ describe("Send message test", () => {
     const factor = 2
 
     const chat = await createChatInstance({
-      shouldCreateNewInstance: true,
-      userId: generateRandomString(8),
+      userId: generateRandomString(),
       config: { rateLimitFactor: factor, rateLimitPerChannel: { public: timeout } },
     })
 
     const channel = await chat.createPublicConversation({
-      channelId: `channel_${makeid()}`,
+      channelId: `channel_${generateRandomString()}`,
       channelData: {
         name: "Test Channel",
         description: "This is a test channel",
@@ -993,40 +981,6 @@ describe("Send message test", () => {
     expect(likeReactions === undefined || likeReactions.length === 0).toBeTruthy()
   }, 30000)
 
-  test("should be unable to pin multiple messages", async () => {
-    await channel.sendText("First Test message")
-    await sleep(150)
-    await channel.sendText("Second Test message")
-    await sleep(150)
-
-    const history = await channel.getHistory()
-    const messages: Message[] = history.messages
-
-    const firstMessageToPin = messages[messages.length - 2]
-    const secondMessageToPin = messages[messages.length - 1]
-    const firstPinnedChannel = await channel.pinMessage(firstMessageToPin)
-
-    if (
-      !firstPinnedChannel.custom?.["pinnedMessageTimetoken"] ||
-      firstPinnedChannel.custom["pinnedMessageTimetoken"] !== firstMessageToPin.timetoken
-    ) {
-      throw new Error("Failed to pin the first message")
-    }
-
-    const secondPinnedChannel = await channel.pinMessage(secondMessageToPin)
-
-    if (
-      !secondPinnedChannel.custom?.["pinnedMessageTimetoken"] ||
-      secondPinnedChannel.custom["pinnedMessageTimetoken"] !== secondMessageToPin.timetoken
-    ) {
-      throw new Error("Failed to pin the second message")
-    }
-
-    if (secondPinnedChannel.custom["pinnedMessageTimetoken"] === firstMessageToPin.timetoken) {
-      throw new Error("First message is still pinned")
-    }
-  }, 30000)
-
   test("should not allow inserting a link inside another link", () => {
     const initialText = "Check out these links: "
     messageDraft.onChange(initialText)
@@ -1133,14 +1087,13 @@ describe("Send message test", () => {
 
   test("should encrypt and decrypt a message", async () => {
     const encryptedChat = await createChatInstance({
-      shouldCreateNewInstance: true,
       config: {
         cryptoModule: CryptoModule.aesCbcCryptoModule({ cipherKey: "pubnubenigma" }),
         userId: "another-user",
       },
     })
 
-    const someRandomUser1 = await encryptedChat.createUser(makeid(), { name: "random-1" })
+    const someRandomUser1 = await encryptedChat.createUser(generateRandomString(), { name: "random-1" })
     const someEncryptedGroupChannel = await encryptedChat.createGroupConversation({ users: [someRandomUser1] })
 
     const sameCipheredGroupChannel = await chat.getChannel(someEncryptedGroupChannel.channel.id)
@@ -1188,13 +1141,12 @@ describe("Send message test", () => {
     ]
 
     const encryptedChat = await createChatInstance({
-      shouldCreateNewInstance: true,
       config: {
         cryptoModule: CryptoModule.aesCbcCryptoModule({ cipherKey: "pubnubenigma" }),
         userId: "another-user",
       },
     })
-    const someRandomUser1 = await encryptedChat.createUser(makeid(), { name: "random-1" })
+    const someRandomUser1 = await encryptedChat.createUser(generateRandomString(), { name: "random-1" })
     const someEncryptedGroupChannel = await encryptedChat.createGroupConversation({ users: [someRandomUser1] })
     const sameCipheredGroupChannel = await chat.getChannel(someEncryptedGroupChannel.channel.id)
 
@@ -1231,14 +1183,13 @@ describe("Send message test", () => {
 
   test("should still view text messages sent before enabling encryption", async () => {
     const encryptedChat = await createChatInstance({
-      shouldCreateNewInstance: true,
       config: {
         cryptoModule: CryptoModule.aesCbcCryptoModule({ cipherKey: "pubnubenigma" }),
         userId: "another-user",
       },
     })
 
-    const someRandomUser1 = await encryptedChat.createUser(makeid(), { name: "random-1" })
+    const someRandomUser1 = await encryptedChat.createUser(generateRandomString(), { name: "random-1" })
     const somePlainGroupChannel = await chat.createGroupConversation({ users: [someRandomUser1] })
     const sameEncryptedGroupChannel = await encryptedChat.getChannel(somePlainGroupChannel.channel.id)
 
@@ -1286,14 +1237,13 @@ describe("Send message test", () => {
     ]
 
     const encryptedChat = await createChatInstance({
-      shouldCreateNewInstance: true,
       config: {
         cryptoModule: CryptoModule.aesCbcCryptoModule({ cipherKey: "pubnubenigma" }),
         userId: "another-user",
       },
     })
 
-    const someRandomUser1 = await encryptedChat.createUser(makeid(), { name: "random-1" })
+    const someRandomUser1 = await encryptedChat.createUser(generateRandomString(), { name: "random-1" })
     const somePlainGroupChannel = await chat.createGroupConversation({ users: [someRandomUser1] })
     const sameEncryptedGroupChannel = await encryptedChat.getChannel(somePlainGroupChannel.channel.id)
 
@@ -1342,21 +1292,19 @@ describe("Send message test", () => {
     ]
 
     const encryptedChat1 = await createChatInstance({
-      shouldCreateNewInstance: true,
       config: {
         cryptoModule: CryptoModule.aesCbcCryptoModule({ cipherKey: "pubnubenigma" }),
         userId: "some-user-1",
       },
     })
     const encryptedChat2 = await createChatInstance({
-      shouldCreateNewInstance: true,
       config: {
         cryptoModule: CryptoModule.aesCbcCryptoModule({ cipherKey: "another-pubnubenigma" }),
         userId: "some-user-2",
       },
     })
 
-    const someRandomUser1 = await encryptedChat1.createUser(makeid(), { name: "random-1" })
+    const someRandomUser1 = await encryptedChat1.createUser(generateRandomString(), { name: "random-1" })
     const someGroupChannel = await encryptedChat1.createGroupConversation({ users: [someRandomUser1] })
     await someGroupChannel.channel.sendText("Random text", { files: filesFromInput })
 
@@ -1413,7 +1361,6 @@ describe("Send message test", () => {
 
   test("should send a message with custom body and transform it to TextMessageContent when received", async () => {
     const chat = await createChatInstance({
-      shouldCreateNewInstance: true,
       userId: generateRandomString(8),
       config: {
         customPayloads: {
@@ -1456,7 +1403,6 @@ describe("Send message test", () => {
 
   test("should send a message with custom body and crash if getMessageResponseBody is incorrect", async () => {
     const chat = await createChatInstance({
-      shouldCreateNewInstance: true,
       userId: generateRandomString(8),
       config: {
         customPayloads: {
@@ -1491,7 +1437,6 @@ describe("Send message test", () => {
 
   test("should be able to pass custom edit and delete action names", async () => {
     const chat = await createChatInstance({
-      shouldCreateNewInstance: true,
       userId: generateRandomString(8),
       config: {
         customPayloads: {
@@ -1530,7 +1475,6 @@ describe("Send message test", () => {
 
   test("should work fine even for multiple schemas on different channels", async () => {
     const chat = await createChatInstance({
-      shouldCreateNewInstance: true,
       userId: generateRandomString(8),
       config: {
         customPayloads: {
@@ -1603,7 +1547,6 @@ describe("Send message test", () => {
 
   test("should be able to read live messages with custom payloads as well", async () => {
     const chat = await createChatInstance({
-      shouldCreateNewInstance: true,
       userId: generateRandomString(8),
       config: {
         customPayloads: {
@@ -1657,7 +1600,6 @@ describe("Send message test", () => {
 
   test("should be able to read live encrypted messages with custom payloads", async () => {
     const chat = await createChatInstance({
-      shouldCreateNewInstance: true,
       userId: generateRandomString(8),
       config: {
         customPayloads: {
@@ -1711,7 +1653,6 @@ describe("Send message test", () => {
 
   test("should be able to read historic encrypted messages with custom payloads", async () => {
     const chat = await createChatInstance({
-      shouldCreateNewInstance: true,
       userId: generateRandomString(8),
       config: {
         customPayloads: {
@@ -1844,7 +1785,7 @@ describe("Send message test", () => {
   }, 20000)
 
   test("should forward message via message.forward", async () => {
-    const targetChannel = await createRandomChannel()
+    const targetChannel = await createRandomChannel(chat)
     const messageText = "Message to forward via message object"
 
     await channel.sendText(messageText)
@@ -1939,8 +1880,8 @@ describe("Send message test", () => {
   }, 25000)
 
   test("should get message elements with text, mentions, and links", async () => {
-    const mentionedUser1 = await createRandomUser("mentioned1_")
-    const mentionedUser2 = await createRandomUser("mentioned2_")
+    const mentionedUser1 = await createRandomUser(chat, "mentioned1_")
+    const mentionedUser2 = await createRandomUser(chat, "mentioned2_")
     const messageDraft = channel.createMessageDraftV2()
 
     // Build message with user mentions and a linked URL

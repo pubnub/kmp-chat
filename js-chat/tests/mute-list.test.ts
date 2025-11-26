@@ -4,7 +4,9 @@ import {
 } from "../dist-test"
 import {
   createChatInstance,
-  makeid
+  generateRandomString,
+  createRandomChannel,
+  createRandomUser
 } from "./utils"
 
 import { jest } from "@jest/globals"
@@ -15,25 +17,12 @@ describe("Mute list test", () => {
   let chat: Chat
   let channel: Channel
 
-  function createRandomChannel(prefix: string = "") {
-    return chat.createChannel(`${prefix}channel_${makeid()}`, {
-      name: `${prefix}Test Channel`,
-      description: "This is a test channel",
-    })
-  }
-
-  function createRandomUser(prefix: string = "") {
-    return chat.createUser(`${prefix}user_${makeid()}`, {
-      name: `${prefix}Test User`,
-    })
-  }
-
   beforeAll(async () => {
-    chat = await createChatInstance({ shouldCreateNewInstance: true, userId: makeid() })
+    chat = await createChatInstance({ userId: generateRandomString() })
   })
 
   beforeEach(async () => {
-    channel = await createRandomChannel()
+    channel = await createRandomChannel(chat)
   })
 
   afterEach(async () => {
