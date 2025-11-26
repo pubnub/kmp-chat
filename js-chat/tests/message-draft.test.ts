@@ -1,20 +1,33 @@
 import { Channel, Chat } from "../dist-test"
 import {
   createChatInstance,
-  createRandomChannel,
-  createRandomUser,
+  makeid,
   renderMessagePart,
 } from "./utils"
 import { jest } from "@jest/globals"
 
 describe("MessageDraft", function () {
   jest.retryTimes(2)
+
   let chat: Chat
   let channel: Channel
   let messageDraft
 
+  function createRandomChannel(prefix: string = "") {
+    return chat.createChannel(`${prefix}channel_${makeid()}`, {
+      name: `${prefix}Test Channel`,
+      description: "This is a test channel",
+    })
+  }
+
+  function createRandomUser(prefix: string = "") {
+    return chat.createUser(`${prefix}user_${makeid()}`, {
+      name: `${prefix}Test User`,
+    })
+  }
+
   beforeAll(async () => {
-    chat = await createChatInstance()
+    chat = await createChatInstance({ shouldCreateNewInstance: true, userId: makeid() })
   })
 
   beforeEach(async () => {
@@ -28,6 +41,7 @@ describe("MessageDraft", function () {
     messageDraft.onChange("Hello @user1 and @user2")
     messageDraft.addMentionedUser(user1, 0)
     messageDraft.addMentionedUser(user2, 1)
+
     const messagePreview = messageDraft.getMessagePreview()
 
     expect(messagePreview.length).toBe(4)
@@ -36,9 +50,8 @@ describe("MessageDraft", function () {
     expect(messagePreview[2].type).toBe("text")
     expect(messagePreview[3].type).toBe("mention")
     expect(messageDraft.value).toBe(`Hello @${user1.name} and @${user2.name}`)
-    expect(messagePreview.map(renderMessagePart).join("")).toBe(
-      `Hello @${user1.name} and @${user2.name}`
-    )
+    expect(messagePreview.map(renderMessagePart).join("")).toBe(`Hello @${user1.name} and @${user2.name}`)
+
     await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
   })
 
@@ -53,6 +66,7 @@ describe("MessageDraft", function () {
     messageDraft.addMentionedUser(user1, 0)
     messageDraft.addMentionedUser(user2, 1)
     messageDraft.addMentionedUser(user3, 2)
+
     const messagePreview = messageDraft.getMessagePreview()
 
     expect(messagePreview.length).toBe(6)
@@ -62,10 +76,9 @@ describe("MessageDraft", function () {
     expect(messagePreview[3].type).toBe("mention")
     expect(messagePreview[4].type).toBe("text")
     expect(messagePreview[5].type).toBe("mention")
-    expect(messagePreview.map(renderMessagePart).join("")).toBe(
-      `Hello @${user1.name} @${user2.name} @${user3.name}`
-    )
+    expect(messagePreview.map(renderMessagePart).join("")).toBe(`Hello @${user1.name} @${user2.name} @${user3.name}`)
     expect(messageDraft.value).toBe(`Hello @${user1.name} @${user2.name} @${user3.name}`)
+
     await Promise.all([
       user1.delete({ soft: false }),
       user2.delete({ soft: false }),
@@ -84,7 +97,9 @@ describe("MessageDraft", function () {
     messageDraft.addMentionedUser(user1, 0)
     messageDraft.addMentionedUser(user2, 1)
     messageDraft.addMentionedUser(user3, 2)
+
     const messagePreview = messageDraft.getMessagePreview()
+
     expect(messageDraft.value).toBe(`Hello @${user1.name} @${user2.name} and @${user3.name}`)
     expect(messagePreview.length).toBe(6)
     expect(messagePreview[0].type).toBe("text")
@@ -94,10 +109,9 @@ describe("MessageDraft", function () {
     expect(messagePreview[4].type).toBe("text")
     expect(messagePreview[4].content.text).toBe(" and ")
     expect(messagePreview[5].type).toBe("mention")
-    expect(messagePreview.map(renderMessagePart).join("")).toBe(
-      `Hello @${user1.name} @${user2.name} and @${user3.name}`
-    )
+    expect(messagePreview.map(renderMessagePart).join("")).toBe(`Hello @${user1.name} @${user2.name} and @${user3.name}`)
     expect(messageDraft.value).toBe(`Hello @${user1.name} @${user2.name} and @${user3.name}`)
+
     await Promise.all([
       user1.delete({ soft: false }),
       user2.delete({ soft: false }),
@@ -111,6 +125,7 @@ describe("MessageDraft", function () {
     messageDraft.onChange("Hello #channel1 and #channl2")
     messageDraft.addReferencedChannel(channel1, 0)
     messageDraft.addReferencedChannel(channel2, 1)
+
     const messagePreview = messageDraft.getMessagePreview()
 
     expect(messagePreview.length).toBe(4)
@@ -118,10 +133,9 @@ describe("MessageDraft", function () {
     expect(messagePreview[1].type).toBe("channelReference")
     expect(messagePreview[2].type).toBe("text")
     expect(messagePreview[3].type).toBe("channelReference")
-    expect(messagePreview.map(renderMessagePart).join("")).toBe(
-      `Hello #${channel1.name} and #${channel2.name}`
-    )
+    expect(messagePreview.map(renderMessagePart).join("")).toBe(`Hello #${channel1.name} and #${channel2.name}`)
     expect(messageDraft.value).toBe(`Hello #${channel1.name} and #${channel2.name}`)
+
     await Promise.all([channel1.delete({ soft: false }), channel2.delete({ soft: false })])
   })
 
@@ -134,6 +148,7 @@ describe("MessageDraft", function () {
     messageDraft.addReferencedChannel(channel2, 1)
     messageDraft.addMentionedUser(user1, 0)
     messageDraft.addMentionedUser(user2, 1)
+
     const messagePreview = messageDraft.getMessagePreview()
 
     expect(messagePreview.length).toBe(9)
@@ -145,12 +160,14 @@ describe("MessageDraft", function () {
     expect(messagePreview[5].type).toBe("channelReference")
     expect(messagePreview[6].type).toBe("text")
     expect(messagePreview[7].type).toBe("mention")
+
     expect(messagePreview.map(renderMessagePart).join("")).toBe(
       `Hello #${channel1.name} and @${user1.name} and #${channel2.name} or @${user2.name}.`
     )
     expect(messageDraft.value).toBe(
       `Hello #${channel1.name} and @${user1.name} and #${channel2.name} or @${user2.name}.`
     )
+
     await Promise.all([channel1.delete({ soft: false }), channel2.delete({ soft: false })])
     await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
   })
@@ -164,6 +181,7 @@ describe("MessageDraft", function () {
     messageDraft.addReferencedChannel(channel2, 1)
     messageDraft.addMentionedUser(user1, 0)
     messageDraft.addMentionedUser(user2, 1)
+
     const messagePreview = messageDraft.getMessagePreview()
 
     expect(messagePreview.length).toBe(8)
@@ -175,12 +193,14 @@ describe("MessageDraft", function () {
     expect(messagePreview[5].type).toBe("channelReference")
     expect(messagePreview[6].type).toBe("text")
     expect(messagePreview[7].type).toBe("mention")
+
     expect(messagePreview.map(renderMessagePart).join("")).toBe(
       `Hello #${channel1.name}, @${user1.name}, #${channel2.name} or @${user2.name}`
     )
     expect(messageDraft.value).toBe(
       `Hello #${channel1.name}, @${user1.name}, #${channel2.name} or @${user2.name}`
     )
+
     await Promise.all([channel1.delete({ soft: false }), channel2.delete({ soft: false })])
     await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
   })
@@ -212,18 +232,23 @@ describe("MessageDraft", function () {
     expect(messagePreview[7].type).toBe("channelReference")
     expect(messagePreview[8].type).toBe("text")
     expect(messagePreview[9].type).toBe("mention")
+
     expect(messagePreview.map(renderMessagePart).join("")).toBe(
       `Hello #${channel1.name}, @${user1.name}, #${channel2.name}, #${channel3.name}, @${user2.name}`
     )
     expect(messageDraft.value).toBe(
       `Hello #${channel1.name}, @${user1.name}, #${channel2.name}, #${channel3.name}, @${user2.name}`
     )
+
     await Promise.all([
       channel1.delete({ soft: false }),
       channel2.delete({ soft: false }),
       channel3.delete({ soft: false }),
     ])
-    await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
+    await Promise.all([
+      user1.delete({ soft: false }),
+      user2.delete({ soft: false })
+    ])
   })
 
   test("should add 2 text links and 2 plain links", async () => {
@@ -240,7 +265,9 @@ describe("MessageDraft", function () {
       positionInInput: messageDraft.value.length,
     })
     messageDraft.onChange("Hello https://pubnub.com, https://google.com and pubnub, google.")
+
     const messagePreview = messageDraft.getMessagePreview()
+
     expect(messagePreview.length).toBe(9)
     expect(messagePreview[0].type).toBe("text")
     expect(messagePreview[1].type).toBe("plainLink")
@@ -251,6 +278,7 @@ describe("MessageDraft", function () {
     expect(messagePreview[6].type).toBe("text")
     expect(messagePreview[7].type).toBe("textLink")
     expect(messagePreview[8].type).toBe("text")
+
     expect(messagePreview.map(renderMessagePart).join("")).toBe(
       "Hello https://pubnub.com, https://google.com and pubnub, google."
     )
@@ -282,12 +310,14 @@ describe("MessageDraft", function () {
     messageDraft.onChange(
       "Hello pubnub at https://pubnub.com! Hello to google at https://google.com. Referencing #channel1, #channel2, #blankchannel, @user1, @user2, and mentioning @blankuser3 @user4 @user5"
     )
+
     messageDraft.addReferencedChannel(channel1, 0)
     messageDraft.addReferencedChannel(channel2, 1)
     messageDraft.addMentionedUser(user1, 0)
     messageDraft.addMentionedUser(user2, 1)
     messageDraft.addMentionedUser(user4, 3)
     messageDraft.addMentionedUser(user5, 4)
+
     const messagePreview = messageDraft.getMessagePreview()
 
     expect(messagePreview.length).toBe(20)
@@ -317,7 +347,11 @@ describe("MessageDraft", function () {
     expect(messageDraft.value).toBe(
       `Hello pubnub at https://pubnub.com! Hello to google at https://google.com. Referencing #${channel1.name}, #${channel2.name}, #blankchannel, @${user1.name}, @${user2.name}, and mentioning @blankuser3 @${user4.name} @${user5.name}`
     )
-    await Promise.all([channel1.delete({ soft: false }), channel2.delete({ soft: false })])
+
+    await Promise.all([
+      channel1.delete({ soft: false }),
+      channel2.delete({ soft: false })
+    ])
     await Promise.all([
       user1.delete({ soft: false }),
       user2.delete({ soft: false }),
@@ -355,6 +389,7 @@ describe("MessageDraft", function () {
     messageDraft.addMentionedUser(user2, 1)
     messageDraft.addMentionedUser(user4, 3)
     messageDraft.addMentionedUser(user5, 4)
+
     const messagePreview = messageDraft.getMessagePreview()
 
     expect(messagePreview.length).toBe(21)
@@ -378,13 +413,18 @@ describe("MessageDraft", function () {
     expect(messagePreview[17].type).toBe("mention")
     expect(messagePreview[18].type).toBe("text")
     expect(messagePreview[19].type).toBe("mention")
+
     expect(messagePreview.map(renderMessagePart).join("")).toBe(
       `Hello @Test User #Test Channel pubnub at https://pubnub.com. google at https://google.com, @Test User @blankuser3 #Test Channel, random text @Test User, @Test User.`
     )
     expect(messageDraft.value).toBe(
       `Hello @Test User #Test Channel pubnub at https://pubnub.com. google at https://google.com, @Test User @blankuser3 #Test Channel, random text @Test User, @Test User.`
     )
-    await Promise.all([channel1.delete({ soft: false }), channel2.delete({ soft: false })])
+
+    await Promise.all([
+      channel1.delete({ soft: false }),
+      channel2.delete({ soft: false })
+    ])
     await Promise.all([
       user1.delete({ soft: false }),
       user2.delete({ soft: false }),
@@ -404,15 +444,14 @@ describe("MessageDraft", function () {
       createRandomUser(),
     ])
 
-    messageDraft.onChange(
-      `Hello @real #real #fake @fake @real #fake #fake #real @real #fake #real @@@ @@@@ @ #fake #fake`
-    )
+    messageDraft.onChange(`Hello @real #real #fake @fake @real #fake #fake #real @real #fake #real @@@ @@@@ @ #fake #fake`)
     messageDraft.addReferencedChannel(channel1, 0)
     messageDraft.addReferencedChannel(channel2, 4)
     messageDraft.addReferencedChannel(channel3, 6)
     messageDraft.addMentionedUser(user1, 0)
     messageDraft.addMentionedUser(user2, 2)
     messageDraft.addMentionedUser(user3, 3)
+
     const messagePreview = messageDraft.getMessagePreview()
 
     expect(messagePreview.map(renderMessagePart).join("")).toBe(

@@ -435,7 +435,7 @@ describe("Chat tests", () => {
     const suggestions = await chat.getChannelSuggestions("#" + prefix, { limit: 10 })
     expect(Array.isArray(suggestions)).toBe(true)
     expect(suggestions.length).toBeGreaterThanOrEqual(3)
-    
+
     const suggestionIds = suggestions.map(ch => ch.id)
     expect(suggestionIds).toContain(channel1.id)
     expect(suggestionIds).toContain(channel2.id)

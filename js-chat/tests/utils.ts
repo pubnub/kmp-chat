@@ -74,6 +74,7 @@ const createChat = async (
   if (!publishKey || !subscribeKey || (clientType === 'PamServer' && !secretKey) || (clientType === 'PamServerWithRefIntegrity' && !secretKey)) {
     throw keysetError
   }
+
   // Build the chat configuration
   const chatConfig: Partial<ChatConfig> & PubNub.PubnubConfig = {
     publishKey,
@@ -98,11 +99,9 @@ export async function createChatInstance(
     clientType?: ClientType
   } = {}
 ) {
-
   if (options.shouldCreateNewInstance) {
     return await createChat(options.userId || process.env.USER_ID!, options.config, options.clientType);
   }
-
   if (!chat) {
     chat = await createChat(options.userId || process.env.USER_ID!, options.config, options.clientType);
   }

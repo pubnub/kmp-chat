@@ -1,22 +1,33 @@
 import { Channel, Chat, MessageDraftV2, MixedTextTypedElement } from "../dist-test"
 import {
   createChatInstance,
-  createRandomChannel,
-  createRandomUser,
   renderMessagePart,
-  sleep,
   makeid
 } from "./utils"
 import { jest } from "@jest/globals"
 
 describe("MessageDraft2", function () {
   jest.retryTimes(2)
+
   let chat: Chat
   let channel: Channel
   let messageDraft: MessageDraftV2
 
+  function createRandomChannel(prefix: string = "") {
+    return chat.createChannel(`${prefix}channel_${makeid()}`, {
+      name: `${prefix}Test Channel`,
+      description: "This is a test channel",
+    })
+  }
+
+  function createRandomUser(prefix: string = "") {
+    return chat.createUser(`${prefix}user_${makeid()}`, {
+      name: `${prefix}Test User`,
+    })
+  }
+
   beforeAll(async () => {
-    chat = await createChatInstance()
+    chat = await createChatInstance({ shouldCreateNewInstance: true, userId: makeid() })
   })
 
   beforeEach(async () => {
@@ -30,16 +41,17 @@ describe("MessageDraft2", function () {
     messageDraft.update("Hello @user1 and @user2")
     messageDraft.addMention(6, 6, "mention", user1.id)
     messageDraft.addMention(17, 6, "mention", user2.id)
+
     const messagePreview = messageDraft.getMessagePreview()
+
     expect(messagePreview.length).toBe(4)
     expect(messagePreview[0].type).toBe("text")
     expect(messagePreview[1].type).toBe("mention")
     expect(messagePreview[2].type).toBe("text")
     expect(messagePreview[3].type).toBe("mention")
     expect(messageDraft.value).toBe(`Hello @user1 and @user2`)
-    expect(messagePreview.map(renderMessagePart).join("")).toBe(
-      `Hello @@user1 and @@user2`
-    )
+    expect(messagePreview.map(renderMessagePart).join("")).toBe(`Hello @@user1 and @@user2`)
+
     await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
   })
 
@@ -52,6 +64,7 @@ describe("MessageDraft2", function () {
 
     let elements: MixedTextTypedElement[][] = []
     let resolve, reject;
+
     const promise = new Promise((res, rej) => {
       resolve = res;
       reject = rej;
@@ -76,9 +89,8 @@ describe("MessageDraft2", function () {
     expect(messagePreview[1].type).toBe("mention")
     expect(messagePreview[2].type).toBe("text")
     expect(messagePreview[3].type).toBe("mention")
-    expect(messagePreview.map(renderMessagePart).join("")).toBe(
-      elements[2].map(renderMessagePart).join("")
-    )
+    expect(messagePreview.map(renderMessagePart).join("")).toBe(elements[2].map(renderMessagePart).join(""))
+
     await Promise.all([
       user1.delete({ soft: false }),
       user2.delete({ soft: false }),
@@ -155,12 +167,15 @@ describe("MessageDraft2", function () {
     expect(messageDraft.value).toBe(
       `Hello pubnub at https://pubnub.com! Hello to google at https://google.com. Referencing ${channel1.name}, ${channel2.name}, #blankchannel, ${user1.name}, ${user2.name}, and mentioning @blankuser3 ${user4.name} ${user5.name}`
     )
-    await Promise.all([channel1.delete({ soft: false }), channel2.delete({ soft: false })])
+
+    await Promise.all([
+      channel1.delete({ soft: false }),
+      channel2.delete({ soft: false })
+    ])
     await Promise.all([
       user1.delete({ soft: false }),
       user2.delete({ soft: false }),
       user4.delete({ soft: false }),
     ])
   })
-
 })
