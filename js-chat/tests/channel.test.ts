@@ -332,8 +332,9 @@ describe("Channel test", () => {
     }
 
     const stopUpdates = channel.streamUpdates(callback)
+    await sleep(1500)
     await channel.update({ name })
-    await sleep(150)
+    await sleep(500)
 
     expect(callbackCount).toBe(1)
     expect(updatedChannel).toBeDefined()

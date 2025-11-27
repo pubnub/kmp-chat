@@ -8,7 +8,7 @@ logback = "1.2.11"
 kotlinx_serialization = "1.7.3"
 kotlinx_coroutines = "1.9.0"
 pubnub = "12.0.1"
-pubnub_swift = "9.3.5"
+pubnub_swift = "10.0.1"
 
 [libraries]
 pubnub-kotlin-api = { module = "com.pubnub:pubnub-kotlin-api", version.ref = "pubnub" }

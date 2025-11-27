@@ -19,15 +19,9 @@ describe("User test", () => {
     jest.clearAllMocks()
   })
 
-  afterEach(async () => {
-    await user.delete()
-    await chat.currentUser.delete()
-    jest.clearAllMocks()
-  })
-
   test("Should automatically create chat user while initializing", () => {
     expect(chat.currentUser).toBeDefined()
-    expect(chat.currentUser.id).toBe(chat.sdk.getUUID())
+    expect(chat.currentUser.id).toBe(chat.sdk.getUserId())
   })
 
   test("Should be able to create and fetch user", async () => {
