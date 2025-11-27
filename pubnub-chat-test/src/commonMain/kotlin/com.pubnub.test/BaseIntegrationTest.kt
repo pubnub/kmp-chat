@@ -47,30 +47,31 @@ abstract class BaseIntegrationTest {
             UserId(randomString()),
             Keys.subKey,
             Keys.pubKey,
-            logVerbosity = PNLogVerbosity.BODY,
+            // logVerbosity = PNLogVerbosity.BODY, //
             authToken = null
         )
         config02 = createPNConfiguration(
             UserId(randomString()),
             Keys.subKey,
             Keys.pubKey,
-            logVerbosity = PNLogVerbosity.BODY,
+            // logVerbosity = PNLogVerbosity.BODY, //
             authToken = null
         )
         pubnub = createPubNub(config)
         pubnub02 = createPubNub(config02)
         configPamServer = createPNConfiguration(
             UserId(randomString()),
-            Keys.pamSubKey,
-            Keys.pamPubKey,
-            Keys.pamSecKey,
-            PNLogVerbosity.BODY
+            subscribeKey = Keys.pamSubKey,
+            publishKey = Keys.pamPubKey,
+            secretKey = Keys.pamSecKey,
+            // logVerbosity = PNLogVerbosity.BODY, //
+            authToken = null
         )
         configPamClient = createPNConfiguration(
             UserId(randomString()),
-            Keys.pamSubKey,
-            Keys.pamPubKey,
-            logVerbosity = PNLogVerbosity.BODY,
+            subscribeKey = Keys.pamSubKey,
+            publishKey = Keys.pamPubKey,
+            // logVerbosity = PNLogVerbosity.BODY, //
             authToken = null
         )
         pubnubPamServer = createPubNub(configPamServer)

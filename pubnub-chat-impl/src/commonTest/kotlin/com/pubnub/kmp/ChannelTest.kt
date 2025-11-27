@@ -619,7 +619,12 @@ class ChannelTest : BaseTest() {
     fun sendTextPushMessageIsIncludedInPublish() {
         chatConfig = ChatConfiguration(
             typingTimeout = this@ChannelTest.typingTimeout,
-            pushNotifications = PushNotificationsConfig(sendPushes = true, apnsTopic = "aaa", deviceToken = "aaa", deviceGateway = PNPushType.APNS2)
+            pushNotifications = PushNotificationsConfig(
+                sendPushes = true,
+                apnsTopic = "aaa",
+                deviceToken = "aaa",
+                deviceGateway = PNPushType.APNS2
+            )
         )
 
         every { chat.config } returns chatConfig
@@ -828,7 +833,7 @@ class ChannelTest : BaseTest() {
                 sort = sort,
                 include = matching<MemberInclude> {
                     it.includeCustom && !it.includeStatus && !it.includeType && it.includeTotalCount &&
-                        it.includeUser && it.includeUserCustom && it.includeUserType && !it.includeUserStatus
+                            it.includeUser && it.includeUserCustom && it.includeUserType && !it.includeUserStatus
                 },
             )
         }
@@ -864,7 +869,7 @@ class ChannelTest : BaseTest() {
                 sort = sort,
                 include = matching<MemberInclude> {
                     it.includeCustom && !it.includeStatus && !it.includeType && it.includeTotalCount &&
-                        it.includeUser && it.includeUserCustom && it.includeUserType && !it.includeUserStatus
+                            it.includeUser && it.includeUserCustom && it.includeUserType && !it.includeUserStatus
                 },
             )
         }
