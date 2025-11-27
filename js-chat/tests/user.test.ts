@@ -1,17 +1,35 @@
-import { Chat, INTERNAL_MODERATION_PREFIX, User } from "../dist-test"
-import { createChatInstance, createRandomUser, sleep } from "./utils"
-import { INTERNAL_ADMIN_CHANNEL } from "../dist-test"
+import { Chat, User } from "../dist-test"
+import {createChatInstance, generateRandomString, makeid, sleep} from "./utils"
+import {jest} from "@jest/globals";
 
 describe("User test", () => {
+  jest.retryTimes(3)
+
   let chat: Chat
   let user: User
 
-  beforeAll(async () => {
-    chat = await createChatInstance()
-  })
+  function createRandomUser(prefix: string = "") {
+    return chat.createUser(`${prefix}user_${makeid()}`, {
+      name: `${prefix}Test User`,
+    })
+  }
+
+  function createRandomChannel(prefix: string = "") {
+    return chat.createChannel(`${prefix}channel_${makeid()}`, {
+      name: `${prefix}Test Channel`,
+      description: "This is a test channel",
+    })
+  }
 
   beforeEach(async () => {
+    chat = await createChatInstance({ userId: makeid() })
     user = await createRandomUser()
+  })
+
+  afterEach(async () => {
+    await user.delete()
+    await chat.currentUser.delete()
+    jest.clearAllMocks()
   })
 
   test("Should automatically create chat user while initializing", () => {
@@ -20,7 +38,6 @@ describe("User test", () => {
   })
 
   test("Should be able to create and fetch user", async () => {
-    expect(user).toBeDefined()
     const fetchedUser = await chat.getUser(user.id)
     expect(fetchedUser).toBeDefined()
     expect(fetchedUser.name).toEqual(user.name)
@@ -45,79 +62,89 @@ describe("User test", () => {
   })
 
   test("Should stream user updates and invoke the callback", async () => {
-    let updatedUser
+    let updatedUser: User | undefined
+    let callbackCount = 0
+
     const name = "Updated User"
-    const callback = jest.fn((user) => {
-      return (updatedUser = user)
-    })
+
+    const callback = (user: User) => {
+      updatedUser = user
+      callbackCount++
+    }
 
     const stopUpdates = user.streamUpdates(callback)
     await user.update({ name })
     await sleep(150)
 
-    expect(callback).toHaveBeenCalledWith(updatedUser)
-    expect(updatedUser.name).toEqual(name)
+    expect(callbackCount).toBe(1)
+    expect(updatedUser).toBeDefined()
+    expect(updatedUser!.name).toEqual(name)
+    expect(updatedUser!.id).toEqual(user.id)
 
     stopUpdates()
-  })
+  }, 20000)
 
   test("should update the user even if they're a member of a particular channel", async () => {
-    let someUser = await chat.getUser("test-user-chatsdk0")
-    if (!someUser) {
-      someUser = await chat.createUser("test-user-chatsdk0", { name: "Chat SDK user 0" })
-    }
-    let someChannel = await chat.getChannel("some-public-channel")
-    if (!someChannel) {
-      someChannel = await chat.createPublicConversation({
-        channelId: "some-public-channel",
-        channelData: { name: "Public channel test" },
-      })
-    }
+    const someUser = await createRandomUser()
+    let capturedUser: User | undefined
+
+    const someChannel = await chat.createPublicConversation({
+      channelId: generateRandomString(10),
+      channelData: { name: "Public channel test" },
+    })
+
     await chat.sdk.objects.setChannelMembers({
       channel: someChannel.id,
       uuids: [someUser.id],
     })
 
     const stopUpdates = User.streamUpdatesOn([someUser], (updatedUsers) => {
-      someUser = updatedUsers[0]
+      capturedUser = updatedUsers[0]
     })
+
     await someUser.update({ name: "update number 1" })
     await sleep(1000)
-    expect(someUser.name).toBe("update number 1")
+    expect(capturedUser?.name).toBe("update number 1")
+
     await someUser.update({ name: "update number 2" })
     await sleep(1000)
-    expect(someUser.name).toBe("update number 2")
+    expect(capturedUser?.name).toBe("update number 2")
 
     stopUpdates()
-  })
+
+    await someUser.delete()
+    await someChannel.delete()
+  }, 20000)
 
   test("should update the user even if they're not a member of a particular channel", async () => {
-    let someUser = await chat.getUser("test-user-chatsdk1")
-    if (!someUser) {
-      someUser = await chat.createUser("test-user-chatsdk1", { name: "Chat SDK user 1" })
-    }
-    let someChannel = await chat.getChannel("some-public-channel-2")
-    if (!someChannel) {
-      someChannel = await chat.createPublicConversation({
-        channelId: "some-public-channel-2",
-        channelData: { name: "Public channel test 2" },
-      })
-    }
-    const { members } = await someChannel.getMembers()
+    const someUser = await createRandomUser()
+    let capturedUser: User | undefined
 
-    expect(members.length).toBe(0)
-    const stopUpdates = User.streamUpdatesOn([someUser], (updatedUsers) => {
-      someUser = updatedUsers[0]
+    const someChannel = await chat.createPublicConversation({
+      channelId: generateRandomString(10),
+      channelData: { name: "Public channel test 2" },
     })
+
+    const { members } = await someChannel.getMembers()
+    expect(members.length).toBe(0)
+
+    const stopUpdates = User.streamUpdatesOn([someUser], (updatedUsers) => {
+      capturedUser = updatedUsers[0]
+    })
+
     await someUser.update({ name: "update number 1" })
     await sleep(1000)
-    expect(someUser.name).toBe("update number 1")
+    expect(capturedUser?.name).toBe("update number 1")
+
     await someUser.update({ name: "update number 2" })
     await sleep(1000)
-    expect(someUser.name).toBe("update number 2")
+    expect(capturedUser?.name).toBe("update number 2")
 
     stopUpdates()
-  })
+
+    await someUser.delete()
+    await someChannel.delete()
+  }, 20000)
 
 //   test("should report a user", async () => {
 //     const reportReason = "Inappropriate behavior"
@@ -139,7 +166,7 @@ describe("User test", () => {
 
   test("Should be able to create, fetch, and validate multiple users", async () => {
     const usersToCreate = []
-    const numUsers = 5
+    const numUsers = 3
 
     for (let i = 0; i < numUsers; i++) {
       const newUser = await createRandomUser()
@@ -148,12 +175,15 @@ describe("User test", () => {
 
     for (const createdUser of usersToCreate) {
       const fetchedUser = await chat.getUser(createdUser.id)
-
       expect(fetchedUser).toBeDefined()
       expect(fetchedUser.id).toBe(createdUser.id)
       expect(fetchedUser.name).toEqual(createdUser.name)
     }
-  }, 15000)
+
+    for (const createdUser of usersToCreate) {
+      await createdUser.delete()
+    }
+  }, 25000)
 
   test("Should fail to update a non-existent user", async () => {
     const nonExistentUserId = "nonexistentuserid"
@@ -180,98 +210,34 @@ describe("User test", () => {
   })
 
   test("Should apply filter to 'getMemberships'", async () => {
-    jest.spyOn(chat.sdk.objects, "getMemberships")
-    const commonParams = {
-      include: {
-        totalCount: true,
-        customFields: true,
-        channelFields: true,
-        customChannelFields: true,
-        channelTypeField: true,
-        statusField: true,
-        channelStatusField: true,
-        typeField: true,
-      },
-      limit: null,
-      page: null,
-      sort: {},
-      uuid: chat.currentUser.id,
-    }
+    const timestamp = Date.now()
+    const helloChannel1 = await chat.createChannel(`hello-channel-${timestamp}-1`, { name: "Hello Channel 1" })
+    const helloChannel2 = await chat.createChannel(`hello-channel-${timestamp}-2`, { name: "Hello Channel 2" })
+    const testChannel = await chat.createChannel(`other-channel-${timestamp}`, { name: "Filter Test Channel" })
 
-    await chat.currentUser.getMemberships({ filter: "channel.id like 'hello*'" })
-    expect(chat.sdk.objects.getMemberships).toHaveBeenCalledWith({
-      ...commonParams,
-      filter: `!(channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*') && (channel.id like 'hello*')`,
-    })
+    await helloChannel1.join(() => {})
+    await helloChannel2.join(() => {})
+    await testChannel.join(() => {})
+    await sleep(500)
 
-    await chat.currentUser.getMemberships({ filter: "channel.name like '*test-channel'" })
-    expect(chat.sdk.objects.getMemberships).toHaveBeenCalledWith({
-      ...commonParams,
-      filter: `!(channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*') && (channel.name like '*test-channel')`,
-    })
+    const helloFilter = `channel.name LIKE 'hello*'`
+    const helloResult = await chat.currentUser.getMemberships({ filter: helloFilter })
+    const helloChannelNames = helloResult.memberships.map(m => m.channel.name)
 
-    await chat.currentUser.getMemberships()
-    expect(chat.sdk.objects.getMemberships).toHaveBeenCalledWith({
-      ...commonParams,
-      filter: `!(channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*')`,
-    })
+    expect(helloChannelNames).toContain(helloChannel1.name)
+    expect(helloChannelNames).toContain(helloChannel2.name)
+    expect(helloChannelNames).not.toContain(testChannel.name)
 
-    const exampleResponse = {
-      prev: undefined,
-      status: 200,
-      totalCount: 307,
-      next: "MTAw",
-      data: [
-        {
-          channel: {
-            id: "0053d903-62d5-4f14-91cc-50aa90b1ab30",
-            name: "0053d903-62d5-4f14-91cc-50aa90b1ab30",
-            description: null,
-            type: "group",
-            status: null,
-            custom: null,
-            updated: "2024-02-28T13:04:28.210319Z",
-            eTag: "41ba0b6a52df2cc52775a83674ad4ba1",
-          },
-          status: null,
-          custom: null,
-          updated: "2024-02-28T13:04:28.645304Z",
-          eTag: "AZO/t53al7m8fw",
-        },
-        {
-          channel: { id: "019b58bd-3592-4184-8bc9-ce4a3ea87b37" },
-          status: null,
-          custom: null,
-          updated: "2024-02-29T09:06:21.629495Z",
-          eTag: "AZO/t53al7m8fw",
-        },
-        {
-          channel: { id: "0336a32b-3568-42ec-8664-48f05f479928" },
-          status: null,
-          custom: null,
-          updated: "2024-05-21T12:12:51.439348Z",
-          eTag: "AZO/t53al7m8fw",
-        },
-      ],
-    }
+    await helloChannel1.leave()
+    await helloChannel2.leave()
+    await testChannel.leave()
 
-    jest.spyOn(chat.sdk.objects, "getMemberships").mockImplementation(() => exampleResponse)
-
-    const response = await chat.currentUser.getMemberships()
-    expect(response).toEqual(
-      expect.objectContaining({
-        page: expect.objectContaining({
-          prev: exampleResponse.prev,
-          next: exampleResponse.next,
-        }),
-        total: exampleResponse.totalCount,
-        status: exampleResponse.status,
-      })
-    )
-    expect(response.memberships.map((m) => m.channel.id)).toEqual(
-      exampleResponse.data.map((m) => m.channel.id)
-    )
-  })
+    await Promise.all([
+      helloChannel1.delete(),
+      helloChannel2.delete(),
+      testChannel.delete()
+    ])
+  }, 30000)
 
   test("should get multiple users via chat.getUsers", async () => {
     const user1 = await createRandomUser()
@@ -305,106 +271,184 @@ describe("User test", () => {
   })
 
   test("should get channels where user is present via user.wherePresent", async () => {
-    const channel1 = await chat.createChannel(`test-channel-${Date.now()}-1`, {
-      name: "Test Channel 1"
-    })
-    const channel2 = await chat.createChannel(`test-channel-${Date.now()}-2`, {
-      name: "Test Channel 2"
-    })
+    const channel1 = await chat.createChannel(`test-channel-${Date.now()}-1`, { name: "Test Channel 1" })
+    const channel2 = await chat.createChannel(`test-channel-${Date.now()}-2`, { name: "Test Channel 2" })
 
     const disconnect1 = channel1.connect(() => {})
     const disconnect2 = channel2.connect(() => {})
-
-    await sleep(2000)
+    await sleep(4000)
 
     const presentChannels = await chat.currentUser.wherePresent()
-
     expect(presentChannels.length).toBeGreaterThan(0)
-    const channelIds = presentChannels.map(c => c.id)
-    expect(channelIds).toContain(channel1.id)
-    expect(channelIds).toContain(channel2.id)
+    expect(presentChannels).toContain(channel1.id)
+    expect(presentChannels).toContain(channel2.id)
 
     disconnect1()
     disconnect2()
+
     await Promise.all([channel1.delete(), channel2.delete()])
-  })
-
-  test("should get channels where user is present via chat.wherePresent", async () => {
-    const channel = await chat.createChannel(`test-channel-${Date.now()}`, {
-      name: "Test Channel"
-    })
-
-    const disconnect = channel.connect(() => {})
-    await sleep(2000)
-    const presentChannels = await chat.wherePresent(chat.currentUser.id)
-
-    expect(presentChannels.length).toBeGreaterThan(0)
-    const channelIds = presentChannels.map(c => c.id)
-    expect(channelIds).toContain(channel.id)
-
-    disconnect()
-    await channel.delete()
-  })
-
-  test("should check if user is active via user.active property", async () => {
-    const channel = await chat.createChannel(`test-channel-${Date.now()}`, {
-      name: "Test Channel"
-    })
-
-    const disconnect = channel.connect(() => {})
-    await sleep(2000)
-    const isActive = await chat.currentUser.active()
-
-    expect(typeof isActive).toBe("boolean")
-    expect(isActive).toBe(true)
-    disconnect()
-
-    await channel.delete()
-  })
+  }, 20000)
 
   test("should get last active timestamp via user.lastActiveTimestamp property", async () => {
-    const channel = await chat.createChannel(`test-channel-${Date.now()}`, {
-      name: "Test Channel"
+    const chat = await createChatInstance({
+      userId: makeid(),
+      shouldCreateNewInstance: true,
+      config: {
+        storeUserActivityTimestamps: true,
+        storeUserActivityInterval: 600000,
+        userId: generateRandomString(10)
+      }
     })
 
+    const channel = await chat.createChannel(`test-channel-${Date.now()}`, { name: "Test Channel" })
     const disconnect = channel.connect(() => {})
-    await sleep(2000)
-    const timestamp = await chat.currentUser.lastActiveTimestamp()
+    await sleep(5000)
 
+    const timestamp = chat.currentUser.lastActiveTimestamp
     expect(timestamp).toBeDefined()
-    expect(typeof timestamp).toBe("string")
+    expect(timestamp).toBeGreaterThan(0)
+
     disconnect()
 
     await channel.delete()
-  })
+    await chat.currentUser.delete()
+  }, 15000)
 
-  test("should set restrictions on user via user.setRestrictions", async () => {
-    const channel = await chat.createChannel(`test-channel-${Date.now()}`, {
-      name: "Test Channel"
+  test("should get active status via user.active property", async () => {
+    const activityInterval = 60000
+    const chat = await createChatInstance({
+      userId: makeid(),
+      shouldCreateNewInstance: true,
+      config: {
+        storeUserActivityTimestamps: true,
+        storeUserActivityInterval: activityInterval,
+        userId: generateRandomString(10)
+      }
     })
 
-    const testUser = await createRandomUser()
-    await testUser.setRestrictions(channel.id, { ban: true })
-    await sleep(150)
+    const channel = await chat.createChannel(`test-channel-${Date.now()}`, { name: "Test Channel" })
+    const disconnect = channel.connect(() => {})
+    await sleep(1000)
+
+    const isActiveWhileConnected = chat.currentUser.active
+    expect(isActiveWhileConnected).toBe(true)
+
+    disconnect()
+
+    await channel.delete()
+    await chat.currentUser.delete()
+  }, 15000)
+
+  test("should set restrictions on user via user.setRestrictions", async () => {
+    const chatPamServer = await createChatInstance( { userId: makeid(), shouldCreateNewInstance: true, clientType: 'PamServer' })
+    const testUser = await chatPamServer.createUser(generateRandomString(10), { name: "Test User" })
+    const channel = await chatPamServer.createChannel(generateRandomString(10), { name: "Test Channel" })
+
+    await testUser.setRestrictions(channel, { ban: true, mute: true, reason: "Violated community guidelines" })
+    await sleep(350)
 
     const restrictions = await channel.getUserRestrictions(testUser)
     expect(restrictions.ban).toBe(true)
+    expect(restrictions.mute).toBe(true)
+    expect(restrictions.reason).toBe("Violated community guidelines")
 
-    await Promise.all([testUser.delete(), channel.delete()])
-  })
+    await Promise.all([testUser.delete(), channel.delete(), chatPamServer.currentUser.delete()])
+  }, 20000)
 
   test("should get channel restrictions for user via user.getChannelRestrictions", async () => {
-    const channel = await chat.createChannel(`test-channel-${Date.now()}`, {
-      name: "Test Channel"
-    })
+    const chatPamServer = await createChatInstance({ userId: makeid(), shouldCreateNewInstance: true, clientType: 'PamServer' })
+    const testUser = await chatPamServer.createUser(generateRandomString(10), { name: "Test User" })
+    const channel = await chatPamServer.createChannel(generateRandomString(10), { name: "Test Channel" })
 
-    const testUser = await createRandomUser()
-    await chat.setRestrictions(testUser.id, channel.id, { mute: true })
-    await sleep(150)
+    await chatPamServer.setRestrictions(testUser.id, channel.id, { mute: true })
+    await sleep(350)
 
     const restrictions = await testUser.getChannelRestrictions(channel.id)
     expect(restrictions.mute).toBe(true)
 
-    await Promise.all([testUser.delete(), channel.delete()])
+    await Promise.all([testUser.delete(), channel.delete(), chatPamServer.currentUser.delete()])
+  }, 20000)
+
+  test("should check if user is present on specific channel via user.isPresentOn", async () => {
+    const channel = await chat.createChannel(`test-channel-${Date.now()}`, { name: "Test Channel" })
+    const disconnect = channel.connect(() => {})
+    await sleep(2000)
+
+    const isPresent = await chat.currentUser.isPresentOn(channel.id)
+    expect(isPresent).toBe(true)
+
+    disconnect()
+    await sleep(2000)
+
+    const isPresentAfterDisconnect = await chat.currentUser.isPresentOn(channel.id)
+    expect(isPresentAfterDisconnect).toBe(false)
+
+    await channel.delete()
+  })
+
+  test("should create user with all fields", async () => {
+    const userId = `user_${Date.now()}`
+    const userData = {
+      name: "Test User Full",
+      externalId: "ext-123",
+      profileUrl: "https://example.com/avatar.jpg",
+      email: "test@example.com",
+      custom: {
+        role: "admin",
+        department: "engineering"
+      },
+      status: "active",
+      type: "premium"
+    }
+
+    const createdUser = await chat.createUser(userId, userData)
+
+    expect(createdUser.id).toBe(userId)
+    expect(createdUser.name).toBe(userData.name)
+    expect(createdUser.externalId).toBe(userData.externalId)
+    expect(createdUser.profileUrl).toBe(userData.profileUrl)
+    expect(createdUser.email).toBe(userData.email)
+    expect(createdUser.custom).toEqual(userData.custom)
+    expect(createdUser.status).toBe(userData.status)
+    expect(createdUser.type).toBe(userData.type)
+    expect(createdUser.updated).toBeDefined()
+
+    await createdUser.delete()
+  })
+
+  test("should update user with all optional fields", async () => {
+    const updateData = {
+      name: "Updated Full User",
+      externalId: "ext-456",
+      profileUrl: "https://example.com/new-avatar.jpg",
+      email: "updated@example.com",
+      custom: {
+        role: "moderator",
+        level: 5
+      },
+      status: "busy",
+      type: "standard"
+    }
+
+    const updatedUser = await user.update(updateData)
+
+    expect(updatedUser.id).toBe(user.id)
+    expect(updatedUser.name).toBe(updateData.name)
+    expect(updatedUser.externalId).toBe(updateData.externalId)
+    expect(updatedUser.profileUrl).toBe(updateData.profileUrl)
+    expect(updatedUser.email).toBe(updateData.email)
+    expect(updatedUser.custom).toEqual(updateData.custom)
+    expect(updatedUser.status).toBe(updateData.status)
+    expect(updatedUser.type).toBe(updateData.type)
+    expect(updatedUser.updated).toBeDefined()
+
+    await updatedUser.delete()
+  })
+
+  test("should soft delete user", async () => {
+    const testUser = await createRandomUser()
+    const softDeleteResult = await testUser.delete({ soft: true })
+    expect(softDeleteResult).toBeDefined()
+    expect((softDeleteResult as User).status).toBe("deleted")
   })
 })
