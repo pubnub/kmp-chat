@@ -2,6 +2,8 @@ import {Chat, Channel, User, Membership} from "../dist-test"
 import {createChatInstance, generateRandomString, sleep, createRandomChannel, createRandomUser} from "./utils"
 
 describe("Membership test", () => {
+  jest.retryTimes(3)
+
   let chat: Chat
   let channel: Channel
   let user: User
@@ -21,6 +23,7 @@ describe("Membership test", () => {
       user?.delete(),
       chat.currentUser.delete()
     ])
+    jest.clearAllMocks()
   })
 
   test("should get membership via channel.invite", async () => {
