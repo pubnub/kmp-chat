@@ -444,8 +444,8 @@ describe("Send message test", () => {
 
   test("should render URLs correctly", async () => {
     const messageDraft = channel.createMessageDraft()
-    const someUser = await chat.createUser(generateRandomString(8), { name: "Lukasz" })
-    const someUser2 = await chat.createUser(generateRandomString(8), { name: "Anton" })
+    const someUser = await chat.createUser(generateRandomString(), { name: "Lukasz" })
+    const someUser2 = await chat.createUser(generateRandomString(), { name: "Anton" })
 
     const expectedLinkedText = generateExpectedLinkedText(messageDraft, someUser, someUser2)
     const messagePreview = messageDraft.getMessagePreview()
@@ -1361,7 +1361,7 @@ describe("Send message test", () => {
 
   test("should send a message with custom body and transform it to TextMessageContent when received", async () => {
     const chat = await createChatInstance({
-      userId: generateRandomString(8),
+      userId: generateRandomString(),
       config: {
         customPayloads: {
           getMessagePublishBody: ({ type, text, files }) => {
@@ -1389,7 +1389,7 @@ describe("Send message test", () => {
       },
     })
 
-    const someChannel = await chat.createChannel(generateRandomString(10))
+    const someChannel = await chat.createChannel(generateRandomString())
     await someChannel.sendText("Hello world!")
     await sleep(200)
 
@@ -1403,7 +1403,7 @@ describe("Send message test", () => {
 
   test("should send a message with custom body and crash if getMessageResponseBody is incorrect", async () => {
     const chat = await createChatInstance({
-      userId: generateRandomString(8),
+      userId: generateRandomString(),
       config: {
         customPayloads: {
           getMessageResponseBody: (messageParams: MessageDTOParams) => {
@@ -1417,7 +1417,7 @@ describe("Send message test", () => {
       },
     })
 
-    const someChannel = await chat.createChannel(generateRandomString(10))
+    const someChannel = await chat.createChannel(generateRandomString())
     await someChannel.sendText("Hello world!")
     await sleep(200)
 
@@ -1437,7 +1437,7 @@ describe("Send message test", () => {
 
   test("should be able to pass custom edit and delete action names", async () => {
     const chat = await createChatInstance({
-      userId: generateRandomString(8),
+      userId: generateRandomString(),
       config: {
         customPayloads: {
           editMessageActionName: "field-updated",
@@ -1446,7 +1446,7 @@ describe("Send message test", () => {
       },
     })
 
-    const someChannel = await chat.createChannel(generateRandomString(10))
+    const someChannel = await chat.createChannel(generateRandomString())
     await someChannel.sendText("Hello world!")
     await sleep(250)
 
@@ -1475,7 +1475,7 @@ describe("Send message test", () => {
 
   test("should work fine even for multiple schemas on different channels", async () => {
     const chat = await createChatInstance({
-      userId: generateRandomString(8),
+      userId: generateRandomString(),
       config: {
         customPayloads: {
           getMessagePublishBody: ({ type, text, files }, channelId) => {
@@ -1526,11 +1526,11 @@ describe("Send message test", () => {
       },
     })
 
-    const someChannel = await chat.createChannel(generateRandomString(10))
+    const someChannel = await chat.createChannel(generateRandomString())
     await someChannel.sendText("One type of schema")
     await sleep(200)
 
-    const someChannelWithDifferentSchema = await chat.createChannel(generateRandomString(10))
+    const someChannelWithDifferentSchema = await chat.createChannel(generateRandomString())
     await someChannelWithDifferentSchema.sendText("Another type of schema")
     await sleep(200)
 
@@ -1547,7 +1547,7 @@ describe("Send message test", () => {
 
   test("should be able to read live messages with custom payloads as well", async () => {
     const chat = await createChatInstance({
-      userId: generateRandomString(8),
+      userId: generateRandomString(),
       config: {
         customPayloads: {
           getMessagePublishBody: ({ type, text, files }) => {
@@ -1574,7 +1574,7 @@ describe("Send message test", () => {
       },
     })
 
-    const someChannel = await chat.createChannel(generateRandomString(10), { name: "Custom body channel" })
+    const someChannel = await chat.createChannel(generateRandomString(), { name: "Custom body channel" })
     const receivedMessages: string[] = []
     const disconnect = someChannel.connect((msg) => { receivedMessages.push(msg.text) })
     await sleep(500)
@@ -1600,7 +1600,7 @@ describe("Send message test", () => {
 
   test("should be able to read live encrypted messages with custom payloads", async () => {
     const chat = await createChatInstance({
-      userId: generateRandomString(8),
+      userId: generateRandomString(),
       config: {
         customPayloads: {
           getMessagePublishBody: ({ type, text, files }) => {
@@ -1628,7 +1628,7 @@ describe("Send message test", () => {
       },
     })
 
-    const someChannel = await chat.createChannel(generateRandomString(10))
+    const someChannel = await chat.createChannel(generateRandomString())
     const receivedMessages: string[] = []
     const disconnect = someChannel.connect((msg) => { receivedMessages.push(msg.text) })
     await sleep(250)
@@ -1653,7 +1653,7 @@ describe("Send message test", () => {
 
   test("should be able to read historic encrypted messages with custom payloads", async () => {
     const chat = await createChatInstance({
-      userId: generateRandomString(8),
+      userId: generateRandomString(),
       config: {
         customPayloads: {
           getMessagePublishBody: ({ type, text, files }) => {
@@ -1681,7 +1681,7 @@ describe("Send message test", () => {
       },
     })
 
-    const someChannel = await chat.createChannel(generateRandomString(10))
+    const someChannel = await chat.createChannel(generateRandomString())
     await someChannel.sendText("Hello encrypted world!")
     await sleep(500)
     await someChannel.sendText("Hello encrypted world! Number 2")

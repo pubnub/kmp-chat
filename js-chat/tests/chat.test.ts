@@ -174,7 +174,7 @@ describe("Chat tests", () => {
   }, 20000)
 
   test("should create public conversation", async () => {
-    const channelId = generateRandomString(10)
+    const channelId = generateRandomString()
     const channelData = { name: "Public Test Channel" }
 
     const publicChannel = await chat.createPublicConversation({
@@ -329,8 +329,8 @@ describe("Chat tests", () => {
       userId: generateRandomString(),
       clientType: 'PamServer'
     })
-    const testUser = await chatPamServer.createUser(generateRandomString(10), { name: "Test User" })
-    const channel = await chatPamServer.createChannel(generateRandomString(10), { name: "Test Channel" })
+    const testUser = await chatPamServer.createUser(generateRandomString(), { name: "Test User" })
+    const channel = await chatPamServer.createChannel(generateRandomString(), { name: "Test Channel" })
 
     await chatPamServer.setRestrictions(testUser.id, channel.id, {
       ban: true,

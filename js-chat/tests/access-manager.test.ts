@@ -16,7 +16,7 @@ describe("Access Manager test test", () => {
     let chatPamServer: Chat
 
     beforeAll(async () => {
-        let chatClientUserId = generateRandomString(8)
+        let chatClientUserId = generateRandomString()
         chatPamServer = await createChatInstance( { clientType: 'PamServer' })
         const token = await _grantTokenForUserId(chatPamServer, chatClientUserId);
         chatPamClient = await createChatInstance( {

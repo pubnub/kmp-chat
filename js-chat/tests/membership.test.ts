@@ -7,7 +7,7 @@ describe("Membership test", () => {
   let user: User
 
   beforeAll(async () => {
-    chat = await createChatInstance({ userId: generateRandomString(8) })
+    chat = await createChatInstance({ userId: generateRandomString() })
   })
 
   beforeEach(async () => {

@@ -1432,8 +1432,8 @@ describe("Channel test", () => {
   }, 20000)
 
   test("should get users restrictions from channel", async () => {
-    const user1 = await chatPamServer.createUser(generateRandomString(10), { name: "User1" })
-    const user2 = await chatPamServer.createUser(generateRandomString(10), { name: "User2" })
+    const user1 = await chatPamServer.createUser(generateRandomString(), { name: "User1" })
+    const user2 = await chatPamServer.createUser(generateRandomString(), { name: "User2" })
     const testChannel = (await chatPamServer.createGroupConversation({ users: [user1, user2] })).channel
 
     await testChannel.setRestrictions(user1, { mute: true, reason: "spam" })
@@ -1492,7 +1492,7 @@ describe("Channel test", () => {
 
   test("should stream presence updates on a channel", async () => {
     const testChannel = await chat.createPublicConversation({
-      channelId: generateRandomString(10),
+      channelId: generateRandomString(),
       channelData: { name: "Presence Test Channel" }
     })
 

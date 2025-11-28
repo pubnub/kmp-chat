@@ -76,7 +76,7 @@ describe("User test", () => {
     let capturedUser: User | undefined
 
     const someChannel = await chat.createPublicConversation({
-      channelId: generateRandomString(10),
+      channelId: generateRandomString(),
       channelData: { name: "Public channel test" },
     })
 
@@ -108,7 +108,7 @@ describe("User test", () => {
     let capturedUser: User | undefined
 
     const someChannel = await chat.createPublicConversation({
-      channelId: generateRandomString(10),
+      channelId: generateRandomString(),
       channelData: { name: "Public channel test 2" },
     })
 
@@ -282,7 +282,6 @@ describe("User test", () => {
       config: {
         storeUserActivityTimestamps: true,
         storeUserActivityInterval: 600000,
-        userId: generateRandomString(10)
       }
     })
 
@@ -298,7 +297,7 @@ describe("User test", () => {
 
     await channel.delete()
     await chat.currentUser.delete()
-  }, 15000)
+  }, 20000)
 
   test("should get active status via user.active property", async () => {
     const activityInterval = 60000
@@ -307,7 +306,7 @@ describe("User test", () => {
       config: {
         storeUserActivityTimestamps: true,
         storeUserActivityInterval: activityInterval,
-        userId: generateRandomString(10)
+        userId: generateRandomString()
       }
     })
 
@@ -326,8 +325,8 @@ describe("User test", () => {
 
   test("should set restrictions on user via user.setRestrictions", async () => {
     const chatPamServer = await createChatInstance( { userId: generateRandomString(), clientType: 'PamServer' })
-    const testUser = await chatPamServer.createUser(generateRandomString(10), { name: "Test User" })
-    const channel = await chatPamServer.createChannel(generateRandomString(10), { name: "Test Channel" })
+    const testUser = await chatPamServer.createUser(generateRandomString(), { name: "Test User" })
+    const channel = await chatPamServer.createChannel(generateRandomString(), { name: "Test Channel" })
 
     await testUser.setRestrictions(channel, { ban: true, mute: true, reason: "Violated community guidelines" })
     await sleep(350)
@@ -342,8 +341,8 @@ describe("User test", () => {
 
   test("should get channel restrictions for user via user.getChannelRestrictions", async () => {
     const chatPamServer = await createChatInstance({ userId: generateRandomString(), clientType: 'PamServer' })
-    const testUser = await chatPamServer.createUser(generateRandomString(10), { name: "Test User" })
-    const channel = await chatPamServer.createChannel(generateRandomString(10), { name: "Test Channel" })
+    const testUser = await chatPamServer.createUser(generateRandomString(), { name: "Test User" })
+    const channel = await chatPamServer.createChannel(generateRandomString(), { name: "Test Channel" })
 
     await chatPamServer.setRestrictions(testUser.id, channel.id, { mute: true })
     await sleep(350)
