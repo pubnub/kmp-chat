@@ -8,21 +8,18 @@ describe("Membership test", () => {
   let channel: Channel
   let user: User
 
-  beforeAll(async () => {
-    chat = await createChatInstance({ userId: generateRandomString() })
-  })
-
   beforeEach(async () => {
+    chat = await createChatInstance({ userId: generateRandomString() })
     channel = await createRandomChannel(chat)
     user = await createRandomUser(chat)
   })
 
   afterEach(async () => {
-    await Promise.all([
-      channel?.delete(),
-      user?.delete(),
-      chat.currentUser.delete()
-    ])
+    await channel.delete()
+    await user.delete()
+    await chat.currentUser.delete()
+    await chat.sdk.disconnect()
+
     jest.clearAllMocks()
   })
 

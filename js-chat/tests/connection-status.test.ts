@@ -9,7 +9,7 @@ describe("Connection Status test", () => {
 
     const TEST_CHANNEL = generateRandomString()
 
-    beforeAll(async () => {
+    beforeEach(async () => {
         chat1 = await createChatInstance({
             userId: generateRandomString(),
             config: {
@@ -24,7 +24,7 @@ describe("Connection Status test", () => {
         })
     })
 
-    afterAll(async () => {
+    afterEach(async () => {
         // Use type assertion to access destroy method
         ;(chat1 as any)?.destroy?.()
         ;(chat2 as any)?.destroy?.()

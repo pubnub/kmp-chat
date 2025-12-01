@@ -16,6 +16,8 @@ describe("User test", () => {
   afterEach(async () => {
     await user.delete()
     await chat.currentUser.delete()
+    await chat.sdk.disconnect()
+
     jest.clearAllMocks()
   })
 

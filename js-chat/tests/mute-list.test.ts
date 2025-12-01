@@ -17,16 +17,16 @@ describe("Mute list test", () => {
   let chat: Chat
   let channel: Channel
 
-  beforeAll(async () => {
-    chat = await createChatInstance({ userId: generateRandomString() })
-  })
-
   beforeEach(async () => {
+    chat = await createChatInstance({ userId: generateRandomString() })
     channel = await createRandomChannel(chat)
   })
 
   afterEach(async () => {
     await channel.delete()
+    await chat.currentUser.delete()
+    await chat.sdk.disconnect()
+
     jest.clearAllMocks()
   })
 

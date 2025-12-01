@@ -16,21 +16,19 @@ describe("Channel group test", () => {
   let secondChannel: Channel
   let channelGroup: ChannelGroup
 
-  beforeAll(async () => {
-    chat = await createChatInstance({ userId: generateRandomString() })
-  })
-
   beforeEach(async () => {
+    chat = await createChatInstance({ userId: generateRandomString() })
     firstChannel = await createRandomChannel(chat)
     secondChannel = await createRandomChannel(chat)
     channelGroup = chat.getChannelGroup(generateRandomString())
   })
 
   afterEach(async () => {
-    await firstChannel.delete({ soft: false })
-    await secondChannel.delete( { soft: false })
+    await firstChannel.delete()
+    await secondChannel.delete()
     await chat.sdk.channelGroups.deleteGroup({ channelGroup: channelGroup.id })
-    await chat.currentUser.delete({ soft: false })
+    await chat.currentUser.delete()
+    await chat.sdk.disconnect()
   })
 
   test("successfully adds channels to a channel group", async () => {

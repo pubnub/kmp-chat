@@ -26,13 +26,10 @@ describe("Channel test", () => {
   let channel: Channel
   let messageDraft: MessageDraft
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     chat = await createChatInstance({ userId: generateRandomString() })
     chatPamServer = await createChatInstance( { userId: generateRandomString(), clientType: 'PamServer' })
     chatPamServerWithRefIntegrity = await createChatInstance({ userId: generateRandomString(), clientType: 'PamServerWithRefIntegrity' })
-  }, 15000)
-
-  beforeEach(async () => {
     channel = await createRandomChannel(chat)
     messageDraft = channel.createMessageDraft()
   }, 15000)
@@ -40,8 +37,12 @@ describe("Channel test", () => {
   afterEach(async () => {
     await channel.delete()
     await chat.currentUser.delete()
+    await chat.sdk.disconnect()
     await chatPamServer.currentUser.delete()
+    await chatPamServer.sdk.disconnect()
     await chatPamServerWithRefIntegrity.currentUser.delete()
+    await chatPamServerWithRefIntegrity.sdk.disconnect()
+
     jest.clearAllMocks()
   }, 15000)
 

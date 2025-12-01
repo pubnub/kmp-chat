@@ -7,18 +7,18 @@ describe("Typing indicator test", () => {
   let chat: Chat
   let chat2: Chat
 
-  beforeAll(async () => {
-    chat = await createChatInstance({
-      userId: generateRandomString(),
-          })
-    chat2 = await createChatInstance({
-      userId: generateRandomString(),
-          })
+  beforeEach(async () => {
+    chat = await createChatInstance({ userId: generateRandomString() })
+    chat2 = await createChatInstance({ userId: generateRandomString() })
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     await chat.currentUser.delete()
+    await chat.sdk.disconnect()
     await chat2.currentUser.delete()
+    await chat2.sdk.disconnect()
+
+    jest.clearAllMocks()
   })
 
   test("should call the callback with the typing value when a typing signal is received", async () => {

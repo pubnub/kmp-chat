@@ -15,13 +15,16 @@ describe("MessageDraft2", function () {
   let channel: Channel
   let messageDraft: MessageDraftV2
 
-  beforeAll(async () => {
-    chat = await createChatInstance({ userId: generateRandomString() })
-  })
-
   beforeEach(async () => {
+    chat = await createChatInstance({ userId: generateRandomString() })
     channel = await createRandomChannel(chat)
     messageDraft = channel.createMessageDraftV2({ userSuggestionSource: "global" })
+  })
+
+  afterEach(async () => {
+    await channel.delete()
+    await chat.currentUser.delete()
+    await chat.sdk.disconnect()
   })
 
   test("should mention 2 users", async () => {

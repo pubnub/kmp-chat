@@ -39,11 +39,8 @@ describe("Send message test", () => {
   let channel: Channel
   let messageDraft
 
-  beforeAll(async () => {
-    chat = await createChatInstance({ userId: generateRandomString() })
-  })
-
   beforeEach(async () => {
+    chat = await createChatInstance({ userId: generateRandomString() })
     channel = await createRandomChannel(chat)
     messageDraft = channel.createMessageDraft()
   }, 15000)
@@ -51,6 +48,8 @@ describe("Send message test", () => {
   afterEach(async () => {
     await channel.delete()
     await chat.currentUser.delete()
+    await chat.sdk.disconnect()
+
     jest.clearAllMocks()
   }, 15000)
 

@@ -7,19 +7,16 @@ describe("Chat tests", () => {
 
   let chat: Chat
 
-  beforeAll(async () => {
-    chat = await createChatInstance({
-      userId: generateRandomString()
-    })
-  }, 15000)
-
-  afterEach(() => {
-    jest.clearAllMocks()
+  beforeEach(async () => {
+    chat = await createChatInstance({ userId: generateRandomString() })
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     await chat.currentUser.delete()
-  }, 15000)
+    await chat.sdk.disconnect()
+
+    jest.clearAllMocks()
+  })
 
   test("should emit and listen for custom events", async () => {
     const channel = await createRandomChannel(chat)
