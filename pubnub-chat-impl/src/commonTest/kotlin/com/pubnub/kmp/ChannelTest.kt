@@ -833,7 +833,7 @@ class ChannelTest : BaseTest() {
                 sort = sort,
                 include = matching<MemberInclude> {
                     it.includeCustom && !it.includeStatus && !it.includeType && it.includeTotalCount &&
-                            it.includeUser && it.includeUserCustom && it.includeUserType && !it.includeUserStatus
+                        it.includeUser && it.includeUserCustom && it.includeUserType && !it.includeUserStatus
                 },
             )
         }
@@ -869,7 +869,7 @@ class ChannelTest : BaseTest() {
                 sort = sort,
                 include = matching<MemberInclude> {
                     it.includeCustom && !it.includeStatus && !it.includeType && it.includeTotalCount &&
-                            it.includeUser && it.includeUserCustom && it.includeUserType && !it.includeUserStatus
+                        it.includeUser && it.includeUserCustom && it.includeUserType && !it.includeUserStatus
                 },
             )
         }
