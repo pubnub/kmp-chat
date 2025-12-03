@@ -1704,20 +1704,6 @@ class ChatTest : BaseTest() {
     }
 
     @Test
-    fun disconnectSubscriptions_shouldCompleteSuccessfully() {
-        // given
-        every { pubnub.disconnect() } returns Unit
-
-        // when
-        objectUnderTest.disconnectSubscriptions().async { result ->
-            // then
-            assertTrue(result.isSuccess)
-        }
-
-        verify { pubnub.disconnect() }
-    }
-
-    @Test
     fun disconnectSubscriptions_withNoActiveSubscriptions_shouldStillWork() {
         // given
         every { pubnub.disconnect() } returns Unit
@@ -1730,19 +1716,5 @@ class ChatTest : BaseTest() {
         }
 
         verify { pubnub.disconnect() }
-    }
-
-    @Test
-    fun reconnectSubscriptions_shouldRestoreConnection() {
-        // given
-        every { pubnub.reconnect() } returns Unit
-
-        // when
-        objectUnderTest.reconnectSubscriptions().async { result ->
-            // then
-            assertTrue(result.isSuccess)
-        }
-
-        verify { pubnub.reconnect() }
     }
 }

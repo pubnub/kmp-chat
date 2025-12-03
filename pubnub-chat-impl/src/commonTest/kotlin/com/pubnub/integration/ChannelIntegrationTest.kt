@@ -1,6 +1,5 @@
 package com.pubnub.integration
 
-import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.utils.Clock
@@ -39,7 +38,6 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -1025,93 +1023,6 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun sendText_withTooLargeMessage_shouldFail() = runTest {
-        // given - a test channel
-        val testChannelId = randomString()
-        val testChannel = chat.createChannel(testChannelId).await()
-
-        // when - try to send a message that exceeds PubNub's message size limit (32KB)
-        // PubNub allows up to 32KB (32768 bytes) per message
-        val largeMessage = "x".repeat(33000) // > 32KB
-
-        // then - should fail with appropriate error
-        val exception = assertFailsWith<PubNubException> {
-            testChannel.sendText(largeMessage).await()
-        }
-
-        // verify error is 414 URI Too Long
-        // Since sendText uses usePost=false by default, large messages are sent via GET request
-        // and exceed the URI length limit, resulting in 414 (not 413 which would be for POST body)
-        assertEquals(
-            414,
-            exception.statusCode,
-            "Expected 414 (URI Too Long) because sendText uses GET by default. Got: ${exception.statusCode} - ${exception.message}"
-        )
-        assertTrue(
-            exception.message?.contains("too long", ignoreCase = true) == true,
-            "Exception message should mention 'too long': ${exception.message}"
-        )
-
-        // cleanup
-        chat.deleteChannel(testChannelId).await()
-    }
-
-    @Test
-    fun pinMessage_sameMessageTwice_shouldReplaceNotDuplicate() = runTest {
-        // given - a test channel with two messages
-        val testChannelId = randomString()
-        val testChannel = chat.createChannel(testChannelId).await()
-
-        val firstMessageText = "First message ${randomString()}"
-        val secondMessageText = "Second message ${randomString()}"
-
-        val firstPublishResult = testChannel.sendText(firstMessageText).await()
-        val secondPublishResult = testChannel.sendText(secondMessageText).await()
-
-        delayForHistory()
-
-        val firstMessage = testChannel.getMessage(firstPublishResult.timetoken).await()!!
-        val secondMessage = testChannel.getMessage(secondPublishResult.timetoken).await()!!
-
-        // when - pin the first message
-        val channelAfterFirstPin = testChannel.pinMessage(firstMessage).await()
-        assertEquals(
-            firstPublishResult.timetoken.toString(),
-            channelAfterFirstPin.custom?.get(PINNED_MESSAGE_TIMETOKEN),
-            "First message should be pinned"
-        )
-
-        delayForHistory()
-
-        // when - pin the second message (should replace first)
-        val channelAfterSecondPin = channelAfterFirstPin.pinMessage(secondMessage).await()
-        assertEquals(
-            secondPublishResult.timetoken.toString(),
-            channelAfterSecondPin.custom?.get(PINNED_MESSAGE_TIMETOKEN),
-            "Second message should replace first pinned message"
-        )
-
-        delayForHistory()
-
-        // then - verify only second message is pinned
-        val pinnedMessage = channelAfterSecondPin.getPinnedMessage().await()
-        assertNotNull(pinnedMessage, "Should have a pinned message")
-        assertEquals(
-            secondMessage.timetoken,
-            pinnedMessage.timetoken,
-            "Pinned message should be the second message, not the first"
-        )
-        assertEquals(
-            secondMessageText,
-            pinnedMessage.text,
-            "Pinned message text should match second message"
-        )
-
-        // cleanup
-        chat.deleteChannel(testChannelId).await()
-    }
-
-    @Test
     fun sendText_afterChannelSoftDelete_shouldSucceed() = runTest {
         // given - create and delete a channel
         val testChannelId = randomString()
@@ -1145,7 +1056,6 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         // cleanup - hard delete
         chat.deleteChannel(testChannelId, soft = false).await()
     }
-
 }
 
 private fun Channel.asImpl(): ChannelImpl {

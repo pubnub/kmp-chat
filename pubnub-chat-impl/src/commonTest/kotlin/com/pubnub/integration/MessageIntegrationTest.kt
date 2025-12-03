@@ -365,7 +365,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun toggleReaction_rapidly_shouldHandleCorrectly() = runTest {
+    fun toggleReaction_multipleTogglesCycles_shouldMaintainCorrectState() = runTest {
         // given - a message
         val messageText = "Message for reaction test ${randomString()}"
         val pnPublishResult = channel01.sendText(text = messageText).await()

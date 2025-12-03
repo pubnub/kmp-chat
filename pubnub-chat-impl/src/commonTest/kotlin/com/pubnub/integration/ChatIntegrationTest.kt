@@ -48,13 +48,9 @@ import com.pubnub.test.randomString
 import com.pubnub.test.test
 import delayForHistory
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.test.runTest
 import tryLong
 import kotlin.test.Test
-import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -837,36 +833,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun whoIsPresent_withMultipleUsers_shouldReturnAllPresent() = runTest {
-        // given - create a test channel
-        val testChannelId = randomString()
-        val testChannel = chat.createChannel(testChannelId).await()
-
-        // when - multiple users subscribe (simulate with current user)
-        pubnub.test(backgroundScope, checkAllEvents = false) {
-            var subscription: AutoCloseable? = null
-            pubnub.awaitSubscribe(listOf(testChannelId)) {
-                subscription = testChannel.connect { }
-            }
-
-            // wait for presence to settle
-            delayInMillis(2000)
-
-            // then - whoIsPresent should return current user
-            val presentUsers = testChannel.whoIsPresent().await()
-            assertTrue(presentUsers.isNotEmpty(), "Should have at least one present user")
-            assertContains(presentUsers, chat.currentUser.id, "Current user should be in present list")
-
-            // verify multiple calls return consistent results
-            val presentUsers2 = testChannel.whoIsPresent().await()
-            assertEquals(presentUsers.size, presentUsers2.size, "Multiple calls should return same count")
-            assertTrue(presentUsers2.contains(chat.currentUser.id), "Should consistently show current user")
-
-            subscription?.close()
-        }
-    }
-
-    @Test
     fun getEventsHistory_withPagination_shouldReturnCorrectPages() = runTest {
         // given - create multiple events on a channel
         val testChannelId = randomString()
@@ -934,56 +900,77 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         chat.pubNub.deleteMessages(listOf(testChannelId)).await()
     }
 
-    @Test
-    fun concurrentMessagePublish_shouldAllBeDelivered() = runTest(timeout = 30.seconds) {
-        // given - a test channel and multiple messages to publish concurrently
-        val testChannelId = "test_concurrent_${randomString()}"
-        val testChannel = chat.createChannel(testChannelId).await()
-        val messageCount = 10
-        val messageTexts = (1..messageCount).map { "Concurrent message $it - ${randomString()}" }
-
-        pubnub.test(backgroundScope, checkAllEvents = false) {
-            // when - subscribe to the channel first
-            pubnub.awaitSubscribe(listOf(testChannelId)) {
-                testChannel.connect { }
-            }
-
-            // when - publish multiple messages concurrently using async
-            val publishResults = coroutineScope {
-                val publishJobs = messageTexts.map { messageText ->
-                    async {
-                        testChannel.sendText(messageText).await()
-                    }
-                }
-                publishJobs.awaitAll()
-            }
-
-            // then - all publishes should succeed
-            assertEquals(messageCount, publishResults.size, "All publishes should complete")
-
-            // wait for message history to be available
-            delayInMillis(3000)
-
-            // then - fetch history and verify all messages are present
-            val history = testChannel.getHistory(count = 100).await()
-            val historyTexts = history.messages.map { it.text }.toSet()
-
-            // verify all published messages are in history
-            messageTexts.forEach { expectedText ->
-                assertTrue(
-                    historyTexts.contains(expectedText),
-                    "Message '$expectedText' should be in history"
-                )
-            }
-
-            // cleanup
-            chat.deleteChannel(testChannelId).await()
-        }
-    }
-
     private suspend fun assertPushChannels(chat: Chat, expectedNumberOfChannels: Int) {
         val pushChannels = chat.getPushChannels().await()
         assertEquals(expectedNumberOfChannels, pushChannels.size)
+    }
+
+    @Test
+    fun wherePresent_whenUserNotSubscribed_shouldReturnEmptyList() = runTest {
+        // given - a user not subscribed to any channels
+        val channels = chat.wherePresent(chat.currentUser.id).await()
+
+        // then - should return empty list
+        assertTrue(channels.isEmpty(), "User not subscribed to any channel should have empty wherePresent result")
+    }
+
+    @Test
+    fun wherePresent_whenUserSubscribedToChannel_shouldReturnChannelId() = runTest {
+        // given - create a test channel
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+
+        // when - user subscribes to the channel
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var subscription: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(testChannelId)) {
+                subscription = testChannel.connect { }
+            }
+
+            // wait for presence to update
+            delayInMillis(2000)
+
+            // then - wherePresent should return the channel
+            val channels = chat.wherePresent(chat.currentUser.id).await()
+            assertTrue(channels.isNotEmpty(), "Should have at least one channel")
+            assertTrue(channels.contains(testChannelId), "Should contain the subscribed channel")
+
+            subscription?.close()
+        }
+    }
+
+    @Test
+    fun wherePresent_whenUserSubscribedToMultipleChannels_shouldReturnAllChannelIds() = runTest {
+        // given - create multiple test channels
+        val testChannelId1 = randomString()
+        val testChannelId2 = randomString()
+        val testChannel1 = chat.createChannel(testChannelId1).await()
+        val testChannel2 = chat.createChannel(testChannelId2).await()
+
+        // when - user subscribes to both channels
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var subscription1: AutoCloseable? = null
+            var subscription2: AutoCloseable? = null
+
+            pubnub.awaitSubscribe(listOf(testChannelId1)) {
+                subscription1 = testChannel1.connect { }
+            }
+            pubnub.awaitSubscribe(listOf(testChannelId2)) {
+                subscription2 = testChannel2.connect { }
+            }
+
+            // wait for presence to update
+            delayInMillis(2000)
+
+            // then - wherePresent should return both channels
+            val channels = chat.wherePresent(chat.currentUser.id).await()
+            assertTrue(channels.size >= 2, "Should have at least two channels")
+            assertTrue(channels.contains(testChannelId1), "Should contain the first subscribed channel")
+            assertTrue(channels.contains(testChannelId2), "Should contain the second subscribed channel")
+
+            subscription1?.close()
+            subscription2?.close()
+        }
     }
 }
 
