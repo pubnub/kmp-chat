@@ -58,7 +58,7 @@ describe("Membership test", () => {
     }
 
     const updatedMembership = await membership.update({ custom: customData })
-    await sleep(300)
+    await sleep(150)
 
     expect(updatedMembership).toBeDefined()
     expect(updatedMembership.custom).toEqual(customData)

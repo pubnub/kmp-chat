@@ -74,7 +74,7 @@ describe("Access Manager test test", () => {
         await chatPamClient.getChannel(channelRetrievedByClient?.id);
 
         await chatPamServer.deleteChannel(channelId)
-    }, 100000)
+    }, 100000) // This long timeout is needed so we can wait 65sec for token to expire
 
     async function _grantTokenForUserId(chatPamServer, chatClientUserId) {
         return chatPamServer.sdk.grantToken({

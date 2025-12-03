@@ -345,6 +345,34 @@ describe("Send message test", () => {
     expect(likeReaction[0].uuid).toBe(chat.currentUser.id)
   }, 30000)
 
+
+  test("should be unable to pin multiple messages", async () => {
+    await channel.sendText("First Test message")
+    await sleep(150)
+    await channel.sendText("Second Test message")
+    await sleep(150)
+
+    const history = await channel.getHistory()
+    const messages: Message[] = history.messages
+
+    const firstMessageToPin = messages[messages.length - 2]
+    const secondMessageToPin = messages[messages.length - 1]
+    const firstPinnedChannel = await channel.pinMessage(firstMessageToPin)
+
+    if (!firstPinnedChannel.custom?.["pinnedMessageTimetoken"] || firstPinnedChannel.custom["pinnedMessageTimetoken"] !== firstMessageToPin.timetoken) {
+      throw new Error("Failed to pin the first message")
+    }
+
+    const secondPinnedChannel = await channel.pinMessage(secondMessageToPin)
+
+    if (!secondPinnedChannel.custom?.["pinnedMessageTimetoken"] || secondPinnedChannel.custom["pinnedMessageTimetoken"] !== secondMessageToPin.timetoken) {
+      throw new Error("Failed to pin the second message")
+    }
+    if (secondPinnedChannel.custom["pinnedMessageTimetoken"] === firstMessageToPin.timetoken) {
+      throw new Error("First message is still pinned")
+    }
+  }, 30000)
+
   test("should pin the message", async () => {
     await channel.sendText("Test message")
     await sleep(150) // History calls have around 130ms of cache time

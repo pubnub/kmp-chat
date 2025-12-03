@@ -307,8 +307,7 @@ describe("User test", () => {
       userId: generateRandomString(),
       config: {
         storeUserActivityTimestamps: true,
-        storeUserActivityInterval: activityInterval,
-        userId: generateRandomString()
+        storeUserActivityInterval: activityInterval
       }
     })
 
@@ -387,19 +386,24 @@ describe("User test", () => {
       type: "premium"
     }
 
-    const createdUser = await chat.createUser(userId, userData)
+    let createdUser: User | undefined
 
-    expect(createdUser.id).toBe(userId)
-    expect(createdUser.name).toBe(userData.name)
-    expect(createdUser.externalId).toBe(userData.externalId)
-    expect(createdUser.profileUrl).toBe(userData.profileUrl)
-    expect(createdUser.email).toBe(userData.email)
-    expect(createdUser.custom).toEqual(userData.custom)
-    expect(createdUser.status).toBe(userData.status)
-    expect(createdUser.type).toBe(userData.type)
-    expect(createdUser.updated).toBeDefined()
-
-    await createdUser.delete()
+    try {
+      const createdUser = await chat.createUser(userId, userData)
+      expect(createdUser.id).toBe(userId)
+      expect(createdUser.name).toBe(userData.name)
+      expect(createdUser.externalId).toBe(userData.externalId)
+      expect(createdUser.profileUrl).toBe(userData.profileUrl)
+      expect(createdUser.email).toBe(userData.email)
+      expect(createdUser.custom).toEqual(userData.custom)
+      expect(createdUser.status).toBe(userData.status)
+      expect(createdUser.type).toBe(userData.type)
+      expect(createdUser.updated).toBeDefined()
+    } finally {
+        if (createdUser) {
+          await createdUser.delete().catch(() => {})
+        }
+    }
   })
 
   test("should update user with all optional fields", async () => {
