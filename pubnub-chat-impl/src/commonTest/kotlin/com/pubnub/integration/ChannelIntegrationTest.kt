@@ -987,6 +987,75 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         statusListener02.close()
         connect.close()
     }
+
+    @Test
+    fun inviteSameUserTwice_shouldHandleGracefully() = runTest {
+        // given - a channel and a user to invite
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val userToInvite = chat.createUser(UserImpl(chat, randomString(), name = "Test User")).await()
+
+        // when - invite user the first time
+        val firstInvite = testChannel.invite(userToInvite).await()
+        assertNotNull(firstInvite, "First invite should succeed")
+        assertEquals(userToInvite.id, firstInvite.user.id)
+        assertEquals(testChannelId, firstInvite.channel.id)
+
+        // when - invite the same user again
+        val secondInvite = testChannel.invite(userToInvite).await()
+
+        // then - should handle gracefully (idempotent operation)
+        // The operation should either:
+        // 1. Return the existing membership (preferred)
+        // 2. Succeed without error
+        assertNotNull(secondInvite, "Second invite should handle gracefully")
+        assertEquals(userToInvite.id, secondInvite.user.id)
+        assertEquals(testChannelId, secondInvite.channel.id)
+
+        // verify - membership should exist and be consistent
+        val members = testChannel.getMembers().await()
+        val invitedUserMemberships = members.members.filter { it.user.id == userToInvite.id }
+        assertEquals(1, invitedUserMemberships.size, "Should have exactly one membership for the user")
+
+        // cleanup
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(userToInvite.id).await()
+    }
+
+    @Test
+    fun sendText_afterChannelSoftDelete_shouldSucceed() = runTest {
+        // given - create and delete a channel
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+
+        // when - delete the channel (soft delete)
+        testChannel.delete(soft = true).await()
+
+        delayForHistory()
+
+        // then - verify channel is soft-deleted
+        val deletedChannel = chat.getChannel(testChannelId).await()
+        assertNotNull(deletedChannel, "Channel should still exist after soft delete")
+        assertEquals("deleted", deletedChannel.status, "Channel status should be 'deleted'")
+
+        // when - try to send message to deleted channel
+        // Note: PubNub allows publishing to any channel ID, even if channel metadata is deleted
+        // This is because channels are implicit in PubNub - they exist when you publish to them
+        val publishResult = deletedChannel.sendText("Message after delete").await()
+
+        // then - publish should succeed (PubNub allows this)
+        assertNotNull(publishResult, "Should be able to publish to deleted channel")
+        assertTrue(publishResult.timetoken > 0, "Should get valid timetoken")
+
+        // verify message was actually published
+        delayForHistory()
+        val message = deletedChannel.getMessage(publishResult.timetoken).await()
+        assertNotNull(message, "Message should be retrievable even on deleted channel")
+        assertEquals("Message after delete", message.text)
+
+        // cleanup - hard delete
+        chat.deleteChannel(testChannelId, soft = false).await()
+    }
 }
 
 private fun Channel.asImpl(): ChannelImpl {
