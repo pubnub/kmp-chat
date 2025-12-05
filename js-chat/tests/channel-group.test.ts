@@ -26,7 +26,7 @@ describe("Channel group test", () => {
   afterEach(async () => {
     await firstChannel.delete()
     await secondChannel.delete()
-    await chat.sdk.channelGroups.deleteGroup({ channelGroup: channelGroup.id })
+    await chat.removeChannelGroup(channelGroup.id)
     await chat.currentUser.delete()
     await chat.sdk.disconnect()
   })
