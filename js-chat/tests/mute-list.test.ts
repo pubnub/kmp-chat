@@ -1,19 +1,12 @@
 import {
   Channel,
-  Message,
-  Chat,
-  MessageDraft,
-  INTERNAL_MODERATION_PREFIX,
-  Membership,
+  Chat
 } from "../dist-test"
 import {
-  sleep,
-  extractMentionedUserIds,
-  createRandomUser,
-  createRandomChannel,
   createChatInstance,
-  sendMessageAndWaitForHistory,
-  makeid,
+  generateRandomString,
+  createRandomChannel,
+  createRandomUser
 } from "./utils"
 
 import { jest } from "@jest/globals"
@@ -24,16 +17,16 @@ describe("Mute list test", () => {
   let chat: Chat
   let channel: Channel
 
-  beforeAll(async () => {
-    chat = await createChatInstance()
-  })
-
   beforeEach(async () => {
-    channel = await createRandomChannel()
+    chat = await createChatInstance({ userId: generateRandomString() })
+    channel = await createRandomChannel(chat)
   })
 
   afterEach(async () => {
     await channel.delete()
+    await chat.currentUser.delete()
+    await chat.sdk.disconnect()
+
     jest.clearAllMocks()
   })
 

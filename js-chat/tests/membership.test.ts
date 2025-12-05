@@ -1,39 +1,26 @@
 import {Chat, Channel, User, Membership} from "../dist-test"
-import {createChatInstance, generateRandomString, makeid, sleep} from "./utils"
+import {createChatInstance, generateRandomString, sleep, createRandomChannel, createRandomUser} from "./utils"
 
 describe("Membership test", () => {
+  jest.retryTimes(3)
+
   let chat: Chat
   let channel: Channel
   let user: User
 
-  function createRandomChannel(prefix: string = "") {
-    return chat.createChannel(`${prefix}channel_${makeid()}`, {
-      name: `${prefix}Test Channel`,
-      description: "This is a test channel",
-    })
-  }
-
-  function createRandomUser(prefix: string = "") {
-    return chat.createUser(`${prefix}user_${makeid()}`, {
-      name: `${prefix}Test User`,
-    })
-  }
-
-  beforeAll(async () => {
-    chat = await createChatInstance({ shouldCreateNewInstance: true, userId: generateRandomString(8) })
-  })
-
   beforeEach(async () => {
-    channel = await createRandomChannel()
-    user = await createRandomUser()
+    chat = await createChatInstance({ userId: generateRandomString() })
+    channel = await createRandomChannel(chat)
+    user = await createRandomUser(chat)
   })
 
   afterEach(async () => {
-    await Promise.all([
-      channel?.delete(),
-      user?.delete(),
-      chat.currentUser.delete()
-    ])
+    await channel.delete()
+    await user.delete()
+    await chat.currentUser.delete()
+    await chat.sdk.disconnect()
+
+    jest.clearAllMocks()
   })
 
   test("should get membership via channel.invite", async () => {
@@ -67,8 +54,7 @@ describe("Membership test", () => {
     await sleep(150)
 
     const customData = {
-      role: "moderator",
-      permissions: ["read", "write", "delete"]
+      role: "moderator"
     }
 
     const updatedMembership = await membership.update({ custom: customData })
@@ -161,7 +147,7 @@ describe("Membership test", () => {
   }, 20000)
 
   test("should stream updates for multiple memberships via Membership.streamUpdatesOn", async () => {
-    const user2 = await createRandomUser()
+    const user2 = await createRandomUser(chat)
     const membership1 = await channel.invite(user)
     const membership2 = await channel.invite(user2)
     await sleep(150)

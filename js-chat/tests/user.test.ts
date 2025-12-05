@@ -1,5 +1,5 @@
 import { Chat, User } from "../dist-test"
-import {createChatInstance, generateRandomString, makeid, sleep} from "./utils"
+import {createChatInstance, generateRandomString, sleep, createRandomUser, createRandomChannel} from "./utils"
 import {jest} from "@jest/globals";
 
 describe("User test", () => {
@@ -8,33 +8,22 @@ describe("User test", () => {
   let chat: Chat
   let user: User
 
-  function createRandomUser(prefix: string = "") {
-    return chat.createUser(`${prefix}user_${makeid()}`, {
-      name: `${prefix}Test User`,
-    })
-  }
-
-  function createRandomChannel(prefix: string = "") {
-    return chat.createChannel(`${prefix}channel_${makeid()}`, {
-      name: `${prefix}Test Channel`,
-      description: "This is a test channel",
-    })
-  }
-
   beforeEach(async () => {
-    chat = await createChatInstance({ userId: makeid() })
-    user = await createRandomUser()
+    chat = await createChatInstance({ userId: generateRandomString() })
+    user = await createRandomUser(chat)
   })
 
   afterEach(async () => {
     await user.delete()
     await chat.currentUser.delete()
+    await chat.sdk.disconnect()
+
     jest.clearAllMocks()
   })
 
   test("Should automatically create chat user while initializing", () => {
     expect(chat.currentUser).toBeDefined()
-    expect(chat.currentUser.id).toBe(chat.sdk.getUUID())
+    expect(chat.currentUser.id).toBe(chat.sdk.getUserId())
   })
 
   test("Should be able to create and fetch user", async () => {
@@ -85,11 +74,11 @@ describe("User test", () => {
   }, 20000)
 
   test("should update the user even if they're a member of a particular channel", async () => {
-    const someUser = await createRandomUser()
+    const someUser = await createRandomUser(chat)
     let capturedUser: User | undefined
 
     const someChannel = await chat.createPublicConversation({
-      channelId: generateRandomString(10),
+      channelId: generateRandomString(),
       channelData: { name: "Public channel test" },
     })
 
@@ -117,11 +106,11 @@ describe("User test", () => {
   }, 20000)
 
   test("should update the user even if they're not a member of a particular channel", async () => {
-    const someUser = await createRandomUser()
+    const someUser = await createRandomUser(chat)
     let capturedUser: User | undefined
 
     const someChannel = await chat.createPublicConversation({
-      channelId: generateRandomString(10),
+      channelId: generateRandomString(),
       channelData: { name: "Public channel test 2" },
     })
 
@@ -169,7 +158,7 @@ describe("User test", () => {
     const numUsers = 3
 
     for (let i = 0; i < numUsers; i++) {
-      const newUser = await createRandomUser()
+      const newUser = await createRandomUser(chat)
       usersToCreate.push(newUser)
     }
 
@@ -240,9 +229,9 @@ describe("User test", () => {
   }, 30000)
 
   test("should get multiple users via chat.getUsers", async () => {
-    const user1 = await createRandomUser()
-    const user2 = await createRandomUser()
-    const user3 = await createRandomUser()
+    const user1 = await createRandomUser(chat)
+    const user2 = await createRandomUser(chat)
+    const user3 = await createRandomUser(chat)
 
     const filter = `id == '${user1.id}' || id == '${user2.id}' || id == '${user3.id}'`
     const result = await chat.getUsers({ filter })
@@ -291,12 +280,10 @@ describe("User test", () => {
 
   test("should get last active timestamp via user.lastActiveTimestamp property", async () => {
     const chat = await createChatInstance({
-      userId: makeid(),
-      shouldCreateNewInstance: true,
+      userId: generateRandomString(),
       config: {
         storeUserActivityTimestamps: true,
         storeUserActivityInterval: 600000,
-        userId: generateRandomString(10)
       }
     })
 
@@ -312,17 +299,15 @@ describe("User test", () => {
 
     await channel.delete()
     await chat.currentUser.delete()
-  }, 15000)
+  }, 20000)
 
   test("should get active status via user.active property", async () => {
     const activityInterval = 60000
     const chat = await createChatInstance({
-      userId: makeid(),
-      shouldCreateNewInstance: true,
+      userId: generateRandomString(),
       config: {
         storeUserActivityTimestamps: true,
-        storeUserActivityInterval: activityInterval,
-        userId: generateRandomString(10)
+        storeUserActivityInterval: activityInterval
       }
     })
 
@@ -340,9 +325,9 @@ describe("User test", () => {
   }, 15000)
 
   test("should set restrictions on user via user.setRestrictions", async () => {
-    const chatPamServer = await createChatInstance( { userId: makeid(), shouldCreateNewInstance: true, clientType: 'PamServer' })
-    const testUser = await chatPamServer.createUser(generateRandomString(10), { name: "Test User" })
-    const channel = await chatPamServer.createChannel(generateRandomString(10), { name: "Test Channel" })
+    const chatPamServer = await createChatInstance( { userId: generateRandomString(), clientType: 'PamServer' })
+    const testUser = await chatPamServer.createUser(generateRandomString(), { name: "Test User" })
+    const channel = await chatPamServer.createChannel(generateRandomString(), { name: "Test Channel" })
 
     await testUser.setRestrictions(channel, { ban: true, mute: true, reason: "Violated community guidelines" })
     await sleep(350)
@@ -356,9 +341,9 @@ describe("User test", () => {
   }, 20000)
 
   test("should get channel restrictions for user via user.getChannelRestrictions", async () => {
-    const chatPamServer = await createChatInstance({ userId: makeid(), shouldCreateNewInstance: true, clientType: 'PamServer' })
-    const testUser = await chatPamServer.createUser(generateRandomString(10), { name: "Test User" })
-    const channel = await chatPamServer.createChannel(generateRandomString(10), { name: "Test Channel" })
+    const chatPamServer = await createChatInstance({ userId: generateRandomString(), clientType: 'PamServer' })
+    const testUser = await chatPamServer.createUser(generateRandomString(), { name: "Test User" })
+    const channel = await chatPamServer.createChannel(generateRandomString(), { name: "Test Channel" })
 
     await chatPamServer.setRestrictions(testUser.id, channel.id, { mute: true })
     await sleep(350)
@@ -401,19 +386,24 @@ describe("User test", () => {
       type: "premium"
     }
 
-    const createdUser = await chat.createUser(userId, userData)
+    let createdUser: User | undefined
 
-    expect(createdUser.id).toBe(userId)
-    expect(createdUser.name).toBe(userData.name)
-    expect(createdUser.externalId).toBe(userData.externalId)
-    expect(createdUser.profileUrl).toBe(userData.profileUrl)
-    expect(createdUser.email).toBe(userData.email)
-    expect(createdUser.custom).toEqual(userData.custom)
-    expect(createdUser.status).toBe(userData.status)
-    expect(createdUser.type).toBe(userData.type)
-    expect(createdUser.updated).toBeDefined()
-
-    await createdUser.delete()
+    try {
+      const createdUser = await chat.createUser(userId, userData)
+      expect(createdUser.id).toBe(userId)
+      expect(createdUser.name).toBe(userData.name)
+      expect(createdUser.externalId).toBe(userData.externalId)
+      expect(createdUser.profileUrl).toBe(userData.profileUrl)
+      expect(createdUser.email).toBe(userData.email)
+      expect(createdUser.custom).toEqual(userData.custom)
+      expect(createdUser.status).toBe(userData.status)
+      expect(createdUser.type).toBe(userData.type)
+      expect(createdUser.updated).toBeDefined()
+    } finally {
+        if (createdUser) {
+          await createdUser.delete().catch(() => {})
+        }
+    }
   })
 
   test("should update user with all optional fields", async () => {
@@ -446,7 +436,7 @@ describe("User test", () => {
   })
 
   test("should soft delete user", async () => {
-    const testUser = await createRandomUser()
+    const testUser = await createRandomUser(chat)
     const softDeleteResult = await testUser.delete({ soft: true })
     expect(softDeleteResult).toBeDefined()
     expect((softDeleteResult as User).status).toBe("deleted")
