@@ -1,6 +1,6 @@
 import { TimetokenUtils } from "../dist-test"
 
-describe("Channel test", () => {
+describe("Timetoken test", () => {
 
   test("should convert unix timestamp to PubNub timetoken", () => {
     const newDate = new Date().getTime()
