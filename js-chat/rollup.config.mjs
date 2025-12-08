@@ -2,12 +2,33 @@ import pkg from "./package.json" assert { type: "json" }
 import terser from "@rollup/plugin-terser"
 import resolve from "@rollup/plugin-node-resolve"
 import commonjs from "@rollup/plugin-commonjs"
+import gzip from "rollup-plugin-gzip"
 
 // Get PubNub version from dependencies
 const pubnubVersion = pkg.dependencies?.pubnub || "unknown"
 
+// Common banner for CDN builds
+const banner = `/**
+ * PubNub Chat SDK v${pkg.version}
+ * Includes PubNub JS SDK v${pubnubVersion}
+ * https://www.pubnub.com/
+ */`
+
+const minBanner = `/*! PubNub Chat SDK v${pkg.version} | Includes PubNub JS SDK v${pubnubVersion} | https://www.pubnub.com/ */`
+
+// Common plugins for CDN builds
+const cdnPlugins = [
+  resolve({
+    browser: true,
+    preferBuiltins: false
+  }),
+  commonjs()
+]
+
 export default [
+  // ===========================================
   // NPM builds (CommonJS + ESM) - PubNub as external dependency
+  // ===========================================
   {
     input: "./main.mjs",
     external: ["pubnub", "format-util"],
@@ -27,52 +48,42 @@ export default [
   },
 
   // ===========================================
-  // CDN builds (UMD) - PubNub bundled inside
+  // CDN builds (gzipped) - PubNub bundled inside
   // ===========================================
 
-  // CDN build (UMD, unminified) - for debugging
+  // Unminified + gzip
   {
     input: "./main.mjs",
-    external: [],  // Bundle everything
+    external: [],
     output: {
-      file: `dist/pubnub-chat.${pkg.version}.js`,
+      file: `upload/pubnub-chat.${pkg.version}.js`,
       format: "umd",
       name: "PubNubChat",
-      banner: `/**
- * PubNub Chat SDK v${pkg.version}
- * Includes PubNub JS SDK v${pubnubVersion}
- * https://www.pubnub.com/
- */`,
+      banner,
     },
     plugins: [
-      resolve({
-        browser: true,
-        preferBuiltins: false
-      }),
-      commonjs()
+      ...cdnPlugins,
+      gzip({ fileName: '' })
     ],
   },
-  // CDN build (UMD, minified) - for production
+  // Minified + gzip
   {
     input: "./main.mjs",
-    external: [],  // Bundle everything
+    external: [],
     output: {
-      file: `dist/pubnub-chat.${pkg.version}.min.js`,
+      file: `upload/pubnub-chat.${pkg.version}.min.js`,
       format: "umd",
       name: "PubNubChat",
-      banner: `/*! PubNub Chat SDK v${pkg.version} | Includes PubNub JS SDK v${pubnubVersion} | https://www.pubnub.com/ */`,
+      banner: minBanner,
     },
     plugins: [
-      resolve({
-        browser: true,
-        preferBuiltins: false
-      }),
-      commonjs(),
+      ...cdnPlugins,
       terser({
         format: {
           comments: /^!/
         }
-      })
+      }),
+      gzip({ fileName: '' })
     ],
   },
 ]
