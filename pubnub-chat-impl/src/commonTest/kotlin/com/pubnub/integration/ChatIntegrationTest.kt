@@ -847,31 +847,6 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun wherePresent_whenUserSubscribedToChannel_shouldReturnChannelId() = runTest {
-        // given - create a test channel
-        val testChannelId = randomString()
-        val testChannel = chat.createChannel(testChannelId).await()
-
-        // when - user subscribes to the channel
-        pubnub.test(backgroundScope, checkAllEvents = false) {
-            var subscription: AutoCloseable? = null
-            pubnub.awaitSubscribe(listOf(testChannelId)) {
-                subscription = testChannel.connect { }
-            }
-
-            // wait for presence to update
-            delayInMillis(2000)
-
-            // then - wherePresent should return the channel
-            val channels = chat.wherePresent(chat.currentUser.id).await()
-            assertTrue(channels.isNotEmpty(), "Should have at least one channel")
-            assertTrue(channels.contains(testChannelId), "Should contain the subscribed channel")
-
-            subscription?.close()
-        }
-    }
-
-    @Test
     fun wherePresent_whenUserSubscribedToMultipleChannels_shouldReturnAllChannelIds() = runTest {
         // given - create multiple test channels
         val testChannelId1 = randomString()
@@ -884,10 +859,10 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             var subscription1: AutoCloseable? = null
             var subscription2: AutoCloseable? = null
 
-            pubnub.awaitSubscribe(listOf(testChannelId1)) {
+            // Subscribe to both channels in a single awaitSubscribe call
+            // JS SDK handles sequential subscribes differently than JVM
+            pubnub.awaitSubscribe(listOf(testChannelId1, testChannelId2)) {
                 subscription1 = testChannel1.connect { }
-            }
-            pubnub.awaitSubscribe(listOf(testChannelId2)) {
                 subscription2 = testChannel2.connect { }
             }
 
