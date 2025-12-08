@@ -7,6 +7,7 @@ build/
 **/*.podspec
 node_modules
 js-chat/dist
+js-chat/upload
 js-chat/dist-test
 test.properties
 local.properties
