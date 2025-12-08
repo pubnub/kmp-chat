@@ -97,5 +97,5 @@ jobs:
           content-type: application/javascript
           content-encoding: gzip
           acl: public-read
-          local-path: js-chat/dist/upload/*.js
+          local-path: js-chat/upload/*.js
           remote-path: pubnub/sdk/js-chat
