@@ -58,9 +58,7 @@ class ChatIntegrationTest : BaseIntegrationTest() {
     fun shouldThrowException_when_initializingChatWithoutSecretKeyAndWithPamEnabled_and_noToken() {
         val chatConfig = ChatConfiguration(logLevel = LogLevel.VERBOSE)
         val pnConfiguration =
-            PNConfiguration.builder(userId = UserId("myUserId"), subscribeKey = Keys.pamSubKey) {
-                logVerbosity = PNLogVerbosity.BODY
-            }.build()
+            PNConfiguration.builder(userId = UserId("myUserId"), subscribeKey = Keys.pamSubKey).build()
         var capturedException: Exception? = null
         val latch = CountDownLatch(1)
 

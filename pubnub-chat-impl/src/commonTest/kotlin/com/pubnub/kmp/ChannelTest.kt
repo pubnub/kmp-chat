@@ -619,7 +619,12 @@ class ChannelTest : BaseTest() {
     fun sendTextPushMessageIsIncludedInPublish() {
         chatConfig = ChatConfiguration(
             typingTimeout = this@ChannelTest.typingTimeout,
-            pushNotifications = PushNotificationsConfig(sendPushes = true, apnsTopic = "aaa", deviceToken = "aaa", deviceGateway = PNPushType.APNS2)
+            pushNotifications = PushNotificationsConfig(
+                sendPushes = true,
+                apnsTopic = "aaa",
+                deviceToken = "aaa",
+                deviceGateway = PNPushType.APNS2
+            )
         )
 
         every { chat.config } returns chatConfig

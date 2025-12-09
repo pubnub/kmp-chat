@@ -1,5 +1,6 @@
 package com.pubnub.integration
 
+import com.pubnub.api.PubNubException
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.chat.Event
 import com.pubnub.chat.Message
@@ -23,9 +24,12 @@ import com.pubnub.test.test
 import delayForHistory
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 
@@ -95,6 +99,56 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
                 .contains("${MESSAGE_THREAD_ID_PREFIX}_${channel01.id}")
         )
         assertEquals(2, restoredMessage.actions!!.size)
+    }
+
+    @Ignore
+    @Test // todo enable test once deleteMessage from channel containing "!_=-@" is clarified
+    fun restore_hardDeletedMessage_shouldFail() = runTest {
+        // given - a message that is hard deleted
+        val messageText = "Message to be hard deleted ${randomString()}"
+        val publishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = publishResult.timetoken
+        delayForHistory()
+
+        val message = channel01.getMessage(publishTimetoken).await()!!
+
+        // when - hard delete the message (soft=false)
+        val deletedMessage = message.delete(soft = false).await()
+
+        // then - should return null (hard deleted messages cannot be restored)
+        assertNull(deletedMessage, "Hard deleted message should return null")
+
+        delayForHistory()
+
+        // verify - message should not exist in history
+        val messageAfterDelete = channel01.getMessage(publishTimetoken).await()
+        assertNull(messageAfterDelete, "Hard deleted message should not be retrievable from history")
+    }
+
+    @Test
+    fun getThread_beforeCreation_shouldThrowException() = runTest {
+        // given - a message without a thread
+        val messageText = "Message without thread ${randomString()}"
+        val publishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = publishResult.timetoken
+        delayForHistory()
+
+        val message = channel01.getMessage(publishTimetoken).await()!!
+
+        // then - message should not have a thread
+        assertFalse(message.hasThread, "Message should not have a thread initially")
+
+        // when - try to get thread that doesn't exist
+        // then - should throw exception
+        val exception = assertFailsWith<PubNubException> {
+            message.getThread().await()
+        }
+
+        assertEquals(
+            true,
+            exception.message?.contains("This message is not a thread", ignoreCase = true),
+            "Exception should indicate no thread exists. Got: ${exception.message}"
+        )
     }
 
     @Test
@@ -311,6 +365,43 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun toggleReaction_multipleTogglesCycles_shouldMaintainCorrectState() = runTest {
+        // given - a message
+        val messageText = "Message for reaction test ${randomString()}"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = pnPublishResult.timetoken
+        delayForHistory()
+
+        var message = channel01.getMessage(publishTimetoken).await()!!
+        val reactionValue = "like"
+
+        // when - toggle reaction multiple times rapidly
+        // Toggle ON
+        message = message.toggleReaction(reactionValue).await()
+        assertTrue(message.hasUserReaction(reactionValue), "After first toggle, should have reaction")
+
+        // Toggle OFF
+        message = message.toggleReaction(reactionValue).await()
+        assertFalse(message.hasUserReaction(reactionValue), "After second toggle, should not have reaction")
+
+        // Toggle ON again
+        message = message.toggleReaction(reactionValue).await()
+        assertTrue(message.hasUserReaction(reactionValue), "After third toggle, should have reaction again")
+
+        // Toggle OFF again
+        message = message.toggleReaction(reactionValue).await()
+        assertFalse(message.hasUserReaction(reactionValue), "After fourth toggle, should not have reaction again")
+
+        // then - verify final state from history
+        delayForHistory()
+        val finalMessage = channel01.getMessage(publishTimetoken).await()!!
+        assertFalse(
+            finalMessage.hasUserReaction(reactionValue),
+            "Final message from history should not have reaction (even number of toggles)"
+        )
+    }
+
+    @Test
     fun adminCanSubscribeToInternalChannelRelatedToReportsForSpecificChannelAndCanGetReportedMessageEvent() = runTest {
         val pnPublishResult = channel01.sendText("message1").await()
         val timetoken = pnPublishResult.timetoken
@@ -348,6 +439,57 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
             // cleanup
             removeListenerAndUnsubscribe?.close()
         }
+    }
+
+    @Test
+    fun threadChannel_getHistory_withCountLimit_shouldReturnLimitedResults() = runTest {
+        // given - create a message and thread with multiple messages
+        val messageText = "Parent message_${randomString()}"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = pnPublishResult.timetoken
+        delayForHistory()
+
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
+        val threadChannel: ThreadChannel = message.createThread("First thread message_${randomString()}").await()
+
+        // add more messages to thread
+        val additionalMessageCount = 5
+        val threadMessageTexts = (2..additionalMessageCount).map {
+            "Thread message $it - ${randomString()}"
+        }
+
+        threadMessageTexts.forEach { text ->
+            threadChannel.sendText(text).await()
+        }
+
+        delayForHistory()
+
+        // when - fetch with count limit of 3
+        val limitedHistory: HistoryResponse<ThreadMessage> = threadChannel.getHistory(count = 3).await()
+
+        // then - should get exactly 3 messages
+        assertEquals(3, limitedHistory.messages.size, "Should get 3 messages when count=3")
+        assertTrue(limitedHistory.isMore, "Should indicate more messages available")
+
+        // when - fetch all with large count
+        val allMessages: HistoryResponse<ThreadMessage> = threadChannel.getHistory(count = 100).await()
+
+        // then - should get all thread messages (including the first one from createThread)
+        assertTrue(
+            allMessages.messages.size >= additionalMessageCount,
+            "Should get at least $additionalMessageCount thread messages"
+        )
+
+        // verify all our test messages are present
+        val allTexts = allMessages.messages.map { it.text }.toSet()
+        assertTrue(
+            threadMessageTexts.all { it in allTexts },
+            "All thread messages should be in history"
+        )
+
+        // cleanup - we need to re-fetch the message to see update state that contains info that it "hasThread"
+        val messageWithThread = channel01.getMessage(publishTimetoken).await()!!
+        messageWithThread.removeThread().await()
     }
 
     private fun getDeletedActionMap() = mapOf(
