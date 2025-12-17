@@ -33,7 +33,6 @@ fun Message.Companion.streamUpdatesOn(
  *
  * **Supported events:**
  * - [EntityChange.Updated] - emitted when a message changes or reactions are added or removed
- *
  * **Not supported:**
  * - [EntityChange.Removed] - Messages themselves do not emit removal events
  *
@@ -68,7 +67,6 @@ fun ThreadMessage.Companion.streamUpdatesOn(
  *
  * **Supported events:**
  * - [EntityChange.Updated] - emitted when a message changes or reactions are added or removed
- *
  * **Not supported:**
  * - [EntityChange.Removed] - Messages themselves do not emit removal events
  *
