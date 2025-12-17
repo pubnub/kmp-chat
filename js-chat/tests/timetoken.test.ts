@@ -1,11 +1,10 @@
 import { TimetokenUtils } from "../dist-test"
 
-describe("Channel test", () => {
+describe("Timetoken test", () => {
+
   test("should convert unix timestamp to PubNub timetoken", () => {
     const newDate = new Date().getTime()
-
     expect(TimetokenUtils.unixToTimetoken(newDate)).toBe(newDate * 10000)
-//     expect(TimetokenUtils.unixToTimetoken(10)).toBe(100000)
     expect(TimetokenUtils.unixToTimetoken("1692689549407")).toBe(16926895494070000)
   })
 
@@ -19,9 +18,6 @@ describe("Channel test", () => {
 
   test("should convert PubNub timetoken to unix timestamp", () => {
     const newDate = new Date().getTime()
-
-//     expect(TimetokenUtils.timetokenToUnix(newDate)).toBe(newDate / 10000)
-//     expect(TimetokenUtils.timetokenToUnix(100000)).toBe(10)
     expect(TimetokenUtils.timetokenToUnix(16926895494070000)).toBe(1692689549407)
     expect(TimetokenUtils.timetokenToUnix("16926895494070000")).toBe(1692689549407)
   })
@@ -49,7 +45,6 @@ describe("Channel test", () => {
 
   test("should convert a Date object to PubNub timetoken", () => {
     expect(TimetokenUtils.dateToTimetoken(new Date(1692689549407))).toBe(16926895494070000)
-//     expect(TimetokenUtils.dateToTimetoken(new Date(169268954940))).toBe(1692689549400000)
   })
 
   test("should throw an error if the passed value for Date is not a Date", () => {

@@ -269,7 +269,17 @@ abstract class BaseChannel<C : Channel, M : Message>(
         customPushData: Map<String, String>?,
     ): PNFuture<PNPublishResult> {
         val newMeta = buildMetaForPublish(meta, quotedMessage, mentionedUsers, referencedChannels, textLinks)
-        return sendTextInternal(text, newMeta, shouldStore, usePost, ttl, quotedMessage, files, mentionedUsers?.map { it.value.id }, customPushData)
+        return sendTextInternal(
+            text,
+            newMeta,
+            shouldStore,
+            usePost,
+            ttl,
+            quotedMessage,
+            files,
+            mentionedUsers?.map { it.value.id },
+            customPushData
+        )
     }
 
     override fun sendText(
@@ -398,6 +408,11 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun inviteMultiple(users: Collection<User>): PNFuture<List<Membership>> {
+        // Prevents unnecessary API call and avoids bug where empty filter returns ALL members
+        if (users.isEmpty()) {
+            return emptyList<Membership>().asFuture()
+        }
+
         return chat.pubNub.setChannelMembers(
             this.id,
             users.map { PNMember.Partial(it.id) },
@@ -686,6 +701,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                                 "join" -> {
                                     ids.add(event.uuid!!)
                                 }
+
                                 "leave", "timeout" -> {
                                     ids.remove(event.uuid!!)
                                 }

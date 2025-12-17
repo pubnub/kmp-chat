@@ -216,6 +216,35 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun createGroupConversation_withEmptyUserList_shouldSucceedWithOnlyHost() = runTest {
+        // given
+        val emptyUserList = emptyList<User>()
+
+        // when
+        val result = chat.createGroupConversation(emptyUserList).await()
+
+        // then
+        assertNotNull(result.channel)
+        assertNotNull(result.channel.id)
+
+        assertEquals(
+            chat.currentUser,
+            result.hostMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null)
+        )
+        assertEquals(result.channel, result.hostMembership.channel)
+
+        assertTrue(
+            result.inviteeMemberships.isEmpty(),
+            "inviteeMemberships should be empty when no users are invited"
+        )
+
+        // verify the channel exists and is accessible
+        val fetchedChannel = chat.getChannel(result.channel.id).await()
+        assertNotNull(fetchedChannel, "Created channel should be fetchable")
+        assertEquals(result.channel.id, fetchedChannel?.id)
+    }
+
+    @Test
     fun can_markAllMessagesAsRead() = runTest {
         // create two membership for user one with "lastReadMessageTimetoken" and second without.
         val lastReadMessageTimetokenValue: Long = 17195737006492403
@@ -738,9 +767,117 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         assertEquals("11", message.text)
     }
 
+    @Test
+    fun createDirectConversation_withDuplicateUsers_shouldReturnExisting() = runTest {
+        // given - initialize and create first direct conversation
+        chat.initialize().await()
+        val firstResult = chat.createDirectConversation(someUser).await()
+        val firstChannelId = firstResult.channel.id
+
+        // when - create direct conversation again with same user
+        val secondResult = chat.createDirectConversation(someUser).await()
+        val secondChannelId = secondResult.channel.id
+
+        // then - should return the same channel ID (idempotent operation)
+        assertEquals(firstChannelId, secondChannelId, "Creating direct conversation twice should return same channel")
+
+        // verify memberships are consistent
+        assertEquals(
+            chat.currentUser.asImpl().copy(updated = null, lastActiveTimestamp = null),
+            secondResult.hostMembership.user.asImpl().copy(updated = null, lastActiveTimestamp = null)
+        )
+        assertEquals(someUser, secondResult.inviteeMembership.user.asImpl())
+        assertEquals(secondResult.channel, secondResult.hostMembership.channel)
+        assertEquals(secondResult.channel, secondResult.inviteeMembership.channel)
+
+        // verify no duplicate channels created - fetch channel directly
+        val fetchedChannel = chat.getChannel(firstChannelId).await()
+        assertNotNull(fetchedChannel, "Original channel should still exist")
+        assertEquals(firstChannelId, fetchedChannel.id)
+    }
+
+    @Test
+    fun isPresent_withStateTransitions_shouldReflectCorrectState() = runTest {
+        // given - create a test channel
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+
+        // initially, current user should not be present (not subscribed)
+        val initiallyPresent = chat.isPresent(chat.currentUser.id, testChannelId).await()
+        assertFalse(initiallyPresent, "User should not be present before subscribing")
+
+        // when - user subscribes to the channel
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var subscription: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(testChannelId)) {
+                subscription = testChannel.connect { }
+            }
+
+            // wait for presence to update
+            delayInMillis(2000)
+
+            // then - user should be present
+            val nowPresent = chat.isPresent(chat.currentUser.id, testChannelId).await()
+            assertTrue(nowPresent, "User should be present after subscribing")
+
+            // when - user unsubscribes
+            subscription?.close()
+
+            // wait for presence to update
+            delayInMillis(2000)
+
+            // then - user should not be present anymore
+            val afterUnsubscribe = chat.isPresent(chat.currentUser.id, testChannelId).await()
+            assertFalse(afterUnsubscribe, "User should not be present after unsubscribing")
+        }
+    }
+
     private suspend fun assertPushChannels(chat: Chat, expectedNumberOfChannels: Int) {
         val pushChannels = chat.getPushChannels().await()
         assertEquals(expectedNumberOfChannels, pushChannels.size)
+    }
+
+    @Test
+    fun wherePresent_whenUserNotSubscribed_shouldReturnEmptyList() = runTest {
+        // given - a user not subscribed to any channels
+        val channels = chat.wherePresent(chat.currentUser.id).await()
+
+        // then - should return empty list
+        assertTrue(channels.isEmpty(), "User not subscribed to any channel should have empty wherePresent result")
+    }
+
+    @Test
+    fun wherePresent_whenUserSubscribedToMultipleChannels_shouldReturnAllChannelIds() = runTest {
+        // given - create multiple test channels
+        val testChannelId1 = randomString()
+        val testChannelId2 = randomString()
+        val testChannel1 = chat.createChannel(testChannelId1).await()
+        val testChannel2 = chat.createChannel(testChannelId2).await()
+
+        // when - user subscribes to both channels
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var subscription1: AutoCloseable? = null
+            var subscription2: AutoCloseable? = null
+
+            // Subscribe to both channels in a single awaitSubscribe call
+            // JS SDK handles sequential subscribes differently than JVM
+            pubnub.awaitSubscribe(listOf(testChannelId1, testChannelId2)) {
+                subscription1 = testChannel1.connect { }
+                subscription2 = testChannel2.connect { }
+            }
+
+            // wait for presence to update
+            delayInMillis(2000)
+
+            // then - wherePresent should return both channels
+            val channels = chat.wherePresent(chat.currentUser.id).await()
+            assertTrue(channels.size >= 2, "Should have at least two channels")
+            assertTrue(channels.contains(testChannelId1), "Should contain the first subscribed channel")
+            assertTrue(channels.contains(testChannelId2), "Should contain the second subscribed channel")
+
+            subscription1?.close()
+            subscription2?.close()
+        }
     }
 }
 

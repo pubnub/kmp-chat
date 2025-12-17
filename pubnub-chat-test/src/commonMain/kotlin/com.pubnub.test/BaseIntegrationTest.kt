@@ -2,7 +2,6 @@ package com.pubnub.test
 
 import com.pubnub.api.PubNub
 import com.pubnub.api.UserId
-import com.pubnub.api.enums.PNLogVerbosity
 import com.pubnub.api.enums.PNStatusCategory
 import com.pubnub.api.models.consumer.PNStatus
 import com.pubnub.api.models.consumer.pubsub.PNEvent
@@ -47,30 +46,31 @@ abstract class BaseIntegrationTest {
             UserId(randomString()),
             Keys.subKey,
             Keys.pubKey,
-            logVerbosity = PNLogVerbosity.BODY,
+            // logVerbosity = PNLogVerbosity.BODY, // todo replace with logLeve
             authToken = null
         )
         config02 = createPNConfiguration(
             UserId(randomString()),
             Keys.subKey,
             Keys.pubKey,
-            logVerbosity = PNLogVerbosity.BODY,
+            // logVerbosity = PNLogVerbosity.BODY, // todo replace with logLeve
             authToken = null
         )
         pubnub = createPubNub(config)
         pubnub02 = createPubNub(config02)
         configPamServer = createPNConfiguration(
             UserId(randomString()),
-            Keys.pamSubKey,
-            Keys.pamPubKey,
-            Keys.pamSecKey,
-            PNLogVerbosity.BODY
+            subscribeKey = Keys.pamSubKey,
+            publishKey = Keys.pamPubKey,
+            secretKey = Keys.pamSecKey,
+            // logVerbosity = PNLogVerbosity.BODY, // todo replace with logLeve
+            authToken = null
         )
         configPamClient = createPNConfiguration(
             UserId(randomString()),
-            Keys.pamSubKey,
-            Keys.pamPubKey,
-            logVerbosity = PNLogVerbosity.BODY,
+            subscribeKey = Keys.pamSubKey,
+            publishKey = Keys.pamPubKey,
+            // logVerbosity = PNLogVerbosity.BODY, // todo replace with logLeve
             authToken = null
         )
         pubnubPamServer = createPubNub(configPamServer)

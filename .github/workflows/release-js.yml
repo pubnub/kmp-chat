@@ -56,6 +56,12 @@ jobs:
           # This should be the same as the one specified for on.pull_request.branches
           ref: master
           submodules: recursive
+      - name: Setup AWS CLI credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActionsSession
+          aws-region: us-east-1
       - name: Checkout actions
         uses: actions/checkout@v4
         with:
@@ -83,3 +89,13 @@ jobs:
           build-command: npm run build
           build-path: dist
           last-service: true
+      - name: Publish to S3
+        uses: ./.github/.release/actions/actions/services/aws
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          auth-method: role
+          content-type: application/javascript
+          content-encoding: gzip
+          acl: public-read
+          local-path: js-chat/upload/*.js
+          remote-path: pubnub/sdk/js-chat

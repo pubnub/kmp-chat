@@ -167,19 +167,6 @@ class UserTest {
     }
 
     @Test
-    fun canIsPresentOn() {
-        // given
-        val callback: (Result<Boolean>) -> Unit = {}
-        every { chat.isPresent(any(), any()) } returns true.asFuture()
-
-        // when
-        objectUnderTest.isPresentOn(channelId = channelId).async {}
-
-        // then
-        verify { chat.isPresent(id, channelId) }
-    }
-
-    @Test
     fun getMembershipsShouldResultFailureWhenPubNubReturnsError() {
         // given
         val limit = 10
