@@ -1551,16 +1551,21 @@ describe("Channel test", () => {
   test("should stream channel changes via Channel.streamChangesOn", async () => {
     let callbackCount = 0
 
-    const stopUpdates = Channel.streamChangesOn([channel], (change) => {
-      if (change.type === "updated") {
-        callbackCount++
-        expect(change.entity.id).toBe(channel.id)
-        expect(change.entity.name).toBe("New name")
-      }
+    const stopUpdates = Channel.streamChangesOn([channel], (result) => {
+      result.onSuccess((change) => {
+        change.handle({
+          onUpdated: (entity) => {
+            callbackCount++
+            expect(entity.id).toBe(channel.id)
+            expect(entity.name).toBe("New name")
+          }
+        })
+      })
     })
 
     await sleep(1500)
     await channel.update({ name: "New name" })
+    await sleep(400)
 
     expect(callbackCount).toBe(1)
     stopUpdates()
@@ -1569,11 +1574,15 @@ describe("Channel test", () => {
   test("should stream channel hard deletion via Channel.streamChangesOn", async () => {
     let callbackCount = 0
 
-    const stopUpdates = Channel.streamChangesOn([channel], (change) => {
-      if (change.type === "removed") {
-        callbackCount++
-        expect(change.id).toBe(channel.id)
-      }
+    const stopUpdates = Channel.streamChangesOn([channel], (result) => {
+      result.onSuccess((change) => {
+        change.handle({
+          onRemoved: (id) => {
+            callbackCount++
+            expect(id).toBe(channel.id)
+          }
+        })
+      })
     })
 
     await sleep(1500)

@@ -93,9 +93,11 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id)) {
-                dispose = MembershipImpl.streamChangesOn(listOf(membership)) { change: EntityChange<Membership> ->
-                    if (change is EntityChange.Updated) {
-                        changeReceived.complete(change.entity)
+                dispose = MembershipImpl.streamChangesOn(listOf(membership)) { result ->
+                    result.onSuccess { change ->
+                        if (change is EntityChange.Updated) {
+                            changeReceived.complete(change.entity)
+                        }
                     }
                 }
             }

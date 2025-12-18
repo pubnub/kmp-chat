@@ -274,9 +274,11 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(someUser.id)) {
-                dispose = UserImpl.streamChangesOn(listOf(someUser)) { change: EntityChange<User> ->
-                    if (change is EntityChange.Updated && change.entity.name == newName) {
-                        changeReceived.complete(change.entity)
+                dispose = UserImpl.streamChangesOn(listOf(someUser)) { result ->
+                    result.onSuccess { change ->
+                        if (change is EntityChange.Updated && change.entity.name == newName) {
+                            changeReceived.complete(change.entity)
+                        }
                     }
                 }
             }

@@ -1801,12 +1801,17 @@ describe("Send message test", () => {
     const message = history.messages[history.messages.length - 1]
 
     let callbackCount = 0
-    const stopChanges = Message.streamChangesOn([message], (change) => {
-      if (change.type === "updated") {
-        callbackCount++
-        expect(change.entity.timetoken).toBe(message.timetoken)
-        expect(change.entity.text).toBe("Edited message")
-      }
+
+    const stopChanges = Message.streamChangesOn([message], (result) => {
+      result.onSuccess((change) => {
+        change.handle({
+          onUpdated: (entity) => {
+            callbackCount++
+            expect(entity.timetoken).toBe(message.timetoken)
+            expect(entity.text).toBe("Edited message")
+          }
+        })
+      })
     })
 
     await sleep(1500)

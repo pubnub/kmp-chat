@@ -312,23 +312,28 @@ data class UserImpl(
         )
 
         fun streamUpdatesOn(users: Collection<User>, callback: (users: Collection<User>) -> Unit): AutoCloseable {
-            return streamUpdatesOnInternal(users) { _, _, latestUsers ->
-                callback(latestUsers)
+            return streamUpdatesOnInternal(users) { result ->
+                result.onSuccess { (_, _, latestUsers) ->
+                    callback(latestUsers)
+                }
             }
         }
 
-        fun streamChangesOn(users: Collection<User>, callback: (change: EntityChange<User>) -> Unit): AutoCloseable {
-            return streamUpdatesOnInternal(users) { updatedUser, deletedUserId, _ ->
-                when {
-                    updatedUser != null -> callback(EntityChange.Updated(updatedUser))
-                    deletedUserId != null -> callback(EntityChange.Removed(deletedUserId))
+        fun streamChangesOn(users: Collection<User>, callback: (result: Result<EntityChange<User>>) -> Unit): AutoCloseable {
+            return streamUpdatesOnInternal(users) { result ->
+                result.onSuccess { (updatedUser, deletedUserId, _) ->
+                    val entityChange = updatedUser?.let { EntityChange.Updated(it) }
+                        ?: EntityChange.Removed(deletedUserId)
+                    callback(Result.success(entityChange))
+                }.onFailure { exception ->
+                    callback(Result.failure(exception))
                 }
             }
         }
 
         private fun streamUpdatesOnInternal(
             users: Collection<User>,
-            callback: (updatedUser: User?, deletedUserId: String?, latestUsers: Collection<User>) -> Unit
+            callback: (result: Result<Triple<User?, String, Collection<User>>>) -> Unit
         ): AutoCloseable {
             if (users.isEmpty()) {
                 log.pnError(CAN_NOT_STREAM_USER_UPDATES_ON_EMPTY_LIST)
@@ -346,7 +351,7 @@ data class UserImpl(
                             user.id != newUserId
                         }.plus(newUser).toList()
 
-                        callback(newUser, null, latestUsers)
+                        callback(Result.success(Triple(newUser, "", latestUsers)))
                     }
                     is PNDeleteUUIDMetadataEventMessage -> {
                         val deletedUserId = message.uuid
@@ -354,7 +359,7 @@ data class UserImpl(
                             user.id != deletedUserId
                         }
 
-                        callback(null, deletedUserId, latestUsers)
+                        callback(Result.success(Triple(null, deletedUserId ?: "", latestUsers)))
                     }
                     else -> return@createEventListener
                 }

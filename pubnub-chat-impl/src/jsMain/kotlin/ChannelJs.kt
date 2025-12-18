@@ -338,14 +338,22 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }
 
         @JsStatic
-        fun streamChangesOn(channels: Array<ChannelJs>, callback: (EntityChangeJs<ChannelJs>) -> Unit): () -> Unit {
+        fun streamChangesOn(
+            channels: Array<ChannelJs>,
+            callback: (ResultJs<EntityChangeJs<ChannelJs>>) -> Unit
+        ): () -> Unit {
             val chatJs = channels.first().chatJs
             return BaseChannel.streamChangesOn(
                 channels.map { it.channel }
-            ) { change: EntityChange<Channel> ->
-                when (change) {
-                    is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
-                    is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))
+            ) { result ->
+                result.onSuccess { change ->
+                    val entityChange = when (change) {
+                        is EntityChange.Updated -> EntityChangeJs.Updated(change.entity.asJs(chatJs))
+                        is EntityChange.Removed -> EntityChangeJs.Removed(change.id)
+                    }
+                    callback(ResultJs.Success(entityChange))
+                }.onFailure { error ->
+                    callback(ResultJs.Failure(error.message ?: "Unknown error"))
                 }
             }::close
         }

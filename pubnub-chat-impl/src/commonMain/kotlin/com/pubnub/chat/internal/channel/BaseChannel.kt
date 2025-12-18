@@ -864,26 +864,31 @@ abstract class BaseChannel<C : Channel, M : Message>(
             channels: Collection<Channel>,
             callback: (channels: Collection<Channel>) -> Unit
         ): AutoCloseable {
-            return streamUpdatesOnInternal(channels) { _, _, latestChannels ->
-                callback(latestChannels)
+            return streamUpdatesOnInternal(channels) { result ->
+                result.onSuccess { (_, _, latestChannels) ->
+                    callback(latestChannels)
+                }
             }
         }
 
         fun streamChangesOn(
             channels: Collection<Channel>,
-            callback: (change: EntityChange<Channel>) -> Unit
+            callback: (result: Result<EntityChange<Channel>>) -> Unit
         ): AutoCloseable {
-            return streamUpdatesOnInternal(channels) { updatedChannel, deletedChannelId, _ ->
-                when {
-                    updatedChannel != null -> callback(EntityChange.Updated(updatedChannel))
-                    deletedChannelId != null -> callback(EntityChange.Removed(deletedChannelId))
+            return streamUpdatesOnInternal(channels) { result ->
+                result.onSuccess { (updatedChannel, deletedChannelId, _) ->
+                    val entityChange = updatedChannel?.let { EntityChange.Updated(it) }
+                        ?: EntityChange.Removed(deletedChannelId)
+                    callback(Result.success(entityChange))
+                }.onFailure { exception ->
+                    callback(Result.failure(exception))
                 }
             }
         }
 
         private fun streamUpdatesOnInternal(
             channels: Collection<Channel>,
-            callback: (updatedChannel: Channel?, deletedChannelId: String?, latestChannels: Collection<Channel>) -> Unit
+            callback: (result: Result<Triple<Channel?, String, Collection<Channel>>>) -> Unit
         ): AutoCloseable {
             if (channels.isEmpty()) {
                 log.pnError(CAN_NOT_STREAM_CHANNEL_UPDATES_ON_EMPTY_LIST)
@@ -901,7 +906,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                             channel.id != newChannelId
                         }.plus(newChannel).toList()
 
-                        callback(newChannel, null, latestChannels)
+                        callback(Result.success(Triple(newChannel, "", latestChannels)))
                     }
 
                     is PNDeleteChannelMetadataEventMessage -> {
@@ -910,7 +915,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                             channel.id != deletedChannelId
                         }
 
-                        callback(null, deletedChannelId, latestChannels)
+                        callback(Result.success(Triple(null, deletedChannelId, latestChannels)))
                     }
 
                     else -> return@createEventListener

@@ -137,15 +137,22 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
         }
 
         @JsStatic
-        fun streamChangesOn(users: Array<UserJs>, callback: (EntityChangeJs<UserJs>) -> Unit): () -> Unit {
+        fun streamChangesOn(
+            users: Array<UserJs>,
+            callback: (ResultJs<EntityChangeJs<UserJs>>) -> Unit
+        ): () -> Unit {
             val chatJs = users.first().chatJs
-            val closeable = UserImpl.streamChangesOn(users.map { jsUser -> jsUser.user }) { change: EntityChange<User> ->
-                when (change) {
-                    is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
-                    is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))
+            return UserImpl.streamChangesOn(users.map { jsUser -> jsUser.user }) { result ->
+                result.onSuccess { change ->
+                    val entityChange = when (change) {
+                        is EntityChange.Updated -> EntityChangeJs.Updated(change.entity.asJs(chatJs))
+                        is EntityChange.Removed -> EntityChangeJs.Removed(change.id)
+                    }
+                    callback(ResultJs.Success(entityChange))
+                }.onFailure { error ->
+                    callback(ResultJs.Failure(error.message ?: "Unknown error"))
                 }
-            }
-            return closeable::close
+            }::close
         }
     }
 }

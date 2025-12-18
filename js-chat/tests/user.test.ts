@@ -1,6 +1,7 @@
 import { Chat, User } from "../dist-test"
 import {createChatInstance, generateRandomString, sleep, createRandomUser, createRandomChannel} from "./utils"
 import {jest} from "@jest/globals";
+import {call} from "pubnub";
 
 describe("User test", () => {
   jest.retryTimes(3)
@@ -446,12 +447,16 @@ describe("User test", () => {
     let callbackCount = 0
 
     const name = "Changed User via streamChangesOn"
-    const stopChanges = User.streamChangesOn([user], (change) => {
-      if (change.type === "updated") {
-        callbackCount++
-        expect(change.entity?.name).toEqual(name)
-        expect(change.entity?.id).toEqual(user.id)
-      }
+    const stopChanges = User.streamChangesOn([user], (result) => {
+      result.onSuccess((change) => {
+        change.handle({
+          onUpdated: (entity) => {
+            callbackCount++
+            expect(entity.name).toEqual(name)
+            expect(entity.id).toEqual(user.id)
+          }}
+        )
+      })
     })
 
     await sleep(1000)
@@ -466,11 +471,15 @@ describe("User test", () => {
     const testUser = await createRandomUser(chat)
     let callbackCount = 0
 
-    const stopChanges = User.streamChangesOn([testUser], (change) => {
-      if (change.type === "removed") {
-        expect(change.id).toEqual(testUser.id)
-        callbackCount++
-      }
+    const stopChanges = User.streamChangesOn([testUser], (result) => {
+      result.onSuccess((change) => {
+        change.handle({
+          onRemoved: (id) => {
+            expect(id).toBe(testUser.id)
+            callbackCount++
+          }
+        })
+      })
     })
 
     await sleep(1000)

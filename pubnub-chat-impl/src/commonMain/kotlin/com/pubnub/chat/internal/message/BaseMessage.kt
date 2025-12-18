@@ -11,6 +11,7 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
+import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
@@ -348,23 +349,29 @@ abstract class BaseMessage<T : Message>(
             messages: Collection<T>,
             callback: (messages: Collection<T>) -> Unit,
         ): AutoCloseable {
-            return streamUpdatesOnInternal(messages) { _, latestMessages ->
-                callback(latestMessages)
+            return streamUpdatesOnInternal(messages) { result ->
+                result.onSuccess { (_, latestMessages) ->
+                    callback(latestMessages)
+                }
             }
         }
 
         fun <T : Message> streamChangesOn(
             messages: Collection<T>,
-            callback: (change: EntityChange<T>) -> Unit,
+            callback: (result: Result<EntityChange<T>>) -> Unit,
         ): AutoCloseable {
-            return streamUpdatesOnInternal(messages) { updatedMessage, _ ->
-                callback(EntityChange.Updated(updatedMessage))
+            return streamUpdatesOnInternal(messages) { result ->
+                result.onSuccess { (updatedMessage, _) ->
+                    callback(Result.success(EntityChange.Updated(updatedMessage)))
+                }.onFailure { exception ->
+                    callback(Result.failure(exception))
+                }
             }
         }
 
         private fun <T : Message> streamUpdatesOnInternal(
             messages: Collection<T>,
-            callback: (updatedMessage: T, latestMessages: Collection<T>) -> Unit,
+            callback: (result: Result<Pair<T, Collection<T>>>) -> Unit,
         ): AutoCloseable {
             if (messages.isEmpty()) {
                 log.pnError(CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST)
@@ -397,7 +404,7 @@ abstract class BaseMessage<T : Message>(
                         it
                     }
                 }
-                callback(newMessage, latestMessages)
+                callback(Result.success(newMessage to latestMessages))
             })
 
             val subscriptionSet = chat.pubNub.subscriptionSetOf(

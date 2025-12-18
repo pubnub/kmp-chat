@@ -79,17 +79,20 @@ class MembershipJs internal constructor(internal val membership: Membership, int
         @JsStatic
         fun streamChangesOn(
             memberships: Array<MembershipJs>,
-            callback: (EntityChangeJs<MembershipJs>) -> Unit
+            callback: (ResultJs<EntityChangeJs<MembershipJs>>) -> Unit
         ): () -> Unit {
             val chatJs = memberships.first().chatJs
-            return MembershipImpl.streamChangesOn(memberships.map { it.membership }) { change: EntityChange<Membership> ->
-                when (change) {
-                    is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
-                    is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))
+            return MembershipImpl.streamChangesOn(memberships.map { it.membership }) { result ->
+                result.onSuccess { change ->
+                    val entityChange = when (change) {
+                        is EntityChange.Updated -> EntityChangeJs.Updated(change.entity.asJs(chatJs))
+                        is EntityChange.Removed -> EntityChangeJs.Removed(change.id)
+                    }
+                    callback(ResultJs.Success(entityChange))
+                }.onFailure { error ->
+                    callback(ResultJs.Failure(error.message ?: "Unknown error"))
                 }
-            }.let {
-                it::close
-            }
+            }::close
         }
     }
 }

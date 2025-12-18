@@ -1,5 +1,6 @@
 package com.pubnub.chat
 
+import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.MessageDraft.UserSuggestionSource
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.MessageDraftImpl
@@ -42,7 +43,7 @@ fun Message.Companion.streamUpdatesOn(
  */
 fun Message.Companion.streamChangesOn(
     messages: Collection<Message>,
-    callback: (change: EntityChange<Message>) -> Unit,
+    callback: (result: Result<EntityChange<Message>>) -> Unit,
 ): AutoCloseable = BaseMessage.streamChangesOn(messages, callback)
 
 /**
@@ -76,7 +77,7 @@ fun ThreadMessage.Companion.streamUpdatesOn(
  */
 fun ThreadMessage.Companion.streamChangesOn(
     messages: Collection<ThreadMessage>,
-    callback: (change: EntityChange<ThreadMessage>) -> Unit,
+    callback: (result: Result<EntityChange<ThreadMessage>>) -> Unit,
 ): AutoCloseable = BaseMessage.streamChangesOn(messages, callback)
 
 /**
@@ -113,7 +114,7 @@ fun Channel.Companion.streamUpdatesOn(
  */
 fun Channel.Companion.streamChangesOn(
     channels: Collection<Channel>,
-    callback: (change: EntityChange<Channel>) -> Unit,
+    callback: (result: Result<EntityChange<Channel>>) -> Unit,
 ): AutoCloseable = BaseChannel.streamChangesOn(channels, callback)
 
 /**
@@ -150,7 +151,7 @@ fun ThreadChannel.Companion.streamUpdatesOn(
  */
 fun ThreadChannel.Companion.streamChangesOn(
     channels: Collection<Channel>,
-    callback: (change: EntityChange<Channel>) -> Unit,
+    callback: (result: Result<EntityChange<Channel>>) -> Unit,
 ): AutoCloseable = BaseChannel.streamChangesOn(channels, callback)
 
 /**
@@ -185,7 +186,7 @@ fun Membership.Companion.streamUpdatesOn(
  */
 fun Membership.Companion.streamChangesOn(
     memberships: Collection<Membership>,
-    callback: (change: EntityChange<Membership>) -> Unit,
+    callback: (result: Result<EntityChange<Membership>>) -> Unit,
 ): AutoCloseable = MembershipImpl.streamChangesOn(memberships, callback)
 
 /**
@@ -218,7 +219,7 @@ fun User.Companion.streamUpdatesOn(
  */
 fun User.Companion.streamChangesOn(
     users: Collection<User>,
-    callback: (change: EntityChange<User>) -> Unit
+    callback: (result: Result<EntityChange<User>>) -> Unit
 ): AutoCloseable = UserImpl.streamChangesOn(users, callback)
 
 // Message draft v2

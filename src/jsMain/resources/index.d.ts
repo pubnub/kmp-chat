@@ -1,15 +1,18 @@
 /// <reference types="pubnub" />
 import PubNub from "pubnub";
 import { AppContext, Publish, FileSharing, Signal, Subscription, History } from "pubnub";
-type EntityChange<T> = EntityChangeUpdated<T> | EntityChangeRemoved<T>;
-type EntityChangeUpdated<T> = {
-    type: "updated";
-    entity: T;
+
+type EntityChangeHandler<T> = {
+    onUpdated?: (entity: T) => void;
+    onRemoved?: (id: string) => void;
 };
-type EntityChangeRemoved<T> = {
-    type: "removed";
-    id: string;
-};
+interface EntityChange<T> {
+    handle(handler: EntityChangeHandler<T>): void;
+}
+interface Result<T> {
+    onSuccess(callback: (data: T) => void): Result<T>;
+    onFailure(callback: (error: string) => void): Result<T>;
+}
 type MembershipFields = Pick<Membership, "channel" | "user" | "custom" | "updated" | "eTag" | "status" | "type">;
 declare class Membership {
     private chat;
@@ -27,7 +30,7 @@ declare class Membership {
     * Updates
     */
     static streamUpdatesOn(memberships: Membership[], callback: (memberships: Membership[]) => unknown): () => void;
-    static streamChangesOn(memberships: Membership[], callback: (change: EntityChange<Membership>) => unknown): () => void;
+    static streamChangesOn(memberships: Membership[], callback: (change: Result<EntityChange<Membership>>) => unknown): () => void;
     streamUpdates(callback: (membership: Membership) => unknown): () => void;
     /*
     * Unread message counts
@@ -60,7 +63,7 @@ declare class User {
     * Updates
     */
     static streamUpdatesOn(users: User[], callback: (users: User[]) => unknown): () => void;
-    static streamChangesOn(users: User[], callback: (change: EntityChange<User>) => unknown): () => void;
+    static streamChangesOn(users: User[], callback: (change: Result<EntityChange<User>>) => unknown): () => void;
     streamUpdates(callback: (user: User) => unknown): () => void;
     /*
     * Presence
@@ -384,7 +387,7 @@ declare class Message {
     * Updates
     */
     static streamUpdatesOn(messages: Message[], callback: (messages: Message[]) => unknown): () => void;
-    static streamChangesOn(messages: Message[], callback: (change: EntityChange<Message>) => unknown): () => void;
+    static streamChangesOn(messages: Message[], callback: (change: Result<EntityChange<Message>>) => unknown): () => void;
     streamUpdates(callback: (message: Message) => unknown): () => void;
     /*
     * Message text
@@ -535,7 +538,7 @@ declare class Channel {
     * Updates
     */
     static streamUpdatesOn(channels: Channel[], callback: (channels: Channel[]) => unknown): () => void;
-    static streamChangesOn(channels: Channel[], callback: (change: EntityChange<Channel>) => unknown): () => void;
+    static streamChangesOn(channels: Channel[], callback: (change: Result<EntityChange<Channel>>) => unknown): () => void;
     streamUpdates(callback: (channel: Channel) => unknown): () => void;
     sendText(text: string, options?: SendTextOptionParams): Promise<unknown>;
     forwardMessage(message: Message): Promise<Publish.PublishResponse>;
@@ -843,7 +846,7 @@ declare class Chat {
 declare class ThreadMessage extends Message {
     readonly parentChannelId: string;
     static streamUpdatesOn(threadMessages: ThreadMessage[], callback: (threadMessages: ThreadMessage[]) => unknown): () => void;
-    static streamChangesOn(threadMessages: ThreadMessage[], callback: (change: EntityChange<ThreadMessage>) => unknown): () => void;
+    static streamChangesOn(threadMessages: ThreadMessage[], callback: (change: Result<EntityChange<ThreadMessage>>) => unknown): () => void;
     pinToParentChannel(): Promise<Channel>;
     unpinFromParentChannel(): Promise<Channel>;
 }
@@ -921,4 +924,4 @@ declare const INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_";
 declare const INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL";
 declare const ERROR_LOGGER_KEY_PREFIX = "PUBNUB_INTERNAL_ERROR_LOGGER";
 declare const CryptoModule: typeof PubNub.CryptoModule;
-export { ChatConfig, Chat, ChannelFields, Channel, ChannelGroup, ConnectionStatusCategory, ConnectionStatus, UserFields, User, MessageFields, Message, MembershipFields, Membership, ThreadChannel, ThreadMessage, MessageDraft, EventFields, Event, ChannelType, MessageType, MessageActionType, TextMessageContent, EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams, MessageActions, DeleteParameters, MessageMentionedUsers, MessageReferencedChannels, MessageDraftOptions, SendTextOptionParams, EnhancedMessageEvent, MessageDTOParams, ThreadMessageDTOParams, MembershipResponse, OptionalAllBut, ChannelDTOParams, ThreadChannelDTOParams, MessageDraftConfig, TextLink, GetLinkedTextParams, PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement, ErrorLoggerSetParams, ErrorLoggerImplementation, ChannelMentionData, ThreadMentionData, UserMentionData, TimetokenUtils, CryptoUtils, MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX, CryptoModule, EntityChange, EntityChangeUpdated, EntityChangeRemoved };
+export { ChatConfig, Chat, ChannelFields, Channel, ChannelGroup, ConnectionStatusCategory, ConnectionStatus, UserFields, User, MessageFields, Message, MembershipFields, Membership, ThreadChannel, ThreadMessage, MessageDraft, EventFields, Event, ChannelType, MessageType, MessageActionType, TextMessageContent, EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams, MessageActions, DeleteParameters, MessageMentionedUsers, MessageReferencedChannels, MessageDraftOptions, SendTextOptionParams, EnhancedMessageEvent, MessageDTOParams, ThreadMessageDTOParams, MembershipResponse, OptionalAllBut, ChannelDTOParams, ThreadChannelDTOParams, MessageDraftConfig, TextLink, GetLinkedTextParams, PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement, ErrorLoggerSetParams, ErrorLoggerImplementation, ChannelMentionData, ThreadMentionData, UserMentionData, TimetokenUtils, CryptoUtils, MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX, CryptoModule, EntityChange, EntityChangeHandler, Result };

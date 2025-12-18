@@ -502,9 +502,11 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id)) {
-                dispose = BaseChannel.streamChangesOn(listOf(channel01)) { change: EntityChange<Channel> ->
-                    if (change is EntityChange.Updated && change.entity.name == newName) {
-                        changeReceived.complete(change.entity)
+                dispose = BaseChannel.streamChangesOn(listOf(channel01)) { result ->
+                    result.onSuccess { change ->
+                        if (change is EntityChange.Updated && change.entity.name == newName) {
+                            changeReceived.complete(change.entity)
+                        }
                     }
                 }
             }

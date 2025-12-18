@@ -7,6 +7,7 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteMembershipEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEvent
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEventMessage
+import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
@@ -157,26 +158,31 @@ data class MembershipImpl(
             memberships: Collection<Membership>,
             callback: (memberships: Collection<Membership>) -> Unit,
         ): AutoCloseable {
-            return streamUpdatesOnInternal(memberships) { _, _, latestMemberships ->
-                callback(latestMemberships)
+            return streamUpdatesOnInternal(memberships) { result ->
+                result.onSuccess { (_, _, latestMemberships) ->
+                    callback(latestMemberships)
+                }
             }
         }
 
         fun streamChangesOn(
             memberships: Collection<Membership>,
-            callback: (change: EntityChange<Membership>) -> Unit,
+            callback: (result: Result<EntityChange<Membership>>) -> Unit,
         ): AutoCloseable {
-            return streamUpdatesOnInternal(memberships) { updatedMembership, deletedMembershipId, _ ->
-                when {
-                    updatedMembership != null -> callback(EntityChange.Updated(updatedMembership))
-                    deletedMembershipId != null -> callback(EntityChange.Removed(deletedMembershipId))
+            return streamUpdatesOnInternal(memberships) { result ->
+                result.onSuccess { (updatedMembership, deletedMembershipId, _) ->
+                    val entityChange = updatedMembership?.let { EntityChange.Updated(it) }
+                        ?: EntityChange.Removed(deletedMembershipId)
+                    callback(Result.success(entityChange))
+                }.onFailure { exception ->
+                    callback(Result.failure(exception))
                 }
             }
         }
 
         private fun streamUpdatesOnInternal(
             memberships: Collection<Membership>,
-            callback: (updatedMembership: Membership?, deletedMembershipId: String?, latestMemberships: Collection<Membership>) -> Unit
+            callback: (result: Result<Triple<Membership?, String, Collection<Membership>>>) -> Unit
         ): AutoCloseable {
             if (memberships.isEmpty()) {
                 log.pnError(CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST)
@@ -215,7 +221,7 @@ data class MembershipImpl(
                             .plus(newMembership)
                             .toList()
 
-                        callback(newMembership, null, latestMemberships)
+                        callback(Result.success(Triple(newMembership, "", latestMemberships)))
                     }
                     is PNDeleteMembershipEventMessage -> {
                         latestMemberships = latestMemberships
@@ -224,7 +230,7 @@ data class MembershipImpl(
                             }
 
                         // Use composite key format for membership identification
-                        callback(null, "${event.channel}:$eventUuid", latestMemberships)
+                        callback(Result.success(Triple(null, "${event.channel}:$eventUuid", latestMemberships)))
                     }
                     else -> return@createEventListener
                 }
