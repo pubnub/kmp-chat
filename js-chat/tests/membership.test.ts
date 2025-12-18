@@ -196,4 +196,28 @@ describe("Membership test", () => {
     expect(typeof unreadCount === "number").toBe(true)
     expect(unreadCount === 0).toBe(true)
   }, 20000)
+
+  test("should stream membership changes via Membership.streamChangesOn", async () => {
+    const membership = await channel.invite(user)
+    await sleep(150)
+
+    let callbackCount = 0
+    const customData = { role: "admin" }
+
+    const stopChanges = Membership.streamChangesOn([membership], (change) => {
+      if (change.type === "updated") {
+        callbackCount++
+        expect(change.entity.custom).toEqual(customData)
+        expect(change.entity.user.id).toEqual(user.id)
+        expect(change.entity.channel.id).toEqual(channel.id)
+      }
+    })
+
+    await sleep(1000)
+    await membership.update({ custom: customData })
+    await sleep(300)
+
+    expect(callbackCount).toBe(1)
+    stopChanges()
+  }, 20000)
 })

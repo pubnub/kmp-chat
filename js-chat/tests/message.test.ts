@@ -1793,6 +1793,30 @@ describe("Send message test", () => {
     expect(secondMsg2?.deleted).toBe(true)
   }, 35000)
 
+  test("should stream message changes via Message.streamChangesOn", async () => {
+    await channel.sendText("Test message")
+    await sleep(150)
+
+    const history = await channel.getHistory()
+    const message = history.messages[history.messages.length - 1]
+
+    let callbackCount = 0
+    const stopChanges = Message.streamChangesOn([message], (change) => {
+      if (change.type === "updated") {
+        callbackCount++
+        expect(change.entity.timetoken).toBe(message.timetoken)
+        expect(change.entity.text).toBe("Edited message")
+      }
+    })
+
+    await sleep(1500)
+    await message.editText("Edited message")
+    await sleep(300)
+
+    expect(callbackCount).toBe(1)
+    stopChanges()
+  }, 20000)
+
   test("should check if user has reacted via message.hasUserReaction", async () => {
     await channel.sendText("Message for reaction test")
     await sleep(150)

@@ -1547,4 +1547,40 @@ describe("Channel test", () => {
     await testUser.delete()
     await directConversation.channel.delete()
   }, 30000)
+
+  test("should stream channel changes via Channel.streamChangesOn", async () => {
+    let callbackCount = 0
+
+    const stopUpdates = Channel.streamChangesOn([channel], (change) => {
+      if (change.type === "updated") {
+        callbackCount++
+        expect(change.entity.id).toBe(channel.id)
+        expect(change.entity.name).toBe("New name")
+      }
+    })
+
+    await sleep(1500)
+    await channel.update({ name: "New name" })
+
+    expect(callbackCount).toBe(1)
+    stopUpdates()
+  }, 30000)
+
+  test("should stream channel hard deletion via Channel.streamChangesOn", async () => {
+    let callbackCount = 0
+
+    const stopUpdates = Channel.streamChangesOn([channel], (change) => {
+      if (change.type === "removed") {
+        callbackCount++
+        expect(change.id).toBe(channel.id)
+      }
+    })
+
+    await sleep(1500)
+    await channel.delete()
+    await sleep(300)
+
+    expect(callbackCount).toBe(1)
+    stopUpdates()
+  }, 30000)
 })

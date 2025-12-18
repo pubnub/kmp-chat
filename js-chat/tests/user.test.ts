@@ -441,4 +441,45 @@ describe("User test", () => {
     expect(softDeleteResult).toBeDefined()
     expect((softDeleteResult as User).status).toBe("deleted")
   })
+
+  test("should stream user changes via User.streamChangesOn", async () => {
+    let callbackCount = 0
+
+    const name = "Changed User via streamChangesOn"
+    const stopChanges = User.streamChangesOn([user], (change) => {
+      if (change.type === "updated") {
+        callbackCount++
+        expect(change.entity?.name).toEqual(name)
+        expect(change.entity?.id).toEqual(user.id)
+      }
+    })
+
+    await sleep(1000)
+    await user.update({ name })
+    await sleep(300)
+
+    expect(callbackCount).toBe(1)
+    stopChanges()
+  }, 20000)
+
+  test("should stream user hard deletion via User.streamChangesOn", async () => {
+    const testUser = await createRandomUser(chat)
+    let callbackCount = 0
+
+    const stopChanges = User.streamChangesOn([testUser], (change) => {
+      if (change.type === "removed") {
+        expect(change.id).toEqual(testUser.id)
+        callbackCount++
+      }
+    })
+
+    await sleep(1000)
+    await testUser.delete()
+    await sleep(300)
+
+    expect(callbackCount).toBe(1)
+    stopChanges()
+
+    await testUser.delete()
+  }, 20000)
 })

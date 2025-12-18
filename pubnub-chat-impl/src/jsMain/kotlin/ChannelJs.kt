@@ -330,31 +330,24 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         @JsStatic
         fun streamUpdatesOn(channels: Array<ChannelJs>, callback: (Array<ChannelJs>) -> Unit): () -> Unit {
             val chatJs = channels.first().chatJs
-            val closeable = BaseChannel.streamUpdatesOn(
-                channels.map {
-                        jsChannel ->
-                    jsChannel.channel
-                }
+            return BaseChannel.streamUpdatesOn(
+                channels.map { it.channel }
             ) { kmpChannels: Collection<Channel> ->
                 callback(kmpChannels.map { kmpChannel -> ChannelJs(kmpChannel, chatJs) }.toTypedArray())
-            }
-            return closeable::close
+            }::close
         }
 
+        @JsStatic
         fun streamChangesOn(channels: Array<ChannelJs>, callback: (EntityChangeJs<ChannelJs>) -> Unit): () -> Unit {
             val chatJs = channels.first().chatJs
-            val closeable = BaseChannel.streamChangesOn(
-                channels.map {
-                        jsChannel ->
-                    jsChannel.channel
-                }
+            return BaseChannel.streamChangesOn(
+                channels.map { it.channel }
             ) { change: EntityChange<Channel> ->
                 when (change) {
                     is EntityChange.Updated -> callback(EntityChangeJs.Updated(change.entity.asJs(chatJs)))
                     is EntityChange.Removed -> callback(EntityChangeJs.Removed(change.id))
                 }
-            }
-            return closeable::close
+            }::close
         }
     }
 }
