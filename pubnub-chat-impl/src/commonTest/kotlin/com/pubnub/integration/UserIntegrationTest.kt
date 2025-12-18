@@ -12,10 +12,12 @@ import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -260,6 +262,34 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         }
 
         assertEquals(expectedUpdates, actualUpdates)
+    }
+
+    @Test
+    fun streamChangesOn() = runTest {
+        chat.createUser(someUser).await()
+
+        val newName = "newName"
+        val changeReceived = CompletableDeferred<User>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(someUser.id)) {
+                dispose = UserImpl.streamChangesOn(listOf(someUser)) { change: EntityChange<User> ->
+                    if (change is EntityChange.Updated && change.entity.name == newName) {
+                        changeReceived.complete(change.entity)
+                    }
+                }
+            }
+
+            someUser.update(name = newName).await()
+
+            val entityReceived = changeReceived.await()
+            assertEquals(newName, entityReceived.name)
+            assertEquals(someUser.id, entityReceived.id)
+
+            dispose?.close()
+            someUser.delete()
+        }
     }
 
     @Test

@@ -11,6 +11,7 @@ import com.pubnub.chat.internal.MESSAGE_THREAD_ID_PREFIX
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.listenForEvents
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
@@ -343,6 +344,44 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val secondUpdateMsg2 = secondUpdate.find { it.timetoken == message2.timetoken }!!
         assertTrue(secondUpdateMsg1.deleted, "message1 should be deleted in second update")
         assertTrue(secondUpdateMsg2.deleted, "message2 should be deleted in second update")
+    }
+
+    @Test
+    fun streamChangesOn() = runTest {
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let { createCustomObject(it) },
+            channel01.type,
+            channel01.status
+        ).await()
+
+        val tt = channel01.sendText("message1").await()
+        delayForHistory()
+        val message = channel01.getMessage(tt.timetoken).await()!!
+
+        val newText = "editedText"
+        val changeReceived = CompletableDeferred<Message>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                dispose = BaseMessage.streamChangesOn(listOf(message)) { change: EntityChange<Message> ->
+                    if (change is EntityChange.Updated && change.entity.text == newText) {
+                        changeReceived.complete(change.entity)
+                    }
+                }
+            }
+
+            message.editText(newText).await()
+
+            val receivedEntity = changeReceived.await()
+            assertEquals(newText, receivedEntity.text)
+            assertEquals(message.timetoken, receivedEntity.timetoken)
+
+            dispose?.close()
+        }
     }
 
     @Test

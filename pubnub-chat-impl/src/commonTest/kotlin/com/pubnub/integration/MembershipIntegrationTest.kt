@@ -3,10 +3,12 @@ package com.pubnub.integration
 import com.pubnub.chat.Membership
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.message.MessageImpl
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.test
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -71,6 +73,42 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
             },
             actualUpdates
         )
+    }
+
+    @Test
+    fun streamChangesOn() = runTest {
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let { createCustomObject(it) },
+            channel01.type,
+            channel01.status
+        ).await()
+
+        delayInMillis(1000)
+        val membership = channel01.join().await().membership
+        val changeReceived = CompletableDeferred<Membership>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                dispose = MembershipImpl.streamChangesOn(listOf(membership)) { change: EntityChange<Membership> ->
+                    if (change is EntityChange.Updated) {
+                        changeReceived.complete(change.entity)
+                    }
+                }
+            }
+
+            membership.update(createCustomObject(mapOf("a" to "b"))).await()
+
+            val entityReceived = changeReceived.await()
+            assertEquals("b", entityReceived.custom?.get("a"))
+            assertEquals(membership.channel.id, entityReceived.channel.id)
+            assertEquals(membership.user.id, entityReceived.user.id)
+
+            dispose?.close()
+        }
     }
 
     @Test

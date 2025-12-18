@@ -18,6 +18,7 @@ import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.listeners.ConnectionStatus
 import com.pubnub.chat.listeners.ConnectionStatusCategory
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
+import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.InputFile
@@ -489,6 +490,34 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         }
 
         assertEquals(expectedUpdates.map { it.map { it.asImpl().copy(updated = null) as Channel } }, actualUpdates)
+    }
+
+    @Test
+    fun streamChangesOn() = runTest {
+        chat.createChannel(channel01.id).await()
+
+        val newName = "newName"
+        val changeReceived = CompletableDeferred<Channel>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                dispose = BaseChannel.streamChangesOn(listOf(channel01)) { change: EntityChange<Channel> ->
+                    if (change is EntityChange.Updated && change.entity.name == newName) {
+                        changeReceived.complete(change.entity)
+                    }
+                }
+            }
+
+            channel01.update(name = newName).await()
+
+            val entityReceived = changeReceived.await()
+            assertEquals(newName, entityReceived.name)
+            assertEquals(channel01.id, entityReceived.id)
+
+            dispose?.close()
+            channel01.delete().await()
+        }
     }
 
     @Test
