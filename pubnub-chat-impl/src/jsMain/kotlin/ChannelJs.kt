@@ -119,6 +119,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.isPresent(userId).asPromise()
     }
 
+    @Deprecated("Will be removed from SDK in the future")
     fun streamPresence(callback: (Array<String>) -> Unit): Promise<() -> Unit> {
         return channel.streamPresence { callback(it.toTypedArray()) }.let {
             it::close

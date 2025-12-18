@@ -501,6 +501,10 @@ interface Channel {
      *
      * @return AutoCloseable Interface that lets you stop receiving presence-related updates (presence events) by invoking the close() method.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future",
+        level = DeprecationLevel.WARNING,
+    )
     fun streamPresence(callback: (userIds: Collection<String>) -> Unit): AutoCloseable
 
     /**

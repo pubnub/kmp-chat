@@ -76,11 +76,19 @@ interface ChannelGroup {
     /**
      * Returns a collection of users currently present in any channel within the given [ChannelGroup]
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future",
+        level = DeprecationLevel.WARNING,
+    )
     fun whoIsPresent(): PNFuture<Map<String, Collection<String>>>
 
     /**
      * Enables real-time tracking of users connecting to or disconnecting from the given [ChannelGroup]
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future",
+        level = DeprecationLevel.WARNING,
+    )
     fun streamPresence(callback: (presenceByChannels: Map<String, Collection<String>>) -> Unit): AutoCloseable
 
     /**

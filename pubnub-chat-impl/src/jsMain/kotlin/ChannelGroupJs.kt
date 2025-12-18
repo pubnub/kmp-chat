@@ -55,6 +55,7 @@ class ChannelGroupJs internal constructor(
         }::close
     }
 
+    @Deprecated("Will be removed from SDK in the future")
     fun whoIsPresent(): Promise<JsMap<Array<String>>> {
         return channelGroup.whoIsPresent().then {
             it
@@ -64,6 +65,7 @@ class ChannelGroupJs internal constructor(
         }.asPromise()
     }
 
+    @Deprecated("Will be removed from SDK in the future")
     fun streamPresence(callback: (JsMap<Array<String>>) -> Unit): Promise<() -> Unit> {
         return channelGroup.streamPresence {
             callback(
