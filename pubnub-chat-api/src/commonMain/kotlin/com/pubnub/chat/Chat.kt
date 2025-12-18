@@ -178,6 +178,10 @@ interface Chat {
      *
      * @return [PNFuture] containing list of [Channel.id] object.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future",
+        level = DeprecationLevel.WARNING,
+    )
     fun wherePresent(userId: String): PNFuture<List<String>>
 
     /**
@@ -188,6 +192,10 @@ interface Chat {
      *
      * @return [PNFuture] containing information on whether a given user is present on a specified channel (true) or not (false).
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future",
+        level = DeprecationLevel.WARNING,
+    )
     fun isPresent(userId: String, channelId: String): PNFuture<Boolean>
 
     /**
@@ -259,6 +267,10 @@ interface Chat {
      *
      * @return [PNFuture] containing Collection of [User.id].
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future",
+        level = DeprecationLevel.WARNING,
+    )
     fun whoIsPresent(channelId: String): PNFuture<Collection<String>>
 
     /**

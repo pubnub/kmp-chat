@@ -10,6 +10,7 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.api.v2.subscriptions.EmptyOptions
 import com.pubnub.api.v2.subscriptions.SubscriptionOptions
+import com.pubnub.api.enums.LogLevel
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.createPubNub
@@ -46,14 +47,14 @@ abstract class BaseIntegrationTest {
             UserId(randomString()),
             Keys.subKey,
             Keys.pubKey,
-            // logVerbosity = PNLogVerbosity.BODY, // todo replace with logLeve
+            logLevel = LogLevel.NONE,
             authToken = null
         )
         config02 = createPNConfiguration(
             UserId(randomString()),
             Keys.subKey,
             Keys.pubKey,
-            // logVerbosity = PNLogVerbosity.BODY, // todo replace with logLeve
+            logLevel = LogLevel.NONE,
             authToken = null
         )
         pubnub = createPubNub(config)
@@ -63,14 +64,14 @@ abstract class BaseIntegrationTest {
             subscribeKey = Keys.pamSubKey,
             publishKey = Keys.pamPubKey,
             secretKey = Keys.pamSecKey,
-            // logVerbosity = PNLogVerbosity.BODY, // todo replace with logLeve
+            logLevel = LogLevel.NONE,
             authToken = null
         )
         configPamClient = createPNConfiguration(
             UserId(randomString()),
             subscribeKey = Keys.pamSubKey,
             publishKey = Keys.pamPubKey,
-            // logVerbosity = PNLogVerbosity.BODY, // todo replace with logLeve
+            logLevel = LogLevel.NONE,
             authToken = null
         )
         pubnubPamServer = createPubNub(configPamServer)

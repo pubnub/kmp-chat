@@ -180,6 +180,10 @@ interface Channel {
      *                    The result of this future can be processed using the `async` method of `PNFuture`.
      *
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future",
+        level = DeprecationLevel.WARNING,
+    )
     fun whoIsPresent(): PNFuture<Collection<String>>
 
     /**
@@ -189,6 +193,10 @@ interface Channel {
      *
      * @return [PNFuture] with Boolean value informing if a given user is present on a specified [Channel]
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future",
+        level = DeprecationLevel.WARNING,
+    )
     fun isPresent(userId: String): PNFuture<Boolean>
 
     /**

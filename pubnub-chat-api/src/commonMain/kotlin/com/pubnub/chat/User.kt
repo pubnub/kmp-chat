@@ -141,6 +141,10 @@ interface User {
      *
      * @return [PNFuture] containing a list of channel IDs where the user is present.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future",
+        level = DeprecationLevel.WARNING,
+    )
     fun wherePresent(): PNFuture<List<String>>
 
     /**
@@ -149,6 +153,10 @@ interface User {
      * @param channelId The ID of the channel to check for the user's presence.
      * @return [PNFuture] containing a boolean indicating whether the user is present in the specified channel.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future",
+        level = DeprecationLevel.WARNING,
+    )
     fun isPresentOn(channelId: String): PNFuture<Boolean>
 
     /**
