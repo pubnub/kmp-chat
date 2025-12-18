@@ -109,10 +109,12 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }::close
     }
 
+    @Deprecated("Will be removed from SDK in the future")
     fun whoIsPresent(): Promise<Array<String>> {
         return channel.whoIsPresent().then { it.toTypedArray() }.asPromise()
     }
 
+    @Deprecated("Will be removed from SDK in the future")
     fun isPresent(userId: String): Promise<Boolean> {
         return channel.isPresent(userId).asPromise()
     }

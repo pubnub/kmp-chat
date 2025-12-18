@@ -56,10 +56,12 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
         return closeable::close
     }
 
+    @Deprecated("Will be removed from SDK in the future")
     fun wherePresent(): Promise<Array<String>> {
         return user.wherePresent().then { it.toTypedArray() }.asPromise()
     }
 
+    @Deprecated("Will be removed from SDK in the future")
     fun isPresentOn(channelId: String): Promise<Boolean> {
         return user.isPresentOn(channelId).asPromise()
     }

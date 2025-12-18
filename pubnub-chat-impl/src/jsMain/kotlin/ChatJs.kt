@@ -261,14 +261,17 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         }.asPromise()
     }
 
+    @Deprecated("Will be removed from SDK in the future")
     fun wherePresent(id: String): Promise<Array<String>> {
         return chat.wherePresent(id).then { it.toTypedArray() }.asPromise()
     }
 
+    @Deprecated("Will be removed from SDK in the future")
     fun whoIsPresent(id: String): Promise<Array<String>> {
         return chat.whoIsPresent(id).then { it.toTypedArray() }.asPromise()
     }
 
+    @Deprecated("Will be removed from SDK in the future")
     fun isPresent(userId: String, channelId: String): Promise<Boolean> {
         return chat.isPresent(userId, channelId).asPromise()
     }
