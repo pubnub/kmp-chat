@@ -1077,7 +1077,7 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
-    fun shouldThrowException_whenPinningMessageToDifferentChannel(){
+    fun shouldThrowException_whenPinningMessageToDifferentChannel() {
         val timetoken = 9999999L
         val channelId = "differentThanChannelIdOFChannelThatWeCall_pinMessage_on"
         val message = createMessage(timetoken = timetoken, channelId = channelId)
@@ -1094,7 +1094,7 @@ class ChannelTest : BaseTest() {
             return
         }
         val timetoken = 9999999L
-        val message = createMessage(timetoken = timetoken, channelId = channelId )
+        val message = createMessage(timetoken = timetoken, channelId = channelId)
         val customSlot = Capture.slot<CustomObject>()
         every {
             pubNub.setChannelMetadata(
