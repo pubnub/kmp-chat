@@ -1381,7 +1381,7 @@ class ChatImpl(
             message: Message?,
             channel: Channel
         ): PNFuture<PNChannelMetadataResult> {
-            if (message?.channelId != channel.id) {
+            if (message != null && message.channelId != channel.id) {
                 return log.logErrorAndReturnException(CAN_NOT_PIN_MESSAGE_THAT_IS_FROM_DIFFERENT_CHANNEL).asFuture()
             }
             val customMetadataToSet = channel.custom?.toMutableMap() ?: mutableMapOf()

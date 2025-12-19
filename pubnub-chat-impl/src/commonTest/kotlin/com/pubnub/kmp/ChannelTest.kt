@@ -1089,6 +1089,31 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
+    fun unpinMessage_shouldNotFailWithDifferentChannelError() {
+        if (PLATFORM == "iOS") {
+            return
+        }
+        every {
+            pubNub.setChannelMetadata(
+                channel = any(),
+                name = any(),
+                description = any(),
+                custom = any(),
+                includeCustom = any(),
+                type = any(),
+                status = any()
+            )
+        } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.success(getPNChannelMetadataResult()))
+        }
+
+        objectUnderTest.unpinMessage().async { result: Result<Channel> ->
+            assertTrue(result.isSuccess)
+        }
+    }
+
+    @Test
     fun pinMessage_shouldSetTwoCustomChannelMetadata() {
         if (PLATFORM == "iOS") {
             return
