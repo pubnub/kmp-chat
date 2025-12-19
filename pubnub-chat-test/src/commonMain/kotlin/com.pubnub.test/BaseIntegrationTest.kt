@@ -2,6 +2,7 @@ package com.pubnub.test
 
 import com.pubnub.api.PubNub
 import com.pubnub.api.UserId
+import com.pubnub.api.enums.LogLevel
 import com.pubnub.api.enums.PNStatusCategory
 import com.pubnub.api.models.consumer.PNStatus
 import com.pubnub.api.models.consumer.pubsub.PNEvent
@@ -10,7 +11,6 @@ import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.api.v2.subscriptions.EmptyOptions
 import com.pubnub.api.v2.subscriptions.SubscriptionOptions
-import com.pubnub.api.enums.LogLevel
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.createPubNub
@@ -194,10 +194,10 @@ class PubNubTest(
                     pnStatus.affectedChannels.containsAll(channels) && pnStatus.affectedChannelGroups.containsAll(
                         channelGroups
                     ) || (
-                        getSubscribedChannels().containsAll(channels) && getSubscribedChannelGroups().containsAll(
-                            channelGroups
-                        )
-                    )
+                            getSubscribedChannels().containsAll(channels) && getSubscribedChannelGroups().containsAll(
+                                channelGroups
+                            )
+                            )
                 ) {
                     if (!cont.isCompleted) {
                         cont.resume(Unit)
@@ -239,10 +239,10 @@ class PubNubTest(
                         }
                         if ((pnStatus.category == PNStatusCategory.PNDisconnectedCategory || pnStatus.category == PNStatusCategory.PNSubscriptionChanged) &&
                             (
-                                pnStatus.affectedChannels.containsAll(channels) && pnStatus.affectedChannelGroups.containsAll(
-                                    channelGroups
-                                )
-                            )
+                                    pnStatus.affectedChannels.containsAll(channels) && pnStatus.affectedChannelGroups.containsAll(
+                                        channelGroups
+                                    )
+                                    )
                         ) {
                             cont.resume(Unit)
                         }
