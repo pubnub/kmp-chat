@@ -1077,13 +1077,24 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
+    fun shouldThrowException_whenPinningMessageToDifferentChannel(){
+        val timetoken = 9999999L
+        val channelId = "differentThanChannelIdOFChannelThatWeCall_pinMessage_on"
+        val message = createMessage(timetoken = timetoken, channelId = channelId)
+
+        objectUnderTest.pinMessage(message).async { result: Result<Channel> ->
+            assertTrue(result.isFailure)
+            assertEquals("Can not pin message that is from different channel.", result.exceptionOrNull()?.message)
+        }
+    }
+
+    @Test
     fun pinMessage_shouldSetTwoCustomChannelMetadata() {
         if (PLATFORM == "iOS") {
             return
         }
         val timetoken = 9999999L
-        val channelId = "adfjaldf"
-        val message = createMessage(timetoken = timetoken, channelId = channelId)
+        val message = createMessage(timetoken = timetoken, channelId = channelId )
         val customSlot = Capture.slot<CustomObject>()
         every {
             pubNub.setChannelMetadata(

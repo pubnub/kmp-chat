@@ -58,6 +58,7 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_FIND_CHANNEL_WITH_ID
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_PIN_MESSAGE_THAT_IS_FROM_DIFFERENT_CHANNEL
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_ID_ALREADY_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_ID_IS_REQUIRED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_NOT_EXIST
@@ -1380,6 +1381,9 @@ class ChatImpl(
             message: Message?,
             channel: Channel
         ): PNFuture<PNChannelMetadataResult> {
+            if (message?.channelId != channel.id) {
+                return log.logErrorAndReturnException(CAN_NOT_PIN_MESSAGE_THAT_IS_FROM_DIFFERENT_CHANNEL).asFuture()
+            }
             val customMetadataToSet = channel.custom?.toMutableMap() ?: mutableMapOf()
             if (message == null) {
                 customMetadataToSet.remove(PINNED_MESSAGE_TIMETOKEN)
