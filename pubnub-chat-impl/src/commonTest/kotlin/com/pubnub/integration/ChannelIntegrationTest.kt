@@ -1056,6 +1056,61 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         // cleanup - hard delete
         chat.deleteChannel(testChannelId, soft = false).await()
     }
+
+    @Test
+    fun pinMessage_sameMessageTwice_shouldReplaceNotDuplicate() = runTest {
+        // given - a test channel with two messages
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+
+        val firstMessageText = "First message ${randomString()}"
+        val secondMessageText = "Second message ${randomString()}"
+
+        val firstPublishResult = testChannel.sendText(firstMessageText).await()
+        val secondPublishResult = testChannel.sendText(secondMessageText).await()
+
+        delayForHistory()
+
+        val firstMessage = testChannel.getMessage(firstPublishResult.timetoken).await()!!
+        val secondMessage = testChannel.getMessage(secondPublishResult.timetoken).await()!!
+
+        // when - pin the first message
+        val channelAfterFirstPin = testChannel.pinMessage(firstMessage).await()
+        assertEquals(
+            firstPublishResult.timetoken.toString(),
+            channelAfterFirstPin.custom?.get(PINNED_MESSAGE_TIMETOKEN),
+            "First message should be pinned"
+        )
+
+        delayForHistory()
+
+        // when - pin the second message (should replace first)
+        val channelAfterSecondPin = channelAfterFirstPin.pinMessage(secondMessage).await()
+        assertEquals(
+            secondPublishResult.timetoken.toString(),
+            channelAfterSecondPin.custom?.get(PINNED_MESSAGE_TIMETOKEN),
+            "Second message should replace first pinned message"
+        )
+
+        delayForHistory()
+
+        // then - verify only second message is pinned
+        val pinnedMessage = channelAfterSecondPin.getPinnedMessage().await()
+        assertNotNull(pinnedMessage, "Should have a pinned message")
+        assertEquals(
+            secondMessage.timetoken,
+            pinnedMessage.timetoken,
+            "Pinned message should be the second message, not the first"
+        )
+        assertEquals(
+            secondMessageText,
+            pinnedMessage.text,
+            "Pinned message text should match second message"
+        )
+
+        // cleanup
+        chat.deleteChannel(testChannelId).await()
+    }
 }
 
 private fun Channel.asImpl(): ChannelImpl {
