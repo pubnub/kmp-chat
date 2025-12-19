@@ -1077,12 +1077,48 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
+    fun shouldThrowException_whenPinningMessageToDifferentChannel() {
+        val timetoken = 9999999L
+        val channelId = "differentThanChannelIdOFChannelThatWeCall_pinMessage_on"
+        val message = createMessage(timetoken = timetoken, channelId = channelId)
+
+        objectUnderTest.pinMessage(message).async { result: Result<Channel> ->
+            assertTrue(result.isFailure)
+            assertEquals("Can not pin message that is from different channel.", result.exceptionOrNull()?.message)
+        }
+    }
+
+    @Test
+    fun unpinMessage_shouldNotFailWithDifferentChannelError() {
+        if (PLATFORM == "iOS") {
+            return
+        }
+        every {
+            pubNub.setChannelMetadata(
+                channel = any(),
+                name = any(),
+                description = any(),
+                custom = any(),
+                includeCustom = any(),
+                type = any(),
+                status = any()
+            )
+        } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.success(getPNChannelMetadataResult()))
+        }
+
+        objectUnderTest.unpinMessage().async { result: Result<Channel> ->
+            assertTrue(result.isSuccess)
+        }
+    }
+
+    @Test
     fun pinMessage_shouldSetTwoCustomChannelMetadata() {
         if (PLATFORM == "iOS") {
             return
         }
         val timetoken = 9999999L
-        val channelId = "adfjaldf"
         val message = createMessage(timetoken = timetoken, channelId = channelId)
         val customSlot = Capture.slot<CustomObject>()
         every {

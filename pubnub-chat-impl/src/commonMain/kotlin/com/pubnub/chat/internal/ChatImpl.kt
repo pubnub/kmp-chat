@@ -1,6 +1,7 @@
 package com.pubnub.chat.internal
 
 import co.touchlab.kermit.Logger
+import co.touchlab.kermit.Severity
 import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
@@ -57,6 +58,7 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_FORWARD_MESSAGE_TO_THE_SAME_CHANNEL
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_FIND_CHANNEL_WITH_ID
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_PIN_MESSAGE_THAT_IS_FROM_DIFFERENT_CHANNEL
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_ID_ALREADY_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_ID_IS_REQUIRED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CHANNEL_NOT_EXIST
@@ -123,6 +125,7 @@ import com.pubnub.kmp.createStatusListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import encodeForSending
+import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlin.concurrent.Volatile
 import kotlin.reflect.KClass
@@ -154,7 +157,7 @@ class ChatImpl(
 
     @Volatile
     private var connectionStatusListenersMap: Map<String, StatusListener> = emptyMap()
-    private val connectionStatusListenersLock = kotlinx.atomicfu.locks.SynchronizedObject()
+    private val connectionStatusListenersLock = SynchronizedObject()
 
     init {
         Logger.setMinSeverity(mapLogLevelFromConfigToKmLogging())
@@ -1378,6 +1381,9 @@ class ChatImpl(
             message: Message?,
             channel: Channel
         ): PNFuture<PNChannelMetadataResult> {
+            if (message != null && message.channelId != channel.id) {
+                return log.logErrorAndReturnException(CAN_NOT_PIN_MESSAGE_THAT_IS_FROM_DIFFERENT_CHANNEL).asFuture()
+            }
             val customMetadataToSet = channel.custom?.toMutableMap() ?: mutableMapOf()
             if (message == null) {
                 customMetadataToSet.remove(PINNED_MESSAGE_TIMETOKEN)
@@ -1458,14 +1464,14 @@ class ChatImpl(
         }
     }
 
-    private fun mapLogLevelFromConfigToKmLogging(): co.touchlab.kermit.Severity {
+    private fun mapLogLevelFromConfigToKmLogging(): Severity {
         return when (config.logLevel) {
-            LogLevel.OFF -> co.touchlab.kermit.Severity.Assert
-            LogLevel.ERROR -> co.touchlab.kermit.Severity.Error
-            LogLevel.WARN -> co.touchlab.kermit.Severity.Warn
-            LogLevel.INFO -> co.touchlab.kermit.Severity.Info
-            LogLevel.DEBUG -> co.touchlab.kermit.Severity.Debug
-            LogLevel.VERBOSE -> co.touchlab.kermit.Severity.Verbose
+            LogLevel.OFF -> Severity.Assert
+            LogLevel.ERROR -> Severity.Error
+            LogLevel.WARN -> Severity.Warn
+            LogLevel.INFO -> Severity.Info
+            LogLevel.DEBUG -> Severity.Debug
+            LogLevel.VERBOSE -> Severity.Verbose
         }
     }
 }
