@@ -1,6 +1,8 @@
 package com.pubnub.chat.internal
 
 import co.touchlab.kermit.Logger
+import com.pubnub.api.PubNubException
+import com.pubnub.api.enums.PNStatusCategory
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
@@ -14,6 +16,7 @@ import com.pubnub.chat.Message
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CONNECTION_ERROR
 import com.pubnub.chat.internal.error.PubNubErrorMessage.NO_SUCH_MEMBERSHIP_EXISTS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.RECEIPT_EVENT_WAS_NOT_SENT_TO_CHANNEL
 import com.pubnub.chat.internal.util.pnError
@@ -26,6 +29,7 @@ import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.createEventListener
+import com.pubnub.kmp.createStatusListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import tryLong
@@ -236,10 +240,21 @@ data class MembershipImpl(
                 }
             })
 
+            val statusListener = createStatusListener(chat.pubNub) { _, status ->
+                if (status.category == PNStatusCategory.PNUnexpectedDisconnectCategory || status.category == PNStatusCategory.PNConnectionError) {
+                    callback(Result.failure(status.exception ?: PubNubException(CONNECTION_ERROR)))
+                }
+            }
+            chat.pubNub.addListener(statusListener)
+
             val subscriptionSet = chat.pubNub.subscriptionSetOf(memberships.map { it.channel.id }.toSet())
             subscriptionSet.addListener(listener)
             subscriptionSet.subscribe()
-            return subscriptionSet
+
+            return AutoCloseable {
+                subscriptionSet.close()
+                chat.pubNub.removeListener(statusListener)
+            }
         }
 
         internal fun fromMembershipDTO(chat: ChatInternal, channelMembership: PNChannelMembership, user: User) =

@@ -9,7 +9,6 @@ internal object PubNubErrorMessage {
     internal const val FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA = "Failed to retrieve whoIsPresent data."
     internal const val FAILED_TO_CREATE_UPDATE_CHANNEL_DATA = "Failed to create/update channel data."
     internal const val FAILED_TO_CREATE_UPDATE_USER_DATA = "Failed to create/update user data."
-    internal const val FAILED_TO_RETRIEVE_CHANNEL_DATA = "Failed to retrieve channel data."
     internal const val FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA = "Failed to retrieve getMembership data."
     internal const val FAILED_TO_GET_USERS = "Failed to get users."
     internal const val FAILED_TO_GET_CHANNELS = "Failed to get channels."
@@ -58,4 +57,5 @@ internal object PubNubErrorMessage {
     internal const val MENTION_SUGGESTION_INVALID = "This mention suggestion is no longer valid - the message draft text has been changed."
     internal const val MENTION_CANNOT_INTERSECT = "Cannot intersect with existing mention:"
     internal const val AUTOMODERATED_MESSAGE_CANNOT_BE_EDITED = "The automoderated message can no longer be edited"
+    internal const val CONNECTION_ERROR = "Connection error"
 }

@@ -3,9 +3,11 @@ package com.pubnub.chat.internal.message
 import co.touchlab.kermit.Logger
 import com.pubnub.api.JsonElement
 import com.pubnub.api.PubNubError
+import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
 import com.pubnub.api.decode
 import com.pubnub.api.endpoints.message_actions.RemoveMessageAction
+import com.pubnub.api.enums.PNStatusCategory
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
@@ -31,6 +33,7 @@ import com.pubnub.chat.internal.channel.ThreadChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.AUTOMODERATED_MESSAGE_CANNOT_BE_EDITED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CONNECTION_ERROR
 import com.pubnub.chat.internal.error.PubNubErrorMessage.KEY_IS_NOT_VALID_INTEGER
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_MESSAGE_HAS_NOT_BEEN_DELETED
@@ -55,6 +58,7 @@ import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.createEventListener
+import com.pubnub.kmp.createStatusListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -407,12 +411,23 @@ abstract class BaseMessage<T : Message>(
                 callback(Result.success(newMessage to latestMessages))
             })
 
+            val statusListener = createStatusListener(chat.pubNub) { _, status ->
+                if (status.category == PNStatusCategory.PNUnexpectedDisconnectCategory || status.category == PNStatusCategory.PNConnectionError) {
+                    callback(Result.failure(status.exception ?: PubNubException(CONNECTION_ERROR)))
+                }
+            }
+            chat.pubNub.addListener(statusListener)
+
             val subscriptionSet = chat.pubNub.subscriptionSetOf(
                 messages.map { it.channelId }.toSet()
             )
             subscriptionSet.addListener(listener)
             subscriptionSet.subscribe()
-            return subscriptionSet
+
+            return AutoCloseable {
+                subscriptionSet.close()
+                chat.pubNub.removeListener(statusListener)
+            }
         }
 
         internal fun JsonElement?.extractMentionedUsers(): MessageMentionedUsers? {

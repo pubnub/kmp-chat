@@ -3,6 +3,7 @@ package com.pubnub.chat.internal.channel
 import co.touchlab.kermit.Logger
 import com.pubnub.api.PubNubException
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
+import com.pubnub.api.enums.PNStatusCategory
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.PNTimeResult
@@ -50,6 +51,7 @@ import com.pubnub.chat.internal.PINNED_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.defaultGetMessageResponseBody
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_QUOTE_MESSAGE_FROM_OTHER_CHANNELS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_CHANNEL_UPDATES_ON_EMPTY_LIST
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CONNECTION_ERROR
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_HANDLING_ONMESSAGE_EVENT
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
@@ -90,6 +92,7 @@ import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.catch
 import com.pubnub.kmp.createEventListener
+import com.pubnub.kmp.createStatusListener
 import com.pubnub.kmp.remember
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
@@ -922,10 +925,21 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 }
             })
 
+            val statusListener = createStatusListener(chat.pubNub) { _, status ->
+                if (status.category == PNStatusCategory.PNUnexpectedDisconnectCategory || status.category == PNStatusCategory.PNConnectionError) {
+                    callback(Result.failure(status.exception ?: PubNubException(CONNECTION_ERROR)))
+                }
+            }
+            chat.pubNub.addListener(statusListener)
+
             val subscriptionSet = chat.pubNub.subscriptionSetOf(channels.map { it.id }.toSet())
             subscriptionSet.addListener(listener)
             subscriptionSet.subscribe()
-            return subscriptionSet
+
+            return AutoCloseable {
+                subscriptionSet.close()
+                chat.pubNub.removeListener(statusListener)
+            }
         }
 
         internal fun getPushPayload(

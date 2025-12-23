@@ -3,6 +3,7 @@ package com.pubnub.chat.internal
 import co.touchlab.kermit.Logger
 import com.pubnub.api.PubNubException
 import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
+import com.pubnub.api.enums.PNStatusCategory
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
@@ -22,6 +23,7 @@ import com.pubnub.chat.Membership
 import com.pubnub.chat.User
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_USER_UPDATES_ON_EMPTY_LIST
+import com.pubnub.chat.internal.error.PubNubErrorMessage.CONNECTION_ERROR
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_USER_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_NOT_EXIST
@@ -37,6 +39,7 @@ import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.catch
 import com.pubnub.kmp.createEventListener
+import com.pubnub.kmp.createStatusListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import tryLong
@@ -365,10 +368,22 @@ data class UserImpl(
                 }
             })
 
+            val statusListener = createStatusListener(chat.pubNub, { _, status ->
+                if (status.category == PNStatusCategory.PNUnexpectedDisconnectCategory || status.category == PNStatusCategory.PNConnectionError) {
+                    callback(Result.failure(status.exception ?: PubNubException(CONNECTION_ERROR)))
+                }
+            })
+
+            chat.pubNub.addListener(statusListener)
+
             val subscriptionSet = chat.pubNub.subscriptionSetOf(users.map { it.id }.toSet())
             subscriptionSet.addListener(listener)
             subscriptionSet.subscribe()
-            return subscriptionSet
+
+            return AutoCloseable {
+                subscriptionSet.close()
+                chat.pubNub.removeListener(statusListener)
+            }
         }
     }
 }
