@@ -5,9 +5,11 @@ import com.pubnub.api.adjustCollectionTypes
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.message.BaseMessage
+import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.kmp.JsMap
+import com.pubnub.kmp.UploadableImpl
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
 import com.pubnub.kmp.toJsMap
@@ -131,6 +133,33 @@ open class MessageJs internal constructor(internal val message: Message, interna
 
     fun createThread(): Promise<ThreadChannelJs> {
         return message.createThread().then { it.asJs(chatJs) }.asPromise()
+    }
+
+    fun createThreadWithResult(text: String, options: CreateThreadOptionsParams? = null): Promise<CreateThreadResultJs> {
+        @Suppress("USELESS_CAST") // cast required to be able to call "let" extension function
+        val files = (options?.files as? Any)?.let { files ->
+            val filesArray = files as? Array<*> ?: arrayOf(files)
+            filesArray.filterNotNull().map { file ->
+                InputFile("", file.asDynamic().type ?: file.asDynamic().mimeType ?: "", UploadableImpl(file))
+            }
+        } ?: listOf()
+
+        return message.createThreadWithResult(
+            text = text,
+            meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
+            shouldStore = options?.storeInHistory ?: true,
+            usePost = options?.sendByPost ?: false,
+            ttl = options?.ttl?.toInt(),
+            quotedMessage = options?.quotedMessage?.message,
+            files = files,
+            usersToMention = options?.usersToMention?.toList(),
+            customPushData = options?.customPushData?.toMap()
+        ).then { result ->
+            createJsObject<CreateThreadResultJs> {
+                this.threadChannel = result.threadChannel.asJs(chatJs)
+                this.parentMessage = result.parentMessage.asJs(chatJs)
+            }
+        }.asPromise()
     }
 
     fun removeThread(): Promise<Array<Any>> {

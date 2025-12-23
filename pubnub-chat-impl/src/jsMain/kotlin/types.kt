@@ -316,3 +316,19 @@ external interface Reaction {
 external interface UpdateMembershipParams {
     val custom: PubNub.CustomObject?
 }
+
+external interface CreateThreadResultJs {
+    var threadChannel: ThreadChannelJs
+    var parentMessage: MessageJs
+}
+
+external interface CreateThreadOptionsParams {
+    val meta: Any?
+    val storeInHistory: Boolean?
+    val sendByPost: Boolean?
+    val ttl: Number?
+    val quotedMessage: MessageJs?
+    val files: Any?
+    val usersToMention: Array<String>?
+    val customPushData: JsMap<String>?
+}

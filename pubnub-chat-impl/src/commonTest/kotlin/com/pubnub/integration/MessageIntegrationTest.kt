@@ -12,6 +12,7 @@ import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.types.CreateThreadResult
 import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageActionType
@@ -490,6 +491,41 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         // cleanup - we need to re-fetch the message to see update state that contains info that it "hasThread"
         val messageWithThread = channel01.getMessage(publishTimetoken).await()!!
         messageWithThread.removeThread().await()
+    }
+
+    @Test
+    fun createThreadWithResult_shouldReturnUpdatedParentMessageWithHasThreadTrue() = runTest {
+        // given - a message without a thread
+        val messageText = "Parent message_${randomString()}"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = pnPublishResult.timetoken
+        delayForHistory()
+
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
+        assertFalse(message.hasThread, "Message should not have thread initially")
+
+        // when - create thread using createThreadWithResult
+        val threadText = "First thread message_${randomString()}"
+        val result: CreateThreadResult = message.createThreadWithResult(threadText).await()
+
+        // then - result should contain both threadChannel and updated parentMessage
+        val threadChannel = result.threadChannel
+        val updatedParentMessage = result.parentMessage
+
+        // verify threadChannel is valid
+        assertTrue(threadChannel.id.contains(MESSAGE_THREAD_ID_PREFIX), "Thread channel ID should contain prefix")
+        assertEquals(message.channelId, threadChannel.parentChannelId, "Parent channel ID should match")
+
+        // verify parentMessage has hasThread = true (this is the key improvement!)
+        assertTrue(
+            updatedParentMessage.hasThread,
+            "Returned parentMessage should have hasThread=true immediately without re-fetching"
+        )
+        assertEquals(message.timetoken, updatedParentMessage.timetoken, "Parent message timetoken should be preserved")
+        assertEquals(message.text, updatedParentMessage.text, "Parent message text should be preserved")
+
+        // cleanup
+        updatedParentMessage.removeThread().await()
     }
 
     private fun getDeletedActionMap() = mapOf(
