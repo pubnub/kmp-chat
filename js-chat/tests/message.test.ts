@@ -205,6 +205,36 @@ describe("Send message test", () => {
     // await messageThread.delete()
   }, 20000)
 
+  test("should create thread with result and return updated parent message with hasThread true", async () => {
+    // given - a message without a thread
+    await channel.sendText("Parent message for createThreadWithResult test")
+    await sleep(150)
+
+    const history = await channel.getHistory()
+    const message = history.messages[history.messages.length - 1]
+    expect(message.hasThread).toBe(false)
+
+    // when - create thread using createThreadWithResult
+    const result = await message.createThreadWithResult("First thread message")
+
+    // then - result should contain both threadChannel and updated parentMessage
+    const { threadChannel, parentMessage } = result
+
+    // verify threadChannel is valid
+    expect(threadChannel).toBeDefined()
+    expect(threadChannel.id).toContain("PUBNUB_INTERNAL_THREAD")
+    expect(threadChannel.parentChannelId).toBe(message.channelId)
+
+    // verify parentMessage has hasThread = true (this is the key improvement!)
+    // Previously with createThread(), you had to re-fetch the message to see hasThread=true
+    expect(parentMessage.hasThread).toBe(true)
+    expect(parentMessage.timetoken).toBe(message.timetoken)
+    expect(parentMessage.text).toBe(message.text)
+
+    // cleanup
+    await parentMessage.removeThread()
+  }, 20000)
+
   test("should soft delete message with thread", async () => {
     await channel.sendText("Test message")
     await sleep(150) // History calls have around 130ms of cache time
