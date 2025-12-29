@@ -11,8 +11,8 @@ import com.pubnub.chat.internal.MESSAGE_THREAD_ID_PREFIX
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.listenForEvents
-import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.CreateThreadResult
+import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageActionType
@@ -360,7 +360,8 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         assertTrue(messageWithReaction.hasUserReaction(reactionValue))
 
         delayForHistory()
-        val messageWithReactionFromHistory: Message = channel01.getHistory(publishTimetoken + 1, publishTimetoken).await().messages.first()
+        val messageWithReactionFromHistory: Message =
+            channel01.getHistory(publishTimetoken + 1, publishTimetoken).await().messages.first()
 
         assertTrue(messageWithReactionFromHistory.hasUserReaction(reactionValue))
     }
