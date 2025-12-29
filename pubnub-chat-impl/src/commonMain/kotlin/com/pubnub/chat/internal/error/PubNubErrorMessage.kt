@@ -58,4 +58,5 @@ internal object PubNubErrorMessage {
     internal const val MENTION_SUGGESTION_INVALID = "This mention suggestion is no longer valid - the message draft text has been changed."
     internal const val MENTION_CANNOT_INTERSECT = "Cannot intersect with existing mention:"
     internal const val AUTOMODERATED_MESSAGE_CANNOT_BE_EDITED = "The automoderated message can no longer be edited"
+    internal const val CAN_NOT_PIN_MESSAGE_THAT_IS_FROM_DIFFERENT_CHANNEL = "Can not pin message that is from different channel."
 }
