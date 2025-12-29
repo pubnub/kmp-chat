@@ -5,6 +5,7 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.endpoints.MessageCounts
+import com.pubnub.api.endpoints.message_actions.RemoveMessageAction
 import com.pubnub.api.endpoints.objects.channel.GetAllChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.GetChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.RemoveChannelMetadata
@@ -25,8 +26,10 @@ import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.history.PNMessageCountResult
+import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
@@ -1716,5 +1719,344 @@ class ChatTest : BaseTest() {
         }
 
         verify { pubnub.disconnect() }
+    }
+
+    @Test
+    fun removeThreadChannel_shouldFailWhenMessageHasNoThread() {
+        // given - a message without a thread (hasThread = false means no THREAD_ROOT_ID in actions)
+        val messageTimetoken = 123456L
+        val messageChannelId = channelId
+
+        // Mock fetchMessages to return a message without thread actions
+        every {
+            pubnub.fetchMessages(
+                channels = listOf(messageChannelId),
+                page = any(),
+                includeUUID = true,
+                includeMeta = true,
+                includeMessageActions = true,
+                includeMessageType = true
+            )
+        } returns fetchMessages
+        every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNFetchMessagesResult(
+                        channels = mapOf(
+                            messageChannelId to listOf(
+                                PNFetchMessageItem(
+                                    uuid = userId,
+                                    message = com.pubnub.api.createJsonElement(
+                                        mapOf("type" to "text", "text" to "message without thread")
+                                    ),
+                                    meta = null, timetoken = messageTimetoken, actions = null, // No thread actions
+                                    messageType = null, error = null
+                                )
+                            )
+                        ),
+                        page = null
+                    )
+                )
+            )
+        }
+
+        val message = createMessage(messageChannelId, userId)
+
+        // when
+        objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
+            .async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+                // then
+                assertTrue(result.isFailure)
+                assertEquals("There is no thread to be deleted.", result.exceptionOrNull()?.message)
+            }
+    }
+
+    @Test
+    fun removeThreadChannel_shouldFailWhenNoActionTimetokenFound() {
+        // given - a message with hasThread=true but no action timetoken in the expected structure
+        val messageTimetoken = 123456L
+        val messageChannelId = channelId
+        val threadId = "PUBNUB_INTERNAL_THREAD_${messageChannelId}_$messageTimetoken"
+
+        // Mock fetchMessages to return a message with thread indicator but invalid action structure
+        every {
+            pubnub.fetchMessages(
+                channels = listOf(messageChannelId),
+                page = any(),
+                includeUUID = true,
+                includeMeta = true,
+                includeMessageActions = true,
+                includeMessageType = true
+            )
+        } returns fetchMessages
+        every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNFetchMessagesResult(
+                        channels = mapOf(
+                            messageChannelId to listOf(
+                                PNFetchMessageItem(
+                                    uuid = userId,
+                                    message = com.pubnub.api.createJsonElement(
+                                        mapOf("type" to "text", "text" to "message with thread")
+                                    ),
+                                    meta = null,
+                                    timetoken = messageTimetoken,
+                                    // Has threadRootId but with wrong threadId so actionTimetoken lookup fails
+                                    actions = mapOf(
+                                        "threadRootId" to mapOf(
+                                            "wrong_thread_id" to listOf(
+                                                PNFetchMessageItem.Action(uuid = userId, actionTimetoken = 999L)
+                                            )
+                                        )
+                                    ),
+                                    messageType = null, error = null
+                                )
+                            )
+                        ),
+                        page = null
+                    )
+                )
+            )
+        }
+
+        val message = createMessage(messageChannelId, userId)
+
+        // when
+        objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
+            .async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+                // then
+                assertTrue(result.isFailure)
+                assertEquals(
+                    "There is no action timetoken corresponding to the thread.",
+                    result.exceptionOrNull()?.message
+                )
+            }
+    }
+
+    @Test
+    fun removeThreadChannel_shouldFailWhenThreadChannelDoesNotExist() {
+        // given - a message with valid thread but thread channel doesn't exist
+        val messageTimetoken = 123456L
+        val messageChannelId = channelId
+        val threadId = "PUBNUB_INTERNAL_THREAD_${messageChannelId}_$messageTimetoken"
+        val actionTimetoken = 999L
+
+        // Mock fetchMessages to return a message with valid thread structure
+        every {
+            pubnub.fetchMessages(
+                channels = listOf(messageChannelId),
+                page = any(),
+                includeUUID = true,
+                includeMeta = true,
+                includeMessageActions = true,
+                includeMessageType = true
+            )
+        } returns fetchMessages
+        every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNFetchMessagesResult(
+                        channels = mapOf(
+                            messageChannelId to listOf(
+                                PNFetchMessageItem(
+                                    uuid = userId,
+                                    message = com.pubnub.api.createJsonElement(
+                                        mapOf("type" to "text", "text" to "message with thread")
+                                    ),
+                                    meta = null,
+                                    timetoken = messageTimetoken,
+                                    actions = mapOf(
+                                        "threadRootId" to mapOf(
+                                            threadId to listOf(
+                                                PNFetchMessageItem.Action(
+                                                    uuid = userId, actionTimetoken = actionTimetoken
+                                                )
+                                            )
+                                        )
+                                    ),
+                                    messageType = null, error = null
+                                )
+                            )
+                        ),
+                        page = null
+                    )
+                )
+            )
+        }
+
+        // Mock getChannel to return null (thread channel doesn't exist)
+        every { pubnub.getChannelMetadata(channel = threadId, includeCustom = true) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback.accept(Result.failure(pnException404))
+        }
+
+        val message = createMessage(messageChannelId, userId)
+
+        // when
+        objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
+            .async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+                // then
+                assertTrue(result.isFailure)
+                assertTrue(result.exceptionOrNull()?.message?.contains("There is no thread with id:") == true)
+            }
+    }
+
+    @Test
+    fun removeThreadChannel_shouldSucceedWhenAllConditionsAreMet() {
+        // given - a message with valid thread and thread channel exists
+        val messageTimetoken = 123456L
+        val messageChannelId = channelId
+        val threadId = "PUBNUB_INTERNAL_THREAD_${messageChannelId}_$messageTimetoken"
+        val actionTimetoken = 999L
+        val removeMessageActionEndpoint: RemoveMessageAction = mock(MockMode.strict)
+
+        // Mock fetchMessages to return a message with valid thread structure
+        every {
+            pubnub.fetchMessages(
+                channels = listOf(messageChannelId),
+                page = any(),
+                includeUUID = true,
+                includeMeta = true,
+                includeMessageActions = true,
+                includeMessageType = true
+            )
+        } returns fetchMessages
+        every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNFetchMessagesResult(
+                        channels = mapOf(
+                            messageChannelId to listOf(
+                                PNFetchMessageItem(
+                                    uuid = userId,
+                                    message = com.pubnub.api.createJsonElement(
+                                        mapOf("type" to "text", "text" to "message with thread")
+                                    ),
+                                    meta = null, timetoken = messageTimetoken,
+                                    actions = mapOf(
+                                        "threadRootId" to mapOf(
+                                            threadId to listOf(
+                                                PNFetchMessageItem.Action(
+                                                    uuid = userId, actionTimetoken = actionTimetoken
+                                                )
+                                            )
+                                        )
+                                    ),
+                                    messageType = null, error = null
+                                )
+                            )
+                        ),
+                        page = null
+                    )
+                )
+            )
+        }
+
+        // Mock getChannel to return the thread channel
+        every { pubnub.getChannelMetadata(channel = threadId, includeCustom = true) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback.accept(
+                Result.success(
+                    getPNChannelMetadataResult(
+                        updatedId = threadId,
+                        updatedName = "Thread Channel",
+                        updatedType = ChannelType.GROUP.stringValue
+                    )
+                )
+            )
+        }
+
+        // Mock removeMessageAction
+        every {
+            pubnub.removeMessageAction(
+                channel = messageChannelId, messageTimetoken = messageTimetoken, actionTimetoken = actionTimetoken
+            )
+        } returns removeMessageActionEndpoint
+        every { removeMessageActionEndpoint.async(any()) } calls { (callback: Consumer<Result<PNRemoveMessageActionResult>>) ->
+            callback.accept(Result.success(PNRemoveMessageActionResult()))
+        }
+
+        // Mock channel delete (soft delete uses setChannelMetadata)
+        every {
+            pubnub.setChannelMetadata(
+                channel = threadId,
+                name = any(),
+                description = any(),
+                custom = any(),
+                includeCustom = any(),
+                type = any(),
+                status = "deleted"
+            )
+        } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback.accept(Result.success(getPNChannelMetadataResult(updatedId = threadId, updatedStatus = "deleted")))
+        }
+
+        val message = createMessage(messageChannelId, userId)
+
+        // when
+        objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
+            .async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+                // then
+                assertTrue(result.isSuccess)
+            }
+    }
+
+    @Test
+    fun getThreadChannel_shouldReturnThreadChannelWhenItExists() {
+        // given - a message with a thread channel
+        val messageTimetoken = 123456L
+        val messageChannelId = channelId
+        val threadId = "PUBNUB_INTERNAL_THREAD_${messageChannelId}_$messageTimetoken"
+        val message = createMessage(messageChannelId, userId)
+
+        // Mock getChannelMetadata to return thread channel metadata
+        every { pubnub.getChannelMetadata(channel = threadId, includeCustom = true) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback.accept(
+                Result.success(
+                    getPNChannelMetadataResult(
+                        updatedId = threadId,
+                        updatedName = "Thread Channel",
+                        updatedDescription = "Thread on channel $messageChannelId with message timetoken $messageTimetoken",
+                        updatedType = ChannelType.GROUP.stringValue
+                    )
+                )
+            )
+        }
+
+        // when
+        objectUnderTest.getThreadChannel(message).async { result ->
+            // then
+            assertTrue(result.isSuccess)
+            assertNotNull(result.getOrNull())
+            assertEquals(threadId, result.getOrNull()?.id)
+        }
+    }
+
+    @Test
+    fun getThreadChannel_shouldFailWhenThreadDoesNotExist() {
+        // given - a message without a thread channel
+        val messageTimetoken = 123456L
+        val messageChannelId = channelId
+        val threadId = "PUBNUB_INTERNAL_THREAD_${messageChannelId}_$messageTimetoken"
+        val message = createMessage(messageChannelId, userId)
+
+        // Mock getChannelMetadata to return 404 (thread channel doesn't exist)
+        every { pubnub.getChannelMetadata(channel = threadId, includeCustom = true) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback.accept(Result.failure(pnException404))
+        }
+
+        // when
+        objectUnderTest.getThreadChannel(message).async { result ->
+            // then
+            assertTrue(result.isFailure)
+            assertTrue(
+                result.exceptionOrNull()?.message?.contains("This message is not a thread") == true,
+                "Expected error message to contain 'This message is not a thread'"
+            )
+        }
     }
 }

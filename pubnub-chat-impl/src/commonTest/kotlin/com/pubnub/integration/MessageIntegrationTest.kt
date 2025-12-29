@@ -444,6 +444,36 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun chat_getThreadChannel_shouldReturnThreadChannel() = runTest {
+        // given - create a message and a thread
+        val messageText = "Parent message_${randomString()}"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = pnPublishResult.timetoken
+        delayForHistory()
+
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
+        val threadReplyText = "First thread reply_${randomString()}"
+        val threadChannel: ThreadChannel = message.createThread(threadReplyText).await()
+        delayForHistory()
+
+        // when - get thread channel using chat.getThreadChannel
+        val retrievedThreadChannel: ThreadChannel = chat.getThreadChannel(message).await()
+
+        // then - should return the same thread channel
+        assertEquals(threadChannel.id, retrievedThreadChannel.id)
+        assertEquals(threadChannel.parentChannelId, retrievedThreadChannel.parentChannelId)
+        assertEquals(threadChannel.parentMessage.timetoken, retrievedThreadChannel.parentMessage.timetoken)
+
+        // verify history contains the initial message
+        val history = retrievedThreadChannel.getHistory().await()
+        assertTrue(history.messages.any { it.text == threadReplyText })
+
+        // cleanup
+        val messageWithThread = channel01.getMessage(publishTimetoken).await()!!
+        messageWithThread.removeThread().await()
+    }
+
+    @Test
     fun threadChannel_getHistory_withCountLimit_shouldReturnLimitedResults() = runTest {
         // given - create a message and thread with multiple messages
         val messageText = "Parent message_${randomString()}"

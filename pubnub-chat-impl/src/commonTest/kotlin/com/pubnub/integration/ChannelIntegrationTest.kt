@@ -1111,6 +1111,64 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         // cleanup
         chat.deleteChannel(testChannelId).await()
     }
+
+    @Test
+    fun threadMessage_pinToParentChannel_shouldBeRetrievableViaPinnedMessage() = runTest {
+        // given - a parent channel with a message
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+
+        val parentMessageText = "Parent message ${randomString()}"
+        val parentPublishResult = testChannel.sendText(parentMessageText).await()
+        delayForHistory()
+
+        val parentMessage = testChannel.getMessage(parentPublishResult.timetoken).await()!!
+
+        // when - create a thread and send a message
+        val threadMessageText = "Thread message to pin ${randomString()}"
+        val threadChannel = parentMessage.createThread(threadMessageText).await()
+        delayForHistory()
+
+        val threadHistory = threadChannel.getHistory().await()
+        val threadMessage = threadHistory.messages.first()
+
+        // then - pin the thread message to parent channel
+        val updatedParentChannel = threadMessage.pinToParentChannel().await()
+
+        // verify the pinned message metadata is set correctly
+        assertEquals(
+            threadMessage.timetoken.toString(),
+            updatedParentChannel.custom?.get(PINNED_MESSAGE_TIMETOKEN),
+            "Thread message timetoken should be pinned to parent channel"
+        )
+
+        delayForHistory()
+
+        // verify the pinned message can be retrieved via getPinnedMessage
+        val pinnedMessage = updatedParentChannel.getPinnedMessage().await()
+        assertNotNull(pinnedMessage, "Should have a pinned message")
+        assertEquals(
+            threadMessage.timetoken,
+            pinnedMessage.timetoken,
+            "Retrieved pinned message timetoken should match"
+        )
+        assertEquals(
+            threadMessageText,
+            pinnedMessage.text,
+            "Retrieved pinned message text should match thread message"
+        )
+
+        // verify unpinFromParentChannel works
+        val channelAfterUnpin = threadMessage.unpinFromParentChannel().await()
+        delayForHistory()
+
+        val pinnedMessageAfterUnpin = channelAfterUnpin.getPinnedMessage().await()
+        assertNull(pinnedMessageAfterUnpin, "Should have no pinned message after unpin")
+
+        // cleanup
+        parentMessage.removeThread().await()
+        chat.deleteChannel(testChannelId).await()
+    }
 }
 
 private fun Channel.asImpl(): ChannelImpl {
