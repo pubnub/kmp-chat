@@ -364,6 +364,10 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
             channel01.getHistory(publishTimetoken + 1, publishTimetoken).await().messages.first()
 
         assertTrue(messageWithReactionFromHistory.hasUserReaction(reactionValue))
+
+        val softDeletedMessage = message.delete(soft = true).await()
+        assertEquals(softDeletedMessage?.deleted, true)
+        message.delete().await()
     }
 
     @Test
@@ -401,6 +405,8 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
             finalMessage.hasUserReaction(reactionValue),
             "Final message from history should not have reaction (even number of toggles)"
         )
+
+        finalMessage.delete().await()
     }
 
     @Test
@@ -469,8 +475,9 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         assertTrue(history.messages.any { it.text == threadReplyText })
 
         // cleanup
-        val messageWithThread = channel01.getMessage(publishTimetoken).await()!!
-        messageWithThread.removeThread().await()
+        val softDeletedMessage = message.delete(soft = true).await()
+        assertEquals(true, softDeletedMessage?.deleted)
+        message.delete().await()
     }
 
     @Test
@@ -519,9 +526,8 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
             "All thread messages should be in history"
         )
 
-        // cleanup - we need to re-fetch the message to see update state that contains info that it "hasThread"
-        val messageWithThread = channel01.getMessage(publishTimetoken).await()!!
-        messageWithThread.removeThread().await()
+        // cleanup
+        message.removeThread().await()
     }
 
     @Test

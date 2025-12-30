@@ -2006,13 +2006,13 @@ class ChatTest : BaseTest() {
     @Test
     fun getThreadChannel_shouldReturnThreadChannelWhenItExists() {
         // given - a message with a thread channel
-        val messageTimetoken = 123456L
+        val messageTimetoken = 123345L // Must match createMessage() timetoken
         val messageChannelId = channelId
         val threadId = "PUBNUB_INTERNAL_THREAD_${messageChannelId}_$messageTimetoken"
         val message = createMessage(messageChannelId, userId)
 
         // Mock getChannelMetadata to return thread channel metadata
-        every { pubnub.getChannelMetadata(channel = threadId, includeCustom = true) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(channel = threadId) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
             callback.accept(
                 Result.success(
@@ -2038,13 +2038,13 @@ class ChatTest : BaseTest() {
     @Test
     fun getThreadChannel_shouldFailWhenThreadDoesNotExist() {
         // given - a message without a thread channel
-        val messageTimetoken = 123456L
+        val messageTimetoken = 123345L // Must match createMessage() timetoken
         val messageChannelId = channelId
         val threadId = "PUBNUB_INTERNAL_THREAD_${messageChannelId}_$messageTimetoken"
         val message = createMessage(messageChannelId, userId)
 
         // Mock getChannelMetadata to return 404 (thread channel doesn't exist)
-        every { pubnub.getChannelMetadata(channel = threadId, includeCustom = true) } returns getChannelMetadataEndpoint
+        every { pubnub.getChannelMetadata(channel = threadId) } returns getChannelMetadataEndpoint
         every { getChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
             callback.accept(Result.failure(pnException404))
         }

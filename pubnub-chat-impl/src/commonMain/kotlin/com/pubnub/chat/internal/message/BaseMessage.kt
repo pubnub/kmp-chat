@@ -3,6 +3,7 @@ package com.pubnub.chat.internal.message
 import co.touchlab.kermit.Logger
 import com.pubnub.api.JsonElement
 import com.pubnub.api.PubNubError
+import com.pubnub.api.PubNubException
 import com.pubnub.api.asMap
 import com.pubnub.api.decode
 import com.pubnub.api.endpoints.message_actions.RemoveMessageAction
@@ -11,6 +12,7 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
 import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
+import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
@@ -33,7 +35,9 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.AUTOMODERATED_MESSAGE_C
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CANNOT_STREAM_MESSAGE_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.KEY_IS_NOT_VALID_INTEGER
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED
+import com.pubnub.chat.internal.error.PubNubErrorMessage.THERE_IS_NO_THREAD_TO_BE_DELETED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_MESSAGE_HAS_NOT_BEEN_DELETED
+import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_MESSAGE_IS_NOT_A_THREAD
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THREAD_FOR_THIS_MESSAGE_ALREADY_EXISTS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.YOU_CAN_NOT_CREATE_THREAD_ON_DELETED_MESSAGES
 import com.pubnub.chat.internal.isInternalModerator
@@ -54,6 +58,7 @@ import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
+import com.pubnub.kmp.catch
 import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
@@ -347,12 +352,24 @@ abstract class BaseMessage<T : Message>(
     }
 
     private fun deleteThread(soft: Boolean): PNFuture<Unit> {
-        if (hasThread) {
-            return getThread().thenAsync {
-                it.delete(soft)
-            }.then { Unit }
+        // Always attempt to delete thread (don't rely on local hasThread state which may be stale
+        // e.g. after createThread(text) the local message doesn't have updated actions)
+        return getThread().thenAsync {
+            it.delete(soft)
+        }.then {
+            Unit
+        }.catch {
+            // Ignore if thread doesn't exist, propagate other errors
+            if (it is PubNubException && (
+                    it.message == THIS_MESSAGE_IS_NOT_A_THREAD ||
+                        it.message == THERE_IS_NO_THREAD_TO_BE_DELETED
+                )
+            ) {
+                Result.success(Unit)
+            } else {
+                Result.failure(it)
+            }
         }
-        return Unit.asFuture()
     }
 
     internal fun asQuotedMessage(): QuotedMessage {
