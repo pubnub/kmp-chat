@@ -360,16 +360,16 @@ abstract class BaseMessage<T : Message>(
             Unit
         }.catch {
             // Ignore if thread doesn't exist, propagate other errors
-            if (it is PubNubException && (
-                    it.message == THIS_MESSAGE_IS_NOT_A_THREAD ||
-                        it.message == THERE_IS_NO_THREAD_TO_BE_DELETED
-                )
-            ) {
+            if (it is PubNubException && errorMessageIndicatesThatThreadDoesNotExist(it.message)) {
                 Result.success(Unit)
             } else {
                 Result.failure(it)
             }
         }
+    }
+
+    private fun errorMessageIndicatesThatThreadDoesNotExist(errorMessage: String?): Boolean {
+        return errorMessage == THIS_MESSAGE_IS_NOT_A_THREAD || errorMessage == THERE_IS_NO_THREAD_TO_BE_DELETED
     }
 
     internal fun asQuotedMessage(): QuotedMessage {
