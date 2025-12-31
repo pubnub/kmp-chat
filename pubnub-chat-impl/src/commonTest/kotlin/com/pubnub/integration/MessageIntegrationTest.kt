@@ -565,6 +565,35 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         updatedParentMessage.removeThread().await()
     }
 
+    @Test
+    fun forward_shouldForwardMessageToAnotherChannelWithCorrectMetadata() = runTest {
+        // given - a message in channel01
+        val messageText = "message to forward_${randomString()}"
+        val publishResult = channel01.sendText(text = messageText).await()
+        delayForHistory()
+        val originalMessage = channel01.getMessage(publishResult.timetoken).await()!!
+
+        // when - forward to channel02
+        val forwardResult = originalMessage.forward(channel02.id).await()
+
+        // then - forwarded message exists in channel02
+        delayForHistory()
+        val forwardedMessage = channel02.getMessage(forwardResult.timetoken).await()!!
+
+        // verify content is preserved
+        assertEquals(messageText, forwardedMessage.text)
+
+        // verify originalPublisher is in meta
+        assertEquals(someUser.id, forwardedMessage.meta?.get("originalPublisher"))
+
+        // verify originalChannelId is in meta
+        assertEquals(channel01.id, forwardedMessage.meta?.get("originalChannelId"))
+
+        // cleanup
+        originalMessage.delete().await()
+        forwardedMessage.delete().await()
+    }
+
     private fun getDeletedActionMap() = mapOf(
         MessageActionType.DELETED.toString() to mapOf(
             MessageActionType.DELETED.toString() to listOf(

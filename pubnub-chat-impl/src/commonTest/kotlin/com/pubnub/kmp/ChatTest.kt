@@ -2059,4 +2059,65 @@ class ChatTest : BaseTest() {
             )
         }
     }
+
+    @Test
+    fun forwardMessageShouldFailWhenChannelIdIsEmpty() {
+        // given
+        val message = createMessage()
+        val emptyChannelId = ""
+
+        // when
+        objectUnderTest.forwardMessage(message, emptyChannelId).async { result: Result<PNPublishResult> ->
+            // then
+            assertTrue(result.isFailure)
+            assertEquals("Channel Id is required", result.exceptionOrNull()!!.message)
+        }
+    }
+
+    @Test
+    fun forwardMessageShouldPreserveExistingMetaAndAddOriginInfo() {
+        // given
+        val existingMetaKey = "customKey"
+        val existingMetaValue = "customValue"
+        val messageWithMeta = MessageImpl(
+            chat = chatMock,
+            timetoken = 123345,
+            content = EventContent.TextMessageContent(
+                text = "message with existing meta",
+                files = listOf()
+            ),
+            channelId = channelId,
+            userId = userId,
+            actions = mapOf(),
+            metaInternal = com.pubnub.api.createJsonElement(mapOf(existingMetaKey to existingMetaValue))
+        )
+        val forwardedChannelId = "forwardedChannelId"
+        val metaSlot = Capture.slot<Any>()
+
+        every {
+            pubnub.publish(
+                channel = any(),
+                message = any(),
+                meta = capture(metaSlot),
+                shouldStore = any(),
+                usePost = any(),
+                replicate = any(),
+                ttl = any()
+            )
+        } returns publishEndpoint
+        every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
+            callback1.accept(Result.success(PNPublishResult(timetoken)))
+        }
+
+        // when
+        objectUnderTest.forwardMessage(messageWithMeta, forwardedChannelId).async { result: Result<PNPublishResult> ->
+            assertTrue(result.isSuccess)
+        }
+
+        // then
+        val actualMeta: Map<String, String> = metaSlot.get() as Map<String, String>
+        assertEquals(existingMetaValue, actualMeta[existingMetaKey])
+        assertEquals(userId, actualMeta["originalPublisher"])
+        assertEquals(channelId, actualMeta["originalChannelId"])
+    }
 }
