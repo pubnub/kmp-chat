@@ -5,13 +5,16 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.endpoints.MessageCounts
+import com.pubnub.api.endpoints.Time
 import com.pubnub.api.endpoints.message_actions.RemoveMessageAction
 import com.pubnub.api.endpoints.objects.channel.GetAllChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.GetChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.RemoveChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
+import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.endpoints.objects.member.ManageChannelMembers
 import com.pubnub.api.endpoints.objects.membership.GetMemberships
+import com.pubnub.api.endpoints.objects.membership.ManageMemberships
 import com.pubnub.api.endpoints.objects.uuid.GetAllUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
@@ -26,16 +29,24 @@ import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.PNTimeResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.history.PNMessageCountResult
 import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
+import com.pubnub.api.models.consumer.objects.PNMemberKey
+import com.pubnub.api.models.consumer.objects.PNMembershipKey
+import com.pubnub.api.models.consumer.objects.PNPage
+import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
+import com.pubnub.api.models.consumer.objects.member.MemberInclude
 import com.pubnub.api.models.consumer.objects.member.MemberInput
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
+import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
+import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
@@ -61,10 +72,13 @@ import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_USER_MODERATION_CHANNEL_PREFIX
+import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.timer.TimerManager
+import com.pubnub.chat.internal.utils.cyrb53a
 import com.pubnub.chat.listeners.ConnectionStatus
 import com.pubnub.chat.message.GetUnreadMessagesCounts
+import com.pubnub.chat.message.UnreadMessagesCounts
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.restrictions.RestrictionType
 import com.pubnub.chat.types.ChannelType
@@ -72,7 +86,7 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.utils.BaseTest
-import com.pubnub.kmp.utils.get // this is needed
+import com.pubnub.kmp.utils.get
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -2119,5 +2133,283 @@ class ChatTest : BaseTest() {
         assertEquals(existingMetaValue, actualMeta[existingMetaKey])
         assertEquals(userId, actualMeta["originalPublisher"])
         assertEquals(channelId, actualMeta["originalChannelId"])
+    }
+
+    @Test
+    fun createDirectConversation_shouldGenerateChannelIdFromSortedUserIds() {
+        // given
+        val invitedUserId = "userB"
+        val currentUserId = userId // "myUserId" - defined at class level
+        val invitedUser = UserImpl(chat = objectUnderTest, id = invitedUserId)
+
+        // The expected channel ID should be based on sorted user IDs: "myUserId" < "userB" alphabetically
+        // So it should be: cyrb53a("myUserId&userB")
+        val sortedUsers = listOf(invitedUserId, currentUserId).sorted()
+        val expectedChannelIdSuffix = cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")
+        val expectedChannelId = "direct.$expectedChannelIdSuffix"
+
+        // Mock getToken for AccessManager permission checks
+        every { pubnub.getToken() } returns null
+
+        // Mock getChannelMetadata to return 404 (channel doesn't exist)
+        every {
+            pubnub.getChannelMetadata(
+                channel = expectedChannelId,
+                includeCustom = true
+            )
+        } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.failure(pnException404))
+        }
+
+        // Capture the channel ID used in setChannelMetadata
+        val channelIdSlot = Capture.slot<String>()
+        every {
+            pubnub.setChannelMetadata(
+                channel = capture(channelIdSlot),
+                name = any(),
+                description = any(),
+                custom = any(),
+                includeCustom = any(),
+                type = any(),
+                status = any()
+            )
+        } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(
+                Result.success(
+                    getPNChannelMetadataResult(
+                        updatedId = expectedChannelId,
+                        updatedType = ChannelType.DIRECT.stringValue
+                    )
+                )
+            )
+        }
+
+        // Mock setMemberships for host membership (uses default userId = null)
+        val manageMembershipsEndpoint: ManageMemberships = mock(MockMode.strict)
+        every {
+            pubnub.setMemberships(
+                channels = any<List<ChannelMembershipInput>>(),
+                userId = any<String?>(),
+                limit = any<Int?>(),
+                page = any<PNPage?>(),
+                filter = any<String?>(),
+                sort = any<Collection<PNSortKey<PNMembershipKey>>>(),
+                include = any<MembershipInclude>()
+            )
+        } returns manageMembershipsEndpoint
+        every { manageMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNChannelMembershipArrayResult(
+                        status = 200,
+                        data = listOf(
+                            PNChannelMembership(
+                                channel = PNChannelMetadata(id = expectedChannelId),
+                                custom = null,
+                                updated = "2024-01-01",
+                                eTag = "etag",
+                                status = null
+                            )
+                        ),
+                        totalCount = 1,
+                        next = null,
+                        prev = null
+                    )
+                )
+            )
+        }
+
+        // Mock getChannelMembers for invite check
+        val getChannelMembersEndpoint: GetChannelMembers = mock(MockMode.strict)
+        every {
+            pubnub.getChannelMembers(
+                channel = any<String>(),
+                limit = any<Int>(),
+                page = any<PNPage?>(),
+                filter = any<String?>(),
+                sort = any<Collection<PNSortKey<PNMemberKey>>>(),
+                include = any<MemberInclude>()
+            )
+        } returns getChannelMembersEndpoint
+        every { getChannelMembersEndpoint.async(any()) } calls { (callback: Consumer<Result<PNMemberArrayResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNMemberArrayResult(
+                        status = 200,
+                        data = emptyList(),
+                        totalCount = 0,
+                        next = null,
+                        prev = null
+                    )
+                )
+            )
+        }
+
+        // Mock setMemberships for invite (userId variant)
+        val inviteMembershipsEndpoint: ManageMemberships = mock(MockMode.strict)
+        every {
+            pubnub.setMemberships(
+                channels = any<List<ChannelMembershipInput>>(),
+                userId = invitedUserId,
+                limit = any<Int?>(),
+                page = any<PNPage?>(),
+                filter = any<String?>(),
+                sort = any<Collection<PNSortKey<PNMembershipKey>>>(),
+                include = any<MembershipInclude>()
+            )
+        } returns inviteMembershipsEndpoint
+        every { inviteMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNChannelMembershipArrayResult(
+                        status = 200,
+                        data = listOf(
+                            PNChannelMembership(
+                                channel = PNChannelMetadata(id = expectedChannelId),
+                                custom = null,
+                                updated = "2024-01-01",
+                                eTag = "etag",
+                                status = null
+                            )
+                        ),
+                        totalCount = 1,
+                        next = null,
+                        prev = null
+                    )
+                )
+            )
+        }
+
+        // Mock time for invite
+        val timeEndpoint: Time = mock(MockMode.strict)
+        every { pubnub.time() } returns timeEndpoint
+        every { timeEndpoint.async(any()) } calls { (callback: Consumer<Result<PNTimeResult>>) ->
+            callback.accept(Result.success(PNTimeResult(timetoken)))
+        }
+
+        // Mock getMemberships for getting the invited user's membership result
+        every {
+            pubnub.getMemberships(
+                userId = invitedUserId,
+                limit = any(),
+                page = any(),
+                filter = any(),
+                sort = any(),
+                include = any<MembershipInclude>()
+            )
+        } returns getMembershipsEndpoint
+        every { getMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNChannelMembershipArrayResult(
+                        status = 200,
+                        data = listOf(
+                            PNChannelMembership(
+                                channel = PNChannelMetadata(id = expectedChannelId),
+                                custom = null,
+                                updated = "2024-01-01",
+                                eTag = "etag",
+                                status = null
+                            )
+                        ),
+                        totalCount = 1,
+                        next = null,
+                        prev = null
+                    )
+                )
+            )
+        }
+
+        // Mock publish for invite event (8 parameters including customMessageType)
+        every { pubnub.publish(any(), any(), any(), any(), any(), any(), any(), any()) } returns publishEndpoint
+        every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
+            callback1.accept(Result.success(PNPublishResult(timetoken)))
+        }
+
+        // Mock signal for read receipt
+        every { pubnub.signal(channel = any(), message = any(), customMessageType = any()) } returns signalEndpoint
+        every { signalEndpoint.async(any()) } calls { (callback: Consumer<Result<PNPublishResult>>) ->
+            callback.accept(Result.success(PNPublishResult(timetoken)))
+        }
+
+        // when
+        var testResult: Result<*>? = null
+        objectUnderTest.createDirectConversation(invitedUser = invitedUser).async { result ->
+            testResult = result
+            // then
+            assertTrue(result.isSuccess, "Expected success but got: ${result.exceptionOrNull()?.message}")
+            result.onSuccess {
+                assertEquals(expectedChannelId, it.channel.id)
+                assertTrue(it.channel.id.startsWith("direct."))
+            }
+        }
+
+        // Verify the channel ID was correctly generated
+        assertEquals(expectedChannelId, channelIdSlot.get())
+    }
+
+    @Test
+    fun fetchUnreadMessagesCounts_shouldReturnPaginationInfo() {
+        // given
+        val nextPage = PNPage.PNNext("nextPageHash")
+        val prevPage = PNPage.PNPrev("prevPageHash")
+        val channelId1 = "channel1"
+
+        // Mock getMemberships to return memberships with pagination
+        every {
+            pubnub.getMemberships(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                include = any(),
+            )
+        } returns getMembershipsEndpoint
+        every { getMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNChannelMembershipArrayResult(
+                        status = 200,
+                        data = listOf(
+                            PNChannelMembership(
+                                channel = PNChannelMetadata(id = channelId1),
+                                custom = null,
+                                updated = "2024-01-01",
+                                eTag = "etag",
+                                status = null
+                            )
+                        ),
+                        totalCount = 1,
+                        next = nextPage,
+                        prev = prevPage
+                    )
+                )
+            )
+        }
+
+        // Mock messageCounts
+        every { pubnub.messageCounts(channels = listOf(channelId1), channelsTimetoken = any()) } returns messageCounts
+        every { messageCounts.async(any()) } calls { (callback: Consumer<Result<PNMessageCountResult>>) ->
+            callback.accept(Result.success(PNMessageCountResult(mapOf(channelId1 to 5L))))
+        }
+
+        // when
+        objectUnderTest.fetchUnreadMessagesCounts().async { result: Result<UnreadMessagesCounts> ->
+            // then
+            assertTrue(result.isSuccess)
+            result.onSuccess { unreadMessagesCounts ->
+                // Verify pagination info is passed through
+                assertEquals(nextPage, unreadMessagesCounts.next)
+                assertEquals(prevPage, unreadMessagesCounts.prev)
+
+                // Verify counts are correct
+                assertEquals(1, unreadMessagesCounts.countsByChannel.size)
+                assertEquals(5L, unreadMessagesCounts.countsByChannel.first().count)
+                assertEquals(channelId1, unreadMessagesCounts.countsByChannel.first().channel.id)
+            }
+        }
     }
 }
