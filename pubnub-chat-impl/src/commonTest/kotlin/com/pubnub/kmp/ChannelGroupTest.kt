@@ -9,8 +9,8 @@ import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.api.v2.createPNConfiguration
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatInternal
-import com.pubnub.chat.internal.channelGroup.ChannelGroupImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.channelGroup.ChannelGroupImpl
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.GetChannelsResponse
 import com.pubnub.kmp.utils.BaseTest
@@ -41,7 +41,12 @@ class ChannelGroupTest : BaseTest() {
     fun setUp() {
         every { chat.pubNub } returns pubNub
         every { chat.config } returns ChatConfiguration()
-        every { pubNub.configuration } returns createPNConfiguration(UserId("testUser"), "demo", "demo", authToken = null)
+        every { pubNub.configuration } returns createPNConfiguration(
+            UserId("testUser"),
+            "demo",
+            "demo",
+            authToken = null
+        )
 
         objectUnderTest = ChannelGroupImpl(
             id = channelGroupId,

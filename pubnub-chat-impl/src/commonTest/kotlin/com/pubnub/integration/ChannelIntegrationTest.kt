@@ -1169,6 +1169,67 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         parentMessage.removeThread().await()
         chat.deleteChannel(testChannelId).await()
     }
+
+    @Test
+    fun inviteMultiple_shouldInviteMultipleUsersSuccessfully() = runTest {
+        // given - a channel and multiple users to invite
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+
+        val user1Id = randomString()
+        val user2Id = randomString()
+        val user3Id = randomString()
+
+        val user1 = chat.createUser(UserImpl(chat, user1Id, name = "Test User 1")).await()
+        val user2 = chat.createUser(UserImpl(chat, user2Id, name = "Test User 2")).await()
+        val user3 = chat.createUser(UserImpl(chat, user3Id, name = "Test User 3")).await()
+
+        // when - invite multiple users
+        val memberships = testChannel.inviteMultiple(listOf(user1, user2, user3)).await()
+
+        // then - verify all memberships were created
+        assertEquals(3, memberships.size, "Should have created 3 memberships")
+
+        val memberUserIds = memberships.map { it.user.id }.toSet()
+        assertTrue(memberUserIds.contains(user1Id), "User1 should be in memberships")
+        assertTrue(memberUserIds.contains(user2Id), "User2 should be in memberships")
+        assertTrue(memberUserIds.contains(user3Id), "User3 should be in memberships")
+
+        // verify memberships have lastReadMessageTimetoken set
+        memberships.forEach { membership ->
+            assertNotNull(membership.lastReadMessageTimetoken, "lastReadMessageTimetoken should be set for ${membership.user.id}")
+            assertTrue(membership.lastReadMessageTimetoken!! > 0, "lastReadMessageTimetoken should be positive")
+        }
+
+        // verify members can be retrieved
+        val channelMembers = testChannel.getMembers().await()
+        val channelMemberIds = channelMembers.members.map { it.user.id }.toSet()
+        assertTrue(channelMemberIds.contains(user1Id), "User1 should be a channel member")
+        assertTrue(channelMemberIds.contains(user2Id), "User2 should be a channel member")
+        assertTrue(channelMemberIds.contains(user3Id), "User3 should be a channel member")
+
+        // cleanup
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(user1Id).await()
+        chat.deleteUser(user2Id).await()
+        chat.deleteUser(user3Id).await()
+    }
+
+    @Test
+    fun inviteMultiple_shouldHandleEmptyUsersList() = runTest {
+        // given - a channel
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+
+        // when - invite empty list of users
+        val memberships = testChannel.inviteMultiple(emptyList()).await()
+
+        // then - should return empty list without error
+        assertTrue(memberships.isEmpty(), "Should return empty list for empty users input")
+
+        // cleanup
+        chat.deleteChannel(testChannelId).await()
+    }
 }
 
 private fun Channel.asImpl(): ChannelImpl {
