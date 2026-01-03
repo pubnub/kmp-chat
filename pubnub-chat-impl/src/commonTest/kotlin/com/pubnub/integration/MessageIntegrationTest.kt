@@ -364,6 +364,10 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
             channel01.getHistory(publishTimetoken + 1, publishTimetoken).await().messages.first()
 
         assertTrue(messageWithReactionFromHistory.hasUserReaction(reactionValue))
+
+        val softDeletedMessage = message.delete(soft = true).await()
+        assertEquals(softDeletedMessage?.deleted, true)
+        message.delete().await()
     }
 
     @Test
@@ -401,6 +405,8 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
             finalMessage.hasUserReaction(reactionValue),
             "Final message from history should not have reaction (even number of toggles)"
         )
+
+        finalMessage.delete().await()
     }
 
     @Test
@@ -441,6 +447,37 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
             // cleanup
             removeListenerAndUnsubscribe?.close()
         }
+    }
+
+    @Test
+    fun chat_getThreadChannel_shouldReturnThreadChannel() = runTest {
+        // given - create a message and a thread
+        val messageText = "Parent message_${randomString()}"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val publishTimetoken = pnPublishResult.timetoken
+        delayForHistory()
+
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
+        val threadReplyText = "First thread reply_${randomString()}"
+        val threadChannel: ThreadChannel = message.createThread(threadReplyText).await()
+        delayForHistory()
+
+        // when - get thread channel using chat.getThreadChannel
+        val retrievedThreadChannel: ThreadChannel = chat.getThreadChannel(message).await()
+
+        // then - should return the same thread channel
+        assertEquals(threadChannel.id, retrievedThreadChannel.id)
+        assertEquals(threadChannel.parentChannelId, retrievedThreadChannel.parentChannelId)
+        assertEquals(threadChannel.parentMessage.timetoken, retrievedThreadChannel.parentMessage.timetoken)
+
+        // verify history contains the initial message
+        val history = retrievedThreadChannel.getHistory().await()
+        assertTrue(history.messages.any { it.text == threadReplyText })
+
+        // cleanup
+        val softDeletedMessage = message.delete(soft = true).await()
+        assertEquals(true, softDeletedMessage?.deleted)
+        message.delete().await()
     }
 
     @Test
@@ -489,9 +526,8 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
             "All thread messages should be in history"
         )
 
-        // cleanup - we need to re-fetch the message to see update state that contains info that it "hasThread"
-        val messageWithThread = channel01.getMessage(publishTimetoken).await()!!
-        messageWithThread.removeThread().await()
+        // cleanup
+        message.removeThread().await()
     }
 
     @Test
@@ -527,6 +563,35 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
 
         // cleanup
         updatedParentMessage.removeThread().await()
+    }
+
+    @Test
+    fun forward_shouldForwardMessageToAnotherChannelWithCorrectMetadata() = runTest {
+        // given - a message in channel01
+        val messageText = "message to forward_${randomString()}"
+        val publishResult = channel01.sendText(text = messageText).await()
+        delayForHistory()
+        val originalMessage = channel01.getMessage(publishResult.timetoken).await()!!
+
+        // when - forward to channel02
+        val forwardResult = originalMessage.forward(channel02.id).await()
+
+        // then - forwarded message exists in channel02
+        delayForHistory()
+        val forwardedMessage = channel02.getMessage(forwardResult.timetoken).await()!!
+
+        // verify content is preserved
+        assertEquals(messageText, forwardedMessage.text)
+
+        // verify originalPublisher is in meta
+        assertEquals(someUser.id, forwardedMessage.meta?.get("originalPublisher"))
+
+        // verify originalChannelId is in meta
+        assertEquals(channel01.id, forwardedMessage.meta?.get("originalChannelId"))
+
+        // cleanup
+        originalMessage.delete().await()
+        forwardedMessage.delete().await()
     }
 
     private fun getDeletedActionMap() = mapOf(

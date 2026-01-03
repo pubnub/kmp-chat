@@ -1148,6 +1148,96 @@ class ChannelTest : BaseTest() {
         assertNull(actualCustomMetadata.get("pinnedMessageTimetoken"))
         assertNull(actualCustomMetadata.get("pinnedMessageChannelID"))
     }
+
+    @Test
+    fun inviteMultiple_shouldReturnEmptyListWhenUsersCollectionIsEmpty() {
+        // given
+        val emptyUsers = emptyList<UserImpl>()
+
+        // when
+        objectUnderTest.inviteMultiple(emptyUsers).async { result ->
+            // then
+            assertTrue(result.isSuccess)
+            assertEquals(emptyList(), result.getOrNull())
+        }
+
+        // verify no API calls were made
+        verify(exactly(0)) { pubNub.setChannelMembers(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun getPinnedMessage_shouldReturnNullWhenNoPinnedMessageTimetoken() {
+        // given - channel with no pinnedMessageTimetoken in custom
+        val channelWithoutPinned = createChannel(type, custom = mapOf("someKey" to "someValue"))
+
+        // when
+        channelWithoutPinned.getPinnedMessage().async { result ->
+            // then
+            assertTrue(result.isSuccess)
+            assertNull(result.getOrNull())
+        }
+    }
+
+    @Test
+    fun getPinnedMessage_shouldReturnNullWhenNoPinnedMessageChannelId() {
+        // given - channel with timetoken but no channelId
+        val channelWithPartialPinned = createChannel(type, custom = mapOf("pinnedMessageTimetoken" to "12345"))
+
+        // when
+        channelWithPartialPinned.getPinnedMessage().async { result ->
+            // then
+            assertTrue(result.isSuccess)
+            assertNull(result.getOrNull())
+        }
+    }
+
+    @Test
+    fun getPinnedMessage_shouldReturnMessageFromSameChannel() {
+        // given
+        val pinnedTimetoken = 12345L
+        val channelWithPinned = createChannel(
+            type,
+            custom = mapOf(
+                "pinnedMessageTimetoken" to pinnedTimetoken.toString(),
+                "pinnedMessageChannelID" to channelId
+            )
+        )
+
+        val fetchMessages: FetchMessages = mock(MockMode.strict)
+        every {
+            pubNub.fetchMessages(
+                channels = any(),
+                page = any(),
+                includeUUID = any(),
+                includeMeta = any(),
+                includeMessageActions = any(),
+                includeMessageType = any()
+            )
+        } returns fetchMessages
+        every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
+            callback.accept(
+                Result.success(
+                    createPnFetchMessagesResult(
+                        channelId,
+                        "user1",
+                        "Pinned message text",
+                        pinnedTimetoken,
+                        "user1",
+                        "other",
+                        pinnedTimetoken + 1
+                    )
+                )
+            )
+        }
+
+        // when
+        channelWithPinned.getPinnedMessage().async { result ->
+            // then
+            assertTrue(result.isSuccess)
+            assertNotNull(result.getOrNull())
+            assertEquals("Pinned message text", result.getOrNull()?.text)
+        }
+    }
 }
 
 private operator fun Any?.get(s: String): Any? {

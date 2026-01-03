@@ -10,6 +10,7 @@ import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
+import com.pubnub.api.utils.Clock
 import com.pubnub.api.utils.PatchValue
 import com.pubnub.api.v2.PNConfiguration
 import com.pubnub.api.v2.callbacks.Consumer
@@ -35,6 +36,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class UserTest {
     private lateinit var objectUnderTest: User
@@ -383,5 +385,65 @@ class UserTest {
             next = null,
             prev = null
         )
+    }
+
+    @Test
+    fun active_shouldReturnFalseWhenLastActiveTimestampIsNull() {
+        // given
+        every { chatConfig.storeUserActivityInterval } returns 60.seconds
+        val userWithNoTimestamp = UserImpl(
+            chat = chat,
+            id = id,
+            name = name,
+            lastActiveTimestamp = null
+        )
+
+        // when
+        val result = userWithNoTimestamp.active
+
+        // then
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun active_shouldReturnTrueWhenLastActiveTimestampWithinInterval() {
+        // given
+        val activityInterval = 60.seconds
+        every { chatConfig.storeUserActivityInterval } returns activityInterval
+        // Set timestamp to 30 seconds ago (within 60 second interval)
+        val recentTimestamp = Clock.System.now().toEpochMilliseconds() - 30_000
+        val userWithRecentActivity = UserImpl(
+            chat = chat,
+            id = id,
+            name = name,
+            lastActiveTimestamp = recentTimestamp
+        )
+
+        // when
+        val result = userWithRecentActivity.active
+
+        // then
+        assertEquals(true, result)
+    }
+
+    @Test
+    fun active_shouldReturnFalseWhenLastActiveTimestampOutsideInterval() {
+        // given
+        val activityInterval = 60.seconds
+        every { chatConfig.storeUserActivityInterval } returns activityInterval
+        // Set timestamp to 120 seconds ago (outside 60 second interval)
+        val oldTimestamp = Clock.System.now().toEpochMilliseconds() - 120_000
+        val userWithOldActivity = UserImpl(
+            chat = chat,
+            id = id,
+            name = name,
+            lastActiveTimestamp = oldTimestamp
+        )
+
+        // when
+        val result = userWithOldActivity.active
+
+        // then
+        assertEquals(false, result)
     }
 }
