@@ -1637,10 +1637,14 @@ class ChatTest : BaseTest() {
         verify { pubnub.whereNow(userId) }
     }
 
-    private fun createMessage(chId: String = channelId, uId: String = userId): Message {
+    private fun createMessage(
+        chId: String = channelId,
+        uId: String = userId,
+        timetoken: Long = 123345L
+    ): Message {
         return MessageImpl(
             chat = chatMock,
-            timetoken = 123345,
+            timetoken = timetoken,
             content = EventContent.TextMessageContent(
                 text = "justo",
                 files = listOf()
@@ -1746,10 +1750,10 @@ class ChatTest : BaseTest() {
             pubnub.fetchMessages(
                 channels = listOf(messageChannelId),
                 page = any(),
-                includeUUID = true,
-                includeMeta = true,
-                includeMessageActions = true,
-                includeMessageType = true
+                includeUUID = any(),
+                includeMeta = any(),
+                includeMessageActions = any(),
+                includeMessageType = any()
             )
         } returns fetchMessages
         every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
@@ -1774,7 +1778,7 @@ class ChatTest : BaseTest() {
             )
         }
 
-        val message = createMessage(messageChannelId, userId)
+        val message = createMessage(messageChannelId, userId, messageTimetoken)
 
         // when
         objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
@@ -1797,10 +1801,10 @@ class ChatTest : BaseTest() {
             pubnub.fetchMessages(
                 channels = listOf(messageChannelId),
                 page = any(),
-                includeUUID = true,
-                includeMeta = true,
-                includeMessageActions = true,
-                includeMessageType = true
+                includeUUID = any(),
+                includeMeta = any(),
+                includeMessageActions = any(),
+                includeMessageType = any()
             )
         } returns fetchMessages
         every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
@@ -1834,7 +1838,7 @@ class ChatTest : BaseTest() {
             )
         }
 
-        val message = createMessage(messageChannelId, userId)
+        val message = createMessage(messageChannelId, userId, messageTimetoken)
 
         // when
         objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
@@ -1861,10 +1865,10 @@ class ChatTest : BaseTest() {
             pubnub.fetchMessages(
                 channels = listOf(messageChannelId),
                 page = any(),
-                includeUUID = true,
-                includeMeta = true,
-                includeMessageActions = true,
-                includeMessageType = true
+                includeUUID = any(),
+                includeMeta = any(),
+                includeMessageActions = any(),
+                includeMessageType = any()
             )
         } returns fetchMessages
         every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
@@ -1905,7 +1909,7 @@ class ChatTest : BaseTest() {
             callback.accept(Result.failure(pnException404))
         }
 
-        val message = createMessage(messageChannelId, userId)
+        val message = createMessage(messageChannelId, userId, messageTimetoken)
 
         // when
         objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
@@ -1930,10 +1934,10 @@ class ChatTest : BaseTest() {
             pubnub.fetchMessages(
                 channels = listOf(messageChannelId),
                 page = any(),
-                includeUUID = true,
-                includeMeta = true,
-                includeMessageActions = true,
-                includeMessageType = true
+                includeUUID = any(),
+                includeMeta = any(),
+                includeMessageActions = any(),
+                includeMessageType = any()
             )
         } returns fetchMessages
         every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
@@ -2007,7 +2011,7 @@ class ChatTest : BaseTest() {
             callback.accept(Result.success(getPNChannelMetadataResult(updatedId = threadId, updatedStatus = "deleted")))
         }
 
-        val message = createMessage(messageChannelId, userId)
+        val message = createMessage(messageChannelId, userId, messageTimetoken)
 
         // when
         objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
