@@ -316,3 +316,37 @@ external interface Reaction {
 external interface UpdateMembershipParams {
     val custom: PubNub.CustomObject?
 }
+
+/**
+ * Result of creating a thread on a message.
+ *
+ * @property threadChannel The newly created thread channel.
+ * @property parentMessage The parent message with updated `hasThread` property set to `true`.
+ */
+external interface CreateThreadResultJs {
+    var threadChannel: ThreadChannelJs
+    var parentMessage: MessageJs
+}
+
+/**
+ * Options for creating a thread with an initial message.
+ *
+ * @property meta Additional metadata to include with the message.
+ * @property storeInHistory Whether to store the message in history.
+ * @property sendByPost Whether to use POST request instead of GET.
+ * @property ttl Time-to-live for the message in hours.
+ * @property quotedMessage A message to quote in the thread's initial message.
+ * @property files Files to attach to the initial message.
+ * @property usersToMention Array of user IDs to mention in the message.
+ * @property customPushData Custom data to include in push notifications.
+ */
+external interface CreateThreadOptionsParams {
+    val meta: Any?
+    val storeInHistory: Boolean?
+    val sendByPost: Boolean?
+    val ttl: Number?
+    val quotedMessage: MessageJs?
+    val files: Any?
+    val usersToMention: Array<String>?
+    val customPushData: JsMap<String>?
+}

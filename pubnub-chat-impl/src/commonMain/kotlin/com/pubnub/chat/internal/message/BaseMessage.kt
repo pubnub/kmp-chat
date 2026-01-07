@@ -28,6 +28,7 @@ import com.pubnub.chat.internal.METADATA_REFERENCED_CHANNELS
 import com.pubnub.chat.internal.METADATA_TEXT_LINKS
 import com.pubnub.chat.internal.PUBNUB_INTERNAL_AUTOMODERATED
 import com.pubnub.chat.internal.THREAD_ROOT_ID
+import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.channel.ThreadChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
@@ -43,6 +44,7 @@ import com.pubnub.chat.internal.isInternalModerator
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
+import com.pubnub.chat.types.CreateThreadResult
 import com.pubnub.chat.types.EntityChange
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
@@ -265,7 +267,32 @@ abstract class BaseMessage<T : Message>(
         }
     }
 
-    override fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> = chat.removeThreadChannel(chat, this)
+    override fun createThreadWithResult(
+        text: String,
+        meta: Map<String, Any>?,
+        shouldStore: Boolean,
+        usePost: Boolean,
+        ttl: Int?,
+        quotedMessage: Message?,
+        files: List<InputFile>?,
+        usersToMention: Collection<String>?,
+        customPushData: Map<String, String>?
+    ): PNFuture<CreateThreadResult> {
+        @Suppress("DEPRECATION")
+        return createThread().thenAsync { threadChannel ->
+            threadChannel.sendText(
+                text, meta, shouldStore, usePost, ttl, quotedMessage, files, usersToMention, customPushData
+            ).thenAsync {
+                // Re-fetch message from server to get accurate actions with correct timetokens
+                BaseChannel.getMessage(chat, channelId, timetoken)
+            }.then { fetchedMessage ->
+                CreateThreadResult(threadChannel, fetchedMessage ?: this)
+            }
+        }
+    }
+
+    override fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> =
+        chat.removeThreadChannel(chat, this)
 
     override fun toggleReaction(reaction: String): PNFuture<Message> {
         val existingReaction = reactions[reaction]?.find {

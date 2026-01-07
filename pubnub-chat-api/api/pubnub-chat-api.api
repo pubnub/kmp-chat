@@ -206,6 +206,8 @@ public abstract interface class com/pubnub/chat/Message {
 	public abstract fun createThread ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun createThread (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun createThread$default (Lcom/pubnub/chat/Message;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun createThreadWithResult (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun createThreadWithResult$default (Lcom/pubnub/chat/Message;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun delete (ZZ)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun delete$default (Lcom/pubnub/chat/Message;ZZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun editText (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
@@ -585,6 +587,12 @@ public final class com/pubnub/chat/types/CreateGroupConversationResult {
 	public final fun getChannel ()Lcom/pubnub/chat/Channel;
 	public final fun getHostMembership ()Lcom/pubnub/chat/Membership;
 	public final fun getInviteeMemberships ()[Lcom/pubnub/chat/Membership;
+}
+
+public final class com/pubnub/chat/types/CreateThreadResult {
+	public fun <init> (Lcom/pubnub/chat/ThreadChannel;Lcom/pubnub/chat/Message;)V
+	public final fun getParentMessage ()Lcom/pubnub/chat/Message;
+	public final fun getThreadChannel ()Lcom/pubnub/chat/ThreadChannel;
 }
 
 public final class com/pubnub/chat/types/EmitEventMethod : java/lang/Enum {

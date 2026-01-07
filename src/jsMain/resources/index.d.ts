@@ -1,7 +1,11 @@
 /// <reference types="pubnub" />
 import PubNub from "pubnub";
-import { AppContext, Publish, FileSharing, Signal, Subscription, History } from "pubnub";
+import { AppContext, Publish, FileSharing, Signal, Subscription, History, Payload } from "pubnub";
 
+interface Result<T> {
+    onSuccess(callback: (data: T) => void): Result<T>;
+    onFailure(callback: (error: string) => void): Result<T>;
+}
 type EntityChangeHandler<T> = {
     onUpdated?: (entity: T) => void;
     onRemoved?: (id: string) => void;
@@ -9,10 +13,7 @@ type EntityChangeHandler<T> = {
 interface EntityChange<T> {
     handle(handler: EntityChangeHandler<T>): void;
 }
-interface Result<T> {
-    onSuccess(callback: (data: T) => void): Result<T>;
-    onFailure(callback: (error: string) => void): Result<T>;
-}
+
 type MembershipFields = Pick<Membership, "channel" | "user" | "custom" | "updated" | "eTag" | "status" | "type">;
 declare class Membership {
     private chat;
@@ -360,6 +361,20 @@ type ThreadMentionData = {
 };
 type UserMentionData = ChannelMentionData | ThreadMentionData;
 type MessageFields = Pick<Message, "timetoken" | "content" | "channelId" | "userId" | "actions" | "meta">;
+type CreateThreadResult = {
+    threadChannel: ThreadChannel;
+    parentMessage: Message;
+};
+type CreateThreadOptions = {
+    meta?: Payload;
+    storeInHistory?: boolean;
+    sendByPost?: boolean;
+    ttl?: number;
+    quotedMessage?: Message;
+    files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
+    usersToMention?: string[];
+    customPushData?: { [key: string]: string };
+};
 declare class Message {
     protected chat: Chat;
     readonly timetoken: string;
@@ -431,6 +446,7 @@ declare class Message {
      */
     getThread(): Promise<ThreadChannel>;
     createThread(): Promise<ThreadChannel>;
+    createThreadWithResult(text: string, options?: CreateThreadOptions): Promise<CreateThreadResult>;
     removeThread(): Promise<[
         {
             data: {};
@@ -924,4 +940,8 @@ declare const INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_";
 declare const INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL";
 declare const ERROR_LOGGER_KEY_PREFIX = "PUBNUB_INTERNAL_ERROR_LOGGER";
 declare const CryptoModule: typeof PubNub.CryptoModule;
-export { ChatConfig, Chat, ChannelFields, Channel, ChannelGroup, ConnectionStatusCategory, ConnectionStatus, UserFields, User, MessageFields, Message, MembershipFields, Membership, ThreadChannel, ThreadMessage, MessageDraft, EventFields, Event, ChannelType, MessageType, MessageActionType, TextMessageContent, EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams, MessageActions, DeleteParameters, MessageMentionedUsers, MessageReferencedChannels, MessageDraftOptions, SendTextOptionParams, EnhancedMessageEvent, MessageDTOParams, ThreadMessageDTOParams, MembershipResponse, OptionalAllBut, ChannelDTOParams, ThreadChannelDTOParams, MessageDraftConfig, TextLink, GetLinkedTextParams, PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement, ErrorLoggerSetParams, ErrorLoggerImplementation, ChannelMentionData, ThreadMentionData, UserMentionData, TimetokenUtils, CryptoUtils, MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX, CryptoModule, EntityChange, EntityChangeHandler, Result };
+<<<<<<< HEAD
+export { ChatConfig, Chat, ChannelFields, Channel, ChannelGroup, ConnectionStatusCategory, ConnectionStatus, UserFields, User, MessageFields, Message, MembershipFields, Membership, ThreadChannel, ThreadMessage, MessageDraft, EventFields, Event, ChannelType, MessageType, MessageActionType, TextMessageContent, EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams, MessageActions, DeleteParameters, MessageMentionedUsers, MessageReferencedChannels, MessageDraftOptions, SendTextOptionParams, EnhancedMessageEvent, MessageDTOParams, ThreadMessageDTOParams, MembershipResponse, OptionalAllBut, ChannelDTOParams, ThreadChannelDTOParams, MessageDraftConfig, TextLink, GetLinkedTextParams, PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement, ErrorLoggerSetParams, ErrorLoggerImplementation, ChannelMentionData, ThreadMentionData, UserMentionData, TimetokenUtils, CryptoUtils, MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX, CryptoModule, CreateThreadResult, CreateThreadOptions, EntityChange, EntityChangeHandler, Result };
+=======
+export { ChatConfig, Chat, ChannelFields, Channel, ChannelGroup, ConnectionStatusCategory, ConnectionStatus, UserFields, User, MessageFields, Message, MembershipFields, Membership, ThreadChannel, ThreadMessage, MessageDraft, EventFields, Event, ChannelType, MessageType, MessageActionType, TextMessageContent, EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams, MessageActions, DeleteParameters, MessageMentionedUsers, MessageReferencedChannels, MessageDraftOptions, SendTextOptionParams, EnhancedMessageEvent, MessageDTOParams, ThreadMessageDTOParams, MembershipResponse, OptionalAllBut, ChannelDTOParams, ThreadChannelDTOParams, MessageDraftConfig, TextLink, GetLinkedTextParams, PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement, ErrorLoggerSetParams, ErrorLoggerImplementation, ChannelMentionData, ThreadMentionData, UserMentionData, TimetokenUtils, CryptoUtils, MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX, CryptoModule, CreateThreadResult, CreateThreadOptions};
+>>>>>>> master
