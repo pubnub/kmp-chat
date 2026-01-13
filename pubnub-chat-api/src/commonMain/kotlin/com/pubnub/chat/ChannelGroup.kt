@@ -76,7 +76,7 @@ interface ChannelGroup {
     /**
      * Returns a collection of users currently present in any channel within the given [ChannelGroup]
      */
-    fun whoIsPresent(): PNFuture<Map<String, Collection<String>>>
+    fun whoIsPresent(limit: Int = 1000, offset: Int? = null): PNFuture<Map<String, Collection<String>>>
 
     /**
      * Enables real-time tracking of users connecting to or disconnecting from the given [ChannelGroup]

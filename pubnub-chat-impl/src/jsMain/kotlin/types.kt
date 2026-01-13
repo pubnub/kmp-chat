@@ -222,6 +222,11 @@ external interface GetSuggestionsParams {
     var limit: Int?
 }
 
+external interface WhoIsPresentParams {
+    val limit: Int?
+    val offset: Int?
+}
+
 external interface DeleteUserResult
 
 @Suppress("NOTHING_TO_INLINE")

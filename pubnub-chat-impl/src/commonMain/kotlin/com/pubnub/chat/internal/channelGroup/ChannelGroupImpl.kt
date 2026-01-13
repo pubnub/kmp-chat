@@ -82,8 +82,8 @@ data class ChannelGroupImpl internal constructor(
         return chat.pubNub.removeChannelsFromChannelGroup(ids.toList(), id).then {}
     }
 
-    override fun whoIsPresent(): PNFuture<Map<String, List<String>>> {
-        return chat.pubNub.hereNow(channelGroups = listOf(id)).then { response ->
+    override fun whoIsPresent(limit: Int, offset: Int?): PNFuture<Map<String, List<String>>> {
+        return chat.pubNub.hereNow(channelGroups = listOf(id), limit = limit, offset = offset).then { response ->
             response.channels.mapValues { it ->
                 it.value.occupants.map(PNHereNowOccupantData::uuid)
             }
@@ -92,6 +92,7 @@ data class ChannelGroupImpl internal constructor(
 
     override fun streamPresence(callback: (presenceByChannels: Map<String, Collection<String>>) -> Unit): AutoCloseable {
         val ids = mutableMapOf<String, MutableSet<String>>()
+        // todo what to do in this case
         val future = whoIsPresent().then { whoIsPresentResponse ->
             ids.putAll(whoIsPresentResponse.mapValues { it.value.toMutableSet() })
             callback(whoIsPresentResponse)
@@ -127,7 +128,7 @@ data class ChannelGroupImpl internal constructor(
                                     }
                                     "leave", "timeout" -> {
                                         event.uuid?.let { uuid ->
-                                            ids[event.uuid]?.remove(uuid)
+                                            ids[event.channel]?.remove(uuid)
                                         }
                                     }
                                 }

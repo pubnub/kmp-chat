@@ -224,8 +224,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
-    override fun whoIsPresent(): PNFuture<Collection<String>> {
-        return chat.whoIsPresent(id)
+    override fun whoIsPresent(limit: Int, offset: Int?): PNFuture<Collection<String>> {
+        return chat.whoIsPresent(id, limit, offset)
     }
 
     override fun isPresent(userId: String): PNFuture<Boolean> {
@@ -683,6 +683,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
     override fun streamPresence(callback: (userIds: Collection<String>) -> Unit): AutoCloseable {
         val ids = mutableSetOf<String>()
+        // todo what to do
         val future = whoIsPresent().then {
             ids.addAll(it)
             callback(ids.toSet())

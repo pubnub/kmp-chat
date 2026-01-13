@@ -55,8 +55,11 @@ class ChannelGroupJs internal constructor(
         }::close
     }
 
-    fun whoIsPresent(): Promise<JsMap<Array<String>>> {
-        return channelGroup.whoIsPresent().then {
+    fun whoIsPresent(params: WhoIsPresentParams?): Promise<JsMap<Array<String>>> {
+        return channelGroup.whoIsPresent(
+            params?.limit ?: 1000,
+            params?.offset
+        ).then {
             it
                 .mapKeys { entry -> entry.key.toString() }
                 .mapValues { entry -> entry.value.toTypedArray() }

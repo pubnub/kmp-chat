@@ -3,6 +3,7 @@ package com.pubnub.kmp
 import com.pubnub.api.PubNub
 import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
+import com.pubnub.api.createJsonElement
 import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.endpoints.MessageCounts
 import com.pubnub.api.endpoints.Time
@@ -73,6 +74,7 @@ import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_USER_MODERATION_CHANNEL_PREFIX
 import com.pubnub.chat.internal.UserImpl
+import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.internal.utils.cyrb53a
@@ -445,6 +447,25 @@ class ChatTest : BaseTest() {
             // then
             assertTrue(result.isFailure)
             assertEquals("Channel Id is required", result.exceptionOrNull()?.message)
+        }
+    }
+
+    @Test
+    fun whenCanNotRetrieveHereNowData_shouldThrowException() {
+        // given
+        val channel01 = "myChannel1"
+        val hereNowEndpoint: HereNow = mock(MockMode.strict)
+
+        every { pubnub.hereNow(any(), any(), any(), any(), any(), any()) } returns hereNowEndpoint
+        every { hereNowEndpoint.async(any()) } calls { (callback: Consumer<Result<PNHereNowResult>>) ->
+            callback.accept(Result.failure(Exception("Error calling setChannelMetadata")))
+        }
+
+        // when
+        objectUnderTest.whoIsPresent(channelId = channel01, limit = 1, offset = 0).async { result: Result<Collection<String>> ->
+            // then
+            assertTrue(result.isFailure)
+            assertEquals(FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA, result.exceptionOrNull()?.message)
         }
     }
 
@@ -1764,7 +1785,7 @@ class ChatTest : BaseTest() {
                             messageChannelId to listOf(
                                 PNFetchMessageItem(
                                     uuid = userId,
-                                    message = com.pubnub.api.createJsonElement(
+                                    message = createJsonElement(
                                         mapOf("type" to "text", "text" to "message without thread")
                                     ),
                                     meta = null, timetoken = messageTimetoken, actions = null, // No thread actions
@@ -2228,7 +2249,7 @@ class ChatTest : BaseTest() {
         // Mock getChannelMembers for invite check
         val getChannelMembersEndpoint: GetChannelMembers = mock(MockMode.strict)
         every {
-            pubnub.getChannelMembers(
+            val channelMembers = pubnub.getChannelMembers(
                 channel = any<String>(),
                 limit = any<Int>(),
                 page = any<PNPage?>(),
@@ -2236,6 +2257,7 @@ class ChatTest : BaseTest() {
                 sort = any<Collection<PNSortKey<PNMemberKey>>>(),
                 include = any<MemberInclude>()
             )
+            channelMembers
         } returns getChannelMembersEndpoint
         every { getChannelMembersEndpoint.async(any()) } calls { (callback: Consumer<Result<PNMemberArrayResult>>) ->
             callback.accept(

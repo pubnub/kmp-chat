@@ -793,6 +793,27 @@ describe("Channel test", () => {
     await chat2.currentUser.delete()
   }, 20000)
 
+  test("should get present users on channel via channel.whoIsPresent with limit parameter", async () => {
+    const chat2 = await createChatInstance({
+      userId: "user-two",
+    })
+    const channel = await chat2.createChannel(generateRandomString(), {
+      name: "Test Channel for whoIsPresent",
+    })
+
+    const disconnect = channel.connect(() => null)
+    await sleep(2000)
+
+    const presentUsers = await channel.whoIsPresent({ limit: 10 })
+
+    expect(Array.isArray(presentUsers)).toBe(true)
+    expect(presentUsers).toContain(chat2.currentUser.id)
+
+    disconnect()
+    await channel.delete()
+    await chat2.currentUser.delete()
+  }, 20000)
+
   test("should verify all user-related mentions using getCurrentUserMentions()", async () => {
     const user1Id = `user1_${Date.now()}`
     const user1 = await chat.createUser(user1Id, { name: "User1" })

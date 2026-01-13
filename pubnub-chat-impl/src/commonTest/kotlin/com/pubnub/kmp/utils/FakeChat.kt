@@ -192,7 +192,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun whoIsPresent(channelId: String): PNFuture<Collection<String>> {
+    override fun whoIsPresent(channelId: String, limit: Int, offset: Int?): PNFuture<Collection<String>> {
         TODO("Not yet implemented")
     }
 

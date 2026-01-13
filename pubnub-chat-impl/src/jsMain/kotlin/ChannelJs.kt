@@ -109,8 +109,11 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }::close
     }
 
-    fun whoIsPresent(): Promise<Array<String>> {
-        return channel.whoIsPresent().then { it.toTypedArray() }.asPromise()
+    fun whoIsPresent(params: WhoIsPresentParams?): Promise<Array<String>> {
+        return channel.whoIsPresent(
+            params?.limit ?: 1000,
+            params?.offset
+        ).then { it.toTypedArray() }.asPromise()
     }
 
     fun isPresent(userId: String): Promise<Boolean> {

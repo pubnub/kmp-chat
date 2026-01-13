@@ -54,7 +54,8 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun unregisterFromPush ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun update (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Lcom/pubnub/chat/types/ChannelType;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun update$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Lcom/pubnub/chat/types/ChannelType;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun whoIsPresent ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun whoIsPresent (ILjava/lang/Integer;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun whoIsPresent$default (Lcom/pubnub/chat/Channel;ILjava/lang/Integer;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 }
 
 public final class com/pubnub/chat/Channel$Companion {
@@ -71,7 +72,8 @@ public abstract interface class com/pubnub/chat/ChannelGroup {
 	public abstract fun removeChannelIdentifiers (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun removeChannels (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun streamPresence (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
-	public abstract fun whoIsPresent ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun whoIsPresent (ILjava/lang/Integer;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun whoIsPresent$default (Lcom/pubnub/chat/ChannelGroup;ILjava/lang/Integer;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 }
 
 public abstract interface class com/pubnub/chat/Chat {
@@ -129,7 +131,8 @@ public abstract interface class com/pubnub/chat/Chat {
 	public abstract fun updateUser (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun updateUser$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun wherePresent (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun whoIsPresent (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun whoIsPresent (Ljava/lang/String;ILjava/lang/Integer;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun whoIsPresent$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;ILjava/lang/Integer;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 }
 
 public final class com/pubnub/chat/Chat$Companion {

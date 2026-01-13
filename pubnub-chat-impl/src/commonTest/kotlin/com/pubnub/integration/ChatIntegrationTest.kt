@@ -797,6 +797,30 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun when_calling_whoIsPresent_with_limit_should_get_result() = runTest {
+        // given - create a test channel
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        // when - user subscribes to both channels
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var subscription1: AutoCloseable? = null
+            var subscription2: AutoCloseable? = null
+
+            pubnub.awaitSubscribe(listOf(testChannelId)) {
+                subscription1 = testChannel.connect { }
+                subscription2 = testChannel.connect { }
+            }
+
+            val occupants: Collection<String> = chat.whoIsPresent(channelId = testChannelId, limit = 1).await()
+
+            assertEquals(1, occupants.size)
+
+            subscription1?.close()
+            subscription2?.close()
+        }
+    }
+
+    @Test
     fun isPresent_withStateTransitions_shouldReflectCorrectState() = runTest {
         // given - create a test channel
         val testChannelId = randomString()

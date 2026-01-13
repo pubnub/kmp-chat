@@ -251,6 +251,20 @@ describe("Chat tests", () => {
     await channel.delete()
   }, 20000)
 
+  test("should get present users via chat.whoIsPresent with limit parameter", async () => {
+    const channel = await createRandomChannel(chat)
+    const disconnect = channel.connect(() => {})
+    await sleep(2000)
+
+    const presentUsers = await chat.whoIsPresent(channel.id, { limit: 10 })
+
+    expect(Array.isArray(presentUsers)).toBe(true)
+    expect(presentUsers).toContain(chat.currentUser.id)
+
+    disconnect()
+    await channel.delete()
+  }, 20000)
+
   test("should get present channels via chat.wherePresent", async () => {
     const channel1 = await createRandomChannel(chat)
     const channel2 = await createRandomChannel(chat)

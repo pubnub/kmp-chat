@@ -265,8 +265,12 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         return chat.wherePresent(id).then { it.toTypedArray() }.asPromise()
     }
 
-    fun whoIsPresent(id: String): Promise<Array<String>> {
-        return chat.whoIsPresent(id).then { it.toTypedArray() }.asPromise()
+    fun whoIsPresent(id: String, params: WhoIsPresentParams?): Promise<Array<String>> {
+        return chat.whoIsPresent(
+            id,
+            params?.limit ?: 1000,
+            params?.offset
+        ).then { it.toTypedArray() }.asPromise()
     }
 
     fun isPresent(userId: String, channelId: String): Promise<Boolean> {

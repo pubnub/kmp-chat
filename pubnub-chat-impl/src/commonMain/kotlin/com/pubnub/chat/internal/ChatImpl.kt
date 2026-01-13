@@ -664,11 +664,15 @@ class ChatImpl(
         }
     }
 
-    override fun whoIsPresent(channelId: String): PNFuture<Collection<String>> {
+    override fun whoIsPresent(channelId: String, limit: Int, offset: Int?): PNFuture<Collection<String>> {
         if (!isValidId(channelId)) {
             return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
-        return pubNub.hereNow(listOf(channelId)).then {
+        return pubNub.hereNow(
+            channels = listOf(channelId),
+            limit = limit,
+            offset = offset
+        ).then {
             (it.channels[channelId]?.occupants?.map(PNHereNowOccupantData::uuid) ?: emptyList())
         }.catch { exception ->
             Result.failure(PubNubException(FAILED_TO_RETRIEVE_WHO_IS_PRESENT_DATA, exception))
