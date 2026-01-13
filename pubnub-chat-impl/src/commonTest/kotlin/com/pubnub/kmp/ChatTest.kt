@@ -5,12 +5,16 @@ import com.pubnub.api.PubNubException
 import com.pubnub.api.UserId
 import com.pubnub.api.endpoints.FetchMessages
 import com.pubnub.api.endpoints.MessageCounts
+import com.pubnub.api.endpoints.Time
+import com.pubnub.api.endpoints.message_actions.RemoveMessageAction
 import com.pubnub.api.endpoints.objects.channel.GetAllChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.GetChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.RemoveChannelMetadata
 import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
+import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.endpoints.objects.member.ManageChannelMembers
 import com.pubnub.api.endpoints.objects.membership.GetMemberships
+import com.pubnub.api.endpoints.objects.membership.ManageMemberships
 import com.pubnub.api.endpoints.objects.uuid.GetAllUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.GetUUIDMetadata
 import com.pubnub.api.endpoints.objects.uuid.RemoveUUIDMetadata
@@ -25,14 +29,24 @@ import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
+import com.pubnub.api.models.consumer.PNTimeResult
+import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.history.PNMessageCountResult
+import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
+import com.pubnub.api.models.consumer.objects.PNMemberKey
+import com.pubnub.api.models.consumer.objects.PNMembershipKey
+import com.pubnub.api.models.consumer.objects.PNPage
+import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataArrayResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
+import com.pubnub.api.models.consumer.objects.member.MemberInclude
 import com.pubnub.api.models.consumer.objects.member.MemberInput
 import com.pubnub.api.models.consumer.objects.member.PNMember
 import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
+import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
+import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
@@ -58,10 +72,13 @@ import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_USER_MODERATION_CHANNEL_PREFIX
+import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.timer.TimerManager
+import com.pubnub.chat.internal.utils.cyrb53a
 import com.pubnub.chat.listeners.ConnectionStatus
 import com.pubnub.chat.message.GetUnreadMessagesCounts
+import com.pubnub.chat.message.UnreadMessagesCounts
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.restrictions.RestrictionType
 import com.pubnub.chat.types.ChannelType
@@ -69,7 +86,7 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.utils.BaseTest
-import com.pubnub.kmp.utils.get // this is needed
+import com.pubnub.kmp.utils.get
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -1620,10 +1637,14 @@ class ChatTest : BaseTest() {
         verify { pubnub.whereNow(userId) }
     }
 
-    private fun createMessage(chId: String = channelId, uId: String = userId): Message {
+    private fun createMessage(
+        chId: String = channelId,
+        uId: String = userId,
+        timetoken: Long = 123345L
+    ): Message {
         return MessageImpl(
             chat = chatMock,
-            timetoken = 123345,
+            timetoken = timetoken,
             content = EventContent.TextMessageContent(
                 text = "justo",
                 files = listOf()
@@ -1716,5 +1737,683 @@ class ChatTest : BaseTest() {
         }
 
         verify { pubnub.disconnect() }
+    }
+
+    @Test
+    fun removeThreadChannel_shouldFailWhenMessageHasNoThread() {
+        // given - a message without a thread (hasThread = false means no THREAD_ROOT_ID in actions)
+        val messageTimetoken = 123456L
+        val messageChannelId = channelId
+
+        // Mock fetchMessages to return a message without thread actions
+        every {
+            pubnub.fetchMessages(
+                channels = listOf(messageChannelId),
+                page = any(),
+                includeUUID = any(),
+                includeMeta = any(),
+                includeMessageActions = any(),
+                includeMessageType = any()
+            )
+        } returns fetchMessages
+        every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNFetchMessagesResult(
+                        channels = mapOf(
+                            messageChannelId to listOf(
+                                PNFetchMessageItem(
+                                    uuid = userId,
+                                    message = com.pubnub.api.createJsonElement(
+                                        mapOf("type" to "text", "text" to "message without thread")
+                                    ),
+                                    meta = null, timetoken = messageTimetoken, actions = null, // No thread actions
+                                    messageType = null, error = null
+                                )
+                            )
+                        ),
+                        page = null
+                    )
+                )
+            )
+        }
+
+        val message = createMessage(messageChannelId, userId, messageTimetoken)
+
+        // when
+        objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
+            .async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+                // then
+                assertTrue(result.isFailure)
+                assertEquals("There is no thread to be deleted.", result.exceptionOrNull()?.message)
+            }
+    }
+
+    @Test
+    fun removeThreadChannel_shouldFailWhenNoActionTimetokenFound() {
+        // given - a message with hasThread=true but no action timetoken in the expected structure
+        val messageTimetoken = 123456L
+        val messageChannelId = channelId
+        val threadId = "PUBNUB_INTERNAL_THREAD_${messageChannelId}_$messageTimetoken"
+
+        // Mock fetchMessages to return a message with thread indicator but invalid action structure
+        every {
+            pubnub.fetchMessages(
+                channels = listOf(messageChannelId),
+                page = any(),
+                includeUUID = any(),
+                includeMeta = any(),
+                includeMessageActions = any(),
+                includeMessageType = any()
+            )
+        } returns fetchMessages
+        every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNFetchMessagesResult(
+                        channels = mapOf(
+                            messageChannelId to listOf(
+                                PNFetchMessageItem(
+                                    uuid = userId,
+                                    message = com.pubnub.api.createJsonElement(
+                                        mapOf("type" to "text", "text" to "message with thread")
+                                    ),
+                                    meta = null,
+                                    timetoken = messageTimetoken,
+                                    // Has threadRootId but with wrong threadId so actionTimetoken lookup fails
+                                    actions = mapOf(
+                                        "threadRootId" to mapOf(
+                                            "wrong_thread_id" to listOf(
+                                                PNFetchMessageItem.Action(uuid = userId, actionTimetoken = 999L)
+                                            )
+                                        )
+                                    ),
+                                    messageType = null, error = null
+                                )
+                            )
+                        ),
+                        page = null
+                    )
+                )
+            )
+        }
+
+        val message = createMessage(messageChannelId, userId, messageTimetoken)
+
+        // when
+        objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
+            .async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+                // then
+                assertTrue(result.isFailure)
+                assertEquals(
+                    "There is no action timetoken corresponding to the thread.",
+                    result.exceptionOrNull()?.message
+                )
+            }
+    }
+
+    @Test
+    fun removeThreadChannel_shouldFailWhenThreadChannelDoesNotExist() {
+        // given - a message with valid thread but thread channel doesn't exist
+        val messageTimetoken = 123456L
+        val messageChannelId = channelId
+        val threadId = "PUBNUB_INTERNAL_THREAD_${messageChannelId}_$messageTimetoken"
+        val actionTimetoken = 999L
+
+        // Mock fetchMessages to return a message with valid thread structure
+        every {
+            pubnub.fetchMessages(
+                channels = listOf(messageChannelId),
+                page = any(),
+                includeUUID = any(),
+                includeMeta = any(),
+                includeMessageActions = any(),
+                includeMessageType = any()
+            )
+        } returns fetchMessages
+        every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNFetchMessagesResult(
+                        channels = mapOf(
+                            messageChannelId to listOf(
+                                PNFetchMessageItem(
+                                    uuid = userId,
+                                    message = com.pubnub.api.createJsonElement(
+                                        mapOf("type" to "text", "text" to "message with thread")
+                                    ),
+                                    meta = null,
+                                    timetoken = messageTimetoken,
+                                    actions = mapOf(
+                                        "threadRootId" to mapOf(
+                                            threadId to listOf(
+                                                PNFetchMessageItem.Action(
+                                                    uuid = userId, actionTimetoken = actionTimetoken
+                                                )
+                                            )
+                                        )
+                                    ),
+                                    messageType = null, error = null
+                                )
+                            )
+                        ),
+                        page = null
+                    )
+                )
+            )
+        }
+
+        // Mock getChannel to return null (thread channel doesn't exist)
+        every { pubnub.getChannelMetadata(channel = threadId, includeCustom = true) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback.accept(Result.failure(pnException404))
+        }
+
+        val message = createMessage(messageChannelId, userId, messageTimetoken)
+
+        // when
+        objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
+            .async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+                // then
+                assertTrue(result.isFailure)
+                assertTrue(result.exceptionOrNull()?.message?.contains("There is no thread with id:") == true)
+            }
+    }
+
+    @Test
+    fun removeThreadChannel_shouldSucceedWhenAllConditionsAreMet() {
+        // given - a message with valid thread and thread channel exists
+        val messageTimetoken = 123456L
+        val messageChannelId = channelId
+        val threadId = "PUBNUB_INTERNAL_THREAD_${messageChannelId}_$messageTimetoken"
+        val actionTimetoken = 999L
+        val removeMessageActionEndpoint: RemoveMessageAction = mock(MockMode.strict)
+
+        // Mock fetchMessages to return a message with valid thread structure
+        every {
+            pubnub.fetchMessages(
+                channels = listOf(messageChannelId),
+                page = any(),
+                includeUUID = any(),
+                includeMeta = any(),
+                includeMessageActions = any(),
+                includeMessageType = any()
+            )
+        } returns fetchMessages
+        every { fetchMessages.async(any()) } calls { (callback: Consumer<Result<PNFetchMessagesResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNFetchMessagesResult(
+                        channels = mapOf(
+                            messageChannelId to listOf(
+                                PNFetchMessageItem(
+                                    uuid = userId,
+                                    message = com.pubnub.api.createJsonElement(
+                                        mapOf("type" to "text", "text" to "message with thread")
+                                    ),
+                                    meta = null, timetoken = messageTimetoken,
+                                    actions = mapOf(
+                                        "threadRootId" to mapOf(
+                                            threadId to listOf(
+                                                PNFetchMessageItem.Action(
+                                                    uuid = userId, actionTimetoken = actionTimetoken
+                                                )
+                                            )
+                                        )
+                                    ),
+                                    messageType = null, error = null
+                                )
+                            )
+                        ),
+                        page = null
+                    )
+                )
+            )
+        }
+
+        // Mock getChannel to return the thread channel
+        every { pubnub.getChannelMetadata(channel = threadId, includeCustom = true) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback.accept(
+                Result.success(
+                    getPNChannelMetadataResult(
+                        updatedId = threadId,
+                        updatedName = "Thread Channel",
+                        updatedType = ChannelType.GROUP.stringValue
+                    )
+                )
+            )
+        }
+
+        // Mock removeMessageAction
+        every {
+            pubnub.removeMessageAction(
+                channel = messageChannelId, messageTimetoken = messageTimetoken, actionTimetoken = actionTimetoken
+            )
+        } returns removeMessageActionEndpoint
+        every { removeMessageActionEndpoint.async(any()) } calls { (callback: Consumer<Result<PNRemoveMessageActionResult>>) ->
+            callback.accept(Result.success(PNRemoveMessageActionResult()))
+        }
+
+        // Mock channel delete (soft delete uses setChannelMetadata)
+        every {
+            pubnub.setChannelMetadata(
+                channel = threadId,
+                name = any(),
+                description = any(),
+                custom = any(),
+                includeCustom = any(),
+                type = any(),
+                status = "deleted"
+            )
+        } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback.accept(Result.success(getPNChannelMetadataResult(updatedId = threadId, updatedStatus = "deleted")))
+        }
+
+        val message = createMessage(messageChannelId, userId, messageTimetoken)
+
+        // when
+        objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
+            .async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+                // then
+                assertTrue(result.isSuccess)
+            }
+    }
+
+    @Test
+    fun getThreadChannel_shouldReturnThreadChannelWhenItExists() {
+        // given - a message with a thread channel
+        val messageTimetoken = 123345L // Must match createMessage() timetoken
+        val messageChannelId = channelId
+        val threadId = "PUBNUB_INTERNAL_THREAD_${messageChannelId}_$messageTimetoken"
+        val message = createMessage(messageChannelId, userId)
+
+        // Mock getChannelMetadata to return thread channel metadata
+        every { pubnub.getChannelMetadata(channel = threadId) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback.accept(
+                Result.success(
+                    getPNChannelMetadataResult(
+                        updatedId = threadId,
+                        updatedName = "Thread Channel",
+                        updatedDescription = "Thread on channel $messageChannelId with message timetoken $messageTimetoken",
+                        updatedType = ChannelType.GROUP.stringValue
+                    )
+                )
+            )
+        }
+
+        // when
+        objectUnderTest.getThreadChannel(message).async { result ->
+            // then
+            assertTrue(result.isSuccess)
+            assertNotNull(result.getOrNull())
+            assertEquals(threadId, result.getOrNull()?.id)
+        }
+    }
+
+    @Test
+    fun getThreadChannel_shouldFailWhenThreadDoesNotExist() {
+        // given - a message without a thread channel
+        val messageTimetoken = 123345L // Must match createMessage() timetoken
+        val messageChannelId = channelId
+        val threadId = "PUBNUB_INTERNAL_THREAD_${messageChannelId}_$messageTimetoken"
+        val message = createMessage(messageChannelId, userId)
+
+        // Mock getChannelMetadata to return 404 (thread channel doesn't exist)
+        every { pubnub.getChannelMetadata(channel = threadId) } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback.accept(Result.failure(pnException404))
+        }
+
+        // when
+        objectUnderTest.getThreadChannel(message).async { result ->
+            // then
+            assertTrue(result.isFailure)
+            assertTrue(
+                result.exceptionOrNull()?.message?.contains("This message is not a thread") == true,
+                "Expected error message to contain 'This message is not a thread'"
+            )
+        }
+    }
+
+    @Test
+    fun forwardMessageShouldFailWhenChannelIdIsEmpty() {
+        // given
+        val message = createMessage()
+        val emptyChannelId = ""
+
+        // when
+        objectUnderTest.forwardMessage(message, emptyChannelId).async { result: Result<PNPublishResult> ->
+            // then
+            assertTrue(result.isFailure)
+            assertEquals("Channel Id is required", result.exceptionOrNull()!!.message)
+        }
+    }
+
+    @Test
+    fun forwardMessageShouldPreserveExistingMetaAndAddOriginInfo() {
+        // given
+        val existingMetaKey = "customKey"
+        val existingMetaValue = "customValue"
+        val messageWithMeta = MessageImpl(
+            chat = chatMock,
+            timetoken = 123345,
+            content = EventContent.TextMessageContent(
+                text = "message with existing meta",
+                files = listOf()
+            ),
+            channelId = channelId,
+            userId = userId,
+            actions = mapOf(),
+            metaInternal = com.pubnub.api.createJsonElement(mapOf(existingMetaKey to existingMetaValue))
+        )
+        val forwardedChannelId = "forwardedChannelId"
+        val metaSlot = Capture.slot<Any>()
+
+        every {
+            pubnub.publish(
+                channel = any(),
+                message = any(),
+                meta = capture(metaSlot),
+                shouldStore = any(),
+                usePost = any(),
+                replicate = any(),
+                ttl = any()
+            )
+        } returns publishEndpoint
+        every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
+            callback1.accept(Result.success(PNPublishResult(timetoken)))
+        }
+
+        // when
+        objectUnderTest.forwardMessage(messageWithMeta, forwardedChannelId).async { result: Result<PNPublishResult> ->
+            assertTrue(result.isSuccess)
+        }
+
+        // then
+        val actualMeta: Map<String, String> = metaSlot.get() as Map<String, String>
+        assertEquals(existingMetaValue, actualMeta[existingMetaKey])
+        assertEquals(userId, actualMeta["originalPublisher"])
+        assertEquals(channelId, actualMeta["originalChannelId"])
+    }
+
+    @Test
+    fun createDirectConversation_shouldGenerateChannelIdFromSortedUserIds() {
+        // given
+        val invitedUserId = "userB"
+        val currentUserId = userId // "myUserId" - defined at class level
+        val invitedUser = UserImpl(chat = objectUnderTest, id = invitedUserId)
+
+        // The expected channel ID should be based on sorted user IDs: "myUserId" < "userB" alphabetically
+        // So it should be: cyrb53a("myUserId&userB")
+        val sortedUsers = listOf(invitedUserId, currentUserId).sorted()
+        val expectedChannelIdSuffix = cyrb53a("${sortedUsers[0]}&${sortedUsers[1]}")
+        val expectedChannelId = "direct.$expectedChannelIdSuffix"
+
+        // Mock getToken for AccessManager permission checks
+        every { pubnub.getToken() } returns null
+
+        // Mock getChannelMetadata to return 404 (channel doesn't exist)
+        every {
+            pubnub.getChannelMetadata(
+                channel = expectedChannelId,
+                includeCustom = true
+            )
+        } returns getChannelMetadataEndpoint
+        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(Result.failure(pnException404))
+        }
+
+        // Capture the channel ID used in setChannelMetadata
+        val channelIdSlot = Capture.slot<String>()
+        every {
+            pubnub.setChannelMetadata(
+                channel = capture(channelIdSlot),
+                name = any(),
+                description = any(),
+                custom = any(),
+                includeCustom = any(),
+                type = any(),
+                status = any()
+            )
+        } returns setChannelMetadataEndpoint
+        every { setChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
+            callback1.accept(
+                Result.success(
+                    getPNChannelMetadataResult(
+                        updatedId = expectedChannelId,
+                        updatedType = ChannelType.DIRECT.stringValue
+                    )
+                )
+            )
+        }
+
+        // Mock setMemberships for host membership (uses default userId = null)
+        val manageMembershipsEndpoint: ManageMemberships = mock(MockMode.strict)
+        every {
+            pubnub.setMemberships(
+                channels = any<List<ChannelMembershipInput>>(),
+                userId = any<String?>(),
+                limit = any<Int?>(),
+                page = any<PNPage?>(),
+                filter = any<String?>(),
+                sort = any<Collection<PNSortKey<PNMembershipKey>>>(),
+                include = any<MembershipInclude>()
+            )
+        } returns manageMembershipsEndpoint
+        every { manageMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNChannelMembershipArrayResult(
+                        status = 200,
+                        data = listOf(
+                            PNChannelMembership(
+                                channel = PNChannelMetadata(id = expectedChannelId),
+                                custom = null,
+                                updated = "2024-01-01",
+                                eTag = "etag",
+                                status = null
+                            )
+                        ),
+                        totalCount = 1,
+                        next = null,
+                        prev = null
+                    )
+                )
+            )
+        }
+
+        // Mock getChannelMembers for invite check
+        val getChannelMembersEndpoint: GetChannelMembers = mock(MockMode.strict)
+        every {
+            pubnub.getChannelMembers(
+                channel = any<String>(),
+                limit = any<Int>(),
+                page = any<PNPage?>(),
+                filter = any<String?>(),
+                sort = any<Collection<PNSortKey<PNMemberKey>>>(),
+                include = any<MemberInclude>()
+            )
+        } returns getChannelMembersEndpoint
+        every { getChannelMembersEndpoint.async(any()) } calls { (callback: Consumer<Result<PNMemberArrayResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNMemberArrayResult(
+                        status = 200,
+                        data = emptyList(),
+                        totalCount = 0,
+                        next = null,
+                        prev = null
+                    )
+                )
+            )
+        }
+
+        // Mock setMemberships for invite (userId variant)
+        val inviteMembershipsEndpoint: ManageMemberships = mock(MockMode.strict)
+        every {
+            pubnub.setMemberships(
+                channels = any<List<ChannelMembershipInput>>(),
+                userId = invitedUserId,
+                limit = any<Int?>(),
+                page = any<PNPage?>(),
+                filter = any<String?>(),
+                sort = any<Collection<PNSortKey<PNMembershipKey>>>(),
+                include = any<MembershipInclude>()
+            )
+        } returns inviteMembershipsEndpoint
+        every { inviteMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNChannelMembershipArrayResult(
+                        status = 200,
+                        data = listOf(
+                            PNChannelMembership(
+                                channel = PNChannelMetadata(id = expectedChannelId),
+                                custom = null,
+                                updated = "2024-01-01",
+                                eTag = "etag",
+                                status = null
+                            )
+                        ),
+                        totalCount = 1,
+                        next = null,
+                        prev = null
+                    )
+                )
+            )
+        }
+
+        // Mock time for invite
+        val timeEndpoint: Time = mock(MockMode.strict)
+        every { pubnub.time() } returns timeEndpoint
+        every { timeEndpoint.async(any()) } calls { (callback: Consumer<Result<PNTimeResult>>) ->
+            callback.accept(Result.success(PNTimeResult(timetoken)))
+        }
+
+        // Mock getMemberships for getting the invited user's membership result
+        every {
+            pubnub.getMemberships(
+                userId = invitedUserId,
+                limit = any(),
+                page = any(),
+                filter = any(),
+                sort = any(),
+                include = any<MembershipInclude>()
+            )
+        } returns getMembershipsEndpoint
+        every { getMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNChannelMembershipArrayResult(
+                        status = 200,
+                        data = listOf(
+                            PNChannelMembership(
+                                channel = PNChannelMetadata(id = expectedChannelId),
+                                custom = null,
+                                updated = "2024-01-01",
+                                eTag = "etag",
+                                status = null
+                            )
+                        ),
+                        totalCount = 1,
+                        next = null,
+                        prev = null
+                    )
+                )
+            )
+        }
+
+        // Mock publish for invite event (8 parameters including customMessageType)
+        every { pubnub.publish(any(), any(), any(), any(), any(), any(), any(), any()) } returns publishEndpoint
+        every { publishEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNPublishResult>>) ->
+            callback1.accept(Result.success(PNPublishResult(timetoken)))
+        }
+
+        // Mock signal for read receipt
+        every { pubnub.signal(channel = any(), message = any(), customMessageType = any()) } returns signalEndpoint
+        every { signalEndpoint.async(any()) } calls { (callback: Consumer<Result<PNPublishResult>>) ->
+            callback.accept(Result.success(PNPublishResult(timetoken)))
+        }
+
+        // when
+        var testResult: Result<*>? = null
+        objectUnderTest.createDirectConversation(invitedUser = invitedUser).async { result ->
+            testResult = result
+            // then
+            assertTrue(result.isSuccess, "Expected success but got: ${result.exceptionOrNull()?.message}")
+            result.onSuccess {
+                assertEquals(expectedChannelId, it.channel.id)
+                assertTrue(it.channel.id.startsWith("direct."))
+            }
+        }
+
+        // Verify the channel ID was correctly generated
+        assertEquals(expectedChannelId, channelIdSlot.get())
+    }
+
+    @Test
+    fun fetchUnreadMessagesCounts_shouldReturnPaginationInfo() {
+        // given
+        val nextPage = PNPage.PNNext("nextPageHash")
+        val prevPage = PNPage.PNPrev("prevPageHash")
+        val channelId1 = "channel1"
+
+        // Mock getMemberships to return memberships with pagination
+        every {
+            pubnub.getMemberships(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                include = any(),
+            )
+        } returns getMembershipsEndpoint
+        every { getMembershipsEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback.accept(
+                Result.success(
+                    PNChannelMembershipArrayResult(
+                        status = 200,
+                        data = listOf(
+                            PNChannelMembership(
+                                channel = PNChannelMetadata(id = channelId1),
+                                custom = null,
+                                updated = "2024-01-01",
+                                eTag = "etag",
+                                status = null
+                            )
+                        ),
+                        totalCount = 1,
+                        next = nextPage,
+                        prev = prevPage
+                    )
+                )
+            )
+        }
+
+        // Mock messageCounts
+        every { pubnub.messageCounts(channels = listOf(channelId1), channelsTimetoken = any()) } returns messageCounts
+        every { messageCounts.async(any()) } calls { (callback: Consumer<Result<PNMessageCountResult>>) ->
+            callback.accept(Result.success(PNMessageCountResult(mapOf(channelId1 to 5L))))
+        }
+
+        // when
+        objectUnderTest.fetchUnreadMessagesCounts().async { result: Result<UnreadMessagesCounts> ->
+            // then
+            assertTrue(result.isSuccess)
+            result.onSuccess { unreadMessagesCounts ->
+                // Verify pagination info is passed through
+                assertEquals(nextPage, unreadMessagesCounts.next)
+                assertEquals(prevPage, unreadMessagesCounts.prev)
+
+                // Verify counts are correct
+                assertEquals(1, unreadMessagesCounts.countsByChannel.size)
+                assertEquals(5L, unreadMessagesCounts.countsByChannel.first().count)
+                assertEquals(channelId1, unreadMessagesCounts.countsByChannel.first().channel.id)
+            }
+        }
     }
 }
