@@ -1,5 +1,5 @@
 name: pubnub-js-chat
-version: 0.14.1
+version: 0.14.2
 scm: github.com/pubnub/js-chat
 schema: 1
 files:
@@ -82,6 +82,13 @@ sdks:
                   - 'Microsoft Edge 87.0.664.60"'
                   - 'Safari 13.0'
 changelog:
+  - date: 2026-01-14
+    version: 0.14.2
+    changes:
+      - type: feature
+        text: "Add the createThreadWithResult method that returns the ThreadChannel and an updated parent Message with hasThread property set to true."
+      - type: bug
+        text: "Fix slow performance when creating direct conversation."
   - date: 2025-10-08
     version: 0.14.1
     changes:
