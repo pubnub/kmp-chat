@@ -226,7 +226,7 @@ public abstract interface class com/pubnub/chat/Message {
 	public abstract fun getMentionedUsers ()Ljava/util/Map;
 	public abstract fun getMeta ()Ljava/util/Map;
 	public abstract fun getQuotedMessage ()Lcom/pubnub/chat/types/QuotedMessage;
-	public abstract fun getReactions ()Ljava/util/Map;
+	public abstract fun getReactions ()Ljava/util/List;
 	public abstract fun getReferencedChannels ()Ljava/util/Map;
 	public abstract fun getText ()Ljava/lang/String;
 	public abstract fun getTextLinks ()Ljava/util/List;
@@ -907,6 +907,22 @@ public synthetic class com/pubnub/chat/types/MessageMentionedUser$$serializer : 
 
 public final class com/pubnub/chat/types/MessageMentionedUser$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/pubnub/chat/types/MessageReaction {
+	public fun <init> (Ljava/lang/String;ZLjava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Z
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;ZLjava/util/List;)Lcom/pubnub/chat/types/MessageReaction;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/types/MessageReaction;Ljava/lang/String;ZLjava/util/List;ILjava/lang/Object;)Lcom/pubnub/chat/types/MessageReaction;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCount ()I
+	public final fun getUserIds ()Ljava/util/List;
+	public final fun getValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isMine ()Z
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/pubnub/chat/types/MessageReferencedChannel {

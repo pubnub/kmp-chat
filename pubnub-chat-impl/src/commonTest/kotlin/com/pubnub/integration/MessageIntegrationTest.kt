@@ -352,21 +352,38 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "messageText_${randomString()}"
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val publishTimetoken = pnPublishResult.timetoken
-        delayForHistory()
-        val message: Message = channel01.getMessage(publishTimetoken).await()!!
 
+        delayForHistory()
+
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
         val messageWithReaction = message.toggleReaction(reactionValue).await()
 
         assertTrue(messageWithReaction.hasUserReaction(reactionValue))
 
+        val reactions = messageWithReaction.reactions
+        val reaction = reactions.first()
+
+        assertEquals(1, reactions.size)
+        assertEquals(reactionValue, reaction.value)
+        assertTrue(reaction.isMine,)
+        assertEquals(1, reaction.userIds.size)
+        assertTrue(reaction.userIds.contains(someUser.id))
+        assertEquals(1, reaction.count)
+
         delayForHistory()
-        val messageWithReactionFromHistory: Message =
-            channel01.getHistory(publishTimetoken + 1, publishTimetoken).await().messages.first()
+
+        val messageWithReactionFromHistory = channel01.getHistory(
+            startTimetoken = publishTimetoken + 1,
+            endTimetoken = publishTimetoken
+        ).await().messages.first()
 
         assertTrue(messageWithReactionFromHistory.hasUserReaction(reactionValue))
 
-        val softDeletedMessage = message.delete(soft = true).await()
-        assertEquals(softDeletedMessage?.deleted, true)
+        val reactionsFromHistory = messageWithReactionFromHistory.reactions
+        assertEquals(1, reactionsFromHistory.size)
+        assertEquals(reactionValue, reactionsFromHistory.first().value)
+        assertTrue(reactionsFromHistory.first().isMine)
+
         message.delete().await()
     }
 

@@ -370,35 +370,57 @@ class BaseMessageTest : BaseTest() {
     }
 
     @Test
-    fun reactions_shouldReturnReactionsMapWhenReactionsExist() {
+    fun reactions_shouldReturnReactionsListWhenReactionsExist() {
+        val pubNub: PubNub = mock(MockMode.strict)
+        val currentUserId = "user1"
         val reactionsActionName = "reactions"
+
         every { chat.reactionsActionName } returns reactionsActionName
-        val expectedReactions = mapOf(
-            "👍" to listOf(
-                PNFetchMessageItem.Action("user1", 11111L),
-                PNFetchMessageItem.Action("user2", 22222L)
-            ),
-            "❤️" to listOf(
-                PNFetchMessageItem.Action("user3", 33333L)
-            )
+        every { chat.pubNub } returns pubNub
+        every { pubNub.configuration } returns createPNConfiguration(
+            UserId(currentUserId),
+            "demo",
+            "demo",
+            authToken = null
         )
+
         val message = MessageImpl(
             chat = chat,
             timetoken = 12345L,
             content = EventContent.TextMessageContent(text = "test message", files = listOf()),
             channelId = "testChannelId",
             userId = "testUserId",
-            actions = mapOf(reactionsActionName to expectedReactions)
+            actions = mapOf(
+                reactionsActionName to mapOf(
+                    "👍" to listOf(
+                        PNFetchMessageItem.Action("user1", 11111L),
+                        PNFetchMessageItem.Action("user2", 22222L)
+                    ),
+                    "❤️" to listOf(
+                        PNFetchMessageItem.Action("user3", 33333L)
+                    )
+                )
+            )
         )
 
         val reactions = message.reactions
 
         assertEquals(2, reactions.size)
-        assertEquals(2, reactions["👍"]?.size)
-        assertEquals(1, reactions["❤️"]?.size)
-        assertEquals("user1", reactions["👍"]?.get(0)?.uuid)
-        assertEquals("user2", reactions["👍"]?.get(1)?.uuid)
-        assertEquals("user3", reactions["❤️"]?.get(0)?.uuid)
+
+        val thumbsUp = reactions.find { it.value == "👍" }!!
+        assertEquals("👍", thumbsUp.value)
+        assertTrue(thumbsUp.isMine)
+        assertEquals(2, thumbsUp.userIds.size)
+        assertTrue(thumbsUp.userIds.contains("user1"))
+        assertTrue(thumbsUp.userIds.contains("user2"))
+        assertEquals(2, thumbsUp.count)
+
+        val heart = reactions.find { it.value == "❤️" }!!
+        assertEquals("❤️", heart.value)
+        assertFalse(heart.isMine)
+        assertEquals(1, heart.userIds.size)
+        assertTrue(heart.userIds.contains("user3"))
+        assertEquals(1, heart.count)
     }
 
     @Test
