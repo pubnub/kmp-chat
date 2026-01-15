@@ -180,7 +180,7 @@ interface Channel {
      *                    The result of this future can be processed using the `async` method of `PNFuture`.
      *
      */
-    fun whoIsPresent(): PNFuture<Collection<String>>
+    fun whoIsPresent(limit: Int = 1000, offset: Int? = null): PNFuture<Collection<String>>
 
     /**
      * Returns information if the user is present on the [Channel]

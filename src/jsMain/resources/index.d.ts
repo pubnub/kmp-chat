@@ -551,7 +551,7 @@ declare class Channel {
     /*
     * Presence
     */
-    whoIsPresent(): Promise<string[]>;
+    whoIsPresent(params?: { limit?: number; offset?: number }): Promise<string[]>;
     isPresent(userId: string): Promise<boolean>;
     streamPresence(callback: (userIds: string[]) => unknown): Promise<() => void>;
     /*
@@ -741,7 +741,7 @@ declare class Chat {
      *  Presence
      */
     wherePresent(id: string): Promise<string[]>;
-    whoIsPresent(id: string): Promise<string[]>;
+    whoIsPresent(id: string, params?: { limit?: number; offset?: number }): Promise<string[]>;
     isPresent(userId: string, channelId: string): Promise<boolean>;
     createDirectConversation({ user, channelId, channelData, membershipData }: {
         user: User;
@@ -898,7 +898,7 @@ declare class ChannelGroup {
     removeChannels(channels: Channel[]): Promise<any>;
     removeChannelIdentifiers(ids: string[]): Promise<any>;
     connect(callback: (message: Message) => void): () => void;
-    whoIsPresent(): Promise<{ [key: string]: string[] }>
+    whoIsPresent(params?: { limit?: number; offset?: number }): Promise<{ [key: string]: string[] }>
     streamPresence(callback: (presenceByChannels: {
         [key: string]: string[];
     }) => unknown): Promise<() => void>;

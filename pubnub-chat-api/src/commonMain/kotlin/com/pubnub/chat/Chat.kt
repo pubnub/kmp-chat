@@ -257,9 +257,15 @@ interface Chat {
      *
      * @param channelId Unique identifier of the channel where you want to check all present users.
      *
+     * @param limit Maximum number of occupants to return per channel. Valid range: 0-1000.
+     *              - Default: 1000
+     *              - Use 0 to get occupancy counts without user details
+     * @param offset Zero-based starting index for pagination. Returns occupants starting from this position in the list. Must be >= 0.
+     *              - Default: null (no offset)
+     *
      * @return [PNFuture] containing Collection of [User.id].
      */
-    fun whoIsPresent(channelId: String): PNFuture<Collection<String>>
+    fun whoIsPresent(channelId: String, limit: Int = 1000, offset: Int? = null): PNFuture<Collection<String>>
 
     /**
      * Constructs and sends events with your custom payload.

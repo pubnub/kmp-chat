@@ -435,13 +435,13 @@ class ChannelTest : BaseTest() {
 
     @Test
     fun canCallWhoIsPresent() {
-        every { chat.whoIsPresent(any()) } returns emptyList<String>().asFuture()
+        every { chat.whoIsPresent(any(), any(), any()) } returns emptyList<String>().asFuture()
 
         objectUnderTest.whoIsPresent().async { result: Result<Collection<String>> ->
             assertTrue(result.isSuccess)
         }
 
-        verify { chat.whoIsPresent(channelId) }
+        verify { chat.whoIsPresent(channelId, 1000, null) }
     }
 
     @Test

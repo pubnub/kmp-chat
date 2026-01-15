@@ -106,6 +106,21 @@ describe("Channel group test", () => {
     secondDisconnect()
   })
 
+  test("whoIsPresent with limit parameter", async () => {
+    await channelGroup.addChannels([firstChannel, secondChannel])
+    const disconnect = firstChannel.connect(() => null)
+    const secondDisconnect = secondChannel.connect(() => null)
+
+    await sleep(3000)
+
+    const presenceByChannels = await channelGroup.whoIsPresent({ limit: 10 })
+    expect(presenceByChannels[firstChannel.id]).toEqual([chat.currentUser.id])
+    expect(presenceByChannels[secondChannel.id]).toEqual([chat.currentUser.id])
+
+    disconnect()
+    secondDisconnect()
+  })
+
   test("presence stream", async () => {
     await channelGroup.addChannels([firstChannel, secondChannel])
     const disconnect = firstChannel.connect(() => null)
