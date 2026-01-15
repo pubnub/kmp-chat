@@ -318,6 +318,12 @@ external interface Reaction {
     var actionTimetoken: String
 }
 
+external interface MessageReactionJs {
+    var value: String
+    var isMine: Boolean
+    var userIds: Array<String>
+}
+
 external interface UpdateMembershipParams {
     val custom: PubNub.CustomObject?
 }
