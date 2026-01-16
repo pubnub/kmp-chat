@@ -76,7 +76,7 @@ jobs:
           java-version: '21'
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
       - name: Publish to NPM
         uses: ./.github/.release/actions/actions/services/npm
         with:
