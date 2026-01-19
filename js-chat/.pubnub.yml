@@ -90,7 +90,8 @@ changelog:
       - type: feature
         text: "Add limit and offset parameters to whoIsPresent method on Chat, Channel, and ChannelGroup."
       - type: bug
-        text: "Fix slow performance when creating a direct conversation with retryConfiguration enabled."  - date: 2025-10-08
+        text: "Fix slow performance when creating a direct conversation with retryConfiguration enabled."  
+  - date: 2025-10-08
     version: 0.14.1
     changes:
       - type: bug
