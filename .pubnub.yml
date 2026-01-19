@@ -1,5 +1,5 @@
 name: kmp-chat
-version: 0.15.4
+version: 0.16.0
 schema: 1
 scm: github.com/pubnub/kmp-chat
 sdks:
@@ -21,8 +21,8 @@ sdks:
             -
               distribution-type: library
               distribution-repository: maven
-              package-name: pubnub-chat-0.15.4
-              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.15.4/
+              package-name: pubnub-chat-0.16.0
+              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.16.0/
               supported-platforms:
                 supported-operating-systems:
                   Android:
@@ -77,6 +77,13 @@ sdks:
                   license-url: https://github.com/pubnub/kotlin/blob/master/LICENSE
                   is-required: Required
 changelog:
+  - date: 2026-01-19
+    version: 0.16.0
+    changes:
+      - type: feature
+        text: "Add the createThreadWithResult method that returns the ThreadChannel and an updated parent Message with hasThread property set to true."
+      - type: feature
+        text: "Add limit and offset parameters to whoIsPresent method on Chat, Channel, and ChannelGroup."
   - date: 2025-11-20
     version: 0.15.4
     changes:
