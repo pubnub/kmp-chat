@@ -81,6 +81,14 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
         }.asPromise()
     }
 
+    fun isMemberOf(channelId: String): Promise<Boolean> {
+        return user.isMemberOf(channelId).asPromise()
+    }
+
+    fun getMembership(channelId: String): Promise<MembershipJs?> {
+        return user.getMembership(channelId).then { it?.asJs(chatJs) }.asPromise()
+    }
+
     fun setRestrictions(
         channel: ChannelJs,
         params: RestrictionJs,

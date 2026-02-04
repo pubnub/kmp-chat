@@ -172,6 +172,14 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
+    fun hasMember(userId: String): Promise<Boolean> {
+        return channel.hasMember(userId).asPromise()
+    }
+
+    fun getMember(userId: String): Promise<MembershipJs?> {
+        return channel.getMember(userId).then { it?.asJs(chatJs) }.asPromise()
+    }
+
     fun invite(user: UserJs): Promise<MembershipJs> {
         return channel.invite(user.user).then { it.asJs(chatJs) }.asPromise()
     }
