@@ -475,6 +475,18 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
+    override fun hasMember(userId: String): PNFuture<Boolean> {
+        return getMembers(filter = "uuid.id == '$userId'", limit = 1).then { membersResponse ->
+            membersResponse.members.isNotEmpty()
+        }
+    }
+
+    override fun getMember(userId: String): PNFuture<Membership?> {
+        return getMembers(filter = "uuid.id == '$userId'", limit = 1).then { membersResponse ->
+            membersResponse.members.firstOrNull()
+        }
+    }
+
     override fun connect(callback: (Message) -> Unit): AutoCloseable {
         val channelEntity = chat.pubNub.channel(id)
         val subscription = channelEntity.subscription()

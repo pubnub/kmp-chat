@@ -1568,4 +1568,40 @@ describe("Channel test", () => {
     await testUser.delete()
     await directConversation.channel.delete()
   }, 30000)
+
+  test("should check if user is a member of channel via channel.hasMember", async () => {
+    const user = await createRandomUser(chat)
+    const testChannel = await createRandomChannel(chat)
+
+    await testChannel.invite(user)
+    await sleep(200)
+
+    const hasMember = await testChannel.hasMember(user.id)
+    expect(hasMember).toBe(true)
+
+    const nonMemberUser = await createRandomUser(chat)
+    const hasNonMember = await testChannel.hasMember(nonMemberUser.id)
+    expect(hasNonMember).toBe(false)
+
+    await Promise.all([user.delete(), nonMemberUser.delete(), testChannel.delete()])
+  }, 20000)
+
+  test("should get member from channel via channel.getMember", async () => {
+    const user = await createRandomUser(chat)
+    const testChannel = await createRandomChannel(chat)
+
+    await testChannel.invite(user)
+    await sleep(200)
+
+    const membership = await testChannel.getMember(user.id)
+    expect(membership).toBeDefined()
+    expect(membership?.user.id).toBe(user.id)
+    expect(membership?.channel.id).toBe(testChannel.id)
+
+    const nonMemberUser = await createRandomUser(chat)
+    const nonMemberMembership = await testChannel.getMember(nonMemberUser.id)
+    expect(nonMemberMembership).toBeNull()
+
+    await Promise.all([user.delete(), nonMemberUser.delete(), testChannel.delete()])
+  }, 20000)
 })

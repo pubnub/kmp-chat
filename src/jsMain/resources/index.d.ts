@@ -68,6 +68,8 @@ declare class User {
         status: number;
         memberships: Membership[];
     }>;
+    isMemberOf(channelId: string): Promise<boolean>;
+    getMembership(channelId: string): Promise<Membership | null>;
     /**
      * Moderation restrictions
      */
@@ -583,6 +585,8 @@ declare class Channel {
         status: number;
         members: Membership[];
     }>;
+    hasMember(userId: string): Promise<boolean>;
+    getMember(userId: string): Promise<Membership | null>;
     invite(user: User): Promise<Membership>;
     inviteMultiple(users: User[]): Promise<Membership[]>;
     pinMessage(message: Message): Promise<Channel>;

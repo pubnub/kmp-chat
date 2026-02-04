@@ -1230,6 +1230,66 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         // cleanup
         chat.deleteChannel(testChannelId).await()
     }
+
+    @Test
+    fun hasMember_shouldReturnTrueForMember() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val userToInvite = chat.createUser(UserImpl(chat, randomString(), name = "Test User")).await()
+        testChannel.invite(userToInvite).await()
+
+        val hasMember = testChannel.hasMember(userToInvite.id).await()
+
+        assertTrue(hasMember, "hasMember should return true for invited user")
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(userToInvite.id).await()
+    }
+
+    @Test
+    fun hasMember_shouldReturnFalseForNonMember() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val nonMemberUser = chat.createUser(UserImpl(chat, randomString(), name = "Non-Member User")).await()
+
+        val hasMember = testChannel.hasMember(nonMemberUser.id).await()
+
+        assertFalse(hasMember, "hasMember should return false for non-member user")
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(nonMemberUser.id).await()
+    }
+
+    @Test
+    fun getMember_shouldReturnMembershipForMember() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val userToInvite = chat.createUser(UserImpl(chat, randomString(), name = "Test User")).await()
+        testChannel.invite(userToInvite).await()
+
+        val membership = testChannel.getMember(userToInvite.id).await()
+
+        assertNotNull(membership, "getMember should return membership for invited user")
+        assertEquals(userToInvite.id, membership.user.id, "Membership user ID should match")
+        assertEquals(testChannelId, membership.channel.id, "Membership channel ID should match")
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(userToInvite.id).await()
+    }
+
+    @Test
+    fun getMember_shouldReturnNullForNonMember() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val nonMemberUser = chat.createUser(UserImpl(chat, randomString(), name = "Non-Member User")).await()
+
+        val membership = testChannel.getMember(nonMemberUser.id).await()
+
+        assertNull(membership, "getMember should return null for non-member user")
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(nonMemberUser.id).await()
+    }
 }
 
 private fun Channel.asImpl(): ChannelImpl {

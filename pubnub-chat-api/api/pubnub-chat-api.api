@@ -13,6 +13,7 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun getHistory (Ljava/lang/Long;Ljava/lang/Long;I)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getHistory$default (Lcom/pubnub/chat/Channel;Ljava/lang/Long;Ljava/lang/Long;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getId ()Ljava/lang/String;
+	public abstract fun getMember (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getMembers (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getMembers$default (Lcom/pubnub/chat/Channel;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getMessage (J)Lcom/pubnub/kmp/PNFuture;
@@ -29,6 +30,7 @@ public abstract interface class com/pubnub/chat/Channel {
 	public static synthetic fun getUserSuggestions$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getUsersRestrictions (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getUsersRestrictions$default (Lcom/pubnub/chat/Channel;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun hasMember (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun invite (Lcom/pubnub/chat/User;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun inviteMultiple (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun isPresent (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
@@ -363,6 +365,7 @@ public abstract interface class com/pubnub/chat/User {
 	public abstract fun getExternalId ()Ljava/lang/String;
 	public abstract fun getId ()Ljava/lang/String;
 	public abstract fun getLastActiveTimestamp ()Ljava/lang/Long;
+	public abstract fun getMembership (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getMemberships (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getMemberships$default (Lcom/pubnub/chat/User;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getName ()Ljava/lang/String;
@@ -370,6 +373,7 @@ public abstract interface class com/pubnub/chat/User {
 	public abstract fun getStatus ()Ljava/lang/String;
 	public abstract fun getType ()Ljava/lang/String;
 	public abstract fun getUpdated ()Ljava/lang/String;
+	public abstract fun isMemberOf (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun isPresentOn (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun plus (Lcom/pubnub/api/models/consumer/objects/uuid/PNUUIDMetadata;)Lcom/pubnub/chat/User;
 	public abstract fun setRestrictions (Lcom/pubnub/chat/Channel;ZZLjava/lang/String;)Lcom/pubnub/kmp/PNFuture;

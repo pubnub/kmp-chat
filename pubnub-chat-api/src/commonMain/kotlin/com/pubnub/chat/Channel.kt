@@ -326,6 +326,24 @@ interface Channel {
     ): PNFuture<MembersResponse>
 
     /**
+     * Checks if a specific user is a member of the channel.
+     *
+     * @param userId The ID of the user to check for membership.
+     *
+     * @return [PNFuture] containing a Boolean indicating whether the user is a member of the channel.
+     */
+    fun hasMember(userId: String): PNFuture<Boolean>
+
+    /**
+     * Retrieves a specific user's membership in the channel.
+     *
+     * @param userId The ID of the user whose membership you want to retrieve.
+     *
+     * @return [PNFuture] containing the [Membership] if the user is a member of the channel, or null otherwise.
+     */
+    fun getMember(userId: String): PNFuture<Membership?>
+
+    /**
      * Watch the [Channel] content without a need to [join] the [Channel]
      *
      * @param callback defines the custom behavior to be executed whenever a message is received on the [Channel]

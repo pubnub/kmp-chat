@@ -441,4 +441,38 @@ describe("User test", () => {
     expect(softDeleteResult).toBeDefined()
     expect((softDeleteResult as User).status).toBe("deleted")
   })
+
+  test("should check if user is a member of channel via user.isMemberOf", async () => {
+    const testChannel = await createRandomChannel(chat)
+
+    await testChannel.invite(user)
+    await sleep(200)
+
+    const isMember = await user.isMemberOf(testChannel.id)
+    expect(isMember).toBe(true)
+
+    const otherChannel = await createRandomChannel(chat)
+    const isNotMember = await user.isMemberOf(otherChannel.id)
+    expect(isNotMember).toBe(false)
+
+    await Promise.all([testChannel.delete(), otherChannel.delete()])
+  }, 20000)
+
+  test("should get membership for channel via user.getMembership", async () => {
+    const testChannel = await createRandomChannel(chat)
+
+    await testChannel.invite(user)
+    await sleep(200)
+
+    const membership = await user.getMembership(testChannel.id)
+    expect(membership).toBeDefined()
+    expect(membership?.user.id).toBe(user.id)
+    expect(membership?.channel.id).toBe(testChannel.id)
+
+    const otherChannel = await createRandomChannel(chat)
+    const noMembership = await user.getMembership(otherChannel.id)
+    expect(noMembership).toBeNull()
+
+    await Promise.all([testChannel.delete(), otherChannel.delete()])
+  }, 20000)
 })
