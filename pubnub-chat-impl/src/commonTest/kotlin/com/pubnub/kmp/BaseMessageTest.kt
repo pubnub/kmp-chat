@@ -334,13 +334,12 @@ class BaseMessageTest : BaseTest() {
     @Test
     fun reactions_shouldReturnReactionsListWhenReactionsExist() {
         val pubNub: PubNub = mock(MockMode.strict)
-        val currentUserId = "user1"
         val reactionsActionName = "reactions"
 
         every { chat.reactionsActionName } returns reactionsActionName
         every { chat.pubNub } returns pubNub
         every { pubNub.configuration } returns createPNConfiguration(
-            UserId(currentUserId),
+            UserId("user1"),
             "demo",
             "demo",
             authToken = null
