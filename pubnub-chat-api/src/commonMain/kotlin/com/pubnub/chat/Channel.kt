@@ -326,6 +326,24 @@ interface Channel {
     ): PNFuture<MembersResponse>
 
     /**
+     * Checks if a specific user is a member of the channel.
+     *
+     * @param userId The ID of the user to check for membership.
+     *
+     * @return [PNFuture] containing a Boolean indicating whether the user is a member of the channel.
+     */
+    fun hasMember(userId: String): PNFuture<Boolean>
+
+    /**
+     * Retrieves a specific user's membership in the channel.
+     *
+     * @param userId The ID of the user whose membership you want to retrieve.
+     *
+     * @return [PNFuture] containing the [Membership] if the user is a member of the channel, or null otherwise.
+     */
+    fun getMember(userId: String): PNFuture<Membership?>
+
+    /**
      * Watch the [Channel] content without a need to [join] the [Channel]
      *
      * @param callback defines the custom behavior to be executed whenever a message is received on the [Channel]
@@ -458,13 +476,30 @@ interface Channel {
     fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable
 
     /**
+     * Fetches the read receipts for all members of a channel.
+     *
+     * @param limit Number of members to return. Default and max is 100.
+     * @param page Pagination object for fetching next/previous results.
+     * @param filter Expression used to filter the results.
+     * @param sort A collection to specify the sort order.
+     *
+     * @return [PNFuture] containing a map of userId to last read message timetoken.
+     */
+    fun fetchReadReceipts(
+        limit: Int? = 100,
+        page: PNPage? = null,
+        filter: String? = null,
+        sort: Collection<PNSortKey<PNMemberKey>> = listOf(),
+    ): PNFuture<Map<String, Long>>
+
+    /**
      * Lets you get a read confirmation status for messages you published on a channel.
      * @param callback defines the custom behavior to be executed when receiving a read confirmation status on the joined channel.
      *
      * @return AutoCloseable Interface you can call to stop listening for message read receipts
      * and clean up resources by invoking the close() method.
      */
-    fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable
+    fun streamReadReceipts(callback: (receipts: Map<String, Long>) -> Unit): AutoCloseable
 
     /**
      * Returns all files attached to messages on a given channel.

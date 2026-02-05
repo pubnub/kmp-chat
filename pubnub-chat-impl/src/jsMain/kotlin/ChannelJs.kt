@@ -172,6 +172,14 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
+    fun hasMember(userId: String): Promise<Boolean> {
+        return channel.hasMember(userId).asPromise()
+    }
+
+    fun getMember(userId: String): Promise<MembershipJs?> {
+        return channel.getMember(userId).then { it?.asJs(chatJs) }.asPromise()
+    }
+
     fun invite(user: UserJs): Promise<MembershipJs> {
         return channel.invite(user.user).then { it.asJs(chatJs) }.asPromise()
     }
@@ -232,17 +240,21 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.unregisterFromPush().asPromise()
     }
 
-    fun streamReadReceipts(callback: (JsMap<Array<String>>) -> Unit): Promise<() -> Unit> {
-        return channel.streamReadReceipts {
-            callback(
-                it
-                    .mapKeys { entry -> entry.key.toString() }
-                    .mapValues { entry -> entry.value.toTypedArray() }
-                    .toJsMap()
-            )
-        }.let { autoCloseable ->
-            autoCloseable::close.asFuture().asPromise()
-        }
+    fun fetchReadReceipts(params: PubNub.GetChannelMembersParameters?): Promise<JsMap<String>> {
+        return channel.fetchReadReceipts(
+            params?.limit?.toInt() ?: 100,
+            params?.page?.toKmp(),
+            params?.filter,
+            extractSortKeys(params?.sort)
+        ).then { result ->
+            result.mapValues { it.value.toString() }.toJsMap()
+        }.asPromise()
+    }
+
+    fun streamReadReceipts(callback: (JsMap<String>) -> Unit): () -> Unit {
+        return channel.streamReadReceipts { receipts ->
+            callback(receipts.mapValues { it.value.toString() }.toJsMap())
+        }::close
     }
 
     fun getFiles(params: PubNub.ListFilesParameters?): Promise<GetFilesResultJs> {
