@@ -379,43 +379,42 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         }
     }
 
-    // todo flaky
-    @Ignore
     @Test
-    fun streamReadReceipts() = runTest(timeout = 10.seconds) {
-        val completableBeforeMark = CompletableDeferred<Unit>()
-        val completableAfterMark = CompletableDeferred<Unit>()
+    fun fetchReadReceipts() = runTest(timeout = 10.seconds) {
+        val user = chat.createUser(UserImpl(chat, randomString())).await()
+        val channel = chat.createDirectConversation(user).await().channel
 
-        try {
-            chat.deleteUser("user2", false).await()
-        } catch (_: Exception) {
-        }
-        val user2 = chat.createUser(UserImpl(chat, "user2")).await()
-
-        val channel = chat.createDirectConversation(user2).await().channel
-        channel.sendText("text1").await().timetoken
-        delayForHistory()
+        channel.sendText("text1").await()
         chat.markAllMessagesAsRead().await()
 
         val tt = channel.sendText("text2").await().timetoken
+        val receipts = channel.fetchReadReceipts().await()
+        val lastRead = receipts[chat.currentUser.id]
+
+        assertTrue(lastRead != null && tt > lastRead)
+    }
+
+    @Test
+    fun streamReadReceipts() = runTest(timeout = 10.seconds) {
+        val completable = CompletableDeferred<Unit>()
+        val user = chat.createUser(UserImpl(chat, randomString())).await()
+
+        val channel = chat.createDirectConversation(user).await().channel
+        val tt = channel.sendText("text1").await().timetoken
+
         var dispose: AutoCloseable? = null
         pubnub.test(backgroundScope, checkAllEvents = false) {
             pubnub.awaitSubscribe(listOf(channel.id)) {
                 dispose = channel.streamReadReceipts { receipts ->
-                    val lastRead = receipts.entries.find { it.value.contains(chat.currentUser.id) }?.key
-                    if (lastRead != null) {
-                        if (tt > lastRead) {
-                            completableBeforeMark.complete(Unit) // before calling markAllMessagesRead
-                        } else {
-                            completableAfterMark.complete(Unit) // after calling markAllMessagesRead
-                        }
+                    val lastRead = receipts[chat.currentUser.id]
+                    if (lastRead != null && lastRead >= tt) {
+                        completable.complete(Unit)
                     }
                 }
             }
 
-            completableBeforeMark.await()
             chat.markAllMessagesAsRead().await()
-            completableAfterMark.await()
+            completable.await()
 
             dispose?.close()
         }

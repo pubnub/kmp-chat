@@ -1538,30 +1538,42 @@ describe("Channel test", () => {
     await testChannel.delete()
   }, 30000)
 
+  test("should fetch read receipts on a channel", async () => {
+    const testUser = await createRandomUser(chat)
+    const directConversation = await chat.createDirectConversation({ user: testUser })
+
+    const publishResult = await directConversation.channel.sendText("Test message for receipts")
+    await directConversation.hostMembership.setLastReadMessageTimetoken(publishResult.timetoken.toString())
+    await sleep(500)
+
+    const receipts = await directConversation.channel.fetchReadReceipts()
+    expect(receipts[chat.currentUser.id]).toBeDefined()
+
+    await directConversation.channel.leave()
+    await testUser.delete()
+    await directConversation.channel.delete()
+  }, 30000)
+
   test("should stream read receipts on a channel", async () => {
     const testUser = await createRandomUser(chat)
     const directConversation = await chat.createDirectConversation({ user: testUser })
 
-    let receivedReceipts
+    let receivedReceipts: { [userId: string]: string } | undefined
     let callbackCount = 0
 
-    const stopReceiptsStream = await directConversation.channel.streamReadReceipts((receipts) => {
+    const stopReceiptsStream = directConversation.channel.streamReadReceipts((receipts) => {
       receivedReceipts = receipts
       callbackCount++
     })
 
-    await directConversation.channel.sendText("Test message for receipts")
-    await directConversation.channel.join(() => null)
+    const message = await directConversation.channel.sendText("Test message")
+    await directConversation.hostMembership.setLastReadMessageTimetoken(message.timetoken.toString())
     await sleep(1000)
 
     expect(callbackCount).toBeGreaterThan(0)
     expect(receivedReceipts).toBeDefined()
+    expect(receivedReceipts![chat.currentUser.id]).toBeDefined()
 
-    const hasExpectedReceipt = Object.keys(receivedReceipts).some(key =>
-      receivedReceipts[key].includes(chat.currentUser.id)
-    )
-
-    expect(hasExpectedReceipt).toBe(true)
     stopReceiptsStream()
 
     await directConversation.channel.leave()

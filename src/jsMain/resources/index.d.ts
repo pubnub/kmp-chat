@@ -599,9 +599,12 @@ declare class Channel {
     createMessageDraftV2(config?: Partial<MessageDraftConfig>): MessageDraftV2;
     registerForPush(): Promise<void>;
     unregisterFromPush(): Promise<void>;
+    fetchReadReceipts(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<{
+        [userId: string]: string;
+    }>;
     streamReadReceipts(callback: (receipts: {
-        [key: string]: string[];
-    }) => unknown): Promise<() => void>;
+        [userId: string]: string;
+    }) => unknown): () => void;
     getFiles(params?: Omit<FileSharing.ListFilesParameters, "channel">): Promise<{
         files: {
             name: string;
