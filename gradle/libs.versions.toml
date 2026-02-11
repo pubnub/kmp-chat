@@ -40,7 +40,7 @@ benmanes-versions = { id = "com.github.ben-manes.versions", version = "0.42.0" }
 vanniktech-maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech" }
 gradle-nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus" }
 kotlinx-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version = "0.16.2" }
-mokkery = { id = "dev.mokkery", version = "2.6.0" }
+mokkery = { id = "dev.mokkery", version = "2.8.0" }
 npm-publish = { id = "dev.petuska.npm.publish", version = "3.4.3" }
 codingfeline-buildkonfig = { id = "com.codingfeline.buildkonfig", version = "0.15.1" }
 apple-privacy-manifest = { id = "org.jetbrains.kotlin.apple-privacy-manifests", version = "1.0.0" }
