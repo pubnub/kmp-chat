@@ -246,6 +246,10 @@ type MessageReaction = {
     isMine: boolean;
     userIds: string[];
 };
+type ReadReceipt = {
+    userId: string;
+    lastReadTimetoken: string;
+};
 type DeleteParameters = {
     soft?: boolean;
 };
@@ -599,12 +603,8 @@ declare class Channel {
     createMessageDraftV2(config?: Partial<MessageDraftConfig>): MessageDraftV2;
     registerForPush(): Promise<void>;
     unregisterFromPush(): Promise<void>;
-    fetchReadReceipts(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<{
-        [userId: string]: string;
-    }>;
-    streamReadReceipts(callback: (receipts: {
-        [userId: string]: string;
-    }) => unknown): () => void;
+    fetchReadReceipts(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<ReadReceipt[]>;
+    streamReadReceipts(callback: (receipt: ReadReceipt) => unknown): () => void;
     getFiles(params?: Omit<FileSharing.ListFilesParameters, "channel">): Promise<{
         files: {
             name: string;

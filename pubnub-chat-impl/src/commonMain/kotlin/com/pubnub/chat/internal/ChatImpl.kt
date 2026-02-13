@@ -963,14 +963,24 @@ class ChatImpl(
                                 includeChannelStatus = false
                             ),
                         ).alsoAsync { _: PNChannelMembershipArrayResult ->
+                            val channelTypeMap: Map<String, ChannelType?> =
+                                userMembershipsResponse.memberships.associate { it.channel.id to it.channel.type }
                             val emitEventFutures: List<PNFuture<PNPublishResult>> =
-                                relevantChannelIds.map { channelId: String ->
-                                    val relevantLastMessageTimeToken =
-                                        getTimetokenFromHistoryMessage(channelId, lastMessagesFromMembershipChannels)
-                                    emitEvent(
-                                        channelId = channelId,
-                                        payload = EventContent.Receipt(relevantLastMessageTimeToken)
-                                    )
+                                relevantChannelIds.mapNotNull { channelId: String ->
+                                    val shouldSendReceipt = channelTypeMap[channelId]?.let { config.emitReadReceiptEvents[it] } != false
+                                    if (shouldSendReceipt) {
+                                        emitEvent(
+                                            channelId = channelId,
+                                            payload = EventContent.Receipt(
+                                                getTimetokenFromHistoryMessage(
+                                                    channelId,
+                                                    lastMessagesFromMembershipChannels
+                                                )
+                                            )
+                                        )
+                                    } else {
+                                        null
+                                    }
                                 }
                             emitEventFutures.awaitAll()
                         }.then { setMembershipsResponse: PNChannelMembershipArrayResult ->

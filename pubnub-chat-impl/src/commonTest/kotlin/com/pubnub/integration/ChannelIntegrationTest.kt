@@ -389,7 +389,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         val tt = channel.sendText("text2").await().timetoken
         val receipts = channel.fetchReadReceipts().await()
-        val lastRead = receipts[chat.currentUser.id]
+        val lastRead = receipts.find { it.userId == chat.currentUser.id }?.lastReadTimetoken
 
         assertTrue(lastRead != null && tt > lastRead)
     }
@@ -405,9 +405,8 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         var dispose: AutoCloseable? = null
         pubnub.test(backgroundScope, checkAllEvents = false) {
             pubnub.awaitSubscribe(listOf(channel.id)) {
-                dispose = channel.streamReadReceipts { receipts ->
-                    val lastRead = receipts[chat.currentUser.id]
-                    if (lastRead != null && lastRead >= tt) {
+                dispose = channel.streamReadReceipts { receipt ->
+                    if (receipt.userId == chat.currentUser.id && receipt.lastReadTimetoken >= tt) {
                         completable.complete(Unit)
                     }
                 }

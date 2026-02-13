@@ -324,6 +324,11 @@ external interface MessageReactionJs {
     var userIds: Array<String>
 }
 
+external interface ReadReceiptJs {
+    var userId: String
+    var lastReadTimetoken: String
+}
+
 external interface UpdateMembershipParams {
     val custom: PubNub.CustomObject?
 }

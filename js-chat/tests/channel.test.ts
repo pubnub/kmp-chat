@@ -1547,7 +1547,12 @@ describe("Channel test", () => {
     await sleep(500)
 
     const receipts = await directConversation.channel.fetchReadReceipts()
-    expect(receipts[chat.currentUser.id]).toBeDefined()
+    expect(Array.isArray(receipts)).toBe(true)
+
+    const myReceipt = receipts.find((r) => r.userId === chat.currentUser.id)
+    expect(myReceipt).toBeDefined()
+    expect(myReceipt?.userId).toBe(chat.currentUser.id)
+    expect(myReceipt?.lastReadTimetoken).toBe(publishResult.timetoken.toString())
 
     await directConversation.channel.leave()
     await testUser.delete()
@@ -1558,21 +1563,21 @@ describe("Channel test", () => {
     const testUser = await createRandomUser(chat)
     const directConversation = await chat.createDirectConversation({ user: testUser })
 
-    let receivedReceipts: { [userId: string]: string } | undefined
+    let receivedReceipt: { userId: string; lastReadTimetoken: string } | undefined
     let callbackCount = 0
 
-    const stopReceiptsStream = directConversation.channel.streamReadReceipts((receipts) => {
-      receivedReceipts = receipts
+    const stopReceiptsStream = directConversation.channel.streamReadReceipts((receipt) => {
+      receivedReceipt = receipt
       callbackCount++
     })
 
+    await sleep(1000)
     const message = await directConversation.channel.sendText("Test message")
     await directConversation.hostMembership.setLastReadMessageTimetoken(message.timetoken.toString())
-    await sleep(1000)
 
     expect(callbackCount).toBeGreaterThan(0)
-    expect(receivedReceipts).toBeDefined()
-    expect(receivedReceipts![chat.currentUser.id]).toBeDefined()
+    expect(receivedReceipt).toBeDefined()
+    expect(receivedReceipt!.userId).toBe(chat.currentUser.id)
 
     stopReceiptsStream()
 

@@ -80,6 +80,7 @@ import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
+import com.pubnub.chat.types.ReadReceipt
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -650,17 +651,19 @@ abstract class BaseChannel<C : Channel, M : Message>(
         page: PNPage?,
         filter: String?,
         sort: Collection<PNSortKey<PNMemberKey>>,
-    ): PNFuture<Map<String, Long>> {
+    ): PNFuture<List<ReadReceipt>> {
         return getMembers(limit = limit, page = page, filter = filter, sort = sort).then { members ->
             members.members.mapNotNull { m ->
-                m.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN)?.tryLong()?.let { m.user.id to it }
-            }.toMap()
+                m.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN)?.tryLong()?.let {
+                    ReadReceipt(userId = m.user.id, lastReadTimetoken = it)
+                }
+            }
         }
     }
 
-    override fun streamReadReceipts(callback: (receipts: Map<String, Long>) -> Unit): AutoCloseable {
+    override fun streamReadReceipts(callback: (receipt: ReadReceipt) -> Unit): AutoCloseable {
         return chat.listenForEvents<EventContent.Receipt>(id) { event ->
-            callback(mapOf(event.userId to event.payload.messageTimetoken))
+            callback(ReadReceipt(userId = event.userId, lastReadTimetoken = event.payload.messageTimetoken))
         }
     }
 

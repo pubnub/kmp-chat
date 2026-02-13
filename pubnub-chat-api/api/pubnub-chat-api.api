@@ -412,6 +412,7 @@ public final class com/pubnub/chat/User$UpdatableValues {
 
 public abstract interface class com/pubnub/chat/config/ChatConfiguration {
 	public abstract fun getCustomPayloads ()Lcom/pubnub/chat/config/CustomPayloads;
+	public abstract fun getEmitReadReceiptEvents ()Ljava/util/Map;
 	public abstract fun getLogLevel ()Lcom/pubnub/chat/config/LogLevel;
 	public abstract fun getPushNotifications ()Lcom/pubnub/chat/config/PushNotificationsConfig;
 	public abstract fun getRateLimitFactor ()I
@@ -423,8 +424,10 @@ public abstract interface class com/pubnub/chat/config/ChatConfiguration {
 }
 
 public final class com/pubnub/chat/config/ChatConfigurationKt {
-	public static final fun ChatConfiguration-ZH2SSTU (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;Z)Lcom/pubnub/chat/config/ChatConfiguration;
-	public static synthetic fun ChatConfiguration-ZH2SSTU$default (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;ZILjava/lang/Object;)Lcom/pubnub/chat/config/ChatConfiguration;
+	public static final fun ChatConfiguration-eUJyBe4 (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;Ljava/util/Map;Z)Lcom/pubnub/chat/config/ChatConfiguration;
+	public static synthetic fun ChatConfiguration-eUJyBe4$default (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;Ljava/util/Map;ZILjava/lang/Object;)Lcom/pubnub/chat/config/ChatConfiguration;
+	public static final fun EmitReadReceiptEvents (ZZZZ)Ljava/util/Map;
+	public static synthetic fun EmitReadReceiptEvents$default (ZZZZILjava/lang/Object;)Ljava/util/Map;
 	public static final fun RateLimitPerChannel-InTURus (JJJJ)Ljava/util/Map;
 	public static synthetic fun RateLimitPerChannel-InTURus$default (JJJJILjava/lang/Object;)Ljava/util/Map;
 }
@@ -974,6 +977,19 @@ public synthetic class com/pubnub/chat/types/QuotedMessage$$serializer : kotlinx
 
 public final class com/pubnub/chat/types/QuotedMessage$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/pubnub/chat/types/ReadReceipt {
+	public fun <init> (Ljava/lang/String;J)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun copy (Ljava/lang/String;J)Lcom/pubnub/chat/types/ReadReceipt;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/types/ReadReceipt;Ljava/lang/String;JILjava/lang/Object;)Lcom/pubnub/chat/types/ReadReceipt;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLastReadTimetoken ()J
+	public final fun getUserId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/pubnub/chat/types/TextLink {

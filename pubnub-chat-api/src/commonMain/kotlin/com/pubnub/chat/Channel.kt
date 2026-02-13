@@ -20,6 +20,7 @@ import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
+import com.pubnub.chat.types.ReadReceipt
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -483,23 +484,23 @@ interface Channel {
      * @param filter Expression used to filter the results.
      * @param sort A collection to specify the sort order.
      *
-     * @return [PNFuture] containing a map of userId to last read message timetoken.
+     * @return [PNFuture] containing a list of [ReadReceipt] objects, one per member who has read a message.
      */
     fun fetchReadReceipts(
         limit: Int? = 100,
         page: PNPage? = null,
         filter: String? = null,
         sort: Collection<PNSortKey<PNMemberKey>> = listOf(),
-    ): PNFuture<Map<String, Long>>
+    ): PNFuture<List<ReadReceipt>>
 
     /**
      * Lets you get a read confirmation status for messages you published on a channel.
-     * @param callback defines the custom behavior to be executed when receiving a read confirmation status on the joined channel.
+     * @param callback defines the custom behavior to be executed when receiving a single [ReadReceipt] on the joined channel.
      *
      * @return AutoCloseable Interface you can call to stop listening for message read receipts
      * and clean up resources by invoking the close() method.
      */
-    fun streamReadReceipts(callback: (receipts: Map<String, Long>) -> Unit): AutoCloseable
+    fun streamReadReceipts(callback: (receipt: ReadReceipt) -> Unit): AutoCloseable
 
     /**
      * Returns all files attached to messages on a given channel.
