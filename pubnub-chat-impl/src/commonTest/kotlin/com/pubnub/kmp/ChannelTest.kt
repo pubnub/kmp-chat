@@ -1020,12 +1020,6 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
-    fun generateReceipts() {
-        val result = BaseChannel.generateReceipts(mapOf("user" to 1L, "user2" to 2L, "user3" to 1L, "user4" to 3L))
-        assertEquals(mapOf(1L to listOf("user", "user3"), 2L to listOf("user2"), 3L to listOf("user4")), result)
-    }
-
-    @Test
     fun registerForPush_calls_chat() {
         every { chat.registerPushChannels(any()) } returns mock()
         objectUnderTest.registerForPush()

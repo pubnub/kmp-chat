@@ -318,6 +318,24 @@ external interface Reaction {
     var actionTimetoken: String
 }
 
+external interface MessageReactionJs {
+    var value: String
+    var isMine: Boolean
+    var userIds: Array<String>
+}
+
+external interface ReadReceiptJs {
+    var userId: String
+    var lastReadTimetoken: String
+}
+
+external interface ReadReceiptsResponseJs {
+    var page: PubNub.MetadataPage
+    var total: Int
+    var status: Int
+    var receipts: Array<ReadReceiptJs>
+}
+
 external interface UpdateMembershipParams {
     val custom: PubNub.CustomObject?
 }

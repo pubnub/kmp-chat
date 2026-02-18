@@ -379,43 +379,41 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         }
     }
 
-    // todo flaky
-    @Ignore
     @Test
-    fun streamReadReceipts() = runTest(timeout = 10.seconds) {
-        val completableBeforeMark = CompletableDeferred<Unit>()
-        val completableAfterMark = CompletableDeferred<Unit>()
+    fun fetchReadReceipts() = runTest(timeout = 10.seconds) {
+        val user = chat.createUser(UserImpl(chat, randomString())).await()
+        val channel = chat.createDirectConversation(user).await().channel
 
-        try {
-            chat.deleteUser("user2", false).await()
-        } catch (_: Exception) {
-        }
-        val user2 = chat.createUser(UserImpl(chat, "user2")).await()
-
-        val channel = chat.createDirectConversation(user2).await().channel
-        channel.sendText("text1").await().timetoken
-        delayForHistory()
+        channel.sendText("text1").await()
         chat.markAllMessagesAsRead().await()
 
         val tt = channel.sendText("text2").await().timetoken
+        val response = channel.fetchReadReceipts().await()
+        val lastRead = response.receipts.find { it.userId == chat.currentUser.id }?.lastReadTimetoken
+
+        assertTrue(lastRead != null && tt > lastRead)
+    }
+
+    @Test
+    fun streamReadReceipts() = runTest(timeout = 10.seconds) {
+        val completable = CompletableDeferred<Unit>()
+        val user = chat.createUser(UserImpl(chat, randomString())).await()
+
+        val channel = chat.createDirectConversation(user).await().channel
+        val tt = channel.sendText("text1").await().timetoken
+
         var dispose: AutoCloseable? = null
         pubnub.test(backgroundScope, checkAllEvents = false) {
             pubnub.awaitSubscribe(listOf(channel.id)) {
-                dispose = channel.streamReadReceipts { receipts ->
-                    val lastRead = receipts.entries.find { it.value.contains(chat.currentUser.id) }?.key
-                    if (lastRead != null) {
-                        if (tt > lastRead) {
-                            completableBeforeMark.complete(Unit) // before calling markAllMessagesRead
-                        } else {
-                            completableAfterMark.complete(Unit) // after calling markAllMessagesRead
-                        }
+                dispose = channel.streamReadReceipts { receipt ->
+                    if (receipt.userId == chat.currentUser.id && receipt.lastReadTimetoken >= tt) {
+                        completable.complete(Unit)
                     }
                 }
             }
 
-            completableBeforeMark.await()
             chat.markAllMessagesAsRead().await()
-            completableAfterMark.await()
+            completable.await()
 
             dispose?.close()
         }
@@ -1229,6 +1227,66 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         // cleanup
         chat.deleteChannel(testChannelId).await()
+    }
+
+    @Test
+    fun hasMember_shouldReturnTrueForMember() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val userToInvite = chat.createUser(UserImpl(chat, randomString(), name = "Test User")).await()
+        testChannel.invite(userToInvite).await()
+
+        val hasMember = testChannel.hasMember(userToInvite.id).await()
+
+        assertTrue(hasMember, "hasMember should return true for invited user")
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(userToInvite.id).await()
+    }
+
+    @Test
+    fun hasMember_shouldReturnFalseForNonMember() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val nonMemberUser = chat.createUser(UserImpl(chat, randomString(), name = "Non-Member User")).await()
+
+        val hasMember = testChannel.hasMember(nonMemberUser.id).await()
+
+        assertFalse(hasMember, "hasMember should return false for non-member user")
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(nonMemberUser.id).await()
+    }
+
+    @Test
+    fun getMember_shouldReturnMembershipForMember() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val userToInvite = chat.createUser(UserImpl(chat, randomString(), name = "Test User")).await()
+        testChannel.invite(userToInvite).await()
+
+        val membership = testChannel.getMember(userToInvite.id).await()
+
+        assertNotNull(membership, "getMember should return membership for invited user")
+        assertEquals(userToInvite.id, membership.user.id, "Membership user ID should match")
+        assertEquals(testChannelId, membership.channel.id, "Membership channel ID should match")
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(userToInvite.id).await()
+    }
+
+    @Test
+    fun getMember_shouldReturnNullForNonMember() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val nonMemberUser = chat.createUser(UserImpl(chat, randomString(), name = "Non-Member User")).await()
+
+        val membership = testChannel.getMember(nonMemberUser.id).await()
+
+        assertNull(membership, "getMember should return null for non-member user")
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(nonMemberUser.id).await()
     }
 }
 
