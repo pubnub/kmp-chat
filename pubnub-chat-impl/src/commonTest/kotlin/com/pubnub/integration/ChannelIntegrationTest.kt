@@ -388,8 +388,8 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         chat.markAllMessagesAsRead().await()
 
         val tt = channel.sendText("text2").await().timetoken
-        val receipts = channel.fetchReadReceipts().await()
-        val lastRead = receipts.find { it.userId == chat.currentUser.id }?.lastReadTimetoken
+        val response = channel.fetchReadReceipts().await()
+        val lastRead = response.receipts.find { it.userId == chat.currentUser.id }?.lastReadTimetoken
 
         assertTrue(lastRead != null && tt > lastRead)
     }

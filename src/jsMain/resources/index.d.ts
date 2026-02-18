@@ -250,6 +250,15 @@ type ReadReceipt = {
     userId: string;
     lastReadTimetoken: string;
 };
+type ReadReceiptsResponse = {
+    page: {
+        next?: string;
+        prev?: string;
+    };
+    total: number;
+    status: number;
+    receipts: ReadReceipt[];
+};
 type DeleteParameters = {
     soft?: boolean;
 };
@@ -603,7 +612,7 @@ declare class Channel {
     createMessageDraftV2(config?: Partial<MessageDraftConfig>): MessageDraftV2;
     registerForPush(): Promise<void>;
     unregisterFromPush(): Promise<void>;
-    fetchReadReceipts(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<ReadReceipt[]>;
+    fetchReadReceipts(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<ReadReceiptsResponse>;
     streamReadReceipts(callback: (receipt: ReadReceipt) => unknown): () => void;
     getFiles(params?: Omit<FileSharing.ListFilesParameters, "channel">): Promise<{
         files: {

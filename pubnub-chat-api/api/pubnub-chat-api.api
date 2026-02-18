@@ -992,6 +992,15 @@ public final class com/pubnub/chat/types/ReadReceipt {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/pubnub/chat/types/ReadReceiptsResponse {
+	public fun <init> (Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;IILjava/util/List;)V
+	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
+	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
+	public final fun getReceipts ()Ljava/util/List;
+	public final fun getStatus ()I
+	public final fun getTotal ()I
+}
+
 public final class com/pubnub/chat/types/TextLink {
 	public static final field Companion Lcom/pubnub/chat/types/TextLink$Companion;
 	public fun <init> (IILjava/lang/String;)V

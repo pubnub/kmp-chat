@@ -240,19 +240,24 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.unregisterFromPush().asPromise()
     }
 
-    fun fetchReadReceipts(params: PubNub.GetChannelMembersParameters?): Promise<Array<ReadReceiptJs>> {
+    fun fetchReadReceipts(params: PubNub.GetChannelMembersParameters?): Promise<ReadReceiptsResponseJs> {
         return channel.fetchReadReceipts(
             params?.limit?.toInt() ?: 100,
             params?.page?.toKmp(),
             params?.filter,
             extractSortKeys(params?.sort)
         ).then { result ->
-            result.map { receipt ->
-                createJsObject<ReadReceiptJs> {
-                    userId = receipt.userId
-                    lastReadTimetoken = receipt.lastReadTimetoken.toString()
-                }
-            }.toTypedArray()
+            createJsObject<ReadReceiptsResponseJs> {
+                this.page = MetadataPage(result.next, result.prev)
+                this.total = result.total
+                this.status = result.status
+                this.receipts = result.receipts.map { receipt ->
+                    createJsObject<ReadReceiptJs> {
+                        userId = receipt.userId
+                        lastReadTimetoken = receipt.lastReadTimetoken.toString()
+                    }
+                }.toTypedArray()
+            }
         }.asPromise()
     }
 

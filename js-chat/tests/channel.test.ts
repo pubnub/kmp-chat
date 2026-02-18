@@ -1546,10 +1546,12 @@ describe("Channel test", () => {
     await directConversation.hostMembership.setLastReadMessageTimetoken(publishResult.timetoken.toString())
     await sleep(500)
 
-    const receipts = await directConversation.channel.fetchReadReceipts()
-    expect(Array.isArray(receipts)).toBe(true)
+    const response = await directConversation.channel.fetchReadReceipts()
+    expect(Array.isArray(response.receipts)).toBe(true)
+    expect(response.total).toBeDefined()
+    expect(response.page).toBeDefined()
 
-    const myReceipt = receipts.find((r) => r.userId === chat.currentUser.id)
+    const myReceipt = response.receipts.find((r) => r.userId === chat.currentUser.id)
     expect(myReceipt).toBeDefined()
     expect(myReceipt?.userId).toBe(chat.currentUser.id)
     expect(myReceipt?.lastReadTimetoken).toBe(publishResult.timetoken.toString())
@@ -1574,6 +1576,7 @@ describe("Channel test", () => {
     await sleep(1000)
     const message = await directConversation.channel.sendText("Test message")
     await directConversation.hostMembership.setLastReadMessageTimetoken(message.timetoken.toString())
+    await sleep(1000)
 
     expect(callbackCount).toBeGreaterThan(0)
     expect(receivedReceipt).toBeDefined()

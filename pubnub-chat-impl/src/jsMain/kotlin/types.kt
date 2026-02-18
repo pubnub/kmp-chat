@@ -329,6 +329,13 @@ external interface ReadReceiptJs {
     var lastReadTimetoken: String
 }
 
+external interface ReadReceiptsResponseJs {
+    var page: PubNub.MetadataPage
+    var total: Int
+    var status: Int
+    var receipts: Array<ReadReceiptJs>
+}
+
 external interface UpdateMembershipParams {
     val custom: PubNub.CustomObject?
 }

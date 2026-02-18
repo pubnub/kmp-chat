@@ -81,6 +81,7 @@ import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.ReadReceipt
+import com.pubnub.chat.types.ReadReceiptsResponse
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -651,13 +652,19 @@ abstract class BaseChannel<C : Channel, M : Message>(
         page: PNPage?,
         filter: String?,
         sort: Collection<PNSortKey<PNMemberKey>>,
-    ): PNFuture<List<ReadReceipt>> {
+    ): PNFuture<ReadReceiptsResponse> {
         return getMembers(limit = limit, page = page, filter = filter, sort = sort).then { members ->
-            members.members.mapNotNull { m ->
-                m.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN)?.tryLong()?.let {
-                    ReadReceipt(userId = m.user.id, lastReadTimetoken = it)
+            ReadReceiptsResponse(
+                next = members.next,
+                prev = members.prev,
+                total = members.total,
+                status = members.status,
+                receipts = members.members.mapNotNull { m ->
+                    m.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN)?.tryLong()?.let {
+                        ReadReceipt(userId = m.user.id, lastReadTimetoken = it)
+                    }
                 }
-            }
+            )
         }
     }
 

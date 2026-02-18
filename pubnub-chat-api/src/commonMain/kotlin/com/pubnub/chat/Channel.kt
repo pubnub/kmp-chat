@@ -21,6 +21,7 @@ import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.ReadReceipt
+import com.pubnub.chat.types.ReadReceiptsResponse
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -484,14 +485,14 @@ interface Channel {
      * @param filter Expression used to filter the results.
      * @param sort A collection to specify the sort order.
      *
-     * @return [PNFuture] containing a list of [ReadReceipt] objects, one per member who has read a message.
+     * @return [PNFuture] containing [ReadReceiptsResponse] with read receipts and pagination tokens.
      */
     fun fetchReadReceipts(
         limit: Int? = 100,
         page: PNPage? = null,
         filter: String? = null,
         sort: Collection<PNSortKey<PNMemberKey>> = listOf(),
-    ): PNFuture<List<ReadReceipt>>
+    ): PNFuture<ReadReceiptsResponse>
 
     /**
      * Lets you get a read confirmation status for messages you published on a channel.
