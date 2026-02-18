@@ -967,8 +967,8 @@ class ChatImpl(
                                 userMembershipsResponse.memberships.associate { it.channel.id to it.channel.type }
                             val emitEventFutures: List<PNFuture<PNPublishResult>> =
                                 relevantChannelIds.mapNotNull { channelId: String ->
-                                    val shouldSendReceipt = channelTypeMap[channelId]?.let { config.emitReadReceiptEvents[it] } != false
-                                    if (shouldSendReceipt) {
+                                    val shouldEmitReadReceiptEvent = channelTypeMap[channelId]?.let { config.emitReadReceiptEvents[it] } != false
+                                    if (shouldEmitReadReceiptEvent) {
                                         emitEvent(
                                             channelId = channelId,
                                             payload = EventContent.Receipt(

@@ -326,12 +326,14 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     fun isMemberOf_shouldReturnTrueForMember() = runTest {
         val channelId = randomString()
         val testChannel = chat.createChannel(channelId).await()
+
         testChannel.invite(someUser).await()
 
         val isMember = someUser.isMemberOf(channelId).await()
 
         assertTrue(isMember, "isMemberOf should return true for channel user is member of")
 
+        testChannel.leave().await()
         testChannel.delete().await()
     }
 
@@ -339,11 +341,11 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     fun isMemberOf_shouldReturnFalseForNonMember() = runTest {
         val channelId = randomString()
         val testChannel = chat.createChannel(channelId).await()
-
         val isMember = someUser.isMemberOf(channelId).await()
 
         assertFalse(isMember, "isMemberOf should return false for channel user is not member of")
 
+        testChannel.leave().await()
         testChannel.delete().await()
     }
 
@@ -351,6 +353,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     fun getMembership_shouldReturnMembershipForMember() = runTest {
         val channelId = randomString()
         val testChannel = chat.createChannel(channelId).await()
+
         testChannel.invite(someUser).await()
 
         val membership = someUser.getMembership(channelId).await()
@@ -359,6 +362,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(channelId, membership.channel.id)
         assertEquals(someUser.id, membership.user.id)
 
+        testChannel.leave().await()
         testChannel.delete().await()
     }
 
@@ -366,11 +370,11 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
     fun getMembership_shouldReturnNullForNonMember() = runTest {
         val channelId = randomString()
         val testChannel = chat.createChannel(channelId).await()
-
         val membership = someUser.getMembership(channelId).await()
 
         assertNull(membership, "getMembership should return null for channel user is not member of")
 
+        testChannel.leave().await()
         testChannel.delete().await()
     }
 }
