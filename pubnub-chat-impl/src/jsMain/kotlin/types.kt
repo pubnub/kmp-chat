@@ -174,7 +174,15 @@ external interface ChatConfig {
     val rateLimitPerChannel: RateLimitPerChannelJs?
     val errorLogger: Any?
     val customPayloads: CustomPayloadsJs?
+    val emitReadReceiptEvents: EmitReadReceiptEventsJs?
     val syncMutedUsers: Boolean?
+}
+
+external interface EmitReadReceiptEventsJs {
+    val direct: Boolean?
+    val group: Boolean?
+    val public: Boolean?
+    val unknown: Boolean?
 }
 
 external interface CustomPayloadsJs {

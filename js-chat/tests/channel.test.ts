@@ -1589,6 +1589,39 @@ describe("Channel test", () => {
     await directConversation.channel.delete()
   }, 30000)
 
+  test("should not receive read receipts when disabled in config", async () => {
+    const chatNoReceipts = await createChatInstance({
+      userId: generateRandomString(),
+      config: {
+        emitReadReceiptEvents: { direct: false, group: false, public: false, unknown: false },
+      }
+    })
+
+    const testUser = await createRandomUser(chatNoReceipts)
+    const directConversation = await chatNoReceipts.createDirectConversation({ user: testUser })
+
+    await directConversation.channel.sendText("text1")
+
+    let received = false
+
+    const stopReceiptsStream = directConversation.channel.streamReadReceipts(() => {
+      received = true
+    })
+
+    await sleep(1000)
+    await chatNoReceipts.markAllMessagesAsRead()
+    await sleep(1000)
+
+    expect(received).toBe(false)
+    stopReceiptsStream()
+
+    await directConversation.channel.leave()
+    await testUser.delete()
+    await directConversation.channel.delete()
+    await chatNoReceipts.currentUser.delete()
+    await chatNoReceipts.sdk.disconnect()
+  }, 40000)
+
   test("should check if user is a member of channel via channel.hasMember", async () => {
     const user = await createRandomUser(chat)
     const testChannel = await createRandomChannel(chat)

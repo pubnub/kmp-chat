@@ -691,6 +691,9 @@ type ChatConfig = {
         deleteMessageActionName?: string;
         reactionsActionName?: string;
     };
+    emitReadReceiptEvents?: {
+        [key in ChannelType]?: boolean;
+    };
     authKey?: string;
     syncMutedUsers?: boolean;
 };

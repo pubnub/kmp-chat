@@ -73,7 +73,7 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
             extractSortKeys(params?.sort)
         ).then {
             createJsObject<MembershipsResponseJs> {
-                this.page = MetadataPage(it.next, it.prev)
+                this.page = metadataPage(it.next, it.prev)
                 this.total = it.total
                 this.memberships = it.memberships.map { it.asJs(chatJs) }.toTypedArray()
                 this.status = it.status

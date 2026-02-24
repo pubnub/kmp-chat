@@ -27,7 +27,7 @@ class ChannelGroupJs internal constructor(
             createJsObject<GetChannelsResponseJs> {
                 this.channels =
                     result.channels.map { it.asJs(this@ChannelGroupJs.chatJs) }.toTypedArray()
-                this.page = MetadataPage(result.next, result.prev)
+                this.page = metadataPage(result.next, result.prev)
                 this.total = result.total
             }
         }.asPromise()

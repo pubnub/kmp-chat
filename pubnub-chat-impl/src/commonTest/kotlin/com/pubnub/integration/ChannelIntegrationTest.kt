@@ -9,6 +9,9 @@ import com.pubnub.chat.Event
 import com.pubnub.chat.MentionTarget
 import com.pubnub.chat.Message
 import com.pubnub.chat.MessageElement
+import com.pubnub.chat.config.ChatConfiguration
+import com.pubnub.chat.config.EmitReadReceiptEvents
+import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.PINNED_MESSAGE_TIMETOKEN
@@ -417,6 +420,34 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
             dispose?.close()
         }
+    }
+
+    @Test
+    fun streamReadReceipts_notReceivedWhenDisabledInConfig() = runTest(timeout = 15.seconds) {
+        val chatNoReceiptConfiguration = ChatConfiguration(emitReadReceiptEvents = EmitReadReceiptEvents(direct = false))
+        val chatNoReceipts = createChat { ChatImpl(chatNoReceiptConfiguration, pubnub) }
+        val user = chatNoReceipts.createUser(UserImpl(chatNoReceipts, randomString())).await()
+        val channel = chatNoReceipts.createDirectConversation(user).await().channel
+
+        channel.sendText("text1").await()
+
+        val received = atomic(false)
+        var dispose: AutoCloseable? = null
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            pubnub.awaitSubscribe(listOf(channel.id)) {
+                dispose = channel.streamReadReceipts { _ ->
+                    received.value = true
+                }
+            }
+            chatNoReceipts.markAllMessagesAsRead().await()
+            delayInMillis(2000)
+            assertFalse(received.value, "Should not receive read receipt when disabled in config")
+            dispose?.close()
+        }
+
+        channel.leave().await()
+        channel.delete().await()
     }
 
     @Test

@@ -10,6 +10,7 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.SortField
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.CustomPayloads
+import com.pubnub.chat.config.EmitReadReceiptEvents
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.config.RateLimitPerChannel
 import com.pubnub.chat.internal.serialization.PNDataEncoder
@@ -32,7 +33,7 @@ import kotlin.time.Duration.Companion.seconds
 
 internal fun GetRestrictionsResponse.toJs() =
     createJsObject<GetRestrictionsResponseJs> {
-        this.page = MetadataPage(next, prev)
+        this.page = metadataPage(next, prev)
         this.restrictions = this@toJs.restrictions.map { it.asJs() }.toTypedArray()
         this.status = this@toJs.status
         this.total = this@toJs.total
@@ -157,7 +158,7 @@ internal fun Restriction.asJs(): RestrictionJs {
 internal fun PubNub.MetadataPage?.toKmp() =
     this?.next?.let { PNPage.PNNext(it) } ?: this?.prev?.let { PNPage.PNPrev(it) }
 
-internal fun MetadataPage(next: PNPage.PNNext?, prev: PNPage.PNPrev?) = createJsObject<PubNub.MetadataPage> {
+internal fun metadataPage(next: PNPage.PNNext?, prev: PNPage.PNPrev?) = createJsObject<PubNub.MetadataPage> {
     this.next = next?.pageHash ?: undefined
     this.prev = prev?.pageHash ?: undefined
 }
@@ -185,7 +186,17 @@ internal fun ChatConfig.toChatConfiguration(): ChatConfiguration {
         rateLimitFactor = rateLimitFactor ?: 2,
         rateLimitPerChannel = rateLimitPerChannel.toKmp(),
         customPayloads = customPayloads.toKmp(),
+        emitReadReceiptEvents = emitReadReceiptEvents?.toKmp() ?: EmitReadReceiptEvents(),
         syncMutedUsers = syncMutedUsers == true
+    )
+}
+
+private fun EmitReadReceiptEventsJs.toKmp(): Map<ChannelType, Boolean> {
+    return EmitReadReceiptEvents(
+        direct = direct ?: true,
+        group = group ?: true,
+        public = public ?: false,
+        unknown = unknown ?: true
     )
 }
 

@@ -164,7 +164,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
             extractSortKeys(params?.sort)
         ).then { result ->
             createJsObject<MembersResponseJs> {
-                this.page = MetadataPage(result.next, result.prev)
+                this.page = metadataPage(result.next, result.prev)
                 this.total = result.total
                 this.status = result.status
                 this.members = result.members.map { it.asJs(chatJs) }.toTypedArray()
@@ -248,7 +248,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
             extractSortKeys(params?.sort)
         ).then { result ->
             createJsObject<ReadReceiptsResponseJs> {
-                this.page = MetadataPage(result.next, result.prev)
+                this.page = metadataPage(result.next, result.prev)
                 this.total = result.total
                 this.status = result.status
                 this.receipts = result.receipts.map { receipt ->
