@@ -33,7 +33,7 @@ import kotlin.time.Duration.Companion.seconds
 
 internal fun GetRestrictionsResponse.toJs() =
     createJsObject<GetRestrictionsResponseJs> {
-        this.page = metadataPage(next, prev)
+        this.page = MetadataPage(next, prev)
         this.restrictions = this@toJs.restrictions.map { it.asJs() }.toTypedArray()
         this.status = this@toJs.status
         this.total = this@toJs.total
@@ -158,7 +158,8 @@ internal fun Restriction.asJs(): RestrictionJs {
 internal fun PubNub.MetadataPage?.toKmp() =
     this?.next?.let { PNPage.PNNext(it) } ?: this?.prev?.let { PNPage.PNPrev(it) }
 
-internal fun metadataPage(next: PNPage.PNNext?, prev: PNPage.PNPrev?) = createJsObject<PubNub.MetadataPage> {
+@Suppress("ktlint:standard:function-naming")
+internal fun MetadataPage(next: PNPage.PNNext?, prev: PNPage.PNPrev?) = createJsObject<PubNub.MetadataPage> {
     this.next = next?.pageHash ?: undefined
     this.prev = prev?.pageHash ?: undefined
 }

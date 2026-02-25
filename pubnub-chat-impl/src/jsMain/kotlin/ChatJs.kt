@@ -150,7 +150,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         ).then { result ->
             createJsObject<GetUsersResponseJs> {
                 this.users = result.users.map { it.asJs(this@ChatJs) }.toTypedArray()
-                this.page = metadataPage(result.next, result.prev)
+                this.page = MetadataPage(result.next, result.prev)
                 this.total = result.total
             }
         }.asPromise()
@@ -180,7 +180,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         ).then { result ->
             createJsObject<GetChannelsResponseJs> {
                 this.channels = result.channels.map { it.asJs(this@ChatJs) }.toTypedArray()
-                this.page = metadataPage(result.next, result.prev)
+                this.page = MetadataPage(result.next, result.prev)
                 this.total = result.total
             }
         }.asPromise()
@@ -351,7 +351,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         ).then { result ->
             createJsObject<UnreadMessagesCountsJs> {
                 this.countsByChannel = result.countsByChannel.map { it.toJs() }.toTypedArray()
-                this.page = metadataPage(result.next, result.prev)
+                this.page = MetadataPage(result.next, result.prev)
             }
         }.asPromise()
     }
@@ -371,7 +371,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
             extractSortKeys(params?.sort)
         ).then { result ->
             createJsObject<MarkAllMessageAsReadResponseJs> {
-                this.page = metadataPage(result.next, result.prev)
+                this.page = MetadataPage(result.next, result.prev)
                 this.total = result.total
                 this.status = result.status
                 this.memberships = result.memberships.map { it.asJs(this@ChatJs) }.toTypedArray()
