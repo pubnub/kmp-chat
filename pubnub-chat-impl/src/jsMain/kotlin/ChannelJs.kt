@@ -172,6 +172,14 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
+    fun hasMember(userId: String): Promise<Boolean> {
+        return channel.hasMember(userId).asPromise()
+    }
+
+    fun getMember(userId: String): Promise<MembershipJs?> {
+        return channel.getMember(userId).then { it?.asJs(chatJs) }.asPromise()
+    }
+
     fun invite(user: UserJs): Promise<MembershipJs> {
         return channel.invite(user.user).then { it.asJs(chatJs) }.asPromise()
     }
@@ -232,17 +240,36 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.unregisterFromPush().asPromise()
     }
 
-    fun streamReadReceipts(callback: (JsMap<Array<String>>) -> Unit): Promise<() -> Unit> {
-        return channel.streamReadReceipts {
+    fun fetchReadReceipts(params: PubNub.GetChannelMembersParameters?): Promise<ReadReceiptsResponseJs> {
+        return channel.fetchReadReceipts(
+            params?.limit?.toInt() ?: 100,
+            params?.page?.toKmp(),
+            params?.filter,
+            extractSortKeys(params?.sort)
+        ).then { result ->
+            createJsObject<ReadReceiptsResponseJs> {
+                this.page = MetadataPage(result.next, result.prev)
+                this.total = result.total
+                this.status = result.status
+                this.receipts = result.receipts.map { receipt ->
+                    createJsObject<ReadReceiptJs> {
+                        userId = receipt.userId
+                        lastReadTimetoken = receipt.lastReadTimetoken.toString()
+                    }
+                }.toTypedArray()
+            }
+        }.asPromise()
+    }
+
+    fun streamReadReceipts(callback: (ReadReceiptJs) -> Unit): () -> Unit {
+        return channel.streamReadReceipts { receipt ->
             callback(
-                it
-                    .mapKeys { entry -> entry.key.toString() }
-                    .mapValues { entry -> entry.value.toTypedArray() }
-                    .toJsMap()
+                createJsObject<ReadReceiptJs> {
+                    userId = receipt.userId
+                    lastReadTimetoken = receipt.lastReadTimetoken.toString()
+                }
             )
-        }.let { autoCloseable ->
-            autoCloseable::close.asFuture().asPromise()
-        }
+        }::close
     }
 
     fun getFiles(params: PubNub.ListFilesParameters?): Promise<GetFilesResultJs> {

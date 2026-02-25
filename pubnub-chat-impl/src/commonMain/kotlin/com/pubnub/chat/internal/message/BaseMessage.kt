@@ -50,6 +50,7 @@ import com.pubnub.chat.types.File
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageMentionedUsers
+import com.pubnub.chat.types.MessageReaction
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
@@ -110,8 +111,20 @@ abstract class BaseMessage<T : Message>(
     override val files: List<File>
         get() = content.files ?: emptyList()
 
-    override val reactions: Map<String, List<PNFetchMessageItem.Action>>
+    internal val reactionsMap: Map<String, List<PNFetchMessageItem.Action>>
         get() = actions?.get(chat.reactionsActionName) ?: emptyMap()
+
+    override val reactions: List<MessageReaction>
+        get() {
+            val currentUserId = chat.pubNub.configuration.userId.value
+            return reactionsMap.map { (value, actionList) ->
+                MessageReaction(
+                    value = value,
+                    isMine = actionList.any { it.uuid == currentUserId },
+                    userIds = actionList.map { it.uuid }
+                )
+            }
+        }
 
     override val textLinks: List<TextLink>? get() = (
         meta?.get(
@@ -128,7 +141,7 @@ abstract class BaseMessage<T : Message>(
     }
 
     override fun hasUserReaction(reaction: String): Boolean {
-        return reactions[reaction]?.any { it.uuid == chat.pubNub.configuration.userId.value } ?: false
+        return reactionsMap[reaction]?.any { it.uuid == chat.pubNub.configuration.userId.value } ?: false
     }
 
     override fun editText(newText: String): PNFuture<Message> {
@@ -294,7 +307,7 @@ abstract class BaseMessage<T : Message>(
         chat.removeThreadChannel(chat, this)
 
     override fun toggleReaction(reaction: String): PNFuture<Message> {
-        val existingReaction = reactions[reaction]?.find {
+        val existingReaction = reactionsMap[reaction]?.find {
             it.uuid == chat.currentUser.id
         }
         val messageAction =

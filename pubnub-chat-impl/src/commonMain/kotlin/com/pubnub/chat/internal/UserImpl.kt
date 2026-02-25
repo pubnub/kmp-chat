@@ -140,6 +140,18 @@ data class UserImpl(
         }
     }
 
+    override fun isMemberOf(channelId: String): PNFuture<Boolean> {
+        return getMemberships(filter = "channel.id == '$channelId'", limit = 1).then { membershipsResponse ->
+            membershipsResponse.memberships.isNotEmpty()
+        }
+    }
+
+    override fun getMembership(channelId: String): PNFuture<Membership?> {
+        return getMemberships(filter = "channel.id == '$channelId'", limit = 1).then { membershipsResponse ->
+            membershipsResponse.memberships.firstOrNull()
+        }
+    }
+
     override fun setRestrictions(channel: Channel, ban: Boolean, mute: Boolean, reason: String?): PNFuture<Unit> {
         if (chat.pubNub.configuration.secretKey.isEmpty()) {
             return log.logErrorAndReturnException(MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY).asFuture()

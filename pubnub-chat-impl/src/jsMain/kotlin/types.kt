@@ -174,7 +174,15 @@ external interface ChatConfig {
     val rateLimitPerChannel: RateLimitPerChannelJs?
     val errorLogger: Any?
     val customPayloads: CustomPayloadsJs?
+    val emitReadReceiptEvents: EmitReadReceiptEventsJs?
     val syncMutedUsers: Boolean?
+}
+
+external interface EmitReadReceiptEventsJs {
+    val direct: Boolean?
+    val group: Boolean?
+    val public: Boolean?
+    val unknown: Boolean?
 }
 
 external interface CustomPayloadsJs {
@@ -316,6 +324,24 @@ inline fun GetUnreadMessagesCountResult(boolean: Boolean): GetUnreadMessagesCoun
 external interface Reaction {
     var uuid: String
     var actionTimetoken: String
+}
+
+external interface MessageReactionJs {
+    var value: String
+    var isMine: Boolean
+    var userIds: Array<String>
+}
+
+external interface ReadReceiptJs {
+    var userId: String
+    var lastReadTimetoken: String
+}
+
+external interface ReadReceiptsResponseJs {
+    var page: PubNub.MetadataPage
+    var total: Int
+    var status: Int
+    var receipts: Array<ReadReceiptJs>
 }
 
 external interface UpdateMembershipParams {

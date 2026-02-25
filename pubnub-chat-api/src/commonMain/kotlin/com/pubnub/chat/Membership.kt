@@ -57,6 +57,9 @@ interface Membership {
     /**
      * Setting the last read message for users lets you implement the Read Receipts feature and monitor which channel member read which message.
      *
+     * This method emits a read receipt event on the channel, unless
+     * [com.pubnub.chat.config.ChatConfiguration.emitReadReceiptEvents] is set to `false` for the channel's type.
+     *
      * @param message Last read message on a given channel with the timestamp that gets added to the user-channel membership as the [lastReadMessageTimetoken] property.
      * @return A [PNFuture] that returns an updated [Membership] object.
      */
@@ -72,6 +75,9 @@ interface Membership {
 
     /**
      * Setting the last read message for users lets you implement the Read Receipts feature and monitor which channel member read which message.
+     *
+     * This method emits a read receipt event on the channel, unless
+     * [com.pubnub.chat.config.ChatConfiguration.emitReadReceiptEvents] is set to `false` for the channel's type.
      *
      * @param timetoken Timetoken of the last read message on a given channel that gets added to the user-channel membership as the [lastReadMessageTimetoken] property.
      * @return A [PNFuture] that returns an updated [Membership] object.

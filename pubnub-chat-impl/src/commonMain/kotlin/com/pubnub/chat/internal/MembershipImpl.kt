@@ -80,6 +80,11 @@ data class MembershipImpl(
             put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, timetoken.toString())
         }
         return update(createCustomObject(newCustom)).alsoAsync {
+            val shouldEmitReadReceiptEvent = channel.type?.let { chat.config.emitReadReceiptEvents[it] } != false
+
+            if (!shouldEmitReadReceiptEvent) {
+                return@alsoAsync Unit.asFuture()
+            }
             val canISendSignal = AccessManager(chat).canI(
                 AccessManager.Permission.WRITE,
                 AccessManager.ResourceType.CHANNELS,

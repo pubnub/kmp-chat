@@ -68,6 +68,13 @@ interface ChatConfiguration {
     val customPayloads: CustomPayloads?
 
     /**
+     * Specifies whether read receipt events should be emitted, per channel type.
+     * When set to `false` for a given channel type, the SDK will not emit [com.pubnub.chat.types.EventContent.Receipt]
+     * events for channels of that type. Defaults to `true` for all channel types except `public`, which defaults to `false`.
+     */
+    val emitReadReceiptEvents: Map<ChannelType, Boolean>
+
+    /**
      * Enable automatic syncing of the [com.pubnub.chat.mutelist.MutedUsersManager] data with App Context,
      * using the current `userId` as the key.
      *
@@ -103,6 +110,7 @@ fun ChatConfiguration(
     rateLimitFactor: Int = 2,
     rateLimitPerChannel: Map<ChannelType, Duration> = RateLimitPerChannel(),
     customPayloads: CustomPayloads? = null,
+    emitReadReceiptEvents: Map<ChannelType, Boolean> = EmitReadReceiptEvents(),
     syncMutedUsers: Boolean = false,
 ): ChatConfiguration = object : ChatConfiguration {
     override val logLevel: LogLevel = logLevel
@@ -113,10 +121,25 @@ fun ChatConfiguration(
     override val rateLimitFactor: Int = rateLimitFactor
     override val rateLimitPerChannel: Map<ChannelType, Duration> = rateLimitPerChannel
     override val customPayloads: CustomPayloads? = customPayloads
+    override val emitReadReceiptEvents: Map<ChannelType, Boolean> = emitReadReceiptEvents
     override val syncMutedUsers: Boolean = syncMutedUsers
 }
 
 typealias RateLimitPerChannel = Map<ChannelType, Duration>
+typealias EmitReadReceiptEvents = Map<ChannelType, Boolean>
+
+fun EmitReadReceiptEvents(
+    direct: Boolean = true,
+    group: Boolean = true,
+    public: Boolean = false,
+    unknown: Boolean = true
+): EmitReadReceiptEvents =
+    mapOf(
+        ChannelType.DIRECT to direct,
+        ChannelType.GROUP to group,
+        ChannelType.PUBLIC to public,
+        ChannelType.UNKNOWN to unknown,
+    )
 
 fun RateLimitPerChannel(
     direct: Duration = ZERO,
