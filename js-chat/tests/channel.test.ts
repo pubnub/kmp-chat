@@ -1561,6 +1561,39 @@ describe("Channel test", () => {
     await directConversation.channel.delete()
   }, 30000)
 
+  test("should fetch and stream read receipts on a channel", async () => {
+    const testUser = await createRandomUser(chat)
+    const directConversation = await chat.createDirectConversation({ user: testUser })
+
+    const message = await directConversation.channel.sendText("Test message")
+
+    let receivedReceipt: { userId: string; lastReadTimetoken: string } | undefined
+
+    const stopReceiptsStream = directConversation.channel.streamReadReceipts((receipt) => {
+      if (receipt.userId === chat.currentUser.id) {
+        receivedReceipt = receipt
+      }
+    })
+
+    await sleep(1000)
+    await directConversation.hostMembership.setLastReadMessageTimetoken(message.timetoken.toString())
+    await sleep(1000)
+
+    expect(receivedReceipt).toBeDefined()
+    expect(receivedReceipt!.userId).toBe(chat.currentUser.id)
+
+    const response = await directConversation.channel.fetchReadReceipts()
+    const fetchedReceipt = response.receipts.find((r) => r.userId === chat.currentUser.id)
+    expect(fetchedReceipt).toBeDefined()
+    expect(fetchedReceipt!.lastReadTimetoken).toBe(receivedReceipt!.lastReadTimetoken)
+
+    stopReceiptsStream()
+
+    await directConversation.channel.leave()
+    await testUser.delete()
+    await directConversation.channel.delete()
+  }, 30000)
+
   test("should stream read receipts on a channel", async () => {
     const testUser = await createRandomUser(chat)
     const directConversation = await chat.createDirectConversation({ user: testUser })

@@ -27,6 +27,7 @@ import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.chat.types.ReadReceipt
 import com.pubnub.internal.PLATFORM
 import com.pubnub.kmp.Uploadable
 import com.pubnub.kmp.createCustomObject
@@ -417,6 +418,36 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
             chat.markAllMessagesAsRead().await()
             completable.await()
+
+            dispose?.close()
+        }
+    }
+
+    @Test
+    fun fetchAndStreamReadReceipts() = runTest(timeout = 15.seconds) {
+        val user = chat.createUser(UserImpl(chat, randomString())).await()
+        val channel = chat.createDirectConversation(user).await().channel
+        val tt = channel.sendText("text1").await().timetoken
+
+        val streamedReceipt = CompletableDeferred<ReadReceipt>()
+        var dispose: AutoCloseable? = null
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            pubnub.awaitSubscribe(listOf(channel.id)) {
+                dispose = channel.streamReadReceipts { receipt ->
+                    if (receipt.userId == chat.currentUser.id && receipt.lastReadTimetoken >= tt) {
+                        streamedReceipt.complete(receipt)
+                    }
+                }
+            }
+
+            chat.markAllMessagesAsRead().await()
+
+            val received = streamedReceipt.await()
+
+            val fetched = channel.fetchReadReceipts().await()
+            val fetchedReceipt = fetched.receipts.find { it.userId == chat.currentUser.id }
+            assertNotNull(fetchedReceipt)
+            assertEquals(received.lastReadTimetoken, fetchedReceipt.lastReadTimetoken)
 
             dispose?.close()
         }
