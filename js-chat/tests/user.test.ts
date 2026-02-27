@@ -1,4 +1,4 @@
-import { Chat, User } from "../dist-test"
+import { Chat, User, Mention, Invite } from "../dist-test"
 import {createChatInstance, generateRandomString, sleep, createRandomUser, createRandomChannel} from "./utils"
 import {jest} from "@jest/globals";
 
@@ -441,4 +441,68 @@ describe("User test", () => {
     expect(softDeleteResult).toBeDefined()
     expect((softDeleteResult as User).status).toBe("deleted")
   })
+
+  test("should invoke onUpdated callback when user is updated", async () => {
+    let updatedUser: User | undefined
+    const name = "Updated User"
+
+    const stop = user.onUpdated((u: User) => { updatedUser = u })
+    await user.update({ name })
+    await sleep(150)
+
+    expect(updatedUser).toBeDefined()
+    expect(updatedUser!.name).toEqual(name)
+    expect(updatedUser!.id).toEqual(user.id)
+
+    stop()
+  }, 20000)
+
+  test("should invoke onDeleted callback when user is deleted", async () => {
+    const testUser = await createRandomUser(chat)
+    let deleteCalled = false
+
+    const stop = testUser.onDeleted(() => { deleteCalled = true })
+    await sleep(450)
+    await chat.deleteUser(testUser.id)
+    await sleep(300)
+
+    expect(deleteCalled).toBe(true)
+
+    stop()
+  }, 20000)
+
+  test("should invoke onInvited callback when user is invited to a channel", async () => {
+    let receivedInvite: Invite | undefined
+    const channel = await createRandomChannel(chat)
+
+    const stop = user.onInvited((invite: Invite) => { receivedInvite = invite })
+    await channel.invite(user)
+    await sleep(150)
+
+    expect(receivedInvite).toBeDefined()
+    expect(receivedInvite?.channelId).toBe(channel.id)
+
+    stop()
+    await channel.delete()
+  }, 20000)
+
+  test("should invoke onRestrictionChanged callback when restriction is set", async () => {
+    const chatPamServer = await createChatInstance({ userId: generateRandomString(), clientType: 'PamServer' })
+    const testUser = await chatPamServer.createUser(generateRandomString(), { name: "Test User" })
+    const channel = await chatPamServer.createChannel(generateRandomString(), { name: "Test Channel" })
+
+    let receivedRestriction: { userId: string; channelId: string; ban: boolean; mute: boolean; reason?: string } | undefined
+
+    const stop = testUser.onRestrictionChanged((restriction) => { receivedRestriction = restriction })
+    await testUser.setRestrictions(channel, { ban: true, mute: false, reason: "rude" })
+    await sleep(500)
+
+    expect(receivedRestriction).toBeDefined()
+    expect(receivedRestriction?.ban).toBe(true)
+    expect(receivedRestriction?.reason).toBe("rude")
+    expect(receivedRestriction?.channelId).toBe(channel.id)
+
+    stop()
+    await Promise.all([testUser.delete(), channel.delete(), chatPamServer.currentUser.delete()])
+  }, 20000)
 })

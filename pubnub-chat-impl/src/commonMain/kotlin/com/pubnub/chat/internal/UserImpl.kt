@@ -26,11 +26,18 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
+import com.pubnub.chat.internal.user.InviteEventData
+import com.pubnub.chat.internal.user.MentionEventData
+import com.pubnub.chat.internal.user.ModerationEventData
+import com.pubnub.chat.internal.user.listenForUserEvent
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.chat.restrictions.RestrictionType
+import com.pubnub.chat.user.Invite
+import com.pubnub.chat.user.Mention
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
@@ -189,6 +196,85 @@ data class UserImpl(
         }
     }
 
+    override fun onUpdated(callback: (user: User) -> Unit): AutoCloseable {
+        var latestUser: User = this
+        val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
+            when (val message = event.extractedMessage) {
+                is PNSetUUIDMetadataEventMessage -> {
+                    if (message.data.id == id) {
+                        latestUser += message.data
+                        callback(latestUser)
+                    }
+                }
+                else -> return@createEventListener
+            }
+        })
+
+        val subscription = chat.pubNub.channel(id).subscription()
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
+    }
+
+    override fun onDeleted(callback: () -> Unit): AutoCloseable {
+        val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
+            when (val message = event.extractedMessage) {
+                is PNDeleteUUIDMetadataEventMessage -> {
+                    if (message.uuid == id) {
+                        callback()
+                    }
+                }
+                else -> return@createEventListener
+            }
+        })
+
+        val subscription = chat.pubNub.channel(id).subscription()
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
+    }
+
+    override fun onMentioned(callback: (mention: Mention) -> Unit): AutoCloseable {
+        return chat.listenForUserEvent<MentionEventData>(id) { data, userId, _ ->
+            callback(
+                Mention(
+                    messageTimetoken = data.messageTimetoken,
+                    channelId = data.channel,
+                    parentChannelId = data.parentChannel,
+                    mentionedByUserId = userId,
+                )
+            )
+        }
+    }
+
+    override fun onInvited(callback: (invite: Invite) -> Unit): AutoCloseable {
+        return chat.listenForUserEvent<InviteEventData>(id) { data, userId, timetoken ->
+            callback(
+                Invite(
+                    channelId = data.channelId,
+                    channelType = data.channelType,
+                    invitedByUserId = userId,
+                    invitationTimetoken = timetoken,
+                )
+            )
+        }
+    }
+
+    override fun onRestrictionChanged(callback: (restriction: Restriction) -> Unit): AutoCloseable {
+        return chat.listenForUserEvent<ModerationEventData>(INTERNAL_USER_MODERATION_CHANNEL_PREFIX + id) { data, _, _ ->
+            callback(
+                Restriction(
+                    userId = id,
+                    channelId = data.channelId.removePrefix(INTERNAL_MODERATION_PREFIX),
+                    ban = data.restriction == RestrictionType.BAN,
+                    mute = data.restriction == RestrictionType.MUTE,
+                    reason = data.reason,
+                )
+            )
+        }
+    }
+
+    @Deprecated("Use onUpdated() and onDeleted() instead.", ReplaceWith("onUpdated(callback)"))
     override fun streamUpdates(callback: (user: User?) -> Unit): AutoCloseable {
         return streamUpdatesOn(listOf(this)) {
             callback(it.firstOrNull())
