@@ -177,6 +177,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun getTyping(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable {
+        return onTypingChanged(callback)
+    }
+
+    override fun onTypingChanged(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable {
         val typingIndicators = mutableMapOf<String, Instant>()
         val typingIndicatorsLock = reentrantLock()
         val atomicClosed = atomic(false)
@@ -476,6 +480,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun connect(callback: (Message) -> Unit): AutoCloseable {
+        return onMessageReceived(callback)
+    }
+
+    override fun onMessageReceived(callback: (Message) -> Unit): AutoCloseable {
         val channelEntity = chat.pubNub.channel(id)
         val subscription = channelEntity.subscription()
         val listener = createEventListener(
@@ -540,6 +548,33 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     resultDisconnect
                 )
             }
+        }
+    }
+
+    override fun joinChannel(status: String?, type: String?, custom: CustomObject?): PNFuture<Membership> {
+        val user = this.chat.currentUser
+        return chat.pubNub.setMemberships(
+            channels = listOf(
+                PNChannelMembership.Partial(
+                    channelId = this.id,
+                    custom = custom,
+                    status = status,
+                    type = type
+                )
+            ), // todo should null overwrite? Waiting for optionals?
+            filter = channelFilterString,
+            include = MembershipInclude(
+                includeCustom = true,
+                includeStatus = true,
+                includeType = true,
+                includeTotalCount = true,
+                includeChannel = true,
+                includeChannelCustom = true,
+                includeChannelType = true,
+                includeChannelStatus = false
+            )
+        ).then { membershipArray: PNChannelMembershipArrayResult ->
+            MembershipImpl.fromMembershipDTO(chat, membershipArray.data.first(), user)
         }
     }
 

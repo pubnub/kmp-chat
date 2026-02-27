@@ -34,7 +34,11 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun isPresent (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun join (Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun join$default (Lcom/pubnub/chat/Channel;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun joinChannel (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun joinChannel$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun leave ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun onMessageReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onTypingChanged (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pinMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun plus (Lcom/pubnub/api/models/consumer/objects/channel/PNChannelMetadata;)Lcom/pubnub/chat/Channel;
 	public abstract fun registerForPush ()Lcom/pubnub/kmp/PNFuture;
@@ -69,6 +73,7 @@ public abstract interface class com/pubnub/chat/ChannelGroup {
 	public abstract fun getId ()Ljava/lang/String;
 	public abstract fun listChannels (Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun listChannels$default (Lcom/pubnub/chat/ChannelGroup;Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun onMessageReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun removeChannelIdentifiers (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun removeChannels (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun streamPresence (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;

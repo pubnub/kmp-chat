@@ -57,7 +57,7 @@ class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var unsubscribe: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel.id)) {
-                unsubscribe = channel.connect {
+                unsubscribe = channel.onMessageReceived {
                     message.complete(it)
                 }
             }
@@ -118,10 +118,10 @@ class ChatConfigurationIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var unsubscribe: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id, channel02.id)) {
-                unsubscribe = channel01.connect {
+                unsubscribe = channel01.onMessageReceived {
                     message.complete(it)
                 }
-                unsubscribe = channel02.connect {
+                unsubscribe = channel02.onMessageReceived {
                     message2.complete(it)
                 }
             }

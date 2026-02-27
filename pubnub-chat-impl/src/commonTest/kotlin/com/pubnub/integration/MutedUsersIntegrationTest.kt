@@ -130,7 +130,7 @@ class MutedUsersIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var unsubscribe: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel.id)) {
-                unsubscribe = channel.connect {
+                unsubscribe = channel.onMessageReceived {
                     message.complete(it)
                 }
             }

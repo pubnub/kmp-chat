@@ -530,8 +530,8 @@ interface Chat {
      * - CONNECTION_ERROR: Connection lost due to an error (network issues, auth problems, etc.)
      *
      * The listener monitors the overall Chat SDK connectivity status which affects:
-     * - Channels that were connected via chat.join() or chat.connect()
-     * - Channel groups that were connected via channelGroup.connect()
+     * - Channels that were connected via channel.onMessageReceived()
+     * - Channel groups that were connected via channelGroup.onMessageReceived()
      *
      * Note: This provides global connection status and does not provide per-channel
      * or per-channel group status information. When connection is lost, you can use
@@ -546,8 +546,8 @@ interface Chat {
      * Reconnects all subscriptions that were previously established.
      *
      * This method restores all previous connections to:
-     * - Channels that were connected via chat.join() or chat.connect()
-     * - Channel groups that were connected via channelGroup.connect()
+     * - Channels that were connected via channel.onMessageReceived()
+     * - Channel groups that were connected via channelGroup.onMessageReceived()
      *
      * Should be called when recovering from connection errors.
      *
@@ -559,8 +559,8 @@ interface Chat {
      * Disconnects all active subscriptions.
      *
      * This method stops all active connections to:
-     * - Channels that were connected via chat.join() or chat.connect()
-     * - Channel groups that were connected via channelGroup.connect()
+     * - Channels that were connected via channel.onMessageReceived()
+     * - Channel groups that were connected via channelGroup.onMessageReceived()
      *
      * The Chat instance remains active and can be used to reconnect later by either:
      * - Using reconnectSubscriptions() to restore all previous connections at once

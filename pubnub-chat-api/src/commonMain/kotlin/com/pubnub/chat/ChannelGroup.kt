@@ -89,5 +89,18 @@ interface ChannelGroup {
      * @param callback custom behavior whenever a message is received
      * @return AutoCloseable interface you can call to stop listening for new messages by invoking the close() method.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onMessageReceived(callback) instead.",
+        replaceWith = ReplaceWith("onMessageReceived(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun connect(callback: (Message) -> Unit): AutoCloseable
+
+    /**
+     * Watch the [ChannelGroup] content.
+     *
+     * @param callback custom behavior whenever a message is received
+     * @return AutoCloseable interface you can call to stop listening for new messages by invoking the close() method.
+     */
+    fun onMessageReceived(callback: (Message) -> Unit): AutoCloseable
 }

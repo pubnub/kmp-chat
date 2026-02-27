@@ -807,8 +807,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             var subscription2: AutoCloseable? = null
 
             pubnub.awaitSubscribe(listOf(testChannelId)) {
-                subscription1 = testChannel.connect { }
-                subscription2 = testChannel.connect { }
+                subscription1 = testChannel.onMessageReceived { }
+                subscription2 = testChannel.onMessageReceived { }
             }
 
             val occupants: Collection<String> = chat.whoIsPresent(channelId = testChannelId, limit = 1).await()
@@ -834,7 +834,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var subscription: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(testChannelId)) {
-                subscription = testChannel.connect { }
+                subscription = testChannel.onMessageReceived { }
             }
 
             // wait for presence to update
@@ -886,8 +886,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             // Subscribe to both channels in a single awaitSubscribe call
             // JS SDK handles sequential subscribes differently than JVM
             pubnub.awaitSubscribe(listOf(testChannelId1, testChannelId2)) {
-                subscription1 = testChannel1.connect { }
-                subscription2 = testChannel2.connect { }
+                subscription1 = testChannel1.onMessageReceived { }
+                subscription2 = testChannel2.onMessageReceived { }
             }
 
             // wait for presence to update

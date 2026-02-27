@@ -78,7 +78,7 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
         channelGroup.addChannels(listOf(channel01, channel02)).await()
         delayInMillis(1000)
 
-        val autoCloseable = channelGroup.connect { message -> }
+        val autoCloseable = channelGroup.onMessageReceived { message -> }
         delayInMillis(3000)
 
         val whoIsPresent = channelGroup.whoIsPresent().await()
@@ -91,13 +91,13 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun connect() = runTest {
+    fun onMessageReceived() = runTest {
         val channelGroup = chat.getChannelGroup(randomString())
         channelGroup.addChannels(listOf(channel01, channel02)).await()
         delayInMillis(1000)
 
         val completable = CompletableDeferred<Message>()
-        val autoCloseable = channelGroup.connect { message -> completable.complete(message) }
+        val autoCloseable = channelGroup.onMessageReceived { message -> completable.complete(message) }
 
         delayInMillis(2000)
         channel01.sendText("Some message").await()
@@ -127,7 +127,7 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
                 }
             }
 
-            val closeable2 = channel01Chat02.connect {}
+            val closeable2 = channel01Chat02.onMessageReceived {}
             val completableRes = completable.await()
 
             assertTrue { completableRes.containsKey(channel01.id) || completableRes.containsKey(channel02.id) }

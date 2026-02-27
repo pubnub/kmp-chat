@@ -147,6 +147,11 @@ data class ChannelGroupImpl internal constructor(
 
     @Suppress("TooGenericExceptionCaught", "LabeledExpression")
     override fun connect(callback: (Message) -> Unit): AutoCloseable {
+        return onMessageReceived(callback)
+    }
+
+    @Suppress("TooGenericExceptionCaught", "LabeledExpression")
+    override fun onMessageReceived(callback: (Message) -> Unit): AutoCloseable {
         val channelGroupEntity = chat.pubNub.channelGroup(id)
         val subscription = channelGroupEntity.subscription()
         val listener = createEventListener(

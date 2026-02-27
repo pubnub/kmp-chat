@@ -91,6 +91,28 @@ describe("Channel group test", () => {
     disconnect()
   }, 30000)
 
+  test("should receive a message via onMessageReceived", async () => {
+    const messages: string[] = []
+    const messagesToSend = ["Some text via onMessageReceived"]
+    await channelGroup.addChannels([firstChannel, secondChannel])
+
+    const disconnect = channelGroup.onMessageReceived((message) => {
+      if (message.content.text !== undefined) {
+        messages.push(message.content.text)
+      }
+    })
+
+    await sleep(1000)
+
+    for (const message of messagesToSend) {
+      await firstChannel.sendText(message)
+      await sleep(500)
+    }
+
+    expect(messages).toStrictEqual(messagesToSend)
+    disconnect()
+  }, 30000)
+
   test("get present users", async () => {
     await channelGroup.addChannels([firstChannel, secondChannel])
     const disconnect = firstChannel.connect(() => null)
