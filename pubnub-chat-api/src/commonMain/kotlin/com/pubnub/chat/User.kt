@@ -7,6 +7,8 @@ import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.chat.user.Invite
+import com.pubnub.chat.user.Mention
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 import kotlin.js.JsName
@@ -209,12 +211,55 @@ interface User {
     ): PNFuture<GetRestrictionsResponse>
 
     /**
+     * Emits the updated user entity whenever this user's metadata (name, etc.) is modified.
+     *
+     * @param callback Function triggered with the updated [User] entity reflecting the new metadata state.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onUpdated(callback: (user: User) -> Unit): AutoCloseable
+
+    /**
+     * Fires when this user is deleted.
+     *
+     * The user identity is already known from the entity the method was called on.
+     *
+     * @param callback Function triggered when this user is deleted.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onDeleted(callback: () -> Unit): AutoCloseable
+
+    /**
+     * Emits when this user is mentioned in a message.
+     *
+     * @param callback Function triggered with a [Mention] event.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onMentioned(callback: (mention: Mention) -> Unit): AutoCloseable
+
+    /**
+     * Emits when this user is invited to a channel.
+     *
+     * @param callback Function triggered with an [Invite] event.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onInvited(callback: (invite: Invite) -> Unit): AutoCloseable
+
+    /**
+     * Emits when this user is muted, banned, or has a restriction lifted in a channel.
+     *
+     * @param callback Function triggered with a [Restriction] event.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onRestrictionChanged(callback: (restriction: Restriction) -> Unit): AutoCloseable
+
+    /**
      * Receives updates on a single User object.
      *
      * @param callback A Function that is triggered whenever the user's information are changed (added, edited, or removed)
      * @return AutoCloseable Interface that lets you stop receiving user-related updates (objects events)
      * and clean up resources by invoking the close() method.
      */
+    @Deprecated("Use onUpdated() and onDeleted() instead.", ReplaceWith("onUpdated(callback)"))
     fun streamUpdates(callback: (user: User?) -> Unit): AutoCloseable
 
     /**

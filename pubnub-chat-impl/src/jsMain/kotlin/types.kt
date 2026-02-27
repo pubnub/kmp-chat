@@ -293,6 +293,20 @@ external interface SetMembershipsParametersAndCustom : PubNub.SetMembershipsPara
     val custom: PubNub.CustomObject?
 }
 
+external interface MentionJs {
+    var messageTimetoken: String
+    var channelId: String
+    var parentChannelId: String?
+    var mentionedByUserId: String
+}
+
+external interface InviteJs {
+    var channelId: String
+    var channelType: String
+    var invitedByUserId: String
+    var invitationTimetoken: String
+}
+
 external interface ListenForEventsParams {
     val type: String
     val channel: String?

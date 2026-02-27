@@ -50,7 +50,16 @@ declare class User {
     * Updates
     */
     static streamUpdatesOn(users: User[], callback: (users: User[]) => unknown): () => void;
+    /** @deprecated Use onUpdated() and onDeleted() instead. */
     streamUpdates(callback: (user: User) => unknown): () => void;
+    /*
+    * Entity-first event streaming (Step 1)
+    */
+    onUpdated(callback: (user: User) => unknown): () => void;
+    onDeleted(callback: () => unknown): () => void;
+    onMentioned(callback: (mention: Mention) => unknown): () => void;
+    onInvited(callback: (invite: Invite) => unknown): () => void;
+    onRestrictionChanged(callback: (restriction: { userId: string; channelId: string; ban: boolean; mute: boolean; reason?: string }) => unknown): () => void;
     /*
     * Presence
     */
@@ -231,6 +240,18 @@ type EmitEventParams = (TypingEventParams & {
 });
 type EventType = "typing" | "report" | "receipt" | "mention" | "invite" | "custom" | "moderation";
 type GenericEventParams<T extends keyof EventParams> = EventParams[T];
+type Mention = {
+    messageTimetoken: string;
+    channelId: string;
+    parentChannelId?: string;
+    mentionedByUserId: string;
+};
+type Invite = {
+    channelId: string;
+    channelType: ChannelType;
+    invitedByUserId: string;
+    invitationTimetoken: string;
+};
 type MessageActions = {
     [type: string]: {
         [value: string]: Array<{
@@ -922,4 +943,4 @@ declare const INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_";
 declare const INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL";
 declare const ERROR_LOGGER_KEY_PREFIX = "PUBNUB_INTERNAL_ERROR_LOGGER";
 declare const CryptoModule: typeof PubNub.CryptoModule;
-export { ChatConfig, Chat, ChannelFields, Channel, ChannelGroup, ConnectionStatusCategory, ConnectionStatus, UserFields, User, MessageFields, Message, MembershipFields, Membership, ThreadChannel, ThreadMessage, MessageDraft, EventFields, Event, ChannelType, MessageType, MessageActionType, TextMessageContent, EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams, MessageActions, DeleteParameters, MessageMentionedUsers, MessageReferencedChannels, MessageDraftOptions, SendTextOptionParams, EnhancedMessageEvent, MessageDTOParams, ThreadMessageDTOParams, MembershipResponse, OptionalAllBut, ChannelDTOParams, ThreadChannelDTOParams, MessageDraftConfig, TextLink, GetLinkedTextParams, PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement, ErrorLoggerSetParams, ErrorLoggerImplementation, ChannelMentionData, ThreadMentionData, UserMentionData, TimetokenUtils, CryptoUtils, MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX, CryptoModule, CreateThreadResult, CreateThreadOptions};
+export { ChatConfig, Chat, ChannelFields, Channel, ChannelGroup, ConnectionStatusCategory, ConnectionStatus, UserFields, User, MessageFields, Message, MembershipFields, Membership, ThreadChannel, ThreadMessage, MessageDraft, EventFields, Event, ChannelType, MessageType, MessageActionType, TextMessageContent, EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams, Mention, Invite, MessageActions, DeleteParameters, MessageMentionedUsers, MessageReferencedChannels, MessageDraftOptions, SendTextOptionParams, EnhancedMessageEvent, MessageDTOParams, ThreadMessageDTOParams, MembershipResponse, OptionalAllBut, ChannelDTOParams, ThreadChannelDTOParams, MessageDraftConfig, TextLink, GetLinkedTextParams, PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement, ErrorLoggerSetParams, ErrorLoggerImplementation, ChannelMentionData, ThreadMentionData, UserMentionData, TimetokenUtils, CryptoUtils, MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX, CryptoModule, CreateThreadResult, CreateThreadOptions};
