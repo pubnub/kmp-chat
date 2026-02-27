@@ -91,6 +91,10 @@ data class ChannelGroupImpl internal constructor(
     }
 
     override fun streamPresence(callback: (presenceByChannels: Map<String, Collection<String>>) -> Unit): AutoCloseable {
+        return onPresenceChanged(callback)
+    }
+
+    override fun onPresenceChanged(callback: (presenceByChannels: Map<String, Collection<String>>) -> Unit): AutoCloseable {
         val ids = mutableMapOf<String, MutableSet<String>>()
         // todo what to do in this case
         val future = whoIsPresent().then { whoIsPresentResponse ->

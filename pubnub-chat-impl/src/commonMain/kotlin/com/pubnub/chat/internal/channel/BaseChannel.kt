@@ -717,6 +717,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun streamPresence(callback: (userIds: Collection<String>) -> Unit): AutoCloseable {
+        return onPresenceChanged(callback)
+    }
+
+    override fun onPresenceChanged(callback: (userIds: Collection<String>) -> Unit): AutoCloseable {
         val ids = mutableSetOf<String>()
         // todo what to do
         val future = whoIsPresent().then {

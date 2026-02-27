@@ -120,7 +120,7 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var closeable: AutoCloseable? = null
             pubnub.awaitSubscribe(channelGroups = listOf(channelGroup.id)) {
-                closeable = channelGroup.streamPresence {
+                closeable = channelGroup.onPresenceChanged {
                     if (it.isNotEmpty()) {
                         completable.complete(it)
                     }

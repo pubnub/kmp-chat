@@ -81,7 +81,17 @@ interface ChannelGroup {
     /**
      * Enables real-time tracking of users connecting to or disconnecting from the given [ChannelGroup]
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onPresenceChanged(callback) instead.",
+        replaceWith = ReplaceWith("onPresenceChanged(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun streamPresence(callback: (presenceByChannels: Map<String, Collection<String>>) -> Unit): AutoCloseable
+
+    /**
+     * Enables real-time tracking of users connecting to or disconnecting from the given [ChannelGroup]
+     */
+    fun onPresenceChanged(callback: (presenceByChannels: Map<String, Collection<String>>) -> Unit): AutoCloseable
 
     /**
      * Watch the [ChannelGroup] content.

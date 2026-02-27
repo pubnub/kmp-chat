@@ -541,7 +541,21 @@ interface Channel {
      *
      * @return AutoCloseable Interface that lets you stop receiving presence-related updates (presence events) by invoking the close() method.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onPresenceChanged(callback) instead.",
+        replaceWith = ReplaceWith("onPresenceChanged(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun streamPresence(callback: (userIds: Collection<String>) -> Unit): AutoCloseable
+
+    /**
+     * Enables real-time tracking of users connecting to or disconnecting from a [Channel].
+
+     * @param callback defines the custom behavior to be executed when detecting user presence event.
+     *
+     * @return AutoCloseable Interface that lets you stop receiving presence-related updates (presence events) by invoking the close() method.
+     */
+    fun onPresenceChanged(callback: (userIds: Collection<String>) -> Unit): AutoCloseable
 
     /**
      * Fetches all suggested users that match the provided 3-letter string from [Channel]
