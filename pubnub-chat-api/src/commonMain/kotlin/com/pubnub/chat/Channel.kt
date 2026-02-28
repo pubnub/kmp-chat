@@ -504,7 +504,33 @@ interface Channel {
      * @return [AutoCloseable] interface that lets you stop receiving channel-related updates (objects events)
      * and clean up resources by invoking the close() method.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onUpdated(callback) and onDeleted(callback) instead.",
+        replaceWith = ReplaceWith("onUpdated(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable
+
+    /**
+     * Emits the updated channel entity whenever this channel's metadata (name, description, etc.) is modified.
+     *
+     * @param callback Function that receives the updated [Channel] entity reflecting the new metadata state.
+     *
+     * @return [AutoCloseable] interface that lets you stop receiving channel-related updates (objects events)
+     * and clean up resources by invoking the close() method.
+     */
+    fun onUpdated(callback: (channel: Channel) -> Unit): AutoCloseable
+
+    /**
+     * Fires when this channel is deleted.
+     *
+     * @param callback Function that is invoked when the channel is deleted. The channel identity is already known
+     * from the entity the method was called on.
+     *
+     * @return [AutoCloseable] interface that lets you stop receiving channel deletion events
+     * and clean up resources by invoking the close() method.
+     */
+    fun onDeleted(callback: () -> Unit): AutoCloseable
 
     /**
      * Lets you get a read confirmation status for messages you published on a channel.

@@ -698,6 +698,49 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun onUpdated() = runTest {
+        val expectedDescription = "Modified description"
+        val expectedStatus = "ModifiedStatus"
+        chat.createChannel(channel01.id).await()
+        val completableDescription = CompletableDeferred<String?>()
+        val completableStatus = CompletableDeferred<String?>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                dispose = channel01.onUpdated { channel: Channel ->
+                    completableDescription.complete(channel.description)
+                    completableStatus.complete(channel.status)
+                }
+            }
+            channel01.update(description = expectedDescription, status = expectedStatus).await()
+            assertEquals(expectedDescription, completableDescription.await())
+            assertEquals(expectedStatus, completableStatus.await())
+
+            dispose?.close()
+        }
+    }
+
+    @Test
+    fun onDeleted() = runTest {
+        chat.createChannel(channel01.id).await()
+        val completableDeleted = CompletableDeferred<Unit>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                dispose = channel01.onDeleted {
+                    completableDeleted.complete(Unit)
+                }
+            }
+            channel01.delete().await()
+            completableDeleted.await()
+
+            dispose?.close()
+        }
+    }
+
+    @Test
     fun canCheck_whoIsPresent() = runTest {
         val channel01withChat = channel01
         val join01 = channel01withChat.onMessageReceived { }

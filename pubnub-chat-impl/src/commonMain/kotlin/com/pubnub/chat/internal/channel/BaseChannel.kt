@@ -79,9 +79,9 @@ import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
-import com.pubnub.chat.types.ReadReceipt
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
+import com.pubnub.chat.types.ReadReceipt
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -238,9 +238,53 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable {
-        return streamUpdatesOn(listOf(this)) {
-            callback(it.firstOrNull())
+        val onUpdatedCloseable = onUpdated { channel -> callback(channel) }
+        val onDeletedCloseable = onDeleted { callback(null) }
+        return AutoCloseable {
+            onUpdatedCloseable.close()
+            onDeletedCloseable.close()
         }
+    }
+
+    override fun onUpdated(callback: (channel: Channel) -> Unit): AutoCloseable {
+        val channelEntity = chat.pubNub.channel(id)
+        val subscription = channelEntity.subscription()
+        var latestChannel: Channel = this
+        val listener = createEventListener(chat.pubNub, onObjects = { _, event: PNObjectEventResult ->
+            when (val message = event.extractedMessage) {
+                is PNSetChannelMetadataEventMessage -> {
+                    if (message.data.id == id) {
+                        val updatedChannel = latestChannel + message.data
+                        latestChannel = updatedChannel
+                        callback(updatedChannel)
+                    }
+                }
+
+                else -> return@createEventListener
+            }
+        })
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
+    }
+
+    override fun onDeleted(callback: () -> Unit): AutoCloseable {
+        val channelEntity = chat.pubNub.channel(id)
+        val subscription = channelEntity.subscription()
+        val listener = createEventListener(chat.pubNub, onObjects = { _, event: PNObjectEventResult ->
+            when (val message = event.extractedMessage) {
+                is PNDeleteChannelMetadataEventMessage -> {
+                    if (message.channel == id) {
+                        callback()
+                    }
+                }
+
+                else -> return@createEventListener
+            }
+        })
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
     }
 
     override fun getHistory(
@@ -580,7 +624,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     // there is a discrepancy between KMP and JS. There is no unsubscribe here. This is agreed and will be changed in JS Chat
-    override fun leave(): PNFuture<Unit> = chat.pubNub.removeMemberships(channels = listOf(id), include = MembershipInclude()).then { Unit }
+    override fun leave(): PNFuture<Unit> =
+        chat.pubNub.removeMemberships(channels = listOf(id), include = MembershipInclude()).then { Unit }
 
     override fun getPinnedMessage(): PNFuture<Message?> {
         val pinnedMessageTimetoken = this.custom?.get(PINNED_MESSAGE_TIMETOKEN).tryLong() ?: return null.asFuture()

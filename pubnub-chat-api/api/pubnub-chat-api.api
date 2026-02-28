@@ -37,10 +37,12 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun joinChannel (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun joinChannel$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun leave ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun onDeleted (Lkotlin/jvm/functions/Function0;)Ljava/lang/AutoCloseable;
 	public abstract fun onMessageReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun onPresenceChanged (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun onReadReceiptReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun onTypingChanged (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pinMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun plus (Lcom/pubnub/api/models/consumer/objects/channel/PNChannelMetadata;)Lcom/pubnub/chat/Channel;
 	public abstract fun registerForPush ()Lcom/pubnub/kmp/PNFuture;
