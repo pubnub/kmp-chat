@@ -21,6 +21,7 @@ import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.ReadReceipt
+import com.pubnub.chat.types.Report
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -635,7 +636,23 @@ interface Channel {
      *
      * @return AutoCloseable Interface that lets you stop receiving report-related updates (report events) by invoking the close() method.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onMessageReported(callback) instead.",
+        replaceWith = ReplaceWith("onMessageReported(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun streamMessageReports(callback: (event: Event<EventContent.Report>) -> Unit): AutoCloseable
+
+    /**
+     * As an admin of your chat app, monitor all events emitted when someone reports an offensive message.
+     *
+     * @param callback defines the custom behavior to be executed when receiving a [Report] event,
+     * containing the reason, text, messageTimetoken, reportedMessageChannelId, reportedUserId, and autoModerationId.
+     *
+     * @return AutoCloseable Interface that lets you stop receiving report-related updates (report events)
+     * and clean up resources by invoking the close() method.
+     */
+    fun onMessageReported(callback: (report: Report) -> Unit): AutoCloseable
 
     /**
      * Get a new `Channel` instance that is a copy of this `Channel` with its properties updated with information coming from `update`.

@@ -82,6 +82,7 @@ import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.ReadReceipt
+import com.pubnub.chat.types.Report
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -838,6 +839,22 @@ abstract class BaseChannel<C : Channel, M : Message>(
     override fun streamMessageReports(callback: (event: Event<EventContent.Report>) -> Unit): AutoCloseable {
         val channelId = "${INTERNAL_MODERATION_PREFIX}$id"
         return chat.listenForEvents<EventContent.Report>(channelId = channelId, callback = callback)
+    }
+
+    override fun onMessageReported(callback: (report: Report) -> Unit): AutoCloseable {
+        val channelId = "${INTERNAL_MODERATION_PREFIX}$id"
+        return chat.listenForEvents<EventContent.Report>(channelId = channelId) { event ->
+            callback(
+                Report(
+                    reason = event.payload.reason,
+                    text = event.payload.text,
+                    messageTimetoken = event.payload.reportedMessageTimetoken,
+                    reportedMessageChannelId = event.payload.reportedMessageChannelId,
+                    reportedUserId = event.payload.reportedUserId,
+                    autoModerationId = event.payload.autoModerationId,
+                )
+            )
+        }
     }
 
     internal fun getRestrictions(

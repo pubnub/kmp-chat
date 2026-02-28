@@ -24,6 +24,7 @@ import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.ReadReceipt
+import com.pubnub.chat.types.Report
 import com.pubnub.internal.PLATFORM
 import com.pubnub.kmp.Uploadable
 import com.pubnub.kmp.createCustomObject
@@ -670,6 +671,50 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             assertEquals(2, numberOfReports.value)
 
             streamMessageReportsCloseable?.close()
+        }
+    }
+
+    @Test
+    fun onMessageReported() = runTest {
+        val numberOfReports = atomic(0)
+        val reason01 = "rude"
+        val reason02 = "too verbose"
+        val messageText = "message1"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val timetoken = pnPublishResult.timetoken
+        delayForHistory()
+        val message = channel01.getMessage(timetoken).await()!!
+        val assertionErrorInCallback = CompletableDeferred<AssertionError?>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var onMessageReportedCloseable: AutoCloseable? = null
+
+            pubnub.awaitSubscribe(listOf("PUBNUB_INTERNAL_MODERATION_${channel01.id}")) {
+                onMessageReportedCloseable =
+                    channel01.onMessageReported { report: Report ->
+                        try {
+                            numberOfReports.incrementAndGet()
+                            val reportReason = report.reason
+                            assertTrue(reportReason == reason01 || reportReason == reason02)
+                            assertEquals(messageText, report.text)
+                            assertEquals(message.channelId, report.reportedMessageChannelId)
+                            if (numberOfReports.value == 2) {
+                                assertionErrorInCallback.complete(null)
+                            }
+                        } catch (e: AssertionError) {
+                            assertionErrorInCallback.complete(e)
+                        }
+                    }
+            }
+
+            // report messages
+            message.report(reason01).await()
+            message.report(reason02).await()
+
+            assertionErrorInCallback.await()?.let { assertionError -> throw (assertionError) }
+            assertEquals(2, numberOfReports.value)
+
+            onMessageReportedCloseable?.close()
         }
     }
 
