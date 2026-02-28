@@ -39,6 +39,7 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun leave ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun onMessageReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun onPresenceChanged (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onReadReceiptReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun onTypingChanged (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pinMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun plus (Lcom/pubnub/api/models/consumer/objects/channel/PNChannelMetadata;)Lcom/pubnub/chat/Channel;
@@ -959,6 +960,19 @@ public synthetic class com/pubnub/chat/types/QuotedMessage$$serializer : kotlinx
 
 public final class com/pubnub/chat/types/QuotedMessage$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/pubnub/chat/types/ReadReceipt {
+	public fun <init> (Ljava/lang/String;J)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun copy (Ljava/lang/String;J)Lcom/pubnub/chat/types/ReadReceipt;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/types/ReadReceipt;Ljava/lang/String;JILjava/lang/Object;)Lcom/pubnub/chat/types/ReadReceipt;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLastReadTimetoken ()J
+	public final fun getUserId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/pubnub/chat/types/TextLink {

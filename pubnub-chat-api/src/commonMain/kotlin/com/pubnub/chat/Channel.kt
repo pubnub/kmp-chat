@@ -20,6 +20,7 @@ import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
+import com.pubnub.chat.types.ReadReceipt
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -512,7 +513,23 @@ interface Channel {
      * @return AutoCloseable Interface you can call to stop listening for message read receipts
      * and clean up resources by invoking the close() method.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onReadReceiptReceived(callback) instead.",
+        replaceWith = ReplaceWith("onReadReceiptReceived(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable
+
+    /**
+     * Lets you get individual read receipt events for messages on a channel.
+     *
+     * @param callback defines the custom behavior to be executed when receiving an individual [ReadReceipt] event,
+     * containing the userId and the lastReadTimetoken.
+     *
+     * @return AutoCloseable Interface you can call to stop listening for message read receipts
+     * and clean up resources by invoking the close() method.
+     */
+    fun onReadReceiptReceived(callback: (receipt: ReadReceipt) -> Unit): AutoCloseable
 
     /**
      * Returns all files attached to messages on a given channel.

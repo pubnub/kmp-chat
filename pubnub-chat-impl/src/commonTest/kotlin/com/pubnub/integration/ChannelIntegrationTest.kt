@@ -23,6 +23,7 @@ import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.chat.types.ReadReceipt
 import com.pubnub.internal.PLATFORM
 import com.pubnub.kmp.Uploadable
 import com.pubnub.kmp.createCustomObject
@@ -389,10 +390,9 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         var dispose: AutoCloseable? = null
         pubnub.test(backgroundScope, checkAllEvents = false) {
             pubnub.awaitSubscribe(listOf(channel.id)) {
-                dispose = channel.streamReadReceipts { receipts ->
-                    val lastRead = receipts.entries.find { it.value.contains(chat.currentUser.id) }?.key
-                    if (lastRead != null) {
-                        if (tt > lastRead) {
+                dispose = channel.onReadReceiptReceived { receipt: ReadReceipt ->
+                    if (receipt.userId == chat.currentUser.id) {
+                        if (tt > receipt.lastReadTimetoken) {
                             completableBeforeMark.complete(Unit) // before calling markAllMessagesRead
                         } else {
                             completableAfterMark.complete(Unit) // after calling markAllMessagesRead

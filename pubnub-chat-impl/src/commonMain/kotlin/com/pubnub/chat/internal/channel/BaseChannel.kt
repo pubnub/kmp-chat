@@ -79,6 +79,7 @@ import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
+import com.pubnub.chat.types.ReadReceipt
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.TextLink
@@ -670,23 +671,28 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable {
+        val timetokensPerUser = mutableMapOf<String, Long>()
+        return onReadReceiptReceived { receipt ->
+            timetokensPerUser[receipt.userId] = receipt.lastReadTimetoken
+            callback(generateReceipts(timetokensPerUser))
+        }
+    }
+
+    override fun onReadReceiptReceived(callback: (receipt: ReadReceipt) -> Unit): AutoCloseable {
         if (type == ChannelType.PUBLIC) {
             log.pnError(READ_RECEIPTS_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS)
         }
-        val timetokensPerUser = mutableMapOf<String, Long>()
         // in group chats it work till 100 members
         val future = getMembers().then { members ->
             members.members.forEach { m ->
                 val lastTimetoken = m.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN)?.tryLong()
                 if (lastTimetoken != null) {
-                    timetokensPerUser[m.user.id] = lastTimetoken
+                    callback(ReadReceipt(m.user.id, lastTimetoken))
                 }
             }
-            callback(generateReceipts(timetokensPerUser))
         }.then {
             chat.listenForEvents<EventContent.Receipt>(id) { event ->
-                timetokensPerUser[event.userId] = event.payload.messageTimetoken
-                callback(generateReceipts(timetokensPerUser))
+                callback(ReadReceipt(event.userId, event.payload.messageTimetoken))
             }
         }.remember()
         return AutoCloseable {
