@@ -543,11 +543,15 @@ declare class Channel {
     forwardMessage(message: Message): Promise<Publish.PublishResponse>;
     startTyping(): Promise<Signal.SignalResponse | undefined>;
     stopTyping(): Promise<Signal.SignalResponse | undefined>;
+    /** @deprecated Use onTypingChanged instead. */
     getTyping(callback: (typingUserIds: string[]) => unknown): () => void;
+    onTypingChanged(callback: (typingUserIds: string[]) => unknown): () => void;
     /*
     * Streaming messages
     */
+    /** @deprecated Use onMessageReceived instead. */
     connect(callback: (message: Message) => void): () => void;
+    onMessageReceived(callback: (message: Message) => void): () => void;
     /*
     * Presence
     */
@@ -566,12 +570,18 @@ declare class Channel {
         isMore: boolean;
     }>;
     getMessage(timetoken: string): Promise<Message>;
+    /** @deprecated Use joinChannel(params?) for membership and onMessageReceived(callback) for messages. */
     join(callback: (message: Message) => void, params?: Omit<AppContext.SetMembershipsParameters<AppContext.CustomData>, "channels" | "include" | "filter"> & {
         custom?: AppContext.CustomData;
     }): Promise<{
         membership: Membership;
         disconnect: () => void;
     }>;
+    joinChannel(params?: {
+        status?: string;
+        type?: string;
+        custom?: AppContext.CustomData;
+    }): Promise<Membership>;
     leave(): Promise<boolean>;
     getMembers(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<{
         page: {
@@ -897,7 +907,9 @@ declare class ChannelGroup {
     addChannelIdentifiers(ids: string[]): Promise<any>;
     removeChannels(channels: Channel[]): Promise<any>;
     removeChannelIdentifiers(ids: string[]): Promise<any>;
+    /** @deprecated Use onMessageReceived instead. */
     connect(callback: (message: Message) => void): () => void;
+    onMessageReceived(callback: (message: Message) => void): () => void;
     whoIsPresent(params?: { limit?: number; offset?: number }): Promise<{ [key: string]: string[] }>
     streamPresence(callback: (presenceByChannels: {
         [key: string]: string[];

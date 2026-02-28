@@ -49,8 +49,15 @@ class ChannelGroupJs internal constructor(
         return channelGroup.removeChannelIdentifiers(ids.asList()).asPromise()
     }
 
+    @Deprecated("Will be removed from SDK in the future. Use onMessageReceived(callback) instead.")
     fun connect(callback: (MessageJs) -> Unit): () -> Unit {
         return channelGroup.connect {
+            callback(it.asJs(chatJs))
+        }::close
+    }
+
+    fun onMessageReceived(callback: (MessageJs) -> Unit): () -> Unit {
+        return channelGroup.onMessageReceived {
             callback(it.asJs(chatJs))
         }::close
     }

@@ -256,6 +256,12 @@ external interface JoinResultJs {
     var disconnect: () -> Unit
 }
 
+external interface JoinParams {
+    val status: String?
+    val type: String?
+    val custom: PubNub.CustomObject?
+}
+
 external interface DeleteFileParams {
     val id: String
     val name: String
