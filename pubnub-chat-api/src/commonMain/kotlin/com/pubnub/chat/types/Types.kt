@@ -86,6 +86,7 @@ abstract class EventContent(
      * @property channel The ID of the channel where the mention occurred.
      * @property parentChannel The ID of the parent channel if the mention occurred in a thread, otherwise null.
      */
+    @Deprecated("Use User.onMentioned() with com.pubnub.chat.user.Mention instead.")
     @Serializable
     @SerialName("mention")
     class Mention(
@@ -101,6 +102,7 @@ abstract class EventContent(
      * @property channelType The type of the channel (e.g., direct, group).
      * @property channelId The ID of the channel to which the user is invited.
      */
+    @Deprecated("Use User.onInvited() with com.pubnub.chat.user.Invite instead.")
     @Serializable
     @SerialName("invite")
     class Invite(val channelType: ChannelType, val channelId: String) : EventContent()
@@ -123,6 +125,7 @@ abstract class EventContent(
      * @property restriction The type of restriction applied (e.g., ban, mute).
      * @property reason The reason for the restriction, if provided.
      */
+    @Deprecated("Use User.onRestrictionChanged() with com.pubnub.chat.restrictions.Restriction instead.")
     @Serializable
     @SerialName("moderation")
     class Moderation(val channelId: String, val restriction: RestrictionType, val reason: String? = null) :

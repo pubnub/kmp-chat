@@ -23,8 +23,16 @@ external interface MarkAllMessageAsReadResponseJs {
 }
 
 external interface GetCurrentUserMentionsResultJs {
+    var mentions: Array<UserMentionJs>
     var enhancedMentionsData: Array<UserMentionDataJs>
     var isMore: Boolean
+}
+
+external interface UserMentionJs {
+    var message: MessageJs
+    var userId: String
+    var channelId: String
+    var parentChannelId: String?
 }
 
 external interface UserMentionDataJs {

@@ -51,6 +51,7 @@ internal const val TYPE_OF_MESSAGE_IS_CUSTOM = "custom"
 internal const val RESTRICTION_BAN = "ban"
 internal const val RESTRICTION_MUTE = "mute"
 internal const val RESTRICTION_REASON = "reason"
+internal const val CUSTOM_MESSAGE_TYPE_MODERATED = "moderated"
 
 internal const val TYPE_PUBNUB_PRIVATE = "pn.prv"
 internal const val PREFIX_PUBNUB_PRIVATE = "PN_PRV."

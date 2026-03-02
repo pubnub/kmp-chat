@@ -84,6 +84,7 @@ import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.internal.timer.createTimerManager
+import com.pubnub.chat.internal.user.ModerationPayload
 import com.pubnub.chat.internal.util.channelsUrlDecoded
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.nullOn404
@@ -110,6 +111,7 @@ import com.pubnub.chat.types.GetCurrentUserMentionsResult
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.MessageActionType
 import com.pubnub.chat.types.ThreadMentionData
+import com.pubnub.chat.types.UserMention
 import com.pubnub.chat.types.UserMentionData
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
@@ -764,13 +766,14 @@ class ChatImpl(
                 if (!restriction.ban && !restriction.mute) {
                     pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
                         .alsoAsync { _ ->
-                            emitEvent(
-                                channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
-                                payload = EventContent.Moderation(
+                            EventEmitter(pubNub).publish(
+                                channel = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
+                                payload = ModerationPayload(
                                     channelId = channel,
                                     restriction = RestrictionType.LIFT,
                                     reason = restriction.reason
                                 ),
+                                customMessageType = CUSTOM_MESSAGE_TYPE_MODERATED,
                             )
                         }
                 } else {
@@ -792,9 +795,9 @@ class ChatImpl(
                         }
                     }.thenAsync {
                         pubNub.setChannelMembers(channel = channel, users = uuids).alsoAsync { _ ->
-                            emitEvent(
-                                channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
-                                payload = EventContent.Moderation(
+                            EventEmitter(pubNub).publish(
+                                channel = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
+                                payload = ModerationPayload(
                                     channelId = channel,
                                     restriction = if (restriction.ban) {
                                         RestrictionType.BAN
@@ -803,6 +806,7 @@ class ChatImpl(
                                     },
                                     reason = restriction.reason
                                 ),
+                                customMessageType = CUSTOM_MESSAGE_TYPE_MODERATED,
                             )
                         }
                     }
@@ -1090,7 +1094,16 @@ class ChatImpl(
                             if (message == null) {
                                 return@then null
                             }
-                            if (mentionEvent.payload.parentChannel == null) {
+                            val parentChannelId = mentionEvent.payload.parentChannel
+                            val userMention = UserMention(
+                                message = message,
+                                userId = mentionEvent.userId,
+                                channelId = mentionChannelId,
+                                parentChannelId = parentChannelId,
+                            )
+
+                            @Suppress("DEPRECATION")
+                            val legacyData: UserMentionData = if (parentChannelId == null) {
                                 ChannelMentionData(
                                     event = mentionEvent,
                                     message = message,
@@ -1102,16 +1115,22 @@ class ChatImpl(
                                     event = mentionEvent,
                                     message = message,
                                     userId = mentionEvent.userId,
-                                    parentChannelId = mentionEvent.payload.parentChannel.orEmpty(),
-                                    threadChannelId = mentionEvent.payload.channel
+                                    parentChannelId = parentChannelId.orEmpty(),
+                                    threadChannelId = mentionChannelId
                                 )
                             }
+                            Pair(userMention, legacyData)
                         }
                 }.awaitAll()
         }
             .then { it.filterNotNull() }
-            .then { userMentionDataList: List<UserMentionData> ->
-                GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList, isMore = isMore)
+            .then { pairs: List<Pair<UserMention, UserMentionData>> ->
+                @Suppress("DEPRECATION")
+                GetCurrentUserMentionsResult(
+                    mentions = pairs.map { it.first },
+                    isMore = isMore,
+                    enhancedMentionsData = pairs.map { it.second },
+                )
             }
     }
 

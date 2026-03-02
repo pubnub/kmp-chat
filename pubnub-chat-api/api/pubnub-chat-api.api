@@ -838,8 +838,10 @@ public final class com/pubnub/chat/types/GetChannelsResponse {
 }
 
 public final class com/pubnub/chat/types/GetCurrentUserMentionsResult {
-	public fun <init> (Ljava/util/List;Z)V
+	public fun <init> (Ljava/util/List;ZLjava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;ZLjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getEnhancedMentionsData ()Ljava/util/List;
+	public final fun getMentions ()Ljava/util/List;
 	public final fun isMore ()Z
 }
 
@@ -997,6 +999,14 @@ public final class com/pubnub/chat/types/ThreadMentionData : com/pubnub/chat/typ
 	public final fun getParentChannelId ()Ljava/lang/String;
 	public final fun getThreadChannelId ()Ljava/lang/String;
 	public fun getUserId ()Ljava/lang/String;
+}
+
+public final class com/pubnub/chat/types/UserMention {
+	public fun <init> (Lcom/pubnub/chat/Message;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getChannelId ()Ljava/lang/String;
+	public final fun getMessage ()Lcom/pubnub/chat/Message;
+	public final fun getParentChannelId ()Ljava/lang/String;
+	public final fun getUserId ()Ljava/lang/String;
 }
 
 public abstract class com/pubnub/chat/types/UserMentionData {
