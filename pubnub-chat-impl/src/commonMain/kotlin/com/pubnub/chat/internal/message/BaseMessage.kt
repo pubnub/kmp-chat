@@ -312,6 +312,12 @@ abstract class BaseMessage<T : Message>(
         return newActions.then { copyWithActions(it) }
     }
 
+    override fun onUpdated(callback: (message: Message) -> Unit): AutoCloseable {
+        return streamUpdatesOn(listOf(this)) {
+            callback(it.first())
+        }
+    }
+
     override fun <M : Message> streamUpdates(callback: (message: M) -> Unit): AutoCloseable {
         return streamUpdatesOn(listOf(this as M)) {
             callback(it.first())

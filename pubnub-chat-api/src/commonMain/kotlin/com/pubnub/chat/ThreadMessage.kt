@@ -31,5 +31,13 @@ interface ThreadMessage : Message {
      */
     fun unpinFromParentChannel(): PNFuture<Channel>
 
+    /**
+     * Emits the updated thread message entity whenever this message is edited, reactions are added or removed, or metadata changes.
+     *
+     * @param callback Function triggered with the updated [ThreadMessage] entity reflecting the new state.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onThreadMessageUpdated(callback: (message: ThreadMessage) -> Unit): AutoCloseable
+
     companion object
 }

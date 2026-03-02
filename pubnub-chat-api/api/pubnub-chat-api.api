@@ -235,6 +235,7 @@ public abstract interface class com/pubnub/chat/Message {
 	public abstract fun getType ()Ljava/lang/String;
 	public abstract fun getUserId ()Ljava/lang/String;
 	public abstract fun hasUserReaction (Ljava/lang/String;)Z
+	public abstract fun onUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pin ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun removeThread ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun report (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
@@ -340,6 +341,7 @@ public final class com/pubnub/chat/ThreadChannel$Companion {
 public abstract interface class com/pubnub/chat/ThreadMessage : com/pubnub/chat/Message {
 	public static final field Companion Lcom/pubnub/chat/ThreadMessage$Companion;
 	public abstract fun getParentChannelId ()Ljava/lang/String;
+	public abstract fun onThreadMessageUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pinToParentChannel ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun unpinFromParentChannel ()Lcom/pubnub/kmp/PNFuture;
 }

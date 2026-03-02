@@ -426,7 +426,9 @@ declare class Message {
     * Updates
     */
     static streamUpdatesOn(messages: Message[], callback: (messages: Message[]) => unknown): () => void;
+    /** @deprecated Use onUpdated() instead. */
     streamUpdates(callback: (message: Message) => unknown): () => void;
+    onUpdated(callback: (message: Message) => unknown): () => void;
     /*
     * Message text
     */
@@ -888,6 +890,7 @@ declare class ThreadMessage extends Message {
     static streamUpdatesOn(threadMessages: ThreadMessage[], callback: (threadMessages: ThreadMessage[]) => unknown): () => void;
     pinToParentChannel(): Promise<Channel>;
     unpinFromParentChannel(): Promise<Channel>;
+    onThreadMessageUpdated(callback: (message: ThreadMessage) => unknown): () => void;
 }
 declare class ThreadChannel extends Channel {
     readonly parentChannelId: string;

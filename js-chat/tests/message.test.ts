@@ -1752,6 +1752,27 @@ describe("Send message test", () => {
     await chat.currentUser.delete()
   }, 20000)
 
+  test("should invoke onUpdated callback when message is edited", async () => {
+    await channel.sendText("Test message")
+    await sleep(150)
+
+    const history = await channel.getHistory()
+    const sentMessage = history.messages[history.messages.length - 1]
+
+    let updatedMessage: Message | undefined
+    const stop = sentMessage.onUpdated((message: Message) => { updatedMessage = message })
+    await sleep(3000)
+
+    await sentMessage.editText("Edited message")
+    await sleep(2000)
+
+    expect(updatedMessage).toBeDefined()
+    expect(updatedMessage?.text).toBe("Edited message")
+    expect(updatedMessage?.timetoken).toBe(sentMessage.timetoken)
+
+    stop()
+  }, 20000)
+
   test("should receive streamUpdates callback when soft deleting message", async () => {
     const disconnect = channel.connect((message) => {  })
 
