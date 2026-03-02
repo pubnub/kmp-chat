@@ -329,6 +329,8 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         val newName = "newName_${randomString()}"
         val result = CompletableDeferred<User>()
 
+        chat.createUser(someUser).await()
+
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(someUser.id)) {
@@ -340,6 +342,8 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
             val updated = result.await()
             assertEquals(newName, updated.name)
             assertEquals(someUser.id, updated.id)
+
+            someUser.delete().await()
             dispose?.close()
         }
     }
