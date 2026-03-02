@@ -1,6 +1,7 @@
 package com.pubnub.chat.internal
 
 import co.touchlab.kermit.Logger
+import com.pubnub.api.JsonElement
 import com.pubnub.api.PubNubException
 import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
@@ -11,6 +12,7 @@ import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
+import com.pubnub.api.models.consumer.pubsub.MessageResult
 import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteUUIDMetadataEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetUUIDMetadataEventMessage
 import com.pubnub.api.utils.Clock
@@ -26,10 +28,10 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
-import com.pubnub.chat.internal.user.InviteEventData
-import com.pubnub.chat.internal.user.MentionEventData
-import com.pubnub.chat.internal.user.ModerationEventData
-import com.pubnub.chat.internal.user.listenForUserEvent
+import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.internal.user.InvitePayload
+import com.pubnub.chat.internal.user.MentionPayload
+import com.pubnub.chat.internal.user.ModerationPayload
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.membership.MembershipsResponse
@@ -235,7 +237,7 @@ data class UserImpl(
     }
 
     override fun onMentioned(callback: (mention: Mention) -> Unit): AutoCloseable {
-        return chat.listenForUserEvent<MentionEventData>(id) { data, userId, _ ->
+        return listenForPayload<MentionPayload> { data, userId, _ ->
             callback(
                 Mention(
                     messageTimetoken = data.messageTimetoken,
@@ -248,7 +250,7 @@ data class UserImpl(
     }
 
     override fun onInvited(callback: (invite: Invite) -> Unit): AutoCloseable {
-        return chat.listenForUserEvent<InviteEventData>(id) { data, userId, timetoken ->
+        return listenForPayload<InvitePayload> { data, userId, timetoken ->
             callback(
                 Invite(
                     channelId = data.channelId,
@@ -261,7 +263,7 @@ data class UserImpl(
     }
 
     override fun onRestrictionChanged(callback: (restriction: Restriction) -> Unit): AutoCloseable {
-        return chat.listenForUserEvent<ModerationEventData>(INTERNAL_USER_MODERATION_CHANNEL_PREFIX + id) { data, _, _ ->
+        return listenForPayload<ModerationPayload>(INTERNAL_USER_MODERATION_CHANNEL_PREFIX + id) { data, _, _ ->
             callback(
                 Restriction(
                     userId = id,
@@ -446,6 +448,29 @@ private fun User.setUserUpdatedValues(updatableValues: User.UpdatableValues): Se
     status = updatableValues.status,
     ifMatchesEtag = eTag
 )
+
+private inline fun <reified D> UserImpl.listenForPayload(
+    channelId: String = id,
+    crossinline callback: (payload: D, userId: String, timetoken: Long) -> Unit
+): AutoCloseable {
+    val listener = createEventListener(chat.pubNub, onMessage = { _, pnEvent ->
+        try {
+            if (pnEvent.channel != channelId) {
+                return@createEventListener
+            }
+            val message: JsonElement = (pnEvent as? MessageResult)?.message ?: return@createEventListener
+            val dto: D = PNDataEncoder.decode(message)
+            callback(dto, pnEvent.publisher ?: "", pnEvent.timetoken ?: 0L)
+        } catch (_: Exception) {
+            // Message does not match the expected payload shape — skip
+        }
+    })
+
+    val subscription = chat.pubNub.channel(channelId).subscription()
+    subscription.addListener(listener)
+    subscription.subscribe()
+    return subscription
+}
 
 internal val User.uuidFilterString get() = "uuid.id == '${this.id}'"
 internal val User.isInternalModerator get() = this.id == INTERNAL_MODERATOR_DATA_ID && this.type == INTERNAL_MODERATOR_DATA_TYPE
