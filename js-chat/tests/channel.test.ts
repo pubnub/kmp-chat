@@ -2,6 +2,7 @@ import {
   Channel,
   ThreadChannel,
   Message,
+  Membership,
   Chat,
   MessageDraft,
 } from "../dist-test"
@@ -1568,4 +1569,86 @@ describe("Channel test", () => {
     await testUser.delete()
     await directConversation.channel.delete()
   }, 30000)
+
+  test("should receive messages via onMessageReceived", async () => {
+    const testUser = await createRandomUser(chat)
+    const directConversation = await chat.createDirectConversation({
+      user: testUser,
+      channelData: { name: "Test Direct Channel" }
+    })
+
+    const receivedMessages: Message[] = []
+
+    const disconnect = directConversation.channel.onMessageReceived((message) => {
+      receivedMessages.push(message)
+    })
+    await sleep(2000)
+
+    const messageText = "Hello via onMessageReceived"
+    await directConversation.channel.sendText(messageText)
+    await sleep(1000)
+
+    expect(receivedMessages.length).toBe(1)
+    expect(receivedMessages[0].content.text).toBe(messageText)
+
+    disconnect()
+    await testUser.delete()
+    await directConversation.channel.delete()
+  }, 30000)
+
+  test("should stop receiving messages after disconnecting onMessageReceived", async () => {
+    const testUser = await createRandomUser(chat)
+    const directConversation = await chat.createDirectConversation({
+      user: testUser,
+      channelData: { name: "Test Direct Channel" }
+    })
+
+    const receivedMessages: Message[] = []
+
+    const disconnect = directConversation.channel.onMessageReceived((message) => {
+      receivedMessages.push(message)
+    })
+    await sleep(2000)
+
+    await directConversation.channel.sendText("Message before disconnect")
+    await sleep(1000)
+    expect(receivedMessages.length).toBe(1)
+
+    disconnect()
+    await sleep(2000)
+
+    await directConversation.channel.sendText("Message after disconnect")
+    await sleep(1000)
+    expect(receivedMessages.length).toBe(1)
+
+    await testUser.delete()
+    await directConversation.channel.delete()
+  }, 30000)
+
+  test("should set membership via joinChannel(params)", async () => {
+    const membership: Membership = await channel.joinChannel({
+      status: "myStatus",
+      type: "myType",
+      custom: { role: "admin" }
+    })
+
+    expect(membership).toBeDefined()
+    expect(membership.channel.id).toEqual(channel.id)
+    expect(membership.user.id).toEqual(chat.currentUser.id)
+    expect(membership.custom.role).toEqual("admin")
+    expect(membership.status).toEqual("myStatus")
+    expect(membership.type).toEqual("myType")
+
+    await channel.leave()
+  }, 20000)
+
+  test("should set membership via joinChannel() without params", async () => {
+    const membership: Membership = await channel.joinChannel()
+
+    expect(membership).toBeDefined()
+    expect(membership.channel.id).toEqual(channel.id)
+    expect(membership.user.id).toEqual(chat.currentUser.id)
+
+    await channel.leave()
+  }, 20000)
 })

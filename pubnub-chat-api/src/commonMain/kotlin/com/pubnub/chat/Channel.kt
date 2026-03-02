@@ -20,6 +20,8 @@ import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
+import com.pubnub.chat.types.ReadReceipt
+import com.pubnub.chat.types.Report
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -171,7 +173,23 @@ interface Channel {
      * @return AutoCloseable Interface you can call to disconnect (unsubscribe) from the channel and stop receiving
      * signal events for someone typing by invoking the close() method.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onTypingChanged(callback) instead.",
+        replaceWith = ReplaceWith("onTypingChanged(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun getTyping(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable
+
+    /**
+     * Enables continuous tracking of typing activity within the [Channel].
+     *
+     * @param callback Callback function passed as a parameter. It defines the custom behavior to be executed whenever
+     * a user starts/stops typing.
+     *
+     * @return AutoCloseable Interface you can call to disconnect (unsubscribe) from the channel and stop receiving
+     * signal events for someone typing by invoking the close() method.
+     */
+    fun onTypingChanged(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable
 
     /**
      * Returns a list of users present on the [Channel]
@@ -326,14 +344,29 @@ interface Channel {
     ): PNFuture<MembersResponse>
 
     /**
-     * Watch the [Channel] content without a need to [join] the [Channel]
+     * Subscribes to the [Channel] and invokes [callback] for each incoming message.
      *
      * @param callback defines the custom behavior to be executed whenever a message is received on the [Channel]
      *
      * @return AutoCloseable Interface you can call to stop listening for new messages and clean up resources when they
      * are no longer needed by invoking the close() method.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onMessageReceived(callback) instead.",
+        replaceWith = ReplaceWith("onMessageReceived(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun connect(callback: (Message) -> Unit): AutoCloseable
+
+    /**
+     * Subscribes to the [Channel] and invokes [callback] for each incoming message.
+     *
+     * @param callback defines the custom behavior to be executed whenever a message is received on the [Channel]
+     *
+     * @return AutoCloseable Interface you can call to stop listening for new messages and clean up resources when they
+     * are no longer needed by invoking the close() method.
+     */
+    fun onMessageReceived(callback: (Message) -> Unit): AutoCloseable
 
     /**
      * Connects a user to the [Channel] and sets membership - this way, the chat user can both watch the channel's
@@ -349,7 +382,24 @@ interface Channel {
      * a channel membership. This might be useful when you want to stop receiving notifications about new messages or
      * limit incoming messages or updates to reduce network traffic.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. To set membership use joinChannel(status, type, custom) instead. " +
+            "To connect user to the [Channel] in order to get incoming messages use onMessageReceived(callback).",
+        level = DeprecationLevel.WARNING,
+    )
     fun join(custom: CustomObject? = null, callback: ((Message) -> Unit)? = null): PNFuture<JoinResult>
+
+    /**
+     * Sets the caller's membership on this [Channel].
+     *
+     * @param status Optional membership status value.
+     * @param type Optional membership type value.
+     * @param custom Any custom properties or metadata associated with the channel-user membership in the form of a `Map`.
+     * Values must be scalar only; arrays or objects are not supported.
+     *
+     * @return [PNFuture] containing the created [Membership].
+     */
+    fun joinChannel(status: String? = null, type: String? = null, custom: CustomObject? = null): PNFuture<Membership>
 
     /**
      * Remove user's [Channel] membership
@@ -455,7 +505,33 @@ interface Channel {
      * @return [AutoCloseable] interface that lets you stop receiving channel-related updates (objects events)
      * and clean up resources by invoking the close() method.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onUpdated(callback) and onDeleted(callback) instead.",
+        replaceWith = ReplaceWith("onUpdated(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable
+
+    /**
+     * Emits the updated channel entity whenever this channel's metadata (name, description, etc.) is modified.
+     *
+     * @param callback Function that receives the updated [Channel] entity reflecting the new metadata state.
+     *
+     * @return [AutoCloseable] interface that lets you stop receiving channel-related updates (objects events)
+     * and clean up resources by invoking the close() method.
+     */
+    fun onUpdated(callback: (channel: Channel) -> Unit): AutoCloseable
+
+    /**
+     * Fires when this channel is deleted.
+     *
+     * @param callback Function that is invoked when the channel is deleted. The channel identity is already known
+     * from the entity the method was called on.
+     *
+     * @return [AutoCloseable] interface that lets you stop receiving channel deletion events
+     * and clean up resources by invoking the close() method.
+     */
+    fun onDeleted(callback: () -> Unit): AutoCloseable
 
     /**
      * Lets you get a read confirmation status for messages you published on a channel.
@@ -464,7 +540,23 @@ interface Channel {
      * @return AutoCloseable Interface you can call to stop listening for message read receipts
      * and clean up resources by invoking the close() method.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onReadReceiptReceived(callback) instead.",
+        replaceWith = ReplaceWith("onReadReceiptReceived(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable
+
+    /**
+     * Lets you get individual read receipt events for messages on a channel.
+     *
+     * @param callback defines the custom behavior to be executed when receiving an individual [ReadReceipt] event,
+     * containing the userId and the lastReadTimetoken.
+     *
+     * @return AutoCloseable Interface you can call to stop listening for message read receipts
+     * and clean up resources by invoking the close() method.
+     */
+    fun onReadReceiptReceived(callback: (receipt: ReadReceipt) -> Unit): AutoCloseable
 
     /**
      * Returns all files attached to messages on a given channel.
@@ -493,7 +585,21 @@ interface Channel {
      *
      * @return AutoCloseable Interface that lets you stop receiving presence-related updates (presence events) by invoking the close() method.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onPresenceChanged(callback) instead.",
+        replaceWith = ReplaceWith("onPresenceChanged(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun streamPresence(callback: (userIds: Collection<String>) -> Unit): AutoCloseable
+
+    /**
+     * Enables real-time tracking of users connecting to or disconnecting from a [Channel].
+
+     * @param callback defines the custom behavior to be executed when detecting user presence event.
+     *
+     * @return AutoCloseable Interface that lets you stop receiving presence-related updates (presence events) by invoking the close() method.
+     */
+    fun onPresenceChanged(callback: (userIds: Collection<String>) -> Unit): AutoCloseable
 
     /**
      * Fetches all suggested users that match the provided 3-letter string from [Channel]
@@ -530,7 +636,23 @@ interface Channel {
      *
      * @return AutoCloseable Interface that lets you stop receiving report-related updates (report events) by invoking the close() method.
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onMessageReported(callback) instead.",
+        replaceWith = ReplaceWith("onMessageReported(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun streamMessageReports(callback: (event: Event<EventContent.Report>) -> Unit): AutoCloseable
+
+    /**
+     * As an admin of your chat app, monitor all events emitted when someone reports an offensive message.
+     *
+     * @param callback defines the custom behavior to be executed when receiving a [Report] event,
+     * containing the reason, text, messageTimetoken, reportedMessageChannelId, reportedUserId, and autoModerationId.
+     *
+     * @return AutoCloseable Interface that lets you stop receiving report-related updates (report events)
+     * and clean up resources by invoking the close() method.
+     */
+    fun onMessageReported(callback: (report: Report) -> Unit): AutoCloseable
 
     /**
      * Get a new `Channel` instance that is a copy of this `Channel` with its properties updated with information coming from `update`.

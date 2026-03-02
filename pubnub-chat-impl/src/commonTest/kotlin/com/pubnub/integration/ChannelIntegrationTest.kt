@@ -21,9 +21,10 @@ import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.InputFile
-import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.chat.types.ReadReceipt
+import com.pubnub.chat.types.Report
 import com.pubnub.internal.PLATFORM
 import com.pubnub.kmp.Uploadable
 import com.pubnub.kmp.createCustomObject
@@ -70,36 +71,47 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(config.userId.value, result.membership.user.id)
         assertEquals(channel.id, result.membership.channel.id)
 
+        result.disconnect?.close()
         chat.deleteChannel(channelId).await()
     }
 
     @Test
-    fun join_receivesMessages() = runTest {
+    fun can_onMessageReceived() = runTest {
         val channel = chat.createChannel(randomString()).await()
         val messageText = randomString()
         val message = CompletableDeferred<Message>()
 
         pubnub.test(backgroundScope, checkAllEvents = false) {
-            val joinResult = CompletableDeferred<JoinResult>()
+            var onMessageReceivedResult: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel.id)) {
-                channel.join { receivedMessage ->
+                onMessageReceivedResult = channel.onMessageReceived { receivedMessage ->
                     message.complete(receivedMessage)
-                }.async {
-                    it.onSuccess {
-                        joinResult.complete(it)
-                    }.onFailure {
-                        joinResult.completeExceptionally(it)
-                    }
                 }
             }
-            val result = joinResult.await()
             channel.sendText(messageText).await()
 
-            assertEquals(config.userId.value, result.membership.user.id)
-            assertEquals(channel.id, result.membership.channel.id)
             assertEquals(messageText, message.await().text)
-            result.disconnect?.close()
+
+            pubnub.awaitUnsubscribe(channels = listOf(channel.id)) {
+                onMessageReceivedResult?.close()
+            }
         }
+    }
+
+    @Test
+    fun can_join() = runTest {
+        val channel = chat.createChannel(randomString()).await()
+        val status = "myStatus"
+        val type = "myType"
+        val messageText = randomString()
+        val message = CompletableDeferred<Message>()
+
+        val membership = channel.joinChannel(status = status, type = type).await()
+
+        assertEquals(config.userId.value, membership.user.id)
+        assertEquals(channel.id, membership.channel.id)
+        assertEquals(status, membership.status)
+        assertEquals(type, membership.type)
     }
 
     @OptIn(ExperimentalStdlibApi::class)
@@ -109,7 +121,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var closeable: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id)) {
-                closeable = channel01.streamPresence {
+                closeable = channel01.onPresenceChanged {
                     if (someUser02.id in it) {
                         completable.complete(it)
                     }
@@ -120,28 +132,6 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             completable.await()
             closeable?.close()
             closeable2.close()
-        }
-    }
-
-    @Test
-    fun join_close_unsubscribes() = runTest {
-        val channel = chat.createChannel(randomString()).await()
-
-        pubnub.test(backgroundScope, checkAllEvents = false) {
-            val joinResult = CompletableDeferred<JoinResult>()
-            pubnub.awaitSubscribe(channels = listOf(channel.id)) {
-                channel.join { }.async {
-                    it.onSuccess {
-                        joinResult.complete(it)
-                    }.onFailure {
-                        joinResult.completeExceptionally(it)
-                    }
-                }
-            }
-            val result = joinResult.await()
-            pubnub.awaitUnsubscribe(channels = listOf(channel.id)) {
-                result.disconnect?.close()
-            }
         }
     }
 
@@ -157,15 +147,15 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun connect() = runTest {
+    fun onMessageReceived() = runTest {
         val channel = chat.createChannel(randomString()).await()
 
-        val result = channel.connect {}
+        val result = channel.onMessageReceived {}
         result.close()
     }
 
     @Test
-    fun connect_receivesMessages() = runTest {
+    fun onMessageReceived_receivesMessages() = runTest {
         val channel = chat.createChannel(randomString()).await()
         val messageText = randomString()
         val message = CompletableDeferred<Message>()
@@ -173,7 +163,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var unsubscribe: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel.id)) {
-                unsubscribe = channel.connect {
+                unsubscribe = channel.onMessageReceived {
                     message.complete(it)
                 }
             }
@@ -185,13 +175,13 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun connect_close_unsubscribes() = runTest {
+    fun onMessageReceived_close_unsubscribes() = runTest {
         val channel = chat.createChannel(randomString()).await()
 
         pubnub.test(backgroundScope, checkAllEvents = false) {
             val disconnect = CompletableDeferred<AutoCloseable>()
             pubnub.awaitSubscribe(channels = listOf(channel.id)) {
-                disconnect.complete(channel.connect { })
+                disconnect.complete(channel.onMessageReceived { })
             }
             val closeable = disconnect.await()
             pubnub.awaitUnsubscribe(channels = listOf(channel.id)) {
@@ -308,12 +298,12 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun getTyping_listener_should_not_receive_typing_info_after_close() = runTest {
+    fun onTyping_listener_should_not_receive_typing_changed_info_after_close() = runTest {
         val numberOfTypingEvents = atomic(0)
         pubnub02.test(backgroundScope, checkAllEvents = false) {
             var typingSubscription: AutoCloseable? = null
             pubnub02.awaitSubscribe(listOf(channel01.id)) {
-                typingSubscription = channel01Chat02.getTyping { typingUserIds ->
+                typingSubscription = channel01Chat02.onTypingChanged { typingUserIds ->
                     numberOfTypingEvents.incrementAndGet()
                 }
             }
@@ -401,10 +391,9 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         var dispose: AutoCloseable? = null
         pubnub.test(backgroundScope, checkAllEvents = false) {
             pubnub.awaitSubscribe(listOf(channel.id)) {
-                dispose = channel.streamReadReceipts { receipts ->
-                    val lastRead = receipts.entries.find { it.value.contains(chat.currentUser.id) }?.key
-                    if (lastRead != null) {
-                        if (tt > lastRead) {
+                dispose = channel.onReadReceiptReceived { receipt: ReadReceipt ->
+                    if (receipt.userId == chat.currentUser.id) {
+                        if (tt > receipt.lastReadTimetoken) {
                             completableBeforeMark.complete(Unit) // before calling markAllMessagesRead
                         } else {
                             completableAfterMark.complete(Unit) // after calling markAllMessagesRead
@@ -538,7 +527,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Ignore // run it to see typing behaviour
     @Test
     fun can_illustrate_typing_behaviour() = runTest {
-        val typingSubscription = channel01Chat02.getTyping { typingUserIds: Collection<String> ->
+        val typingSubscription = channel01Chat02.onTypingChanged { typingUserIds: Collection<String> ->
             if (typingUserIds.isNotEmpty()) {
                 println("-= ${Clock.System.now()} Users currently typing: ${typingUserIds.joinToString(", ")}")
             } else {
@@ -574,7 +563,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun getTyping() = runTest(timeout = 10.seconds) {
+    fun onTypingChanged() = runTest(timeout = 10.seconds) {
         val channelId = randomString() // change to channel
         val channel = chat.createChannel(channelId).await()
         val typingStarted = CompletableDeferred<Unit>()
@@ -582,7 +571,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var dispose: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel.id)) {
-                dispose = channel.getTyping {
+                dispose = channel.onTypingChanged {
                     if (it.contains(chat.currentUser.id)) {
                         typingStarted.complete(Unit)
                     } else {
@@ -686,6 +675,50 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun onMessageReported() = runTest {
+        val numberOfReports = atomic(0)
+        val reason01 = "rude"
+        val reason02 = "too verbose"
+        val messageText = "message1"
+        val pnPublishResult = channel01.sendText(text = messageText).await()
+        val timetoken = pnPublishResult.timetoken
+        delayForHistory()
+        val message = channel01.getMessage(timetoken).await()!!
+        val assertionErrorInCallback = CompletableDeferred<AssertionError?>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var onMessageReportedCloseable: AutoCloseable? = null
+
+            pubnub.awaitSubscribe(listOf("PUBNUB_INTERNAL_MODERATION_${channel01.id}")) {
+                onMessageReportedCloseable =
+                    channel01.onMessageReported { report: Report ->
+                        try {
+                            numberOfReports.incrementAndGet()
+                            val reportReason = report.reason
+                            assertTrue(reportReason == reason01 || reportReason == reason02)
+                            assertEquals(messageText, report.text)
+                            assertEquals(message.channelId, report.reportedMessageChannelId)
+                            if (numberOfReports.value == 2) {
+                                assertionErrorInCallback.complete(null)
+                            }
+                        } catch (e: AssertionError) {
+                            assertionErrorInCallback.complete(e)
+                        }
+                    }
+            }
+
+            // report messages
+            message.report(reason01).await()
+            message.report(reason02).await()
+
+            assertionErrorInCallback.await()?.let { assertionError -> throw (assertionError) }
+            assertEquals(2, numberOfReports.value)
+
+            onMessageReportedCloseable?.close()
+        }
+    }
+
+    @Test
     fun canGetUpdatesOnChannel() = runTest {
         val expectedDescription = "Modified description"
         val expectedStatus = "ModifiedStatus"
@@ -710,16 +743,59 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun onUpdated() = runTest {
+        val expectedDescription = "Modified description"
+        val expectedStatus = "ModifiedStatus"
+        chat.createChannel(channel01.id).await()
+        val completableDescription = CompletableDeferred<String?>()
+        val completableStatus = CompletableDeferred<String?>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                dispose = channel01.onUpdated { channel: Channel ->
+                    completableDescription.complete(channel.description)
+                    completableStatus.complete(channel.status)
+                }
+            }
+            channel01.update(description = expectedDescription, status = expectedStatus).await()
+            assertEquals(expectedDescription, completableDescription.await())
+            assertEquals(expectedStatus, completableStatus.await())
+
+            dispose?.close()
+        }
+    }
+
+    @Test
+    fun onDeleted() = runTest {
+        chat.createChannel(channel01.id).await()
+        val completableDeleted = CompletableDeferred<Unit>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                dispose = channel01.onDeleted {
+                    completableDeleted.complete(Unit)
+                }
+            }
+            channel01.delete().await()
+            completableDeleted.await()
+
+            dispose?.close()
+        }
+    }
+
+    @Test
     fun canCheck_whoIsPresent() = runTest {
         val channel01withChat = channel01
-        val join01 = channel01withChat.join { }.await()
-        val join02 = channel01Chat02.join { }.await()
+        val join01 = channel01withChat.onMessageReceived { }
+        val join02 = channel01Chat02.onMessageReceived { }
         delayInMillis(1500)
         val whoIsPresent01: Collection<String> = channel01withChat.whoIsPresent().await()
         val whoIsPresent02: Collection<String> = channel01Chat02.whoIsPresent().await()
 
-        join01.disconnect?.close()
-        join02.disconnect?.close()
+        join01.close()
+        join02.close()
 
         assertEquals(whoIsPresent01.size, whoIsPresent02.size)
         assertTrue(whoIsPresent01.contains(someUser.id))
@@ -731,15 +807,15 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun canCheck_isPresent() = runTest {
         val channel01withChat = channel01
-        val join01 = channel01withChat.join { }.await()
-        val join02 = channel01Chat02.join { }.await()
+        val join01 = channel01withChat.onMessageReceived { }
+        val join02 = channel01Chat02.onMessageReceived { }
         delayInMillis(1000)
 
         assertTrue(channel01withChat.isPresent(channel01Chat02.chat.currentUser.id).await())
         assertTrue(channel01Chat02.isPresent(channel01withChat.chat.currentUser.id).await())
 
-        join01.disconnect?.close()
-        join02.disconnect?.close()
+        join01.close()
+        join02.close()
     }
 
     @Test
@@ -810,7 +886,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var unsubscribe: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(channel01.id)) {
-                unsubscribe = channel01.connect {
+                unsubscribe = channel01.onMessageReceived {
                     if (!message.isCompleted) {
                         message.complete(it)
                         unsubscribe?.close()
@@ -860,7 +936,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         delayInMillis(300)
 
         // we need to call connect to start EE that result triggering the online status
-        val connect = channel01.connect {
+        val connect = channel01.onMessageReceived {
             // no need to handle messages in this test
         }
 
@@ -909,7 +985,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val statusListener: AutoCloseable = chat.addConnectionStatusListener(connectionStatusListener)
 
         // we need to call connect to start EE that result triggering the online status
-        val connect = channel01.connect {
+        val connect = channel01.onMessageReceived {
             // no need to handle messages in this test
         }
 
@@ -973,7 +1049,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val statusListener02: AutoCloseable = chat.addConnectionStatusListener(connectionStatusListener02)
 
         // we need to call connect to start EE that result triggering the online status
-        val connect = channel01.connect {
+        val connect = channel01.onMessageReceived {
             // no need to handle messages in this test
         }
         assertEquals(ConnectionStatusCategory.PN_CONNECTION_ONLINE, statusReceivedOnline01.await())
