@@ -47,7 +47,7 @@ data class ThreadMessageImpl(
     companion object {
         private val log = Logger.withTag("ThreadMessageImpl")
 
-        internal fun fromDTO(chat: ChatImpl, pnMessageResult: PNMessageResult, parentChannelId: String): ThreadMessage {
+        internal fun fromDTO(chat: ChatInternal, pnMessageResult: PNMessageResult, parentChannelId: String): ThreadMessage {
             val content =
                 chat.config.customPayloads?.getMessageResponseBody?.invoke(pnMessageResult.message, pnMessageResult.channel, ::defaultGetMessageResponseBody)
                     ?: defaultGetMessageResponseBody(pnMessageResult.message)
