@@ -91,6 +91,10 @@ data class ChannelGroupImpl internal constructor(
     }
 
     override fun streamPresence(callback: (presenceByChannels: Map<String, Collection<String>>) -> Unit): AutoCloseable {
+        return onPresenceChanged(callback)
+    }
+
+    override fun onPresenceChanged(callback: (presenceByChannels: Map<String, Collection<String>>) -> Unit): AutoCloseable {
         val ids = mutableMapOf<String, MutableSet<String>>()
         // todo what to do in this case
         val future = whoIsPresent().then { whoIsPresentResponse ->
@@ -147,6 +151,11 @@ data class ChannelGroupImpl internal constructor(
 
     @Suppress("TooGenericExceptionCaught", "LabeledExpression")
     override fun connect(callback: (Message) -> Unit): AutoCloseable {
+        return onMessageReceived(callback)
+    }
+
+    @Suppress("TooGenericExceptionCaught", "LabeledExpression")
+    override fun onMessageReceived(callback: (Message) -> Unit): AutoCloseable {
         val channelGroupEntity = chat.pubNub.channelGroup(id)
         val subscription = channelGroupEntity.subscription()
         val listener = createEventListener(
