@@ -106,9 +106,51 @@ data class MembershipImpl(
     }
 
     override fun streamUpdates(callback: (membership: Membership?) -> Unit): AutoCloseable {
-        return streamUpdatesOn(listOf(this)) {
-            callback(it.firstOrNull())
+        val onUpdatedCloseable = onUpdated { membership -> callback(membership) }
+        val onDeletedCloseable = onDeleted { callback(null) }
+        return AutoCloseable {
+            onUpdatedCloseable.close()
+            onDeletedCloseable.close()
         }
+    }
+
+    override fun onUpdated(callback: (membership: Membership) -> Unit): AutoCloseable {
+        val channelEntity = chat.pubNub.channel(channel.id)
+        val subscription = channelEntity.subscription()
+        var latestMembership: Membership = this
+        val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
+            when (val message = event.extractedMessage) {
+                is PNSetMembershipEventMessage -> {
+                    if (event.channel == channel.id && message.data.uuid == user.id) {
+                        val updatedMembership = latestMembership + message.data
+                        latestMembership = updatedMembership
+                        callback(updatedMembership)
+                    }
+                }
+                else -> return@createEventListener
+            }
+        })
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
+    }
+
+    override fun onDeleted(callback: () -> Unit): AutoCloseable {
+        val channelEntity = chat.pubNub.channel(channel.id)
+        val subscription = channelEntity.subscription()
+        val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
+            when (val message = event.extractedMessage) {
+                is PNDeleteMembershipEventMessage -> {
+                    if (event.channel == channel.id && message.data.uuid == user.id) {
+                        callback()
+                    }
+                }
+                else -> return@createEventListener
+            }
+        })
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
     }
 
     override fun plus(update: PNSetMembershipEvent): Membership {

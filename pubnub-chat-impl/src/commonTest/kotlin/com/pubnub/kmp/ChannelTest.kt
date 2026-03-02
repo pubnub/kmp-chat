@@ -1019,7 +1019,7 @@ class ChannelTest : BaseTest() {
                         it.includeChannel &&
                         it.includeChannelCustom &&
                         it.includeChannelType &&
-                        !it.includeChannelStatus
+                        it.includeChannelStatus
                 }
             )
         }
