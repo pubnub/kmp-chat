@@ -84,7 +84,6 @@ import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.internal.timer.createTimerManager
-import com.pubnub.chat.internal.user.ModerationPayload
 import com.pubnub.chat.internal.util.channelsUrlDecoded
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.nullOn404
@@ -766,14 +765,13 @@ class ChatImpl(
                 if (!restriction.ban && !restriction.mute) {
                     pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
                         .alsoAsync { _ ->
-                            EventEmitter(pubNub).publish(
-                                channel = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
-                                payload = ModerationPayload(
+                            emitEvent(
+                                channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
+                                payload = EventContent.Moderation(
                                     channelId = channel,
                                     restriction = RestrictionType.LIFT,
                                     reason = restriction.reason
                                 ),
-                                customMessageType = CUSTOM_MESSAGE_TYPE_MODERATED,
                             )
                         }
                 } else {
@@ -795,9 +793,9 @@ class ChatImpl(
                         }
                     }.thenAsync {
                         pubNub.setChannelMembers(channel = channel, users = uuids).alsoAsync { _ ->
-                            EventEmitter(pubNub).publish(
-                                channel = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
-                                payload = ModerationPayload(
+                            emitEvent(
+                                channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
+                                payload = EventContent.Moderation(
                                     channelId = channel,
                                     restriction = if (restriction.ban) {
                                         RestrictionType.BAN
@@ -806,7 +804,6 @@ class ChatImpl(
                                     },
                                     reason = restriction.reason
                                 ),
-                                customMessageType = CUSTOM_MESSAGE_TYPE_MODERATED,
                             )
                         }
                     }

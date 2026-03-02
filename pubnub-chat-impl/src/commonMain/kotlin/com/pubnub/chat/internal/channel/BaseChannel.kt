@@ -37,7 +37,6 @@ import com.pubnub.chat.User
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl.Companion.pinOrUnpinMessageToChannel
 import com.pubnub.chat.internal.ChatInternal
-import com.pubnub.chat.internal.EventEmitter
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.METADATA_LAST_READ_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.METADATA_MENTIONED_USERS
@@ -61,8 +60,6 @@ import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
-import com.pubnub.chat.internal.user.InvitePayload
-import com.pubnub.chat.internal.user.MentionPayload
 import com.pubnub.chat.internal.util.channelsUrlDecoded
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
@@ -453,9 +450,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
                         membership.setLastReadMessageTimetoken(time.timetoken)
                     }
                 }.alsoAsync {
-                    EventEmitter(chat.pubNub).publish(
-                        channel = user.id,
-                        payload = InvitePayload(channelType = this.type ?: ChannelType.UNKNOWN, channelId = this.id),
+                    chat.emitEvent(
+                        channelId = user.id,
+                        payload = EventContent.Invite(channelType = this.type ?: ChannelType.UNKNOWN, channelId = this.id),
                     )
                 }
             }
@@ -491,9 +488,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
             }
         }.alsoAsync {
             users.map { u ->
-                EventEmitter(chat.pubNub).publish(
-                    channel = u.id,
-                    payload = InvitePayload(channelType = this.type ?: ChannelType.UNKNOWN, channelId = this.id),
+                chat.emitEvent(
+                    channelId = u.id,
+                    payload = EventContent.Invite(channelType = this.type ?: ChannelType.UNKNOWN, channelId = this.id),
                 )
             }.awaitAll()
         }
@@ -897,10 +894,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
         text: String,
         customPushData: Map<String, String>? = null,
     ): PNFuture<PNPublishResult> {
-        return EventEmitter(chat.pubNub).publish(
-            channel = userId,
-            payload = MentionPayload(messageTimetoken = timetoken, channel = id),
-            mergeWith = getPushPayload(this, text, chat.config.pushNotifications, customPushData),
+        return chat.emitEvent(
+            channelId = userId,
+            payload = EventContent.Mention(messageTimetoken = timetoken, channel = id),
+            mergePayloadWith = getPushPayload(this, text, chat.config.pushNotifications, customPushData),
         )
     }
 

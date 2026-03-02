@@ -12,13 +12,12 @@ import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
-import com.pubnub.chat.internal.EventEmitter
 import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.message.ThreadMessageImpl
-import com.pubnub.chat.internal.user.MentionPayload
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
@@ -169,10 +168,10 @@ data class ThreadChannelImpl(
         text: String,
         customPushData: Map<String, String>?,
     ): PNFuture<PNPublishResult> {
-        return EventEmitter(chat.pubNub).publish(
-            channel = userId,
-            payload = MentionPayload(messageTimetoken = timetoken, channel = id, parentChannel = parentChannelId),
-            mergeWith = getPushPayload(this, text, chat.config.pushNotifications, customPushData),
+        return chat.emitEvent(
+            channelId = userId,
+            payload = EventContent.Mention(messageTimetoken = timetoken, channel = id, parentChannel = parentChannelId),
+            mergePayloadWith = getPushPayload(this, text, chat.config.pushNotifications, customPushData),
         )
     }
 
