@@ -580,7 +580,7 @@ interface Channel {
 
     /**
      * Enables real-time tracking of users connecting to or disconnecting from a [Channel].
-
+     *
      * @param callback defines the custom behavior to be executed when detecting user presence event.
      *
      * @return AutoCloseable Interface that lets you stop receiving presence-related updates (presence events) by invoking the close() method.
@@ -594,7 +594,7 @@ interface Channel {
 
     /**
      * Enables real-time tracking of users connecting to or disconnecting from a [Channel].
-
+     *
      * @param callback defines the custom behavior to be executed when detecting user presence event.
      *
      * @return AutoCloseable Interface that lets you stop receiving presence-related updates (presence events) by invoking the close() method.

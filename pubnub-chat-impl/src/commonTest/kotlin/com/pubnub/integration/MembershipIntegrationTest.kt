@@ -7,6 +7,7 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.test
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -121,6 +122,66 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
         ).await()
 
         assertEquals(timetoken, membershipUpdated.lastReadMessageTimetoken)
+    }
+
+    @Test
+    fun onUpdated() = runTest {
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let { createCustomObject(it) },
+            channel01.type,
+            channel01.status
+        ).await()
+        delayInMillis(1000)
+        val membership = channel01.joinChannel().await()
+        delayInMillis(1000)
+
+        val completableCustom = CompletableDeferred<Map<String, Any?>?>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                dispose = membership.onUpdated { updatedMembership ->
+                    completableCustom.complete(updatedMembership.custom)
+                }
+            }
+            membership.update(createCustomObject(mapOf("a" to "b"))).await()
+            assertEquals(mapOf("a" to "b"), completableCustom.await())
+
+            dispose?.close()
+        }
+    }
+
+    @Test
+    fun onDeleted() = runTest {
+        chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let { createCustomObject(it) },
+            channel01.type,
+            channel01.status
+        ).await()
+        delayInMillis(1000)
+        val membership = channel01.joinChannel().await()
+        delayInMillis(1000)
+
+        val completableDeleted = CompletableDeferred<Unit>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                dispose = membership.onDeleted {
+                    completableDeleted.complete(Unit)
+                }
+            }
+            channel01.leave().await()
+            completableDeleted.await()
+
+            dispose?.close()
+        }
     }
 }
 

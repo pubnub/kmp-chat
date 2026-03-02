@@ -617,7 +617,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 includeChannel = true,
                 includeChannelCustom = true,
                 includeChannelType = true,
-                includeChannelStatus = false
+                includeChannelStatus = true
             )
         ).then { membershipArray: PNChannelMembershipArrayResult ->
             MembershipImpl.fromMembershipDTO(chat, membershipArray.data.first(), user)
