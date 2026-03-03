@@ -301,6 +301,17 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }
     }
 
+    fun onReadReceiptReceived(callback: (ReadReceiptJs) -> Unit): () -> Unit {
+        return channel.onReadReceiptReceived { receipt ->
+            callback(
+                createJsObject<ReadReceiptJs> {
+                    userId = receipt.userId
+                    lastReadTimetoken = receipt.lastReadTimetoken.toString()
+                }
+            )
+        }::close
+    }
+
     fun getFiles(params: PubNub.ListFilesParameters?): Promise<GetFilesResultJs> {
         return channel.getFiles(
             params?.limit?.toInt() ?: 100,
