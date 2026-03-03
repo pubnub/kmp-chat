@@ -547,4 +547,28 @@ describe("User test", () => {
 
     await Promise.all([testChannel.delete(), otherChannel.delete()])
   }, 20000)
+
+  test("should invoke onMentioned callback when user is mentioned in a message", async () => {
+    let receivedMention: Mention | undefined
+    const channel = await createRandomChannel(chat)
+
+    const stop = user.onMentioned((mention: Mention) => { receivedMention = mention })
+    await sleep(950)
+
+    const messageDraft = channel.createMessageDraft()
+    await messageDraft.onChange(`Hello @${user.name}`)
+
+    messageDraft.addMentionedUser(user, 0)
+
+    await messageDraft.send()
+    await sleep(900)
+
+    expect(receivedMention).toBeDefined()
+    expect(receivedMention?.channelId).toBe(channel.id)
+    expect(receivedMention?.mentionedByUserId).toBe(chat.currentUser.id)
+    expect(receivedMention?.messageTimetoken).toBeDefined()
+
+    stop()
+    await channel.delete()
+  }, 20000)
 })
