@@ -53,7 +53,6 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_CHANNEL_
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_HANDLING_ONMESSAGE_EVENT
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
-import com.pubnub.chat.internal.error.PubNubErrorMessage.READ_RECEIPTS_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THREAD_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.chat.internal.message.BaseMessage
@@ -82,6 +81,7 @@ import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.ReadReceipt
+import com.pubnub.chat.types.ReadReceiptsResponse
 import com.pubnub.chat.types.Report
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
@@ -525,6 +525,18 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
+    override fun hasMember(userId: String): PNFuture<Boolean> {
+        return getMembers(filter = "uuid.id == '$userId'", limit = 1).then { membersResponse ->
+            membersResponse.members.isNotEmpty()
+        }
+    }
+
+    override fun getMember(userId: String): PNFuture<Membership?> {
+        return getMembers(filter = "uuid.id == '$userId'", limit = 1).then { membersResponse ->
+            membersResponse.members.firstOrNull()
+        }
+    }
+
     override fun connect(callback: (Message) -> Unit): AutoCloseable {
         return onMessageReceived(callback)
     }
@@ -716,37 +728,43 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
+    override fun fetchReadReceipts(
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNMemberKey>>,
+    ): PNFuture<ReadReceiptsResponse> {
+        return getMembers(limit = limit, page = page, filter = filter, sort = sort).then { members ->
+            ReadReceiptsResponse(
+                next = members.next,
+                prev = members.prev,
+                total = members.total,
+                status = members.status,
+                receipts = members.members.mapNotNull { m ->
+                    m.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN)?.tryLong()?.let {
+                        ReadReceipt(userId = m.user.id, lastReadTimetoken = it)
+                    }
+                }
+            )
+        }
+    }
+
+    override fun onReadReceiptReceived(callback: (receipt: ReadReceipt) -> Unit): AutoCloseable {
+        return chat.listenForEvents<EventContent.Receipt>(id) { event ->
+            callback(
+                ReadReceipt(
+                    userId = event.userId,
+                    lastReadTimetoken = event.payload.messageTimetoken
+                )
+            )
+        }
+    }
+
     override fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable {
         val timetokensPerUser = mutableMapOf<String, Long>()
         return onReadReceiptReceived { receipt ->
             timetokensPerUser[receipt.userId] = receipt.lastReadTimetoken
             callback(generateReceipts(timetokensPerUser))
-        }
-    }
-
-    override fun onReadReceiptReceived(callback: (receipt: ReadReceipt) -> Unit): AutoCloseable {
-        if (type == ChannelType.PUBLIC) {
-            log.pnError(READ_RECEIPTS_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS)
-        }
-        // in group chats it work till 100 members
-        val future = getMembers().then { members ->
-            members.members.forEach { m ->
-                val lastTimetoken = m.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN)?.tryLong()
-                if (lastTimetoken != null) {
-                    callback(ReadReceipt(m.user.id, lastTimetoken))
-                }
-            }
-        }.then {
-            chat.listenForEvents<EventContent.Receipt>(id) { event ->
-                callback(ReadReceipt(event.userId, event.payload.messageTimetoken))
-            }
-        }.remember()
-        return AutoCloseable {
-            future.async {
-                it.onSuccess { subscription ->
-                    subscription.close()
-                }
-            }
         }
     }
 
@@ -1068,15 +1086,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
             return pushBuilder.build()
         }
 
-        internal fun generateReceipts(timetokensPerUser: Map<String, Long>): Map<Long, MutableList<String>> {
-            return buildMap {
-                timetokensPerUser.forEach {
-                    val list = this.getOrPut(it.value) { mutableListOf() }
-                    list += it.key
-                }
-            }
-        }
-
         internal fun updateUserTypingStatus(
             userId: String,
             isTyping: Boolean,
@@ -1087,6 +1096,15 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 userLastTyped[userId] = now
             } else {
                 userLastTyped.remove(userId)
+            }
+        }
+
+        internal fun generateReceipts(timetokensPerUser: Map<String, Long>): Map<Long, MutableList<String>> {
+            return buildMap {
+                timetokensPerUser.forEach {
+                    val list = this.getOrPut(it.value) { mutableListOf() }
+                    list += it.key
+                }
             }
         }
 

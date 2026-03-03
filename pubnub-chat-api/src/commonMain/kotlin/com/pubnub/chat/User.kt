@@ -169,6 +169,24 @@ interface User {
     ): PNFuture<MembershipsResponse>
 
     /**
+     * Checks if the user is a member of a specific channel.
+     *
+     * @param channelId The ID of the channel to check for membership.
+     *
+     * @return [PNFuture] containing a Boolean indicating whether the user is a member of the channel.
+     */
+    fun isMemberOf(channelId: String): PNFuture<Boolean>
+
+    /**
+     * Retrieves the user's membership for a specific channel.
+     *
+     * @param channelId The ID of the channel for which to retrieve the membership.
+     *
+     * @return [PNFuture] containing the [Membership] if the user is a member of the channel, or null otherwise.
+     */
+    fun getMembership(channelId: String): PNFuture<Membership?>
+
+    /**
      * Sets/unset restrictions on the user within a specified channel, such as ban/unban or mut/unmute them.
      *
      * @param channel The [Channel] where the restrictions will be applied.
