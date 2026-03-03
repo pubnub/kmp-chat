@@ -9,6 +9,7 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUsers
+import com.pubnub.chat.types.MessageReaction
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
 import com.pubnub.chat.types.TextLink
@@ -46,6 +47,7 @@ interface Message {
     /**
      * Any actions associated with the message, such as reactions, replies, or other interactive elements.
      */
+    @Deprecated("Use `Message.reactions` instead for accessing message reactions.")
     val actions: Map<String, Map<String, List<Action>>>?
 
     /**
@@ -90,7 +92,7 @@ interface Message {
     /**
      * List of reactions attached to the message.
      */
-    val reactions: Map<String, List<Action>>
+    val reactions: List<MessageReaction>
 
     /**
      * Error associated with the message, if any.

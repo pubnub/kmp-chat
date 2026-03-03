@@ -463,6 +463,9 @@ interface Chat {
     /**
      * Allows you to mark as read all messages you didn't read on all joined channels.
      *
+     * This method emits a read receipt event on each affected channel, unless
+     * [com.pubnub.chat.config.ChatConfiguration.emitReadReceiptEvents] is set to `false` for the channel's type.
+     *
      * @param limit Number of objects to return in response. The default (and maximum) value is 100.
      * @param page Object used for pagination to define which previous or next result page you want to fetch.
      * @param filter Expression used to filter the results. Returns only these channels whose properties satisfy the given expression are returned.
