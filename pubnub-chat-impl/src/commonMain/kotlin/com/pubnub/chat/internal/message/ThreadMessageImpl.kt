@@ -85,7 +85,7 @@ data class ThreadMessageImpl(
     }
 
     override fun onThreadMessageUpdated(callback: (message: ThreadMessage) -> Unit): AutoCloseable {
-        return streamUpdates(callback)
+        return onUpdated { message -> callback(message as ThreadMessage) }
     }
 
     override fun pinToParentChannel() = pinOrUnpinFromParentChannel(this)

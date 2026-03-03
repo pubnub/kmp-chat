@@ -191,6 +191,9 @@ interface User {
     /**
      * Sets/unset restrictions on the user within a specified channel, such as ban/unban or mut/unmute them.
      *
+     * This method requires the `secretKey` to be set in the PubNub configuration and is intended for
+     * server-side or admin-like usage.
+     *
      * @param channel The [Channel] where the restrictions will be applied.
      * @param ban If true, the user is banned from the channel.
      * @param mute If true, the user is muted in the channel.
@@ -277,7 +280,7 @@ interface User {
      * @return AutoCloseable Interface that lets you stop receiving user-related updates (objects events)
      * and clean up resources by invoking the close() method.
      */
-    @Deprecated("Use onUpdated() and onDeleted() instead.", ReplaceWith("onUpdated(callback)"))
+    @Deprecated("Use onUpdated() and onDeleted() instead.", ReplaceWith("onUpdated(callback)"), level = DeprecationLevel.WARNING)
     fun streamUpdates(callback: (user: User?) -> Unit): AutoCloseable
 
     /**

@@ -292,7 +292,7 @@ interface Message {
      * @param callback Function that takes a single Message object. It defines the custom behavior to be executed when detecting message or message reaction changes.
      * @return Interface that lets you stop receiving message-related updates by invoking the close() method
      */
-    @Deprecated("Use onUpdated() instead.", ReplaceWith("onUpdated(callback)"))
+    @Deprecated("Use onUpdated() instead.", ReplaceWith("onUpdated(callback)"), level = DeprecationLevel.WARNING)
     fun <T : Message> streamUpdates(callback: (message: T) -> Unit): AutoCloseable
 
     /**
