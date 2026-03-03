@@ -97,7 +97,33 @@ interface Membership {
      * @param callback Defines the custom behavior to be executed when detecting membership changes.
      * @return An [AutoCloseable] that you can use to stop receiving objects events by invoking [AutoCloseable.close].
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onUpdated(callback) and onDeleted(callback) instead.",
+        replaceWith = ReplaceWith("onUpdated(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun streamUpdates(callback: (membership: Membership?) -> Unit): AutoCloseable
+
+    /**
+     * Emits the updated entity whenever this membership's metadata (custom fields, etc.) is modified.
+     *
+     * @param callback Function that receives the updated [Membership] entity reflecting the new metadata state.
+     *
+     * @return [AutoCloseable] interface that lets you stop receiving membership-related updates (objects events)
+     * and clean up resources by invoking the close() method.
+     */
+    fun onUpdated(callback: (membership: Membership) -> Unit): AutoCloseable
+
+    /**
+     * Fires when this membership is removed.
+     *
+     * @param callback Function that is invoked when the membership is deleted. The membership identity is already known
+     * from the entity the method was called on.
+     *
+     * @return [AutoCloseable] interface that lets you stop receiving membership deletion events
+     * and clean up resources by invoking the close() method.
+     */
+    fun onDeleted(callback: () -> Unit): AutoCloseable
 
     /**
      * Get a new [Membership] object updated with the values received in the [update].
