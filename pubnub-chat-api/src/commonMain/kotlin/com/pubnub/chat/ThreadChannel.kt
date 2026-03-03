@@ -67,5 +67,31 @@ interface ThreadChannel : Channel {
      */
     fun unpinMessageFromParentChannel(): PNFuture<Channel>
 
+    /**
+     * Registers a callback to receive messages sent to this thread channel as [ThreadMessage] instances,
+     * preserving thread context such as [ThreadMessage.parentChannelId].
+     *
+     * Unlike [Channel.onMessageReceived], which returns plain [Message] objects, this method ensures
+     * the callback receives properly-typed [ThreadMessage] objects.
+     *
+     * @param callback Function invoked with each incoming [ThreadMessage].
+     *
+     * @return [AutoCloseable] that stops listening for new thread messages when [AutoCloseable.close] is called.
+     */
+    fun onThreadMessageReceived(callback: (ThreadMessage) -> Unit): AutoCloseable
+
+    /**
+     * Registers a callback that is invoked whenever this thread channel's metadata is updated,
+     * returning the updated entity as a [ThreadChannel].
+     *
+     * Unlike [Channel.onUpdated], which returns a plain [Channel], this method ensures
+     * the callback receives a properly-typed [ThreadChannel] with thread context preserved.
+     *
+     * @param callback Function invoked with the updated [ThreadChannel].
+     *
+     * @return [AutoCloseable] that stops listening for thread channel updates when [AutoCloseable.close] is called.
+     */
+    fun onThreadChannelUpdated(callback: (ThreadChannel) -> Unit): AutoCloseable
+
     companion object
 }

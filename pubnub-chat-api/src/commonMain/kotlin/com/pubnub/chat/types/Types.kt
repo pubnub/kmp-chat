@@ -50,7 +50,7 @@ abstract class EventContent(
     /**
      * Represents a report event, which is used to report a message or user to the admin.
      *
-     * @property text The text of the report, if provided.
+     * @property text The text of the reported message, if provided.
      * @property reason The reason for reporting the message or user.
      * @property reportedMessageTimetoken The timetoken of the message being reported, if applicable.
      * @property reportedMessageChannelId The channel ID of the reported message, if applicable.

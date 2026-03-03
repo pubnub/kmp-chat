@@ -368,13 +368,19 @@ describe("Send message test", () => {
     const sentMessage = messagesBeforeReaction[messagesBeforeReaction.length - 1]
 
     expect(sentMessage.actions?.reactions?.like).toBeUndefined()
+    expect(sentMessage.reactions.length).toBe(0)
+
     const toggledMessage = await sentMessage.toggleReaction("like")
     expect(toggledMessage.actions?.reactions?.like).toBeDefined()
 
-    const likeReaction = toggledMessage.actions?.reactions?.like
-    expect(likeReaction[0].uuid).toBe(chat.currentUser.id)
+    const reactions = toggledMessage.reactions
+    expect(reactions.length).toBe(1)
+    const reaction = reactions[0]
+    expect(reaction.value).toBe("like")
+    expect(reaction.isMine).toBe(true)
+    expect(reaction.userIds.length).toBe(1)
+    expect(reaction.userIds).toContain(chat.currentUser.id)
   }, 30000)
-
 
   test("should be unable to pin multiple messages", async () => {
     await channel.sendText("First Test message")
@@ -1852,6 +1858,7 @@ describe("Send message test", () => {
     const message = history.messages[0]
 
     expect(message.hasUserReaction("👍")).toBe(false)
+    expect(message.reactions.length).toBe(0)
 
     await message.toggleReaction("👍")
     await sleep(150)
@@ -1860,6 +1867,12 @@ describe("Send message test", () => {
     const hasReactionAfter = updatedMessage.hasUserReaction("👍")
 
     expect(hasReactionAfter).toBe(true)
+
+    const reactions = updatedMessage.reactions
+    expect(reactions.length).toBe(1)
+    expect(reactions[0].value).toBe("👍")
+    expect(reactions[0].isMine).toBe(true)
+    expect(reactions[0].userIds.length).toBe(1)
   }, 20000)
 
   test("should forward message via message.forward", async () => {

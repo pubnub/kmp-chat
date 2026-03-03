@@ -13,6 +13,8 @@ import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.DELETED
 import com.pubnub.chat.internal.THREAD_ROOT_ID
+import com.pubnub.chat.internal.defaultGetMessageResponseBody
+import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_HANDLING_ONMESSAGE_EVENT
 import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.message.ThreadMessageImpl
 import com.pubnub.chat.internal.util.pnError
@@ -25,6 +27,7 @@ import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
+import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 
@@ -173,6 +176,43 @@ data class ThreadChannelImpl(
             payload = EventContent.Mention(messageTimetoken = timetoken, channel = id, parentChannel = parentChannelId),
             mergePayloadWith = getPushPayload(this, text, chat.config.pushNotifications, customPushData),
         )
+    }
+
+    override fun onThreadMessageReceived(callback: (ThreadMessage) -> Unit): AutoCloseable {
+        val channelEntity = chat.pubNub.channel(id)
+        val subscription = channelEntity.subscription()
+        val listener = createEventListener(
+            chat.pubNub,
+            onMessage = { _, pnMessageResult ->
+                if (pnMessageResult.publisher in chat.mutedUsersManager.mutedUsers) {
+                    return@createEventListener
+                }
+                try {
+                    if (
+                        (
+                            chat.config.customPayloads?.getMessageResponseBody?.invoke(
+                                pnMessageResult.message,
+                                pnMessageResult.channel,
+                                ::defaultGetMessageResponseBody
+                            )
+                                ?: defaultGetMessageResponseBody(pnMessageResult.message)
+                        ) == null
+                    ) {
+                        return@createEventListener
+                    }
+                    callback(ThreadMessageImpl.fromDTO(chat, pnMessageResult, parentChannelId))
+                } catch (e: Exception) {
+                    log.e(throwable = e) { ERROR_HANDLING_ONMESSAGE_EVENT }
+                }
+            },
+        )
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
+    }
+
+    override fun onThreadChannelUpdated(callback: (ThreadChannel) -> Unit): AutoCloseable {
+        return onUpdated { channel -> callback(channel as ThreadChannel) }
     }
 
     companion object {

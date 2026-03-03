@@ -58,15 +58,14 @@ open class MessageJs internal constructor(internal val message: Message, interna
     val files get() = message.files.toTypedArray()
     val text by message::text
     val deleted by message::deleted
-    val reactions: JsMap<Array<Reaction>>
-        get() = message.reactions.mapValues { mapEntry ->
-            mapEntry.value.map { action ->
-                createJsObject<Reaction> {
-                    uuid = action.uuid
-                    actionTimetoken = action.actionTimetoken.toString()
-                }
-            }.toTypedArray()
-        }.toJsMap()
+    val reactions: Array<MessageReactionJs>
+        get() = message.reactions.map { reaction ->
+            createJsObject<MessageReactionJs> {
+                value = reaction.value
+                isMine = reaction.isMine
+                userIds = reaction.userIds.toTypedArray()
+            }
+        }.toTypedArray()
 
     fun onUpdated(callback: (message: MessageJs) -> Unit): () -> Unit {
         val closeable = message.onUpdated {

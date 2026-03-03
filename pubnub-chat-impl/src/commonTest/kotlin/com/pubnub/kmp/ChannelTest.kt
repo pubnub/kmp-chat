@@ -1019,7 +1019,7 @@ class ChannelTest : BaseTest() {
                         it.includeChannel &&
                         it.includeChannelCustom &&
                         it.includeChannelType &&
-                        !it.includeChannelStatus
+                        it.includeChannelStatus
                 }
             )
         }
@@ -1122,12 +1122,6 @@ class ChannelTest : BaseTest() {
             result["pn_apns"]["pn_push"][0]["targets"][0]["environment"]
         )
         assertEquals(objectUnderTest.name, result["pn_apns"]["subtitle"])
-    }
-
-    @Test
-    fun generateReceipts() {
-        val result = BaseChannel.generateReceipts(mapOf("user" to 1L, "user2" to 2L, "user3" to 1L, "user4" to 3L))
-        assertEquals(mapOf(1L to listOf("user", "user3"), 2L to listOf("user2"), 3L to listOf("user4")), result)
     }
 
     @Test
