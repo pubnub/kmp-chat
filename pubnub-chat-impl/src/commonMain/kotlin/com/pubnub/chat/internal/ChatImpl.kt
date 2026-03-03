@@ -1092,6 +1092,7 @@ class ChatImpl(
                                 return@then null
                             }
                             val parentChannelId = mentionEvent.payload.parentChannel
+
                             val userMention = UserMention(
                                 message = message,
                                 userId = mentionEvent.userId,
@@ -1099,7 +1100,6 @@ class ChatImpl(
                                 parentChannelId = parentChannelId,
                             )
 
-                            @Suppress("DEPRECATION")
                             val legacyData: UserMentionData = if (parentChannelId == null) {
                                 ChannelMentionData(
                                     event = mentionEvent,
@@ -1122,7 +1122,6 @@ class ChatImpl(
         }
             .then { it.filterNotNull() }
             .then { pairs: List<Pair<UserMention, UserMentionData>> ->
-                @Suppress("DEPRECATION")
                 GetCurrentUserMentionsResult(
                     mentions = pairs.map { it.first },
                     isMore = isMore,
