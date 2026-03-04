@@ -641,7 +641,9 @@ declare class Channel {
     unregisterFromPush(): Promise<void>;
     fetchReadReceipts(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<ReadReceiptsResponse>;
     /** @deprecated Use onReadReceiptReceived instead. */
-    streamReadReceipts(callback: (receipt: ReadReceipt) => unknown): () => void;
+    streamReadReceipts(callback: (receipts: {
+        [key: string]: string[];
+    }) => void): Promise<() => void>;
     onReadReceiptReceived(callback: (receipt: ReadReceipt) => void): () => void;
     getFiles(params?: Omit<FileSharing.ListFilesParameters, "channel">): Promise<{
         files: {
