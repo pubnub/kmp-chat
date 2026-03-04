@@ -252,6 +252,7 @@ public abstract interface class com/pubnub/chat/Message {
 	public abstract fun getType ()Ljava/lang/String;
 	public abstract fun getUserId ()Ljava/lang/String;
 	public abstract fun hasUserReaction (Ljava/lang/String;)Z
+	public abstract fun onUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pin ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun removeThread ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun report (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
@@ -359,6 +360,7 @@ public final class com/pubnub/chat/ThreadChannel$Companion {
 public abstract interface class com/pubnub/chat/ThreadMessage : com/pubnub/chat/Message {
 	public static final field Companion Lcom/pubnub/chat/ThreadMessage$Companion;
 	public abstract fun getParentChannelId ()Ljava/lang/String;
+	public abstract fun onThreadMessageUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pinToParentChannel ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun unpinFromParentChannel ()Lcom/pubnub/kmp/PNFuture;
 }
@@ -392,6 +394,11 @@ public abstract interface class com/pubnub/chat/User {
 	public abstract fun getUpdated ()Ljava/lang/String;
 	public abstract fun isMemberOf (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun isPresentOn (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun onDeleted (Lkotlin/jvm/functions/Function0;)Ljava/lang/AutoCloseable;
+	public abstract fun onInvited (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onMentioned (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onRestrictionChanged (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun plus (Lcom/pubnub/api/models/consumer/objects/uuid/PNUUIDMetadata;)Lcom/pubnub/chat/User;
 	public abstract fun setRestrictions (Lcom/pubnub/chat/Channel;ZZLjava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun setRestrictions$default (Lcom/pubnub/chat/User;Lcom/pubnub/chat/Channel;ZZLjava/lang/String;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
@@ -857,8 +864,10 @@ public final class com/pubnub/chat/types/GetChannelsResponse {
 }
 
 public final class com/pubnub/chat/types/GetCurrentUserMentionsResult {
-	public fun <init> (Ljava/util/List;Z)V
+	public fun <init> (Ljava/util/List;ZLjava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;ZLjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getEnhancedMentionsData ()Ljava/util/List;
+	public final fun getMentions ()Ljava/util/List;
 	public final fun isMore ()Z
 }
 
@@ -1078,6 +1087,14 @@ public final class com/pubnub/chat/types/ThreadMentionData : com/pubnub/chat/typ
 	public fun getUserId ()Ljava/lang/String;
 }
 
+public final class com/pubnub/chat/types/UserMention {
+	public fun <init> (Lcom/pubnub/chat/Message;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getChannelId ()Ljava/lang/String;
+	public final fun getMessage ()Lcom/pubnub/chat/Message;
+	public final fun getParentChannelId ()Ljava/lang/String;
+	public final fun getUserId ()Ljava/lang/String;
+}
+
 public abstract class com/pubnub/chat/types/UserMentionData {
 	public abstract fun getEvent ()Lcom/pubnub/chat/Event;
 	public abstract fun getMessage ()Lcom/pubnub/chat/Message;
@@ -1090,5 +1107,21 @@ public final class com/pubnub/chat/user/GetUsersResponse {
 	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getTotal ()I
 	public final fun getUsers ()Ljava/util/List;
+}
+
+public final class com/pubnub/chat/user/Invite {
+	public fun <init> (Ljava/lang/String;Lcom/pubnub/chat/types/ChannelType;Ljava/lang/String;J)V
+	public final fun getChannelId ()Ljava/lang/String;
+	public final fun getChannelType ()Lcom/pubnub/chat/types/ChannelType;
+	public final fun getInvitationTimetoken ()J
+	public final fun getInvitedByUserId ()Ljava/lang/String;
+}
+
+public final class com/pubnub/chat/user/Mention {
+	public fun <init> (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getChannelId ()Ljava/lang/String;
+	public final fun getMentionedByUserId ()Ljava/lang/String;
+	public final fun getMessageTimetoken ()J
+	public final fun getParentChannelId ()Ljava/lang/String;
 }
 

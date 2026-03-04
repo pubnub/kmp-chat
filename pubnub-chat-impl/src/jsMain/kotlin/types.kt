@@ -23,8 +23,16 @@ external interface MarkAllMessageAsReadResponseJs {
 }
 
 external interface GetCurrentUserMentionsResultJs {
+    var mentions: Array<UserMentionJs>
     var enhancedMentionsData: Array<UserMentionDataJs>
     var isMore: Boolean
+}
+
+external interface UserMentionJs {
+    var message: MessageJs
+    var userId: String
+    var channelId: String
+    var parentChannelId: String?
 }
 
 external interface UserMentionDataJs {
@@ -305,6 +313,20 @@ external interface CreateGroupConversationParams {
 
 external interface SetMembershipsParametersAndCustom : PubNub.SetMembershipsParameters {
     val custom: PubNub.CustomObject?
+}
+
+external interface MentionJs {
+    var messageTimetoken: String
+    var channelId: String
+    var parentChannelId: String?
+    var mentionedByUserId: String
+}
+
+external interface InviteJs {
+    var channelId: String
+    var channelType: String
+    var invitedByUserId: String
+    var invitationTimetoken: String
 }
 
 external interface ListenForEventsParams {
