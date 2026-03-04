@@ -611,6 +611,32 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         forwardedMessage.delete().await()
     }
 
+    @Test
+    fun onUpdated() = runTest {
+        val messageText = "messageText_${randomString()}"
+        val newText = "editedText_${randomString()}"
+        val tt = channel01.sendText(messageText).await()
+
+        delayForHistory()
+
+        val message = channel01.getMessage(tt.timetoken).await()!!
+        val result = CompletableDeferred<Message>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                dispose = message.onUpdated { updatedMessage ->
+                    result.complete(updatedMessage)
+                }
+            }
+            message.editText(newText).await()
+            val updated = result.await()
+            assertEquals(newText, updated.text)
+            assertEquals(message.timetoken, updated.timetoken)
+            dispose?.close()
+        }
+    }
+
     private fun getDeletedActionMap() = mapOf(
         MessageActionType.DELETED.toString() to mapOf(
             MessageActionType.DELETED.toString() to listOf(

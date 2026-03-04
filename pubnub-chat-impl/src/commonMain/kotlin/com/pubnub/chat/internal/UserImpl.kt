@@ -28,9 +28,14 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_NOT_EXIST
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
+import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.chat.restrictions.RestrictionType
+import com.pubnub.chat.types.EventContent
+import com.pubnub.chat.user.Invite
+import com.pubnub.chat.user.Mention
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
@@ -201,6 +206,85 @@ data class UserImpl(
         }
     }
 
+    override fun onUpdated(callback: (user: User) -> Unit): AutoCloseable {
+        var latestUser: User = this
+        val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
+            when (val message = event.extractedMessage) {
+                is PNSetUUIDMetadataEventMessage -> {
+                    if (message.data.id == id) {
+                        latestUser += message.data
+                        callback(latestUser)
+                    }
+                }
+                else -> return@createEventListener
+            }
+        })
+
+        val subscription = chat.pubNub.channel(id).subscription()
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
+    }
+
+    override fun onDeleted(callback: () -> Unit): AutoCloseable {
+        val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
+            when (val message = event.extractedMessage) {
+                is PNDeleteUUIDMetadataEventMessage -> {
+                    if (message.uuid == id) {
+                        callback()
+                    }
+                }
+                else -> return@createEventListener
+            }
+        })
+
+        val subscription = chat.pubNub.channel(id).subscription()
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
+    }
+
+    override fun onMentioned(callback: (mention: Mention) -> Unit): AutoCloseable {
+        return chat.listenForEvents<EventContent.Mention>(channelId = id) { event ->
+            callback(
+                Mention(
+                    messageTimetoken = event.payload.messageTimetoken,
+                    channelId = event.payload.channel,
+                    parentChannelId = event.payload.parentChannel,
+                    mentionedByUserId = event.userId,
+                )
+            )
+        }
+    }
+
+    override fun onInvited(callback: (invite: Invite) -> Unit): AutoCloseable {
+        return chat.listenForEvents<EventContent.Invite>(channelId = id) { event ->
+            callback(
+                Invite(
+                    channelId = event.payload.channelId,
+                    channelType = event.payload.channelType,
+                    invitedByUserId = event.userId,
+                    invitationTimetoken = event.timetoken,
+                )
+            )
+        }
+    }
+
+    override fun onRestrictionChanged(callback: (restriction: Restriction) -> Unit): AutoCloseable {
+        return chat.listenForEvents<EventContent.Moderation>(channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + id) { event ->
+            callback(
+                Restriction(
+                    userId = id,
+                    channelId = event.payload.channelId.removePrefix(INTERNAL_MODERATION_PREFIX),
+                    ban = event.payload.restriction == RestrictionType.BAN,
+                    mute = event.payload.restriction == RestrictionType.MUTE,
+                    reason = event.payload.reason,
+                )
+            )
+        }
+    }
+
+    @Deprecated("Use onUpdated() and onDeleted() instead.", ReplaceWith("onUpdated(callback)"))
     override fun streamUpdates(callback: (user: User?) -> Unit): AutoCloseable {
         return streamUpdatesOn(listOf(this)) {
             callback(it.firstOrNull())

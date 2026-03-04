@@ -279,11 +279,20 @@ interface Message {
     fun toggleReaction(reaction: String): PNFuture<Message>
 
     /**
+     * Emits the updated message entity whenever this message is edited, reactions are added or removed, or metadata changes.
+     *
+     * @param callback Function triggered with the updated [Message] entity reflecting the new state.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onUpdated(callback: (message: Message) -> Unit): AutoCloseable
+
+    /**
      * You can receive updates when this message and related message reactions are added, edited, or removed.
      *
      * @param callback Function that takes a single Message object. It defines the custom behavior to be executed when detecting message or message reaction changes.
      * @return Interface that lets you stop receiving message-related updates by invoking the close() method
      */
+    @Deprecated("Use onUpdated() instead.", ReplaceWith("onUpdated(callback)"), level = DeprecationLevel.WARNING)
     fun <T : Message> streamUpdates(callback: (message: T) -> Unit): AutoCloseable
 
     /**

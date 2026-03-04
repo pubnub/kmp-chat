@@ -67,6 +67,13 @@ open class MessageJs internal constructor(internal val message: Message, interna
             }
         }.toTypedArray()
 
+    fun onUpdated(callback: (message: MessageJs) -> Unit): () -> Unit {
+        val closeable = message.onUpdated {
+            callback(it.asJs(chatJs))
+        }
+        return closeable::close
+    }
+
     fun streamUpdates(callback: (MessageJs?) -> Unit): () -> Unit {
         return message.streamUpdates<Message> { callback(it.asJs(chatJs)) }::close
     }

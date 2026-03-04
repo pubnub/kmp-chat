@@ -172,9 +172,9 @@ data class ThreadChannelImpl(
         customPushData: Map<String, String>?,
     ): PNFuture<PNPublishResult> {
         return chat.emitEvent(
-            userId,
-            EventContent.Mention(timetoken, id, parentChannelId),
-            getPushPayload(this, text, chat.config.pushNotifications, customPushData)
+            channelId = userId,
+            payload = EventContent.Mention(messageTimetoken = timetoken, channel = id, parentChannel = parentChannelId),
+            mergePayloadWith = getPushPayload(this, text, chat.config.pushNotifications, customPushData),
         )
     }
 

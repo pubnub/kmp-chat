@@ -110,6 +110,7 @@ import com.pubnub.chat.types.GetCurrentUserMentionsResult
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.MessageActionType
 import com.pubnub.chat.types.ThreadMentionData
+import com.pubnub.chat.types.UserMention
 import com.pubnub.chat.types.UserMentionData
 import com.pubnub.chat.user.GetUsersResponse
 import com.pubnub.kmp.CustomObject
@@ -1100,7 +1101,16 @@ class ChatImpl(
                             if (message == null) {
                                 return@then null
                             }
-                            if (mentionEvent.payload.parentChannel == null) {
+                            val parentChannelId = mentionEvent.payload.parentChannel
+
+                            val userMention = UserMention(
+                                message = message,
+                                userId = mentionEvent.userId,
+                                channelId = mentionChannelId,
+                                parentChannelId = parentChannelId,
+                            )
+
+                            val legacyData: UserMentionData = if (parentChannelId == null) {
                                 ChannelMentionData(
                                     event = mentionEvent,
                                     message = message,
@@ -1112,16 +1122,21 @@ class ChatImpl(
                                     event = mentionEvent,
                                     message = message,
                                     userId = mentionEvent.userId,
-                                    parentChannelId = mentionEvent.payload.parentChannel.orEmpty(),
-                                    threadChannelId = mentionEvent.payload.channel
+                                    parentChannelId = parentChannelId.orEmpty(),
+                                    threadChannelId = mentionChannelId
                                 )
                             }
+                            Pair(userMention, legacyData)
                         }
                 }.awaitAll()
         }
             .then { it.filterNotNull() }
-            .then { userMentionDataList: List<UserMentionData> ->
-                GetCurrentUserMentionsResult(enhancedMentionsData = userMentionDataList, isMore = isMore)
+            .then { pairs: List<Pair<UserMention, UserMentionData>> ->
+                GetCurrentUserMentionsResult(
+                    mentions = pairs.map { it.first },
+                    isMore = isMore,
+                    enhancedMentionsData = pairs.map { it.second },
+                )
             }
     }
 

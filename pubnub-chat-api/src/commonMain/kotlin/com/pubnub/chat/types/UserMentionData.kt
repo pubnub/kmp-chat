@@ -10,6 +10,7 @@ import com.pubnub.chat.Message
  * @property message The [Message] object associated with the mention, if available.
  * @property userId The ID of the user who was mentioned.
  */
+@Deprecated("Use UserMention instead.", ReplaceWith("UserMention", "com.pubnub.chat.types.UserMention"))
 sealed class UserMentionData {
     abstract val event: Event<EventContent.Mention>
     abstract val message: Message
@@ -24,6 +25,7 @@ sealed class UserMentionData {
  * @property message The [Message] object associated with the mention, if available.
  * @property userId The ID of the user who was mentioned.
  */
+@Deprecated("Use UserMention instead.", ReplaceWith("UserMention", "com.pubnub.chat.types.UserMention"))
 class ChannelMentionData(
     override val event: Event<EventContent.Mention>,
     override val message: Message,
@@ -40,6 +42,7 @@ class ChannelMentionData(
  * @property message The [Message] object associated with the mention, if available.
  * @property userId The ID of the user who was mentioned.
  */
+@Deprecated("Use UserMention instead.", ReplaceWith("UserMention", "com.pubnub.chat.types.UserMention"))
 class ThreadMentionData(
     override val event: Event<EventContent.Mention>,
     override val message: Message,
