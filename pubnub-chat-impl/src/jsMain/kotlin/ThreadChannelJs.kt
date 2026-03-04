@@ -17,12 +17,12 @@ import kotlin.js.Promise
 class ThreadChannelJs internal constructor(internal val threadChannel: ThreadChannel, chatJs: ChatJs) : ChannelJs(threadChannel, chatJs) {
     val parentChannelId by threadChannel::parentChannelId
 
-    override fun pinMessage(message: MessageJs): Promise<ChannelJs> {
-        return channel.pinMessage(message.message).then { it.asJs(chatJs) }.asPromise()
+    override fun pinMessage(message: MessageJs): Promise<ThreadChannelJs> {
+        return threadChannel.pinMessage(message.message).then { it.asJs(chatJs) }.asPromise()
     }
 
-    override fun unpinMessage(): Promise<ChannelJs> {
-        return channel.unpinMessage().then { it.asJs(chatJs) }.asPromise()
+    override fun unpinMessage(): Promise<ThreadChannelJs> {
+        return threadChannel.unpinMessage().then { it.asJs(chatJs) }.asPromise()
     }
 
     fun pinMessageToParentChannel(message: ThreadMessageJs): Promise<ChannelJs> {
@@ -31,6 +31,14 @@ class ThreadChannelJs internal constructor(internal val threadChannel: ThreadCha
 
     fun unpinMessageFromParentChannel(): Promise<ChannelJs> {
         return threadChannel.unpinMessageFromParentChannel().then { it.asJs(chatJs) }.asPromise()
+    }
+
+    fun onThreadMessageReceived(callback: (ThreadMessageJs) -> Unit): () -> Unit {
+        return threadChannel.onThreadMessageReceived { callback(it.asJs(chatJs)) }::close
+    }
+
+    fun onThreadChannelUpdated(callback: (ThreadChannelJs) -> Unit): () -> Unit {
+        return threadChannel.onThreadChannelUpdated { callback(it.asJs(chatJs)) }::close
     }
 
     override fun getHistory(params: dynamic): Promise<HistoryResponseJs> {

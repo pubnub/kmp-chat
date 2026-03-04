@@ -168,4 +168,30 @@ describe("Channel group test", () => {
     disconnect()
     secondDisconnect()
   }, 30000)
+
+  test("should receive presence changes via channelGroup.onPresenceChanged", async () => {
+    await channelGroup.addChannels([firstChannel, secondChannel])
+    const disconnect = firstChannel.connect(() => null)
+    const secondDisconnect = secondChannel.connect(() => null)
+
+    await sleep(3000)
+
+    const presencePromise = new Promise<{ [key: string]: string[] }>((resolve) => {
+      channelGroup.onPresenceChanged((presenceByChannels) => {
+        const hasFirstChannel = presenceByChannels[firstChannel.id] != null
+        const hasSecondChannel = presenceByChannels[secondChannel.id] != null
+
+        if (hasFirstChannel && hasSecondChannel) {
+          resolve(presenceByChannels)
+        }
+      })
+    })
+
+    const presenceByChannels = await presencePromise
+    expect(presenceByChannels[firstChannel.id]).toEqual([chat.currentUser.id])
+    expect(presenceByChannels[secondChannel.id]).toEqual([chat.currentUser.id])
+
+    disconnect()
+    secondDisconnect()
+  }, 30000)
 })

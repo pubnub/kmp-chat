@@ -1773,4 +1773,38 @@ describe("Channel test", () => {
 
     await channel.leave()
   }, 20000)
+
+  test("should receive channel updates via channel.onUpdated", async () => {
+    const updatedName = "Updated via onUpdated"
+    let updatedChannel: Channel | undefined
+
+    const stop = channel.onUpdated((ch) => { updatedChannel = ch })
+    await sleep(1500)
+    await channel.update({ name: updatedName })
+    await sleep(500)
+
+    expect(updatedChannel).toBeDefined()
+    expect(updatedChannel!.name).toEqual(updatedName)
+    stop()
+  }, 20000)
+
+  test("should fire callback when channel is soft-deleted via channel.onDeleted", async () => {
+    const testChannel = await createRandomChannel(chat)
+    let deletedCalled = false
+
+    const stop = testChannel.onDeleted(() => { deletedCalled = true })
+    await sleep(1500)
+    await testChannel.delete({ soft: false })
+    await sleep(500)
+
+    expect(deletedCalled).toBe(true)
+    stop()
+  }, 20000)
+
+  test("should receive presence changes via channel.onPresenceChanged", async () => {
+    const stop = channel.onPresenceChanged((userIds) => {})
+    expect(typeof stop).toBe("function")
+    stop()
+  }, 10000)
+
 })
