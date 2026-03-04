@@ -18,6 +18,13 @@ class ThreadMessageJs internal constructor(internal val threadMessage: ThreadMes
         return threadMessage.unpinFromParentChannel().then { it.asJs(chatJs) }.asPromise()
     }
 
+    fun onThreadMessageUpdated(callback: (message: ThreadMessageJs) -> Unit): () -> Unit {
+        val closeable = threadMessage.onThreadMessageUpdated {
+            callback(it.asJs(chatJs))
+        }
+        return closeable::close
+    }
+
     companion object {
         @JsStatic
         fun streamUpdatesOn(threadMessages: Array<ThreadMessageJs>, callback: (Array<ThreadMessageJs>) -> Unit): () -> Unit {

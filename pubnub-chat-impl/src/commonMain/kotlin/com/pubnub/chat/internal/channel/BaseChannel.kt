@@ -450,7 +450,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
                         membership.setLastReadMessageTimetoken(time.timetoken)
                     }
                 }.alsoAsync {
-                    chat.emitEvent(user.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
+                    chat.emitEvent(
+                        channelId = user.id,
+                        payload = EventContent.Invite(channelType = this.type ?: ChannelType.UNKNOWN, channelId = this.id),
+                    )
                 }
             }
         }
@@ -485,7 +488,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
             }
         }.alsoAsync {
             users.map { u ->
-                chat.emitEvent(u.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
+                chat.emitEvent(
+                    channelId = u.id,
+                    payload = EventContent.Invite(channelType = this.type ?: ChannelType.UNKNOWN, channelId = this.id),
+                )
             }.awaitAll()
         }
     }
@@ -907,9 +913,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
         customPushData: Map<String, String>? = null,
     ): PNFuture<PNPublishResult> {
         return chat.emitEvent(
-            userId,
-            EventContent.Mention(timetoken, id),
-            getPushPayload(this, text, chat.config.pushNotifications, customPushData)
+            channelId = userId,
+            payload = EventContent.Mention(messageTimetoken = timetoken, channel = id),
+            mergePayloadWith = getPushPayload(this, text, chat.config.pushNotifications, customPushData),
         )
     }
 

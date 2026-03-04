@@ -50,7 +50,16 @@ declare class User {
     * Updates
     */
     static streamUpdatesOn(users: User[], callback: (users: User[]) => unknown): () => void;
+    /** @deprecated Use onUpdated() and onDeleted() instead. */
     streamUpdates(callback: (user: User) => unknown): () => void;
+    /*
+    * Entity-first event streaming (Step 1)
+    */
+    onUpdated(callback: (user: User) => unknown): () => void;
+    onDeleted(callback: () => unknown): () => void;
+    onMentioned(callback: (mention: Mention) => unknown): () => void;
+    onInvited(callback: (invite: Invite) => unknown): () => void;
+    onRestrictionChanged(callback: (restriction: { userId: string; channelId: string; ban: boolean; mute: boolean; reason?: string }) => unknown): () => void;
     /*
     * Presence
     */
@@ -153,14 +162,17 @@ type ReceiptEventParams = {
     type: "receipt";
     channel: string;
 };
+/** @deprecated Use user.onMentioned() instead. */
 type MentionEventParams = {
     type: "mention";
     user: string;
 };
+/** @deprecated Use user.onInvited() instead. */
 type InviteEventParams = {
     type: "invite";
     channel: string;
 };
+/** @deprecated Use user.onRestrictionChanged() instead. */
 type ModerationEventParams = {
     type: "moderation";
     channel: string;
@@ -174,9 +186,12 @@ type EventParams = {
     typing: TypingEventParams;
     report: ReportEventParams;
     receipt: ReceiptEventParams;
+    /** @deprecated Use user.onMentioned() instead. */
     mention: MentionEventParams;
+    /** @deprecated Use user.onInvited() instead. */
     invite: InviteEventParams;
     custom: CustomEventParams;
+    /** @deprecated Use user.onRestrictionChanged() instead. */
     moderation: ModerationEventParams;
 };
 type TypingEventPayload = {
@@ -193,14 +208,17 @@ type ReportEventPayload = {
 type ReceiptEventPayload = {
     messageTimetoken: string;
 };
+/** @deprecated Use Mention type with user.onMentioned() instead. */
 type MentionEventPayload = {
     messageTimetoken: string;
     channel: string;
 };
+/** @deprecated Use Invite type with user.onInvited() instead. */
 type InviteEventPayload = {
     channelType: ChannelType | "unknown";
     channelId: string;
 };
+/** @deprecated Use user.onRestrictionChanged() instead. */
 type ModerationEventPayload = {
     channelId: string;
     restriction: "muted" | "banned" | "lifted";
@@ -222,17 +240,29 @@ type EmitEventParams = (TypingEventParams & {
     payload: ReportEventPayload;
 }) | (ReceiptEventParams & {
     payload: ReceiptEventPayload;
-}) | (MentionEventParams & {
+}) | /** @deprecated Use user.onMentioned() instead. */ (MentionEventParams & {
     payload: MentionEventPayload;
-}) | (InviteEventParams & {
+}) | /** @deprecated Use user.onInvited() instead. */ (InviteEventParams & {
     payload: InviteEventPayload;
 }) | (CustomEventParams & {
     payload: CustomEventPayload;
-}) | (ModerationEventParams & {
+}) | /** @deprecated Use user.onRestrictionChanged() instead. */ (ModerationEventParams & {
     payload: ModerationEventPayload;
 });
 type EventType = "typing" | "report" | "receipt" | "mention" | "invite" | "custom" | "moderation";
 type GenericEventParams<T extends keyof EventParams> = EventParams[T];
+type Mention = {
+    messageTimetoken: string;
+    channelId: string;
+    parentChannelId?: string;
+    mentionedByUserId: string;
+};
+type Invite = {
+    channelId: string;
+    channelType: ChannelType;
+    invitedByUserId: string;
+    invitationTimetoken: string;
+};
 type MessageActions = {
     [type: string]: {
         [value: string]: Array<{
@@ -351,12 +381,20 @@ declare class ErrorLoggerImplementation {
     setItem(key: string, params: ErrorLoggerSetParams): void;
     getStorageObject(): Record<string, unknown>;
 }
+type UserMention = {
+    message: Message;
+    userId: string;
+    channelId: string;
+    parentChannelId?: string;
+};
+/** @deprecated Use UserMention instead. */
 type ChannelMentionData = {
     event: Event<"mention">;
     channelId: string;
     message: Message;
     userId: string;
 };
+/** @deprecated Use UserMention instead. */
 type ThreadMentionData = {
     event: Event<"mention">;
     parentChannelId: string;
@@ -364,6 +402,7 @@ type ThreadMentionData = {
     message: Message;
     userId: string;
 };
+/** @deprecated Use UserMention instead. */
 type UserMentionData = ChannelMentionData | ThreadMentionData;
 type MessageFields = Pick<Message, "timetoken" | "content" | "channelId" | "userId" | "actions" | "meta">;
 type CreateThreadResult = {
@@ -408,7 +447,9 @@ declare class Message {
     * Updates
     */
     static streamUpdatesOn(messages: Message[], callback: (messages: Message[]) => unknown): () => void;
+    /** @deprecated Use onUpdated() instead. */
     streamUpdates(callback: (message: Message) => unknown): () => void;
+    onUpdated(callback: (message: Message) => unknown): () => void;
     /*
     * Message text
     */
@@ -817,6 +858,8 @@ declare class Chat {
         endTimetoken?: string;
         count?: number;
     }): Promise<{
+        mentions: UserMention[];
+        /** @deprecated Use `mentions` instead. */
         enhancedMentionsData: UserMentionData[];
         isMore: boolean;
     }>;
@@ -881,6 +924,7 @@ declare class ThreadMessage extends Message {
     static streamUpdatesOn(threadMessages: ThreadMessage[], callback: (threadMessages: ThreadMessage[]) => unknown): () => void;
     pinToParentChannel(): Promise<Channel>;
     unpinFromParentChannel(): Promise<Channel>;
+    onThreadMessageUpdated(callback: (message: ThreadMessage) => unknown): () => void;
 }
 declare class ThreadChannel extends Channel {
     readonly parentChannelId: string;
@@ -958,4 +1002,4 @@ declare const INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_";
 declare const INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL";
 declare const ERROR_LOGGER_KEY_PREFIX = "PUBNUB_INTERNAL_ERROR_LOGGER";
 declare const CryptoModule: typeof PubNub.CryptoModule;
-export { ChatConfig, Chat, ChannelFields, Channel, ChannelGroup, ConnectionStatusCategory, ConnectionStatus, UserFields, User, MessageFields, Message, MembershipFields, Membership, ThreadChannel, ThreadMessage, MessageDraft, EventFields, Event, ChannelType, MessageType, MessageActionType, TextMessageContent, EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams, MessageActions, MessageReaction, DeleteParameters, MessageMentionedUsers, MessageReferencedChannels, MessageDraftOptions, SendTextOptionParams, EnhancedMessageEvent, MessageDTOParams, ThreadMessageDTOParams, MembershipResponse, OptionalAllBut, ChannelDTOParams, ThreadChannelDTOParams, MessageDraftConfig, TextLink, GetLinkedTextParams, PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement, ErrorLoggerSetParams, ErrorLoggerImplementation, ChannelMentionData, ThreadMentionData, UserMentionData, TimetokenUtils, CryptoUtils, MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX, CryptoModule, CreateThreadResult, CreateThreadOptions, ReadReceipt, ReadReceiptsResponse};
+export { ChatConfig, Chat, ChannelFields, Channel, ChannelGroup, ConnectionStatusCategory, ConnectionStatus, UserFields, User, MessageFields, Message, MembershipFields, Membership, ThreadChannel, ThreadMessage, MessageDraft, EventFields, Event, ChannelType, MessageType, MessageActionType, TextMessageContent, EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams, Mention, Invite, MessageActions, MessageReaction, DeleteParameters, MessageMentionedUsers, MessageReferencedChannels, MessageDraftOptions, SendTextOptionParams, EnhancedMessageEvent, MessageDTOParams, ThreadMessageDTOParams, MembershipResponse, OptionalAllBut, ChannelDTOParams, ThreadChannelDTOParams, MessageDraftConfig, TextLink, GetLinkedTextParams, PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement, ErrorLoggerSetParams, ErrorLoggerImplementation, UserMention, ChannelMentionData, ThreadMentionData, UserMentionData, TimetokenUtils, CryptoUtils, MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX, CryptoModule, CreateThreadResult, CreateThreadOptions, ReadReceipt, ReadReceiptsResponse};

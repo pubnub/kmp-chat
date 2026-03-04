@@ -303,6 +303,15 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         ).then { result ->
             createJsObject<GetCurrentUserMentionsResultJs> {
                 this.isMore = result.isMore
+                this.mentions = result.mentions.map { mention ->
+                    createJsObject<UserMentionJs> {
+                        this.message = mention.message.asJs(this@ChatJs)
+                        this.userId = mention.userId
+                        this.channelId = mention.channelId
+                        this.parentChannelId = mention.parentChannelId
+                    }
+                }.toTypedArray()
+
                 this.enhancedMentionsData = result.enhancedMentionsData.map {
                     when (it) {
                         is ChannelMentionData -> createJsObject<ChannelMentionDataJs> {

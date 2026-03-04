@@ -325,6 +325,31 @@ abstract class BaseMessage<T : Message>(
         return newActions.then { copyWithActions(it) }
     }
 
+    override fun onUpdated(callback: (message: Message) -> Unit): AutoCloseable {
+        var latestMessage: Message = this
+        val listener = createEventListener(chat.pubNub, onMessageAction = { _, event ->
+            if (event.messageAction.messageTimetoken != timetoken || event.channel != channelId) {
+                return@createEventListener
+            }
+            val actions = if (event.event == "added") {
+                assignAction(latestMessage.actions, event.messageAction)
+            } else {
+                filterAction(latestMessage.actions, event.messageAction)
+            }
+
+            val newMessage = (latestMessage as BaseMessage<Message>).copyWithActions(actions)
+            latestMessage = newMessage
+            callback(newMessage)
+        })
+
+        val channelEntity = chat.pubNub.channel(channelId)
+        val subscription = channelEntity.subscription()
+        subscription.addListener(listener)
+        subscription.subscribe()
+
+        return subscription
+    }
+
     override fun <M : Message> streamUpdates(callback: (message: M) -> Unit): AutoCloseable {
         return streamUpdatesOn(listOf(this as M)) {
             callback(it.first())
