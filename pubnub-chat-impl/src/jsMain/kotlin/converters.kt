@@ -16,6 +16,7 @@ import com.pubnub.chat.config.RateLimitPerChannel
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.chat.types.Report
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File

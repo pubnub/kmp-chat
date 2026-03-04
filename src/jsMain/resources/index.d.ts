@@ -16,7 +16,7 @@ declare class Membership {
     * Updates
     */
     static streamUpdatesOn(memberships: Membership[], callback: (memberships: Membership[]) => unknown): () => void;
-    /** @deprecated Use onUpdated and onDeleted instead. */
+    /** @deprecated Use onUpdated() and onDeleted() instead. */
     streamUpdates(callback: (membership: Membership | null) => unknown): () => void;
     onUpdated(callback: (membership: Membership) => void): () => void;
     onDeleted(callback: () => void): () => void;
@@ -51,7 +51,7 @@ declare class User {
     * Updates
     */
     static streamUpdatesOn(users: User[], callback: (users: User[]) => unknown): () => void;
-    /** @deprecated Use onUpdated, onDeleted instead. */
+    /** @deprecated Use onUpdated(), onDeleted() instead. */
     streamUpdates(callback: (user: User | null) => unknown): () => void;
     onUpdated(callback: (user: User) => unknown): () => void;
     onDeleted(callback: () => unknown): () => void;
@@ -166,14 +166,17 @@ type ReceiptEventParams = {
     type: "receipt";
     channel: string;
 };
+/** @deprecated Use user.onMentioned() instead. */
 type MentionEventParams = {
     type: "mention";
     user: string;
 };
+/** @deprecated Use user.onInvited() instead. */
 type InviteEventParams = {
     type: "invite";
     channel: string;
 };
+/** @deprecated Use user.onRestrictionChanged() instead. */
 type ModerationEventParams = {
     type: "moderation";
     channel: string;
@@ -187,9 +190,12 @@ type EventParams = {
     typing: TypingEventParams;
     report: ReportEventParams;
     receipt: ReceiptEventParams;
+    /** @deprecated Use user.onMentioned() instead. */
     mention: MentionEventParams;
+    /** @deprecated Use user.onInvited() instead. */
     invite: InviteEventParams;
     custom: CustomEventParams;
+    /** @deprecated Use user.onRestrictionChanged() instead. */
     moderation: ModerationEventParams;
 };
 type TypingEventPayload = {
@@ -246,13 +252,13 @@ type EmitEventParams = (TypingEventParams & {
     payload: ReportEventPayload;
 }) | (ReceiptEventParams & {
     payload: ReceiptEventPayload;
-}) | (MentionEventParams & {
+}) | /** @deprecated Use user.onMentioned() instead. */ (MentionEventParams & {
     payload: MentionEventPayload;
-}) | (InviteEventParams & {
+}) | /** @deprecated Use user.onInvited() instead. */ (InviteEventParams & {
     payload: InviteEventPayload;
 }) | (CustomEventParams & {
     payload: CustomEventPayload;
-}) | (ModerationEventParams & {
+}) | /** @deprecated Use user.onRestrictionChanged() instead. */ (ModerationEventParams & {
     payload: ModerationEventPayload;
 });
 type EventType = "typing" | "report" | "receipt" | "mention" | "invite" | "custom" | "moderation";
@@ -375,12 +381,14 @@ declare class ErrorLoggerImplementation {
     setItem(key: string, params: ErrorLoggerSetParams): void;
     getStorageObject(): Record<string, unknown>;
 }
+/** @deprecated Use UserMention instead. */
 type ChannelMentionData = {
     event: Event<"mention">;
     channelId: string;
     message: Message;
     userId: string;
 };
+/** @deprecated Use UserMention instead. */
 type ThreadMentionData = {
     event: Event<"mention">;
     parentChannelId: string;
@@ -388,6 +396,7 @@ type ThreadMentionData = {
     message: Message;
     userId: string;
 };
+/** @deprecated Use UserMention instead. */
 type UserMentionData = ChannelMentionData | ThreadMentionData;
 type Mention = {
     messageTimetoken: string;
@@ -459,7 +468,7 @@ declare class Message {
     get text(): string;
     getMessageElements(): MixedTextTypedElement[];
     /**
-     @deprecated Use getMessageElements() instead
+     @deprecated Use getMessageElements instead
      */
     getLinkedText(): MixedTextTypedElement[];
     editText(newText: string): Promise<Message>;
@@ -599,7 +608,7 @@ declare class Channel {
     * Updates
     */
     static streamUpdatesOn(channels: Channel[], callback: (channels: Channel[]) => unknown): () => void;
-    /** @deprecated Use onUpdated() and onDeleted() instead. */
+    /** @deprecated Use onUpdated and onDeleted instead. */
     streamUpdates(callback: (channel: Channel | null) => unknown): () => void;
     onUpdated(callback: (channel: Channel) => void): () => void;
     onDeleted(callback: () => void): () => void;
