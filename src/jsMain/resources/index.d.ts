@@ -450,7 +450,7 @@ declare class Message {
     * Updates
     */
     static streamUpdatesOn(messages: Message[], callback: (messages: Message[]) => unknown): () => void;
-    /** @deprecated Use onUpdated instead. */
+    /** @deprecated Use onUpdated() instead. */
     streamUpdates(callback: (message: Message) => unknown): () => void;
     onUpdated(callback: (message: Message) => unknown): () => void;
     /*
@@ -459,7 +459,7 @@ declare class Message {
     get text(): string;
     getMessageElements(): MixedTextTypedElement[];
     /**
-     @deprecated use getMessageElements instead
+     @deprecated Use getMessageElements() instead
      */
     getLinkedText(): MixedTextTypedElement[];
     editText(newText: string): Promise<Message>;
@@ -599,7 +599,7 @@ declare class Channel {
     * Updates
     */
     static streamUpdatesOn(channels: Channel[], callback: (channels: Channel[]) => unknown): () => void;
-    /** @deprecated Use onUpdated and onDeleted instead. */
+    /** @deprecated Use onUpdated() and onDeleted() instead. */
     streamUpdates(callback: (channel: Channel | null) => unknown): () => void;
     onUpdated(callback: (channel: Channel) => void): () => void;
     onDeleted(callback: () => void): () => void;
@@ -607,13 +607,13 @@ declare class Channel {
     forwardMessage(message: Message): Promise<Publish.PublishResponse>;
     startTyping(): Promise<Signal.SignalResponse | undefined>;
     stopTyping(): Promise<Signal.SignalResponse | undefined>;
-    /** @deprecated Use onTypingChanged instead. */
+    /** @deprecated Use onTypingChanged() instead. */
     getTyping(callback: (typingUserIds: string[]) => unknown): () => void;
     onTypingChanged(callback: (typingUserIds: string[]) => unknown): () => void;
     /*
     * Streaming messages
     */
-    /** @deprecated Use onMessageReceived instead. */
+    /** @deprecated Use onMessageReceived() instead. */
     connect(callback: (message: Message) => void): () => void;
     onMessageReceived(callback: (message: Message) => void): () => void;
     /*
@@ -621,7 +621,7 @@ declare class Channel {
     */
     whoIsPresent(params?: { limit?: number; offset?: number }): Promise<string[]>;
     isPresent(userId: string): Promise<boolean>;
-    /** @deprecated Use onPresenceChanged instead. */
+    /** @deprecated Use onPresenceChanged() instead. */
     streamPresence(callback: (userIds: string[]) => unknown): Promise<() => void>;
     onPresenceChanged(callback: (userIds: string[]) => void): () => void;
     /*
