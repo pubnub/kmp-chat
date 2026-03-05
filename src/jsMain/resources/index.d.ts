@@ -377,6 +377,24 @@ type ThreadMentionData = {
     userId: string;
 };
 type UserMentionData = ChannelMentionData | ThreadMentionData;
+type Mention = {
+    messageTimetoken: string;
+    channelId: string;
+    parentChannelId?: string;
+    mentionedByUserId: string;
+};
+type Invite = {
+    channelId: string;
+    channelType: string;
+    invitedByUserId: string;
+    invitationTimetoken: string;
+};
+type UserMention = {
+    message: Message;
+    userId: string;
+    channelId: string;
+    parentChannelId?: string;
+};
 type MessageFields = Pick<Message, "timetoken" | "content" | "channelId" | "userId" | "actions" | "meta">;
 type CreateThreadResult = {
     threadChannel: ThreadChannel;

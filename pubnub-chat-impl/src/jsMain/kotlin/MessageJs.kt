@@ -137,7 +137,9 @@ open class MessageJs internal constructor(internal val message: Message, interna
         return message.getThread().then { it.asJs(chatJs) }.asPromise()
     }
 
-    @Deprecated("Use createThreadWithResult(text, ...) or createThreadMessageDraft() instead to create a thread by sending the first reply.")
+    @Deprecated(
+        "Use createThreadWithResult(text, ...) or createThreadMessageDraft() instead to create a thread by sending the first reply."
+    )
     fun createThread(): Promise<ThreadChannelJs> {
         return message.createThread().then { it.asJs(chatJs) }.asPromise()
     }
