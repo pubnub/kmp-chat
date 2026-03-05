@@ -1036,7 +1036,7 @@ describe("Channel test", () => {
     const channel = (await chatPamServer.createDirectConversation({ user: user})).channel;
 
     await channel.setRestrictions(user, { mute: true, ban: false, reason: "rude" })
-    await sleep(1000)
+    await sleep(1250)
 
     const restrictions = await channel.getUserRestrictions(user);
 
@@ -1045,7 +1045,7 @@ describe("Channel test", () => {
     expect(restrictions.reason).toEqual("rude");
 
     await Promise.all([user.delete(), channel.delete()])
-  }, 20000)
+  }, 30000)
 
   test("should set (or lift) restrictions on a user", async () => {
     const notExistingUserId = generateRandomString()

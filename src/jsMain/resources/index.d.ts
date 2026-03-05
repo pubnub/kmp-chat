@@ -457,6 +457,7 @@ declare class Message {
      * Threads
      */
     getThread(): Promise<ThreadChannel>;
+    /** @deprecated Use createThreadWithResult(text, ...) or createThreadMessageDraft() instead to create a thread by sending the first reply. */
     createThread(): Promise<ThreadChannel>;
     createThreadWithResult(text: string, options?: CreateThreadOptions): Promise<CreateThreadResult>;
     removeThread(): Promise<[
