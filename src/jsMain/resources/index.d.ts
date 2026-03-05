@@ -51,7 +51,19 @@ declare class User {
     * Updates
     */
     static streamUpdatesOn(users: User[], callback: (users: User[]) => unknown): () => void;
-    streamUpdates(callback: (user: User) => unknown): () => void;
+    /** @deprecated Use onUpdated, onDeleted instead. */
+    streamUpdates(callback: (user: User | null) => unknown): () => void;
+    onUpdated(callback: (user: User) => unknown): () => void;
+    onDeleted(callback: () => unknown): () => void;
+    onMentioned(callback: (mention: Mention) => unknown): () => void;
+    onInvited(callback: (invite: Invite) => unknown): () => void;
+    onRestrictionChanged(callback: (restriction: {
+        userId: string;
+        channelId: string;
+        ban: boolean;
+        mute: boolean;
+        reason?: string;
+    }) => unknown): () => void;
     /*
     * Presence
     */
@@ -385,7 +397,7 @@ type Mention = {
 };
 type Invite = {
     channelId: string;
-    channelType: string;
+    channelType: ChannelType;
     invitedByUserId: string;
     invitationTimetoken: string;
 };
@@ -438,7 +450,9 @@ declare class Message {
     * Updates
     */
     static streamUpdatesOn(messages: Message[], callback: (messages: Message[]) => unknown): () => void;
+    /** @deprecated Use onUpdated instead. */
     streamUpdates(callback: (message: Message) => unknown): () => void;
+    onUpdated(callback: (message: Message) => unknown): () => void;
     /*
     * Message text
     */
@@ -855,6 +869,8 @@ declare class Chat {
         endTimetoken?: string;
         count?: number;
     }): Promise<{
+        mentions: UserMention[];
+        /** @deprecated Use `mentions` instead. */
         enhancedMentionsData: UserMentionData[];
         isMore: boolean;
     }>;
@@ -919,6 +935,7 @@ declare class ThreadMessage extends Message {
     static streamUpdatesOn(threadMessages: ThreadMessage[], callback: (threadMessages: ThreadMessage[]) => unknown): () => void;
     pinToParentChannel(): Promise<Channel>;
     unpinFromParentChannel(): Promise<Channel>;
+    onThreadMessageUpdated(callback: (message: ThreadMessage) => unknown): () => void;
 }
 declare class ThreadChannel extends Channel {
     readonly parentChannelId: string;
