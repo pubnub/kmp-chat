@@ -214,7 +214,7 @@ describe("Membership test", () => {
   }, 20000)
 
   test("should fire callback when membership is deleted via membership.onDeleted", async () => {
-    const membership = await channel.joinChannel()
+    const membership = await channel.join()
     await sleep(150)
 
     let deletedCalled = false

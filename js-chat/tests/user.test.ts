@@ -204,9 +204,9 @@ describe("User test", () => {
     const helloChannel2 = await chat.createChannel(`hello-channel-${timestamp}-2`, { name: "Hello Channel 2" })
     const testChannel = await chat.createChannel(`other-channel-${timestamp}`, { name: "Filter Test Channel" })
 
-    await helloChannel1.join(() => {})
-    await helloChannel2.join(() => {})
-    await testChannel.join(() => {})
+    await helloChannel1.join()
+    await helloChannel2.join()
+    await testChannel.join()
     await sleep(500)
 
     const helloFilter = `channel.name LIKE 'hello*'`

@@ -77,7 +77,6 @@ import com.pubnub.chat.types.GetFileItem
 import com.pubnub.chat.types.GetFilesResult
 import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
-import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
@@ -581,42 +580,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return subscription
     }
 
-    override fun join(custom: CustomObject?, callback: ((Message) -> Unit)?): PNFuture<JoinResult> {
-        val user = this.chat.currentUser
-        return chat.pubNub.setMemberships(
-            channels = listOf(
-                PNChannelMembership.Partial(
-                    this.id,
-                    custom
-                )
-            ), // todo should null overwrite? Waiting for optionals?
-            filter = channelFilterString,
-            include = MembershipInclude(
-                includeCustom = true,
-                includeStatus = false,
-                includeType = false,
-                includeTotalCount = true,
-                includeChannel = true,
-                includeChannelCustom = true,
-                includeChannelType = true,
-                includeChannelStatus = false
-            )
-        ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
-            val resultDisconnect = callback?.let { connect(it) }
-
-            chat.pubNub.time().thenAsync { time: PNTimeResult ->
-                MembershipImpl.fromMembershipDTO(chat, membershipArray.data.first(), user)
-                    .setLastReadMessageTimetoken(time.timetoken)
-            }.then { membership: Membership ->
-                JoinResult(
-                    membership,
-                    resultDisconnect
-                )
-            }
-        }
-    }
-
-    override fun joinChannel(status: String?, type: String?, custom: CustomObject?): PNFuture<Membership> {
+    override fun join(status: String?, type: String?, custom: CustomObject?): PNFuture<Membership> {
         val user = this.chat.currentUser
         return chat.pubNub.setMemberships(
             channels = listOf(

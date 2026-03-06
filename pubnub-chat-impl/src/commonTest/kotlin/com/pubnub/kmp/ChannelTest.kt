@@ -969,7 +969,7 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
-    fun joinChannel_passes_status_type_custom_to_memberships_endpoint() = runTest {
+    fun join_passes_status_type_custom_to_memberships_endpoint() = runTest {
         val userId = "user-id"
         val membershipStatus = "status-1"
         val membershipType = "type-1"
@@ -992,7 +992,7 @@ class ChannelTest : BaseTest() {
             callback.accept(Result.success(createMembershipArrayResult(channelId)))
         }
 
-        objectUnderTest.joinChannel(
+        objectUnderTest.join(
             status = membershipStatus,
             type = membershipType,
             custom = membershipCustom
@@ -1026,7 +1026,7 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
-    fun joinChannel_without_params_passes_null_status_type_custom() = runTest {
+    fun join_without_params_passes_null_status_type_custom() = runTest {
         val userId = "user-id"
         val manageMemberships: ManageMemberships = mock(MockMode.strict)
 
@@ -1046,7 +1046,7 @@ class ChannelTest : BaseTest() {
             callback.accept(Result.success(createMembershipArrayResult(channelId)))
         }
 
-        objectUnderTest.joinChannel().await()
+        objectUnderTest.join().await()
 
         verify {
             pubNub.setMemberships(

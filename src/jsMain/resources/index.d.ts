@@ -16,7 +16,7 @@ declare class Membership {
     * Updates
     */
     static streamUpdatesOn(memberships: Membership[], callback: (memberships: Membership[]) => unknown): () => void;
-    /** @deprecated Use onUpdated and onDeleted instead. */
+    /** @deprecated Use onUpdated() and onDeleted() instead. */
     streamUpdates(callback: (membership: Membership | null) => unknown): () => void;
     onUpdated(callback: (membership: Membership) => void): () => void;
     onDeleted(callback: () => void): () => void;
@@ -51,19 +51,19 @@ declare class User {
     * Updates
     */
     static streamUpdatesOn(users: User[], callback: (users: User[]) => unknown): () => void;
-    /** @deprecated Use onUpdated, onDeleted instead. */
+    /** @deprecated Use onUpdated(), onDeleted() instead. */
     streamUpdates(callback: (user: User | null) => unknown): () => void;
-    onUpdated(callback: (user: User) => unknown): () => void;
-    onDeleted(callback: () => unknown): () => void;
-    onMentioned(callback: (mention: Mention) => unknown): () => void;
-    onInvited(callback: (invite: Invite) => unknown): () => void;
+    onUpdated(callback: (user: User) => void): () => void;
+    onDeleted(callback: () => void): () => void;
+    onMentioned(callback: (mention: Mention) => void): () => void;
+    onInvited(callback: (invite: Invite) => void): () => void;
     onRestrictionChanged(callback: (restriction: {
         userId: string;
         channelId: string;
         ban: boolean;
         mute: boolean;
         reason?: string;
-    }) => unknown): () => void;
+    }) => void): () => void;
     /*
     * Presence
     */
@@ -166,14 +166,17 @@ type ReceiptEventParams = {
     type: "receipt";
     channel: string;
 };
+/** @deprecated Use user.onMentioned() instead. */
 type MentionEventParams = {
     type: "mention";
     user: string;
 };
+/** @deprecated Use user.onInvited() instead. */
 type InviteEventParams = {
     type: "invite";
     channel: string;
 };
+/** @deprecated Use user.onRestrictionChanged() instead. */
 type ModerationEventParams = {
     type: "moderation";
     channel: string;
@@ -187,9 +190,12 @@ type EventParams = {
     typing: TypingEventParams;
     report: ReportEventParams;
     receipt: ReceiptEventParams;
+    /** @deprecated Use user.onMentioned() instead. */
     mention: MentionEventParams;
+    /** @deprecated Use user.onInvited() instead. */
     invite: InviteEventParams;
     custom: CustomEventParams;
+    /** @deprecated Use user.onRestrictionChanged() instead. */
     moderation: ModerationEventParams;
 };
 type TypingEventPayload = {
@@ -235,8 +241,11 @@ type EventPayloads = {
     typing: TypingEventPayload;
     report: ReportEventPayload;
     receipt: ReceiptEventPayload;
+    /** @deprecated Use Mention type with user.onMentioned() instead. */
     mention: MentionEventPayload;
+    /** @deprecated Use Invite type with user.onInvited() instead. */
     invite: InviteEventPayload;
+    /** @deprecated Use user.onRestrictionChanged() instead. */
     moderation: ModerationEventPayload;
     custom: CustomEventPayload;
 };
@@ -246,13 +255,13 @@ type EmitEventParams = (TypingEventParams & {
     payload: ReportEventPayload;
 }) | (ReceiptEventParams & {
     payload: ReceiptEventPayload;
-}) | (MentionEventParams & {
+}) | /** @deprecated Use user.onMentioned() instead. */ (MentionEventParams & {
     payload: MentionEventPayload;
-}) | (InviteEventParams & {
+}) | /** @deprecated Use user.onInvited() instead. */ (InviteEventParams & {
     payload: InviteEventPayload;
 }) | (CustomEventParams & {
     payload: CustomEventPayload;
-}) | (ModerationEventParams & {
+}) | /** @deprecated Use user.onRestrictionChanged() instead. */ (ModerationEventParams & {
     payload: ModerationEventPayload;
 });
 type EventType = "typing" | "report" | "receipt" | "mention" | "invite" | "custom" | "moderation";
@@ -375,12 +384,14 @@ declare class ErrorLoggerImplementation {
     setItem(key: string, params: ErrorLoggerSetParams): void;
     getStorageObject(): Record<string, unknown>;
 }
+/** @deprecated Use UserMention instead. */
 type ChannelMentionData = {
     event: Event<"mention">;
     channelId: string;
     message: Message;
     userId: string;
 };
+/** @deprecated Use UserMention instead. */
 type ThreadMentionData = {
     event: Event<"mention">;
     parentChannelId: string;
@@ -388,6 +399,7 @@ type ThreadMentionData = {
     message: Message;
     userId: string;
 };
+/** @deprecated Use UserMention instead. */
 type UserMentionData = ChannelMentionData | ThreadMentionData;
 type Mention = {
     messageTimetoken: string;
@@ -452,14 +464,14 @@ declare class Message {
     static streamUpdatesOn(messages: Message[], callback: (messages: Message[]) => unknown): () => void;
     /** @deprecated Use onUpdated() instead. */
     streamUpdates(callback: (message: Message) => unknown): () => void;
-    onUpdated(callback: (message: Message) => unknown): () => void;
+    onUpdated(callback: (message: Message) => void): () => void;
     /*
     * Message text
     */
     get text(): string;
     getMessageElements(): MixedTextTypedElement[];
     /**
-     @deprecated Use getMessageElements() instead
+     @deprecated Use getMessageElements instead
      */
     getLinkedText(): MixedTextTypedElement[];
     editText(newText: string): Promise<Message>;
@@ -599,7 +611,7 @@ declare class Channel {
     * Updates
     */
     static streamUpdatesOn(channels: Channel[], callback: (channels: Channel[]) => unknown): () => void;
-    /** @deprecated Use onUpdated() and onDeleted() instead. */
+    /** @deprecated Use onUpdated and onDeleted instead. */
     streamUpdates(callback: (channel: Channel | null) => unknown): () => void;
     onUpdated(callback: (channel: Channel) => void): () => void;
     onDeleted(callback: () => void): () => void;
@@ -609,7 +621,7 @@ declare class Channel {
     stopTyping(): Promise<Signal.SignalResponse | undefined>;
     /** @deprecated Use onTypingChanged() instead. */
     getTyping(callback: (typingUserIds: string[]) => unknown): () => void;
-    onTypingChanged(callback: (typingUserIds: string[]) => unknown): () => void;
+    onTypingChanged(callback: (typingUserIds: string[]) => void): () => void;
     /*
     * Streaming messages
     */
@@ -636,14 +648,7 @@ declare class Channel {
         isMore: boolean;
     }>;
     getMessage(timetoken: string): Promise<Message>;
-    /** @deprecated Use joinChannel(params?) for membership and onMessageReceived(callback) for messages. */
-    join(callback: (message: Message) => void, params?: Omit<AppContext.SetMembershipsParameters<AppContext.CustomData>, "channels" | "include" | "filter"> & {
-        custom?: AppContext.CustomData;
-    }): Promise<{
-        membership: Membership;
-        disconnect: () => void;
-    }>;
-    joinChannel(params?: {
+    join(params?: {
         status?: string;
         type?: string;
         custom?: AppContext.CustomData;
@@ -935,7 +940,7 @@ declare class ThreadMessage extends Message {
     static streamUpdatesOn(threadMessages: ThreadMessage[], callback: (threadMessages: ThreadMessage[]) => unknown): () => void;
     pinToParentChannel(): Promise<Channel>;
     unpinFromParentChannel(): Promise<Channel>;
-    onThreadMessageUpdated(callback: (message: ThreadMessage) => unknown): () => void;
+    onThreadMessageUpdated(callback: (message: ThreadMessage) => void): () => void;
 }
 declare class ThreadChannel extends Channel {
     readonly parentChannelId: string;
