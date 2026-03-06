@@ -53,17 +53,17 @@ declare class User {
     static streamUpdatesOn(users: User[], callback: (users: User[]) => unknown): () => void;
     /** @deprecated Use onUpdated(), onDeleted() instead. */
     streamUpdates(callback: (user: User | null) => unknown): () => void;
-    onUpdated(callback: (user: User) => unknown): () => void;
-    onDeleted(callback: () => unknown): () => void;
-    onMentioned(callback: (mention: Mention) => unknown): () => void;
-    onInvited(callback: (invite: Invite) => unknown): () => void;
+    onUpdated(callback: (user: User) => void): () => void;
+    onDeleted(callback: () => void): () => void;
+    onMentioned(callback: (mention: Mention) => void): () => void;
+    onInvited(callback: (invite: Invite) => void): () => void;
     onRestrictionChanged(callback: (restriction: {
         userId: string;
         channelId: string;
         ban: boolean;
         mute: boolean;
         reason?: string;
-    }) => unknown): () => void;
+    }) => void): () => void;
     /*
     * Presence
     */
@@ -241,8 +241,11 @@ type EventPayloads = {
     typing: TypingEventPayload;
     report: ReportEventPayload;
     receipt: ReceiptEventPayload;
+    /** @deprecated Use Mention type with user.onMentioned() instead. */
     mention: MentionEventPayload;
+    /** @deprecated Use Invite type with user.onInvited() instead. */
     invite: InviteEventPayload;
+    /** @deprecated Use user.onRestrictionChanged() instead. */
     moderation: ModerationEventPayload;
     custom: CustomEventPayload;
 };
@@ -461,7 +464,7 @@ declare class Message {
     static streamUpdatesOn(messages: Message[], callback: (messages: Message[]) => unknown): () => void;
     /** @deprecated Use onUpdated() instead. */
     streamUpdates(callback: (message: Message) => unknown): () => void;
-    onUpdated(callback: (message: Message) => unknown): () => void;
+    onUpdated(callback: (message: Message) => void): () => void;
     /*
     * Message text
     */
@@ -618,7 +621,7 @@ declare class Channel {
     stopTyping(): Promise<Signal.SignalResponse | undefined>;
     /** @deprecated Use onTypingChanged() instead. */
     getTyping(callback: (typingUserIds: string[]) => unknown): () => void;
-    onTypingChanged(callback: (typingUserIds: string[]) => unknown): () => void;
+    onTypingChanged(callback: (typingUserIds: string[]) => void): () => void;
     /*
     * Streaming messages
     */
@@ -937,7 +940,7 @@ declare class ThreadMessage extends Message {
     static streamUpdatesOn(threadMessages: ThreadMessage[], callback: (threadMessages: ThreadMessage[]) => unknown): () => void;
     pinToParentChannel(): Promise<Channel>;
     unpinFromParentChannel(): Promise<Channel>;
-    onThreadMessageUpdated(callback: (message: ThreadMessage) => unknown): () => void;
+    onThreadMessageUpdated(callback: (message: ThreadMessage) => void): () => void;
 }
 declare class ThreadChannel extends Channel {
     readonly parentChannelId: string;
