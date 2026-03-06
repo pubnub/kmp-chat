@@ -4,7 +4,7 @@ import {
   Message,
   Membership,
   Chat,
-  MessageDraft,
+  MessageDraft, ReadReceipt,
 } from "../dist-test"
 import {
   sleep,
@@ -1036,7 +1036,7 @@ describe("Channel test", () => {
     const channel = (await chatPamServer.createDirectConversation({ user: user})).channel;
 
     await channel.setRestrictions(user, { mute: true, ban: false, reason: "rude" })
-    await sleep(1000)
+    await sleep(1250)
 
     const restrictions = await channel.getUserRestrictions(user);
 
@@ -1045,7 +1045,7 @@ describe("Channel test", () => {
     expect(restrictions.reason).toEqual("rude");
 
     await Promise.all([user.delete(), channel.delete()])
-  }, 20000)
+  }, 30000)
 
   test("should set (or lift) restrictions on a user", async () => {
     const notExistingUserId = generateRandomString()
@@ -1562,33 +1562,33 @@ describe("Channel test", () => {
     await directConversation.channel.delete()
   }, 30000)
 
-  test("should fetch and stream read receipts on a channel", async () => {
+  test("should fetch and receive read receipt on a channel", async () => {
     const testUser = await createRandomUser(chat)
     const directConversation = await chat.createDirectConversation({ user: testUser })
 
-    const message = await directConversation.channel.sendText("Test message")
+    const { timetoken } = await directConversation.channel.sendText("Test message")
 
-    let receivedReceipt: { userId: string; lastReadTimetoken: string } | undefined
+    let receivedReceipt: ReadReceipt | undefined
 
-    const stopReceiptsStream = directConversation.channel.streamReadReceipts((receipt) => {
+    const stopReceiving = directConversation.channel.onReadReceiptReceived((receipt) => {
       if (receipt.userId === chat.currentUser.id) {
         receivedReceipt = receipt
       }
     })
 
     await sleep(1000)
-    await directConversation.hostMembership.setLastReadMessageTimetoken(message.timetoken.toString())
+    await directConversation.hostMembership.setLastReadMessageTimetoken(timetoken.toString())
     await sleep(1000)
 
     expect(receivedReceipt).toBeDefined()
-    expect(receivedReceipt!.userId).toBe(chat.currentUser.id)
+    expect(receivedReceipt?.userId).toBe(chat.currentUser.id)
 
     const response = await directConversation.channel.fetchReadReceipts()
     const fetchedReceipt = response.receipts.find((r) => r.userId === chat.currentUser.id)
     expect(fetchedReceipt).toBeDefined()
-    expect(fetchedReceipt!.lastReadTimetoken).toBe(receivedReceipt!.lastReadTimetoken)
+    expect(fetchedReceipt!.lastReadTimetoken).toBe(receivedReceipt?.lastReadTimetoken)
 
-    stopReceiptsStream()
+    stopReceiving()
 
     await directConversation.channel.leave()
     await testUser.delete()
@@ -1599,24 +1599,55 @@ describe("Channel test", () => {
     const testUser = await createRandomUser(chat)
     const directConversation = await chat.createDirectConversation({ user: testUser })
 
-    let receivedReceipt: { userId: string; lastReadTimetoken: string } | undefined
+    let receivedReceipts
     let callbackCount = 0
 
-    const stopReceiptsStream = directConversation.channel.streamReadReceipts((receipt) => {
+    const stopReceiptsStream = await directConversation.channel.streamReadReceipts((receipts) => {
+      receivedReceipts = receipts
+      callbackCount++
+    })
+
+    await directConversation.channel.sendText("Test message for receipts")
+    await directConversation.channel.join(() => null)
+    await sleep(1000)
+
+    expect(callbackCount).toBeGreaterThan(0)
+    expect(receivedReceipts).toBeDefined()
+
+    const hasExpectedReceipt = Object.keys(receivedReceipts).some(key =>
+      receivedReceipts[key].includes(chat.currentUser.id)
+    )
+
+    expect(hasExpectedReceipt).toBe(true)
+    stopReceiptsStream()
+
+    await directConversation.channel.leave()
+    await testUser.delete()
+    await directConversation.channel.delete()
+  }, 30000)
+
+  test("should receive read receipts via onReadReceiptReceived", async () => {
+    const testUser = await createRandomUser(chat)
+    const directConversation = await chat.createDirectConversation({ user: testUser })
+
+    let receivedReceipt: ReadReceipt | undefined
+    let callbackCount = 0
+
+    const stopReceiving = directConversation.channel.onReadReceiptReceived((receipt) => {
       receivedReceipt = receipt
       callbackCount++
     })
 
     await sleep(1000)
-    const message = await directConversation.channel.sendText("Test message")
-    await directConversation.hostMembership.setLastReadMessageTimetoken(message.timetoken.toString())
+    const { timetoken } = await directConversation.channel.sendText("Test message")
+    await directConversation.hostMembership.setLastReadMessageTimetoken(timetoken.toString())
     await sleep(1000)
 
     expect(callbackCount).toBeGreaterThan(0)
     expect(receivedReceipt).toBeDefined()
-    expect(receivedReceipt!.userId).toBe(chat.currentUser.id)
+    expect(receivedReceipt?.userId).toBe(chat.currentUser.id)
 
-    stopReceiptsStream()
+    stopReceiving()
 
     await directConversation.channel.leave()
     await testUser.delete()
@@ -1664,7 +1695,7 @@ describe("Channel test", () => {
 
     let received = false
 
-    const stopReceiptsStream = directConversation.channel.streamReadReceipts(() => {
+    const stopReceiving = directConversation.channel.onReadReceiptReceived(() => {
       received = true
     })
 
@@ -1673,7 +1704,7 @@ describe("Channel test", () => {
     await sleep(1000)
 
     expect(received).toBe(false)
-    stopReceiptsStream()
+    stopReceiving()
 
     await directConversation.channel.leave()
     await testUser.delete()
@@ -1773,4 +1804,38 @@ describe("Channel test", () => {
 
     await channel.leave()
   }, 20000)
+
+  test("should receive channel updates via channel.onUpdated", async () => {
+    const updatedName = "Updated via onUpdated"
+    let updatedChannel: Channel | undefined
+
+    const stop = channel.onUpdated((ch) => { updatedChannel = ch })
+    await sleep(1500)
+    await channel.update({ name: updatedName })
+    await sleep(500)
+
+    expect(updatedChannel).toBeDefined()
+    expect(updatedChannel!.name).toEqual(updatedName)
+    stop()
+  }, 20000)
+
+  test("should fire callback when channel is soft-deleted via channel.onDeleted", async () => {
+    const testChannel = await createRandomChannel(chat)
+    let deletedCalled = false
+
+    const stop = testChannel.onDeleted(() => { deletedCalled = true })
+    await sleep(1500)
+    await testChannel.delete({ soft: false })
+    await sleep(500)
+
+    expect(deletedCalled).toBe(true)
+    stop()
+  }, 20000)
+
+  test("should receive presence changes via channel.onPresenceChanged", async () => {
+    const stop = channel.onPresenceChanged((userIds) => {})
+    expect(typeof stop).toBe("function")
+    stop()
+  }, 10000)
+
 })

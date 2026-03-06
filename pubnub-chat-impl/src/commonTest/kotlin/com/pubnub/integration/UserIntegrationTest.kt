@@ -443,6 +443,7 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
         }
     }
 
+    @Test
     fun isMemberOf_shouldReturnTrueForMember() = runTest {
         val channelId = randomString()
         val testChannel = chat.createChannel(channelId).await()

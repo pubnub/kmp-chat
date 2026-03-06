@@ -53,6 +53,7 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_CHANNEL_
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_HANDLING_ONMESSAGE_EVENT
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_RETRIEVE_HISTORY_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
+import com.pubnub.chat.internal.error.PubNubErrorMessage.READ_RECEIPTS_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THREAD_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.TYPING_INDICATORS_NO_SUPPORTED_IN_PUBLIC_CHATS
 import com.pubnub.chat.internal.message.BaseMessage
@@ -767,10 +768,31 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable {
+        if (type == ChannelType.PUBLIC) {
+            log.pnError(READ_RECEIPTS_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS)
+        }
         val timetokensPerUser = mutableMapOf<String, Long>()
-        return onReadReceiptReceived { receipt ->
-            timetokensPerUser[receipt.userId] = receipt.lastReadTimetoken
+        // in group chats it work till 100 members
+        val future = getMembers().then { members ->
+            members.members.forEach { m ->
+                val lastTimetoken = m.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN)?.tryLong()
+                if (lastTimetoken != null) {
+                    timetokensPerUser[m.user.id] = lastTimetoken
+                }
+            }
             callback(generateReceipts(timetokensPerUser))
+        }.then {
+            chat.listenForEvents<EventContent.Receipt>(id) { event ->
+                timetokensPerUser[event.userId] = event.payload.messageTimetoken
+                callback(generateReceipts(timetokensPerUser))
+            }
+        }.remember()
+        return AutoCloseable {
+            future.async {
+                it.onSuccess { subscription ->
+                    subscription.close()
+                }
+            }
         }
     }
 

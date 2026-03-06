@@ -20,6 +20,7 @@ import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.chat.types.QuotedMessage
+import com.pubnub.chat.types.Report
 import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.createCustomObject
@@ -142,6 +143,15 @@ fun PushNotificationsConfigJs?.toKmp(): PushNotificationsConfig {
         apnsTopic,
         PNPushEnvironment.fromParamString(apnsEnvironment)
     )
+}
+
+internal fun Report.toJs(): MessageReportJs = createJsObject {
+    reason = this@toJs.reason
+    text = this@toJs.text
+    messageTimetoken = this@toJs.messageTimetoken?.toString()
+    reportedMessageChannelId = this@toJs.reportedMessageChannelId
+    reportedUserId = this@toJs.reportedUserId
+    autoModerationId = this@toJs.autoModerationId
 }
 
 internal fun Restriction.asJs(): RestrictionJs {

@@ -409,3 +409,12 @@ external interface CreateThreadOptionsParams {
     val usersToMention: Array<String>?
     val customPushData: JsMap<String>?
 }
+
+external interface MessageReportJs {
+    var reason: String
+    var text: String?
+    var messageTimetoken: String?
+    var reportedMessageChannelId: String?
+    var reportedUserId: String?
+    var autoModerationId: String?
+}
