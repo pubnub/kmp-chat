@@ -51,6 +51,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
+    @Deprecated("Use onUpdated(callback) and onDeleted(callback) instead.")
     fun streamUpdates(callback: (channel: ChannelJs?) -> Unit): () -> Unit {
         val closeable = channel.streamUpdates {
             callback(it?.asJs(chatJs))
@@ -135,6 +136,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.isPresent(userId).asPromise()
     }
 
+    @Deprecated("Use onPresenceChanged(callback) instead.")
     fun streamPresence(callback: (Array<String>) -> Unit): Promise<() -> Unit> {
         return channel.streamPresence { callback(it.toTypedArray()) }.let {
             it::close
@@ -288,6 +290,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
+    @Deprecated("Use onReadReceiptReceived(callback) instead.")
     fun streamReadReceipts(callback: (JsMap<Array<String>>) -> Unit): Promise<() -> Unit> {
         return channel.streamReadReceipts {
             callback(
@@ -345,6 +348,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
+    @Deprecated("Use onMessageReported(callback) instead.")
     fun streamMessageReports(callback: (EventJs) -> Unit): () -> Unit =
         channel.streamMessageReports { event ->
             callback(event.toJs(chatJs))
@@ -370,6 +374,35 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
                 isMore = result.isMore
             }
         }.asPromise()
+    }
+
+    fun onUpdated(callback: (ChannelJs) -> Unit): () -> Unit {
+        return channel.onUpdated { callback(it.asJs(chatJs)) }::close
+    }
+
+    fun onDeleted(callback: () -> Unit): () -> Unit {
+        return channel.onDeleted { callback() }::close
+    }
+
+    fun onPresenceChanged(callback: (Array<String>) -> Unit): () -> Unit {
+        return channel.onPresenceChanged { callback(it.toTypedArray()) }::close
+    }
+
+    fun onReadReceiptReceived(callback: (ReadReceiptJs) -> Unit): () -> Unit {
+        return channel.onReadReceiptReceived { receipt ->
+            callback(
+                createJsObject<ReadReceiptJs> {
+                    userId = receipt.userId
+                    lastReadTimetoken = receipt.lastReadTimetoken.toString()
+                }
+            )
+        }::close
+    }
+
+    fun onMessageReported(callback: (MessageReportJs) -> Unit): () -> Unit {
+        return channel.onMessageReported { report ->
+            callback(report.toJs())
+        }::close
     }
 
     fun toJSON(): Json {

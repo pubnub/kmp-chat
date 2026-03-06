@@ -196,4 +196,35 @@ describe("Membership test", () => {
     expect(typeof unreadCount === "number").toBe(true)
     expect(unreadCount === 0).toBe(true)
   }, 20000)
+
+  test("should receive membership updates via membership.onUpdated", async () => {
+    const membership = await channel.invite(user)
+    await sleep(150)
+
+    let updatedMembership: Membership | undefined
+    const stop = membership.onUpdated((m) => { updatedMembership = m })
+    await sleep(1000)
+
+    await membership.update({ custom: { role: "admin" } })
+    await sleep(500)
+
+    expect(updatedMembership).toBeDefined()
+    expect(updatedMembership!.custom).toEqual({ role: "admin" })
+    stop()
+  }, 20000)
+
+  test("should fire callback when membership is deleted via membership.onDeleted", async () => {
+    const membership = await channel.joinChannel()
+    await sleep(150)
+
+    let deletedCalled = false
+    const stop = membership.onDeleted(() => { deletedCalled = true })
+    await sleep(1000)
+
+    await channel.leave()
+    await sleep(500)
+
+    expect(deletedCalled).toBe(true)
+    stop()
+  }, 20000)
 })

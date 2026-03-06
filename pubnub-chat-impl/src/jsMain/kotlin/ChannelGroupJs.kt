@@ -74,6 +74,17 @@ class ChannelGroupJs internal constructor(
         }.asPromise()
     }
 
+    fun onPresenceChanged(callback: (JsMap<Array<String>>) -> Unit): () -> Unit {
+        return channelGroup.onPresenceChanged {
+            callback(
+                it.mapKeys { entry -> entry.key.toString() }
+                    .mapValues { entry -> entry.value.toTypedArray() }
+                    .toJsMap()
+            )
+        }::close
+    }
+
+    @Deprecated("Use onPresenceChanged(callback) instead.")
     fun streamPresence(callback: (JsMap<Array<String>>) -> Unit): Promise<() -> Unit> {
         return channelGroup.streamPresence {
             callback(
