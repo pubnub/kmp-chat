@@ -36,10 +36,8 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun invite (Lcom/pubnub/chat/User;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun inviteMultiple (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun isPresent (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun join (Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Lcom/pubnub/kmp/PNFuture;
-	public static synthetic fun join$default (Lcom/pubnub/chat/Channel;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun joinChannel (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
-	public static synthetic fun joinChannel$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun join (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun join$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun leave ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun onDeleted (Lkotlin/jvm/functions/Function0;)Ljava/lang/AutoCloseable;
 	public abstract fun onMessageReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
@@ -902,12 +900,6 @@ public final class com/pubnub/chat/types/InputFile {
 	public final fun getName ()Ljava/lang/String;
 	public final fun getSource ()Ljava/io/InputStream;
 	public final fun getType ()Ljava/lang/String;
-}
-
-public final class com/pubnub/chat/types/JoinResult {
-	public fun <init> (Lcom/pubnub/chat/Membership;Ljava/lang/AutoCloseable;)V
-	public final fun getDisconnect ()Ljava/lang/AutoCloseable;
-	public final fun getMembership ()Lcom/pubnub/chat/Membership;
 }
 
 public final class com/pubnub/chat/types/MessageActionType : java/lang/Enum {

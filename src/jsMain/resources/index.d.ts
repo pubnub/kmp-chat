@@ -636,14 +636,7 @@ declare class Channel {
         isMore: boolean;
     }>;
     getMessage(timetoken: string): Promise<Message>;
-    /** @deprecated Use joinChannel(params?) for membership and onMessageReceived(callback) for messages. */
-    join(callback: (message: Message) => void, params?: Omit<AppContext.SetMembershipsParameters<AppContext.CustomData>, "channels" | "include" | "filter"> & {
-        custom?: AppContext.CustomData;
-    }): Promise<{
-        membership: Membership;
-        disconnect: () => void;
-    }>;
-    joinChannel(params?: {
+    join(params?: {
         status?: string;
         type?: string;
         custom?: AppContext.CustomData;
