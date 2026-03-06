@@ -267,11 +267,6 @@ inline fun DeleteChannelResult(boolean: Boolean): DeleteChannelResult {
     return boolean.unsafeCast<DeleteChannelResult>()
 }
 
-external interface JoinResultJs {
-    var membership: MembershipJs
-    var disconnect: () -> Unit
-}
-
 external interface JoinParams {
     val status: String?
     val type: String?

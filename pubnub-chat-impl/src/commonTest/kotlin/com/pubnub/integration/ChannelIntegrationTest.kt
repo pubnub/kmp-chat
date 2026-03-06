@@ -3,7 +3,6 @@ package com.pubnub.integration
 import com.pubnub.api.models.consumer.objects.PNMemberKey
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.utils.Clock
-import com.pubnub.api.utils.Instant
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
 import com.pubnub.chat.MentionTarget
@@ -40,7 +39,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -69,12 +67,11 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val channelId = randomString()
         val channel = chat.createChannel(channelId).await()
 
-        val result = channel.join().await()
+        val membership = channel.join().await()
 
-        assertEquals(config.userId.value, result.membership.user.id)
-        assertEquals(channel.id, result.membership.channel.id)
+        assertEquals(config.userId.value, membership.user.id)
+        assertEquals(channel.id, membership.channel.id)
 
-        result.disconnect?.close()
         chat.deleteChannel(channelId).await()
     }
 
@@ -109,7 +106,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val messageText = randomString()
         val message = CompletableDeferred<Message>()
 
-        val membership = channel.joinChannel(status = status, type = type).await()
+        val membership = channel.join(status = status, type = type).await()
 
         assertEquals(config.userId.value, membership.user.id)
         assertEquals(channel.id, membership.channel.id)
@@ -136,17 +133,6 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
             closeable?.close()
             closeable2.close()
         }
-    }
-
-    @Test
-    fun join_updates_lastReadMessageTimetoken() = runTest {
-        val then = Instant.fromEpochSeconds(chat.pubNub.time().await().timetoken / 10000000, 0)
-        val channel = chat.createChannel(randomString()).await()
-
-        val lastReadMessage: Long = channel.join().await().membership.lastReadMessageTimetoken ?: 0
-
-        assertTrue(lastReadMessage > 0)
-        assertContains(then..Clock.System.now(), Instant.fromEpochSeconds(lastReadMessage / 10000000, 0))
     }
 
     @Test

@@ -415,9 +415,10 @@ describe("Channel test", () => {
     await channel.sendText(messageText2)
     await sleep(150) // History calls have around 130ms of cache time
 
-    const channelJoinData = await channel.join(() => null)
-    let { membership } = channelJoinData
-    const { disconnect } = channelJoinData
+    let membership = await channel.join()
+
+    const { messages: historyMessages } = await channel.getHistory()
+    membership = await membership.setLastReadMessageTimetoken(historyMessages[historyMessages.length - 1].timetoken)
     let unreadCount = await membership.getUnreadMessagesCount()
 
     expect(unreadCount).toBe(0)
@@ -429,7 +430,6 @@ describe("Channel test", () => {
     expect(unreadCount).toBe(1)
 
     await channel.leave()
-    disconnect()
   }, 20000)
 
   test("should add mentioned users to message draft", async () => {
@@ -1608,7 +1608,9 @@ describe("Channel test", () => {
     })
 
     await directConversation.channel.sendText("Test message for receipts")
-    await directConversation.channel.join(() => null)
+    const membership = await directConversation.channel.join()
+    const { messages } = await directConversation.channel.getHistory()
+    await membership.setLastReadMessageTimetoken(messages[messages.length - 1].timetoken)
     await sleep(1000)
 
     expect(callbackCount).toBeGreaterThan(0)
@@ -1778,8 +1780,8 @@ describe("Channel test", () => {
     await directConversation.channel.delete()
   }, 30000)
 
-  test("should set membership via joinChannel(params)", async () => {
-    const membership: Membership = await channel.joinChannel({
+  test("should set membership via join(params)", async () => {
+    const membership: Membership = await channel.join({
       status: "myStatus",
       type: "myType",
       custom: { role: "admin" }
@@ -1795,8 +1797,8 @@ describe("Channel test", () => {
     await channel.leave()
   }, 20000)
 
-  test("should set membership via joinChannel() without params", async () => {
-    const membership: Membership = await channel.joinChannel()
+  test("should set membership via join() without params", async () => {
+    const membership: Membership = await channel.join()
 
     expect(membership).toBeDefined()
     expect(membership.channel.id).toEqual(channel.id)

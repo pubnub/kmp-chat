@@ -17,7 +17,6 @@ import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.GetFilesResult
 import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
-import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.ReadReceipt
@@ -388,28 +387,12 @@ interface Channel {
     fun onMessageReceived(callback: (Message) -> Unit): AutoCloseable
 
     /**
-     * Connects a user to the [Channel] and sets membership - this way, the chat user can both watch the channel's
-     * content and be its full-fledged member.
-     *
-     * @param custom Any custom properties or metadata associated with the channel-user membership in the form of a `Map`.
-     * Values must be scalar only; arrays or objects are not supported.
-     *                a JSON. Values must be scalar only; arrays or objects are not supported.
-     * @param callback defines the custom behavior to be executed whenever a message is received on the [Channel]
-     *
-     * @return [PNFuture] containing [JoinResult] that contains the [JoinResult.membership] and
-     * [JoinResult.disconnect] that  lets you stop listening to new channel messages or message updates while remaining
-     * a channel membership. This might be useful when you want to stop receiving notifications about new messages or
-     * limit incoming messages or updates to reduce network traffic.
-     */
-    @Deprecated(
-        message = "Will be removed from SDK in the future. To set membership use joinChannel(status, type, custom) instead. " +
-            "To connect user to the [Channel] in order to get incoming messages use onMessageReceived(callback).",
-        level = DeprecationLevel.WARNING,
-    )
-    fun join(custom: CustomObject? = null, callback: ((Message) -> Unit)? = null): PNFuture<JoinResult>
-
-    /**
      * Sets the caller's membership on this [Channel].
+     *
+     * Note: This replaces the previous `join(custom, callback)` which also called `connect` to subscribe to
+     * the channel for incoming messages and set [Membership.setLastReadMessageTimetoken] to the current time.
+     * The new `join` only sets membership. Use [onMessageReceived] for receiving messages and
+     * [Membership.setLastReadMessageTimetoken] separately if needed.
      *
      * @param status Optional membership status value.
      * @param type Optional membership type value.
@@ -418,7 +401,7 @@ interface Channel {
      *
      * @return [PNFuture] containing the created [Membership].
      */
-    fun joinChannel(status: String? = null, type: String? = null, custom: CustomObject? = null): PNFuture<Membership>
+    fun join(status: String? = null, type: String? = null, custom: CustomObject? = null): PNFuture<Membership>
 
     /**
      * Remove user's [Channel] membership
