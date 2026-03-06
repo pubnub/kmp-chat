@@ -160,21 +160,8 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.getMessage(timetoken.tryLong()!!).then { it!!.asJs(chatJs) }.asPromise()
     }
 
-    @Deprecated(
-        "Will be removed from SDK in the future. To set membership use joinChannel(status, type, custom) instead. " +
-            "To connect user to the [Channel] in order to get incoming messages use onMessageReceived(callback)"
-    )
-    fun join(callback: (MessageJs) -> Unit, params: PubNub.SetMembershipsParameters?): Promise<JoinResultJs> {
-        return channel.join { callback(it.asJs(chatJs)) }.then {
-            createJsObject<JoinResultJs> {
-                membership = it.membership.asJs(chatJs)
-                disconnect = it.disconnect?.let { autoCloseable -> autoCloseable::close } ?: {}
-            }
-        }.asPromise()
-    }
-
-    fun joinChannel(params: JoinParams?): Promise<MembershipJs> {
-        return channel.joinChannel(
+    fun join(params: JoinParams?): Promise<MembershipJs> {
+        return channel.join(
             status = params?.status,
             type = params?.type,
             custom = params?.custom?.let { convertToCustomObject(it) }

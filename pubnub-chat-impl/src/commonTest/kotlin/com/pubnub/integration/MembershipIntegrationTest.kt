@@ -36,8 +36,8 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
             channel02.status
         ).await()
         delayInMillis(1000)
-        val membership1 = channel01.join().await().membership
-        val membership2 = channel02.join().await().membership
+        val membership1 = channel01.join().await()
+        val membership2 = channel02.join().await()
         delayInMillis(1000)
 
         val expectedUpdates = listOf<List<Membership>>(
@@ -88,7 +88,7 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
             channel01.status
         ).await()
         delayInMillis(1000)
-        val membership1 = channel.join().await().membership
+        val membership1 = channel.join().await()
 
         val membershipUpdated = membership1.setLastReadMessageTimetoken(timetoken).await()
 
@@ -109,7 +109,7 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
             channel01.status
         ).await()
         delayInMillis(1000)
-        val membership1 = channel.join().await().membership
+        val membership1 = channel.join().await()
 
         val membershipUpdated = membership1.setLastReadMessage(
             MessageImpl(
@@ -135,7 +135,7 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
             channel01.status
         ).await()
         delayInMillis(1000)
-        val membership = channel01.joinChannel().await()
+        val membership = channel01.join().await()
         delayInMillis(1000)
 
         val completableCustom = CompletableDeferred<Map<String, Any?>?>()
@@ -165,7 +165,7 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
             channel01.status
         ).await()
         delayInMillis(1000)
-        val membership = channel01.joinChannel().await()
+        val membership = channel01.join().await()
         delayInMillis(1000)
 
         val completableDeleted = CompletableDeferred<Unit>()
