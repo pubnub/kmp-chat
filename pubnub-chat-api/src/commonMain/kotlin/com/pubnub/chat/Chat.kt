@@ -278,6 +278,7 @@ interface Chat {
      *
      * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the emitted event.
      */
+    @Deprecated("Use Channel.emitCustomEvent(...) for custom events.")
     fun <T : EventContent> emitEvent(
         channelId: String,
         payload: T,
@@ -374,6 +375,7 @@ interface Chat {
      * @return AutoCloseable Interface you can call to stop listening for new messages and clean up resources when they
      * are no longer needed by invoking the close() method.
      */
+    @Deprecated("Use entity-first APIs instead.")
     fun <T : EventContent> listenForEvents(
         type: KClass<T>,
         channelId: String,
@@ -611,6 +613,7 @@ interface Chat {
  * @return AutoCloseable Interface you can call to stop listening for new messages and clean up resources when they
  * are no longer needed by invoking the close() method.
  */
+@Deprecated("Use entity-first APIs instead.")
 inline fun <reified T : EventContent> Chat.listenForEvents(
     channelId: String,
     customMethod: EmitEventMethod = EmitEventMethod.PUBLISH,

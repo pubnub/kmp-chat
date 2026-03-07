@@ -154,14 +154,17 @@ type TextMessageContent = {
         type?: string;
     }[];
 };
+/** @deprecated Use channel.onTypingChanged() instead. */
 type TypingEventParams = {
     type: "typing";
     channel: string;
 };
+/** @deprecated Use channel.onMessageReported() instead. */
 type ReportEventParams = {
     type: "report";
     channel: string;
 };
+/** @deprecated Use message.setReadReceipt() and channel.getReadReceipts() instead. */
 type ReceiptEventParams = {
     type: "receipt";
     channel: string;
@@ -181,26 +184,27 @@ type ModerationEventParams = {
     type: "moderation";
     channel: string;
 };
+/** @deprecated Use channel.emitCustomEvent() and channel.onCustomEvent() instead. */
 type CustomEventParams = {
     type: "custom";
     method: "signal" | "publish";
     channel: string;
 };
+/** @deprecated Use entity-first APIs instead. */
 type EventParams = {
     typing: TypingEventParams;
     report: ReportEventParams;
     receipt: ReceiptEventParams;
-    /** @deprecated Use user.onMentioned() instead. */
     mention: MentionEventParams;
-    /** @deprecated Use user.onInvited() instead. */
     invite: InviteEventParams;
     custom: CustomEventParams;
-    /** @deprecated Use user.onRestrictionChanged() instead. */
     moderation: ModerationEventParams;
 };
+/** @deprecated Use channel.onTypingChanged() instead. */
 type TypingEventPayload = {
     value: boolean;
 };
+/** @deprecated Use channel.onMessageReported() instead. */
 type ReportEventPayload = {
     text?: string;
     reason: string;
@@ -209,6 +213,7 @@ type ReportEventPayload = {
     reportedUserId?: string;
     autoModerationId?: string;
 };
+/** @deprecated Use message.setReadReceipt() and channel.getReadReceipts() instead. */
 type ReceiptEventPayload = {
     messageTimetoken: string;
 };
@@ -250,31 +255,30 @@ type MessageReport = {
     reportedUserId?: string;
     autoModerationId?: string;
 };
+/** @deprecated Use entity-first APIs instead. */
 type EventPayloads = {
     typing: TypingEventPayload;
     report: ReportEventPayload;
     receipt: ReceiptEventPayload;
-    /** @deprecated Use Mention type with user.onMentioned() instead. */
     mention: MentionEventPayload;
-    /** @deprecated Use Invite type with user.onInvited() instead. */
     invite: InviteEventPayload;
-    /** @deprecated Use user.onRestrictionChanged() instead. */
     moderation: ModerationEventPayload;
     custom: CustomEventPayload;
 };
+/** @deprecated Use entity-first APIs instead. */
 type EmitEventParams = (TypingEventParams & {
     payload: TypingEventPayload;
 }) | (ReportEventParams & {
     payload: ReportEventPayload;
 }) | (ReceiptEventParams & {
     payload: ReceiptEventPayload;
-}) | /** @deprecated Use user.onMentioned() instead. */ (MentionEventParams & {
+}) | (MentionEventParams & {
     payload: MentionEventPayload;
-}) | /** @deprecated Use user.onInvited() instead. */ (InviteEventParams & {
+}) | (InviteEventParams & {
     payload: InviteEventPayload;
 }) | (CustomEventParams & {
     payload: CustomEventPayload;
-}) | /** @deprecated Use user.onRestrictionChanged() instead. */ (ModerationEventParams & {
+}) | (ModerationEventParams & {
     payload: ModerationEventPayload;
 });
 type EventType = "typing" | "report" | "receipt" | "mention" | "invite" | "custom" | "moderation";
@@ -789,7 +793,9 @@ declare class Chat {
     readonly config: ChatConfig;
     private user;
     static init(params: ChatConstructor): Promise<Chat>;
+    /** @deprecated Use channel.emitCustomEvent() for custom events. */
     emitEvent(event: EmitEventParams): Promise<Signal.SignalResponse>;
+    /** @deprecated Use entity-first APIs instead. */
     listenForEvents<T extends EventType>(event: GenericEventParams<T> & {
         callback: (event: Event<T>) => unknown;
     }): () => void;
