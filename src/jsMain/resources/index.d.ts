@@ -229,6 +229,19 @@ type ModerationEventPayload = {
     reason?: string;
 };
 type CustomEventPayload = any;
+type CustomEventData = {
+    timetoken: string;
+    userId: string;
+    payload: CustomEventPayload;
+    type?: string;
+};
+type CustomEventEmitOptions = {
+    messageType?: string;
+    storeInHistory?: boolean;
+};
+type CustomEventListenOptions = {
+    messageType?: string;
+};
 type MessageReport = {
     reason: string;
     text?: string;
@@ -628,6 +641,8 @@ declare class Channel {
     /** @deprecated Use onMessageReceived() instead. */
     connect(callback: (message: Message) => void): () => void;
     onMessageReceived(callback: (message: Message) => void): () => void;
+    emitCustomEvent(payload: CustomEventPayload, options?: CustomEventEmitOptions): Promise<Publish.PublishResponse>;
+    onCustomEvent(callback: (event: CustomEventData) => void, options?: CustomEventListenOptions): () => void;
     /*
     * Presence
     */

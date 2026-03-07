@@ -4,6 +4,8 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun delete (Z)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun delete$default (Lcom/pubnub/chat/Channel;ZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun deleteFile (Ljava/lang/String;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun emitCustomEvent (Ljava/util/Map;Ljava/lang/String;Z)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun emitCustomEvent$default (Lcom/pubnub/chat/Channel;Ljava/util/Map;Ljava/lang/String;ZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun fetchReadReceipts (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun fetchReadReceipts$default (Lcom/pubnub/chat/Channel;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun forwardMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
@@ -39,6 +41,8 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun join (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun join$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun leave ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun onCustomEvent (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public static synthetic fun onCustomEvent$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/AutoCloseable;
 	public abstract fun onDeleted (Lkotlin/jvm/functions/Function0;)Ljava/lang/AutoCloseable;
 	public abstract fun onMessageReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun onMessageReported (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
@@ -625,6 +629,23 @@ public final class com/pubnub/chat/types/CreateThreadResult {
 	public fun <init> (Lcom/pubnub/chat/ThreadChannel;Lcom/pubnub/chat/Message;)V
 	public final fun getParentMessage ()Lcom/pubnub/chat/Message;
 	public final fun getThreadChannel ()Lcom/pubnub/chat/ThreadChannel;
+}
+
+public final class com/pubnub/chat/types/CustomEvent {
+	public fun <init> (JLjava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V
+	public final fun component1 ()J
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/Object;
+	public final fun copy (JLjava/lang/String;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/chat/types/CustomEvent;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/types/CustomEvent;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/chat/types/CustomEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPayload ()Ljava/lang/Object;
+	public final fun getTimetoken ()J
+	public final fun getType ()Ljava/lang/String;
+	public final fun getUserId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/pubnub/chat/types/EmitEventMethod : java/lang/Enum {

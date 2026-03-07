@@ -228,6 +228,22 @@ external interface SendTextOptionParams : PubNub.PublishParameters {
     var customPushData: JsMap<String>?
 }
 
+external interface CustomEventEmitOptions {
+    val messageType: String?
+    val storeInHistory: Boolean?
+}
+
+external interface CustomEventListenOptions {
+    val messageType: String?
+}
+
+external interface CustomEventData {
+    var timetoken: String
+    var userId: String
+    var payload: Any?
+    var type: String?
+}
+
 external interface GetHistoryParams {
     val startTimetoken: String?
     val endTimetoken: String?
