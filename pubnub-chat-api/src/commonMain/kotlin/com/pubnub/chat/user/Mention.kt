@@ -8,7 +8,7 @@ package com.pubnub.chat.user
  * @property parentChannelId The parent channel if the mention is in a thread, otherwise null.
  * @property mentionedByUserId The user ID of the message author who created the mention.
  */
-class Mention(
+data class Mention(
     val messageTimetoken: Long,
     val channelId: String,
     val parentChannelId: String?,

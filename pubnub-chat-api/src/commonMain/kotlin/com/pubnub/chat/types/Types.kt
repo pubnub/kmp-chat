@@ -43,6 +43,7 @@ abstract class EventContent(
      *
      * @property value A boolean value indicating whether the user is typing (true) or not (false).
      */
+    @Deprecated("Use Channel.startTyping(), Channel.stopTyping(), and Channel.onTypingChanged(callback) instead.")
     @Serializable
     @SerialName("typing")
     class Typing(val value: Boolean) : EventContent()
@@ -56,6 +57,7 @@ abstract class EventContent(
      * @property reportedMessageChannelId The channel ID of the reported message, if applicable.
      * @property reportedUserId The ID of the user being reported.
      */
+    @Deprecated("Use Channel.onMessageReported(callback) instead.")
     @Serializable
     @SerialName("report")
     class Report(
@@ -73,6 +75,7 @@ abstract class EventContent(
      *
      * @property messageTimetoken The timetoken of the message for which the receipt is being acknowledged.
      */
+    @Deprecated("Use Membership.setLastReadMessage() / Membership.setLastReadMessageTimetoken() and Channel.fetchReadReceipts() instead.")
     @Serializable
     @SerialName("receipt")
     class Receipt(
@@ -94,7 +97,6 @@ abstract class EventContent(
         val channel: String,
         val parentChannel: String? = null
     ) : EventContent()
-    // channel should be channelId and parentChannel should be parentChannelId, but we can't change it not tt break compatibility with existing Chat SDK
 
     /**
      * Represents an invite event, which is used when a user is invited to join a channel.
@@ -113,6 +115,7 @@ abstract class EventContent(
      * @property data A map containing key-value pairs of custom data associated with the event.
      * @property method The method by which the event was emitted (PUBLISH, SIGNAL).
      */
+    @Deprecated("Use Channel.emitCustomEvent(...) and Channel.onCustomEvent(...) instead.")
     class Custom(
         val data: Map<String, Any?>,
         @Transient val method: EmitEventMethod = EmitEventMethod.PUBLISH
@@ -177,6 +180,7 @@ abstract class EventContent(
      *
      * @property jsonElement The raw JSON element representing the message with the unknown format.
      */
+    @Deprecated("Will be removed from SDK in the future")
     class UnknownMessageFormat(val jsonElement: JsonElement) : TextMessageContent("", null)
 }
 
@@ -186,6 +190,7 @@ abstract class EventContent(
  * @property SIGNAL Represents events emitted using the "signal" method, typically for lightweight real-time updates.
  * @property PUBLISH Represents events emitted using the "publish" method, typically for broadcasting messages to a channel.
  */
+@Deprecated("Use Channel.emitCustomEvent(...) and Channel.onCustomEvent(...) instead.")
 enum class EmitEventMethod {
     /**
      * Emits the event using the "signal" method, which is lightweight(doesn't store data in history) and used for

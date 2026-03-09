@@ -20,6 +20,7 @@ import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.listeners.ConnectionStatus
 import com.pubnub.chat.listeners.ConnectionStatusCategory
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
+import com.pubnub.chat.types.CustomEvent
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.InputFile
@@ -37,6 +38,7 @@ import delayForHistory
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import tryDouble
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -673,6 +675,67 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
                 payload.reason == reason02
             }
         )
+    }
+
+    @Test
+    fun emitCustomEvent() = runTest {
+        val messageType = "poll_vote"
+        val payload = mapOf("pollId" to "poll_123", "question" to "What language do you prefer?")
+        val eventDeferred = CompletableDeferred<CustomEvent<Map<String, Any?>>>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var closeable: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                closeable = channel01.onCustomEvent(messageType = messageType) { event ->
+                    eventDeferred.complete(event)
+                }
+            }
+
+            channel01.emitCustomEvent(payload = payload, messageType = messageType).await()
+
+            val event = eventDeferred.await()
+            assertEquals("poll_123", event.payload["pollId"])
+            assertEquals("What language do you prefer?", event.payload["question"])
+            assertEquals(messageType, event.type)
+            assertEquals(chat.currentUser.id, event.userId)
+
+            closeable?.close()
+        }
+    }
+
+    @Test
+    fun onCustomEvent() = runTest {
+        val acceptedType = "location_share"
+        val eventDeferred = CompletableDeferred<CustomEvent<Map<String, Any?>>>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var closeable: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                closeable = channel01.onCustomEvent(messageType = acceptedType) { event ->
+                    eventDeferred.complete(event)
+                }
+            }
+
+            // Should be ignored — messageType doesn't match
+            channel01.emitCustomEvent(
+                payload = mapOf("pollId" to "poll_999", "selectedOption" to "Swift"),
+                messageType = "poll_vote"
+            ).await()
+
+            // Should be received — messageType matches
+            channel01.emitCustomEvent(
+                payload = mapOf("lat" to 37.7749, "lng" to -122.4194, "label" to "San Francisco"),
+                messageType = acceptedType
+            ).await()
+
+            val event = eventDeferred.await()
+            assertEquals(acceptedType, event.type)
+            assertEquals(37.7749, event.payload["lat"].tryDouble())
+            assertEquals(-122.4194, event.payload["lng"].tryDouble())
+            assertEquals("San Francisco", event.payload["label"])
+
+            closeable?.close()
+        }
     }
 
     @Test

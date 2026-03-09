@@ -125,6 +125,29 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }::close
     }
 
+    fun emitCustomEvent(payload: JsMap<Any?>, options: CustomEventEmitOptions?): Promise<PubNub.PublishResponse> {
+        return channel.emitCustomEvent(
+            payload = payload.toMap(),
+            messageType = options?.messageType,
+            storeInHistory = options?.storeInHistory ?: true
+        ).then { result ->
+            result.toPublishResponse()
+        }.asPromise()
+    }
+
+    fun onCustomEvent(callback: (CustomEventData) -> Unit, options: CustomEventListenOptions?): () -> Unit {
+        return channel.onCustomEvent(options?.messageType) { event ->
+            callback(
+                createJsObject<CustomEventData> {
+                    timetoken = event.timetoken.toString()
+                    userId = event.userId
+                    payload = event.payload.toJsMap()
+                    type = event.type
+                }
+            )
+        }::close
+    }
+
     fun whoIsPresent(params: WhoIsPresentParams?): Promise<Array<String>> {
         return channel.whoIsPresent(
             params?.limit ?: 1000,
