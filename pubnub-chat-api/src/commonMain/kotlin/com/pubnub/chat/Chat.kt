@@ -375,7 +375,7 @@ interface Chat {
      * @return AutoCloseable Interface you can call to stop listening for new messages and clean up resources when they
      * are no longer needed by invoking the close() method.
      */
-    @Deprecated("Use entity-first APIs instead.")
+    @Deprecated("Use the corresponding method on the entity (Channel or User) instead, e.g. Channel.onTypingChanged(), User.onMentioned().")
     fun <T : EventContent> listenForEvents(
         type: KClass<T>,
         channelId: String,
@@ -613,7 +613,7 @@ interface Chat {
  * @return AutoCloseable Interface you can call to stop listening for new messages and clean up resources when they
  * are no longer needed by invoking the close() method.
  */
-@Deprecated("Use entity-first APIs instead.")
+@Deprecated("Use the corresponding method on the entity (Channel or User) instead, e.g. Channel.onTypingChanged(), User.onMentioned().")
 inline fun <reified T : EventContent> Chat.listenForEvents(
     channelId: String,
     customMethod: EmitEventMethod = EmitEventMethod.PUBLISH,

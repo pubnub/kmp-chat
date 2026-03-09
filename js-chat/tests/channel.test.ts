@@ -5,6 +5,7 @@ import {
   Membership,
   Chat,
   MessageDraft, ReadReceipt,
+  CustomEventData, CustomEventEmitOptions, CustomEventListenOptions,
 } from "../dist-test"
 import {
   sleep,
@@ -1217,11 +1218,13 @@ describe("Channel test", () => {
   test("channel.emitCustomEvent received via onCustomEvent with type and payload", async () => {
     const messageType = "poll_vote"
     const payload = { pollId: "poll_123", question: "What language do you prefer?" }
-    const callback = jest.fn()
-    const unsubscribe = channel.onCustomEvent(callback, { messageType })
+    const callback = jest.fn((event: CustomEventData) => {})
+    const listenOptions: CustomEventListenOptions = { messageType }
+    const unsubscribe = channel.onCustomEvent(callback, listenOptions)
 
     await sleep(1000)
-    await channel.emitCustomEvent(payload, { messageType })
+    const emitOptions: CustomEventEmitOptions = { messageType }
+    await channel.emitCustomEvent(payload, emitOptions)
 
     await sleep(1500)
 

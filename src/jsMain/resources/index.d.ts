@@ -51,7 +51,7 @@ declare class User {
     * Updates
     */
     static streamUpdatesOn(users: User[], callback: (users: User[]) => unknown): () => void;
-    /** @deprecated Use onUpdated(), onDeleted() instead. */
+    /** @deprecated Use onUpdated() and onDeleted() instead. */
     streamUpdates(callback: (user: User | null) => unknown): () => void;
     onUpdated(callback: (user: User) => void): () => void;
     onDeleted(callback: () => void): () => void;
@@ -164,7 +164,7 @@ type ReportEventParams = {
     type: "report";
     channel: string;
 };
-/** @deprecated Use message.setReadReceipt() and channel.getReadReceipts() instead. */
+/** @deprecated Use membership.setLastReadMessage() / membership.setLastReadMessageTimetoken() and channel.fetchReadReceipts() instead. */
 type ReceiptEventParams = {
     type: "receipt";
     channel: string;
@@ -190,7 +190,7 @@ type CustomEventParams = {
     method: "signal" | "publish";
     channel: string;
 };
-/** @deprecated Use entity-first APIs instead. */
+/** @deprecated Use the corresponding method on the entity (channel or user) instead, e.g. channel.onTypingChanged(), user.onMentioned(). */
 type EventParams = {
     typing: TypingEventParams;
     report: ReportEventParams;
@@ -213,7 +213,7 @@ type ReportEventPayload = {
     reportedUserId?: string;
     autoModerationId?: string;
 };
-/** @deprecated Use message.setReadReceipt() and channel.getReadReceipts() instead. */
+/** @deprecated Use membership.setLastReadMessage() / membership.setLastReadMessageTimetoken() and channel.fetchReadReceipts() instead. */
 type ReceiptEventPayload = {
     messageTimetoken: string;
 };
@@ -255,7 +255,7 @@ type MessageReport = {
     reportedUserId?: string;
     autoModerationId?: string;
 };
-/** @deprecated Use entity-first APIs instead. */
+/** @deprecated Use the corresponding method on the entity (channel or user) instead, e.g. channel.onTypingChanged(), user.onMentioned(). */
 type EventPayloads = {
     typing: TypingEventPayload;
     report: ReportEventPayload;
@@ -265,7 +265,7 @@ type EventPayloads = {
     moderation: ModerationEventPayload;
     custom: CustomEventPayload;
 };
-/** @deprecated Use entity-first APIs instead. */
+/** @deprecated Use the corresponding method on the entity (channel or user) instead, e.g. channel.onTypingChanged(), user.onMentioned(). */
 type EmitEventParams = (TypingEventParams & {
     payload: TypingEventPayload;
 }) | (ReportEventParams & {
@@ -795,7 +795,7 @@ declare class Chat {
     static init(params: ChatConstructor): Promise<Chat>;
     /** @deprecated Use channel.emitCustomEvent() for custom events. */
     emitEvent(event: EmitEventParams): Promise<Signal.SignalResponse>;
-    /** @deprecated Use entity-first APIs instead. */
+    /** @deprecated Use the corresponding method on the entity (channel or user) instead, e.g. channel.onTypingChanged(), user.onMentioned(). */
     listenForEvents<T extends EventType>(event: GenericEventParams<T> & {
         callback: (event: Event<T>) => unknown;
     }): () => void;
@@ -1073,5 +1073,6 @@ export {
     CryptoModule,
     CreateThreadResult, CreateThreadOptions,
     ReadReceipt, ReadReceiptsResponse,
-    MessageReport
+    MessageReport,
+    CustomEventData, CustomEventEmitOptions, CustomEventListenOptions
 };

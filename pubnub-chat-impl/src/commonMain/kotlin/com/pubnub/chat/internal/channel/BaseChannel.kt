@@ -616,6 +616,13 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
                 val payload = pnMessageResult.message.decode() as? Map<String, Any?> ?: return@createEventListener
 
+                // Filter out known EventContent types that use polymorphic serialization
+                // with a "type" discriminator via @SerialName. These are internal SDK events
+                // and should not be delivered as custom events.
+                if (payload["type"] in setOf("text", "typing", "report", "receipt", "mention", "invite", "moderation")) {
+                    return@createEventListener
+                }
+
                 callback(
                     CustomEvent(
                         timetoken = pnMessageResult.timetoken ?: 0L,

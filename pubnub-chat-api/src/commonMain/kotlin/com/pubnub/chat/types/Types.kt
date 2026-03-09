@@ -75,7 +75,7 @@ abstract class EventContent(
      *
      * @property messageTimetoken The timetoken of the message for which the receipt is being acknowledged.
      */
-    @Deprecated("Use Message.setReadReceipt() and Channel.getReadReceipts() instead.")
+    @Deprecated("Use Membership.setLastReadMessage() / Membership.setLastReadMessageTimetoken() and Channel.fetchReadReceipts() instead.")
     @Serializable
     @SerialName("receipt")
     class Receipt(

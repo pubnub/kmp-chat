@@ -1124,17 +1124,35 @@ public final class com/pubnub/chat/user/GetUsersResponse {
 
 public final class com/pubnub/chat/user/Invite {
 	public fun <init> (Ljava/lang/String;Lcom/pubnub/chat/types/ChannelType;Ljava/lang/String;J)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/pubnub/chat/types/ChannelType;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()J
+	public final fun copy (Ljava/lang/String;Lcom/pubnub/chat/types/ChannelType;Ljava/lang/String;J)Lcom/pubnub/chat/user/Invite;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/user/Invite;Ljava/lang/String;Lcom/pubnub/chat/types/ChannelType;Ljava/lang/String;JILjava/lang/Object;)Lcom/pubnub/chat/user/Invite;
+	public fun equals (Ljava/lang/Object;)Z
 	public final fun getChannelId ()Ljava/lang/String;
 	public final fun getChannelType ()Lcom/pubnub/chat/types/ChannelType;
 	public final fun getInvitationTimetoken ()J
 	public final fun getInvitedByUserId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/pubnub/chat/user/Mention {
 	public fun <init> (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()J
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/pubnub/chat/user/Mention;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/user/Mention;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/chat/user/Mention;
+	public fun equals (Ljava/lang/Object;)Z
 	public final fun getChannelId ()Ljava/lang/String;
 	public final fun getMentionedByUserId ()Ljava/lang/String;
 	public final fun getMessageTimetoken ()J
 	public final fun getParentChannelId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 

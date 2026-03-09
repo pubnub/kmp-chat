@@ -10,7 +10,7 @@ import com.pubnub.chat.types.ChannelType
  * @property invitedByUserId User ID who sent the invitation.
  * @property invitationTimetoken Timetoken of the invitation.
  */
-class Invite(
+data class Invite(
     val channelId: String,
     val channelType: ChannelType,
     val invitedByUserId: String,
