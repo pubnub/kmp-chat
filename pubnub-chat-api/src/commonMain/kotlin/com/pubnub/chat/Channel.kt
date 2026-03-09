@@ -12,6 +12,7 @@ import com.pubnub.chat.membership.MembersResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.CustomEvent
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetEventsHistoryResult
 import com.pubnub.chat.types.GetFilesResult
@@ -385,6 +386,34 @@ interface Channel {
      * are no longer needed by invoking the close() method.
      */
     fun onMessageReceived(callback: (Message) -> Unit): AutoCloseable
+
+    /**
+     * Emits a custom event on this [Channel].
+     *
+     * @param payload Arbitrary key-value payload to publish.
+     * @param messageType Optional custom message type used for filtering.
+     * @param storeInHistory If true, event is stored in Message Persistence (if enabled).
+     *
+     * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the emitted event.
+     */
+    fun emitCustomEvent(
+        payload: Map<String, Any?>,
+        messageType: String? = null,
+        storeInHistory: Boolean = true,
+    ): PNFuture<PNPublishResult>
+
+    /**
+     * Listens for custom events on this [Channel].
+     *
+     * @param messageType Optional custom message type filter. If null, all custom message types are accepted.
+     * @param callback Function invoked for each matching custom event.
+     *
+     * @return AutoCloseable Interface you can call to stop listening for custom events.
+     */
+    fun onCustomEvent(
+        messageType: String? = null,
+        callback: (event: CustomEvent<Map<String, Any?>>) -> Unit,
+    ): AutoCloseable
 
     /**
      * Sets the caller's membership on this [Channel].

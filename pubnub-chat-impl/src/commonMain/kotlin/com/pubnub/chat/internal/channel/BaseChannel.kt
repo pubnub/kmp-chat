@@ -2,6 +2,7 @@ package com.pubnub.chat.internal.channel
 
 import co.touchlab.kermit.Logger
 import com.pubnub.api.PubNubException
+import com.pubnub.api.decode
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
@@ -70,6 +71,7 @@ import com.pubnub.chat.membership.MembersResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.CustomEvent
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.chat.types.GetEventsHistoryResult
@@ -573,6 +575,62 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 } catch (e: Exception) {
                     log.e(throwable = e) { ERROR_HANDLING_ONMESSAGE_EVENT }
                 }
+            },
+        )
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
+    }
+
+    override fun emitCustomEvent(
+        payload: Map<String, Any?>,
+        messageType: String?,
+        storeInHistory: Boolean,
+    ): PNFuture<PNPublishResult> {
+        return chat.pubNub.publish(
+            channel = id,
+            message = payload,
+            customMessageType = messageType,
+            shouldStore = storeInHistory,
+        )
+    }
+
+    override fun onCustomEvent(
+        messageType: String?,
+        callback: (event: CustomEvent<Map<String, Any?>>) -> Unit,
+    ): AutoCloseable {
+        val channelEntity = chat.pubNub.channel(id)
+        val subscription = channelEntity.subscription()
+        val listener = createEventListener(
+            chat.pubNub,
+            onMessage = { _, pnMessageResult ->
+                if (pnMessageResult.channel != id) {
+                    return@createEventListener
+                }
+                if (pnMessageResult.publisher in chat.mutedUsersManager.mutedUsers) {
+                    return@createEventListener
+                }
+                if (messageType != null && messageType != pnMessageResult.customMessageType) {
+                    return@createEventListener
+                }
+
+                val payload = pnMessageResult.message.decode() as? Map<String, Any?> ?: return@createEventListener
+
+                // Filter out known EventContent types that use polymorphic serialization
+                // with a "type" discriminator via @SerialName. These are internal SDK events
+                // and should not be delivered as custom events.
+                if (payload["type"] in setOf("text", "typing", "report", "receipt", "mention", "invite", "moderation")) {
+                    return@createEventListener
+                }
+
+                callback(
+                    CustomEvent(
+                        timetoken = pnMessageResult.timetoken ?: 0L,
+                        userId = pnMessageResult.publisher ?: "",
+                        payload = payload,
+                        type = pnMessageResult.customMessageType,
+                    )
+                )
             },
         )
         subscription.addListener(listener)
