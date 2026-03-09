@@ -153,6 +153,7 @@ open class MessageJs internal constructor(internal val message: Message, interna
             }
         } ?: listOf()
 
+        @Suppress("DEPRECATION")
         return message.createThreadWithResult(
             text = text,
             meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
@@ -162,7 +163,7 @@ open class MessageJs internal constructor(internal val message: Message, interna
             quotedMessage = options?.quotedMessage?.message,
             files = files,
             usersToMention = options?.usersToMention?.toList(),
-            customPushData = options?.customPushData?.toMap()
+            customPushData = options?.customPushData?.toMap(),
         ).then { result ->
             createJsObject<CreateThreadResultJs> {
                 this.threadChannel = result.threadChannel.asJs(chatJs)

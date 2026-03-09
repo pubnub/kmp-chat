@@ -6,6 +6,7 @@ import com.pubnub.chat.MessageElement
 import com.pubnub.chat.SuggestedMention
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.types.InputFile
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.UploadableImpl
@@ -62,10 +63,12 @@ class MessageDraftV2Js internal constructor(
         messageDraft.quotedMessage = quotedMessage?.message
 
         return messageDraft.send(
-            options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
-            options?.storeInHistory ?: true,
-            options?.sendByPost ?: false,
-            options?.ttl?.toInt()
+            SendTextParams(
+                meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
+                shouldStore = options?.storeInHistory ?: true,
+                usePost = options?.sendByPost ?: false,
+                ttl = options?.ttl?.toInt(),
+            )
         ).then { it.toPublishResponse() }.asPromise()
     }
 

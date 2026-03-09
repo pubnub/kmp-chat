@@ -6,6 +6,7 @@ import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.InputFile
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.UploadableImpl
 import com.pubnub.kmp.asFuture
@@ -68,18 +69,51 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
                 InputFile("", file.asDynamic().type ?: file.asDynamic().mimeType ?: "", UploadableImpl(file))
             }
         } ?: listOf()
+        val mentionedUsers = options?.mentionedUsers?.toMap()?.mapKeys { it.key.toInt() }
+        val referencedChannels = options?.referencedChannels?.toMap()?.mapKeys { it.key.toInt() }
+        val textLinks = options?.textLinks?.toList()
+        if (mentionedUsers != null || referencedChannels != null || textLinks != null) {
+            @Suppress("DEPRECATION")
+            return channel.sendText(
+                text = text,
+                meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
+                shouldStore = options?.storeInHistory ?: true,
+                usePost = options?.sendByPost ?: false,
+                ttl = options?.ttl?.toInt(),
+                mentionedUsers = mentionedUsers,
+                referencedChannels = referencedChannels,
+                textLinks = textLinks,
+                quotedMessage = options?.quotedMessage?.message,
+                files = files,
+                customPushData = options?.customPushData?.toMap()
+            ).then { result ->
+                result.toPublishResponse()
+            }.asPromise()
+        }
+        if (files.isNotEmpty() || options?.quotedMessage != null) {
+            @Suppress("DEPRECATION")
+            return channel.sendText(
+                text = text,
+                meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
+                shouldStore = options?.storeInHistory ?: true,
+                usePost = options?.sendByPost ?: false,
+                ttl = options?.ttl?.toInt(),
+                quotedMessage = options?.quotedMessage?.message,
+                files = files,
+                customPushData = options?.customPushData?.toMap(),
+            ).then { result ->
+                result.toPublishResponse()
+            }.asPromise()
+        }
         return channel.sendText(
             text = text,
-            meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
-            shouldStore = options?.storeInHistory ?: true,
-            usePost = options?.sendByPost ?: false,
-            ttl = options?.ttl?.toInt(),
-            mentionedUsers = options?.mentionedUsers?.toMap()?.mapKeys { it.key.toInt() },
-            referencedChannels = options?.referencedChannels?.toMap()?.mapKeys { it.key.toInt() },
-            textLinks = options?.textLinks?.toList(),
-            quotedMessage = options?.quotedMessage?.message,
-            files = files,
-            customPushData = options?.customPushData?.toMap()
+            params = SendTextParams(
+                meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
+                shouldStore = options?.storeInHistory ?: true,
+                usePost = options?.sendByPost ?: false,
+                ttl = options?.ttl?.toInt(),
+                customPushData = options?.customPushData?.toMap(),
+            ),
         ).then { result ->
             result.toPublishResponse()
         }.asPromise()

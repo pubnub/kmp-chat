@@ -12,6 +12,7 @@ import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReaction
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.PNFuture
 
@@ -187,6 +188,18 @@ interface Message {
     /**
      * Create a thread (channel) for a selected message.
      * @param text Text that you want to send to the selected channel.
+     * @param params [SendTextParams] containing additional parameters for the message.
+     *
+     * @return [PNFuture] that returns a ThreadChannel object which can be used for sending and reading messages from the newly created message thread.
+     */
+    fun createThread(
+        text: String,
+        params: SendTextParams = SendTextParams(),
+    ): PNFuture<ThreadChannel>
+
+    /**
+     * Create a thread (channel) for a selected message.
+     * @param text Text that you want to send to the selected channel.
      * @param meta Publish additional details with the request.
      * @param shouldStore If true, the messages are stored in Message Persistence if enabled in Admin Portal.
      * @param usePost Use HTTP POST
@@ -205,6 +218,10 @@ interface Message {
      *
      * @return [PNFuture] that returns a ThreadChannel object which can be used for sending and reading messages from the newly created message thread.
      */
+    @Deprecated(
+        message = "Use createThread(text, SendTextParams) instead",
+        level = DeprecationLevel.WARNING,
+    )
     fun createThread(
         text: String,
         meta: Map<String, Any>? = null,
@@ -216,6 +233,28 @@ interface Message {
         usersToMention: Collection<String>? = null,
         customPushData: Map<String, String>? = null
     ): PNFuture<ThreadChannel>
+
+    /**
+     * Creates a thread (channel) for this message and sends the first reply, returning both the
+     * thread channel and an updated parent message with [hasThread] set to `true`.
+     *
+     * Use this method when you need immediate confirmation that the thread was created on the
+     * parent message. Unlike [createThread], which returns only the [ThreadChannel], this method
+     * also returns an updated [Message] instance reflecting the thread creation.
+     *
+     * @param text Text that you want to send to the selected channel.
+     * @param params [SendTextParams] containing additional parameters for the message.
+     *
+     * @return [PNFuture] containing [CreateThreadResult] with:
+     *   - [CreateThreadResult.threadChannel]: The newly created thread for sending/receiving messages.
+     *   - [CreateThreadResult.parentMessage]: The updated message with [hasThread] = `true`.
+     *
+     * @see createThread
+     */
+    fun createThreadWithResult(
+        text: String,
+        params: SendTextParams = SendTextParams(),
+    ): PNFuture<CreateThreadResult>
 
     /**
      * Creates a thread (channel) for this message and sends the first reply, returning both the
@@ -247,6 +286,10 @@ interface Message {
      *
      * @see createThread
      */
+    @Deprecated(
+        message = "Use createThreadWithResult(text, SendTextParams) instead",
+        level = DeprecationLevel.WARNING,
+    )
     fun createThreadWithResult(
         text: String,
         meta: Map<String, Any>? = null,
