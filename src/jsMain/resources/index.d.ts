@@ -446,9 +446,6 @@ type CreateThreadOptions = {
     storeInHistory?: boolean;
     sendByPost?: boolean;
     ttl?: number;
-    quotedMessage?: Message;
-    files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
-    usersToMention?: string[];
     customPushData?: { [key: string]: string };
 };
 declare class Message {
@@ -518,8 +515,7 @@ declare class Message {
      * Threads
      */
     getThread(): Promise<ThreadChannel>;
-    /** @deprecated Use createThreadWithResult(text, ...) or createThreadMessageDraft() instead to create a thread by sending the first reply. */
-    createThread(): Promise<ThreadChannel>;
+    createThread(text: string, options?: CreateThreadOptions): Promise<ThreadChannel>;
     createThreadWithResult(text: string, options?: CreateThreadOptions): Promise<CreateThreadResult>;
     removeThread(): Promise<[
         {

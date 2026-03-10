@@ -34,7 +34,7 @@ describe("ThreadChannel test", () => {
     await sleep(150)
     const history = await channel.getHistory()
     const parentMessage = history.messages[0]
-    const threadChannel = await parentMessage.createThread()
+    const threadChannel = await parentMessage.createThread("Initial thread message")
 
     const receivedMessages: any[] = []
     const stop = threadChannel.onThreadMessageReceived((msg) => {

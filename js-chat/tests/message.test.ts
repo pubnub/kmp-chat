@@ -190,8 +190,7 @@ describe("Send message test", () => {
     const history = await channel.getHistory()
     const sentMessage = history.messages[history.messages.length - 1]
 
-    const messageThread = await sentMessage.createThread()
-    await messageThread.sendText("Some message in a thread")
+    const messageThread = await sentMessage.createThread("Initial thread message")
     await sleep(150)
 
     const updatedHistory = await channel.getHistory()
@@ -241,8 +240,7 @@ describe("Send message test", () => {
 
     const historyBeforeThread = await channel.getHistory()
     const messageBeforeThread = historyBeforeThread.messages[historyBeforeThread.messages.length - 1]
-    const messageThread = await messageBeforeThread.createThread()
-    await messageThread.sendText("Some message in a thread")
+    const messageThread = await messageBeforeThread.createThread("Initial thread message")
     await sleep(150)
 
     const historyWithThread = await channel.getHistory()
@@ -268,8 +266,7 @@ describe("Send message test", () => {
 
     const historyBeforeThread = await channel.getHistory()
     const messageBeforeThread = historyBeforeThread.messages[historyBeforeThread.messages.length - 1]
-    const messageThread = await messageBeforeThread.createThread()
-    await messageThread.sendText("Some message in a thread")
+    const messageThread = await messageBeforeThread.createThread("Initial thread message")
     await sleep(150)
 
     const historyWithThread = await channel.getHistory()
@@ -335,7 +332,7 @@ describe("Send message test", () => {
       (message: Message) => message.timetoken === sentMessage.timetoken
     )
 
-    await deletedMessage.createThread().catch((e) => {
+    await deletedMessage.createThread("Initial thread message").catch((e) => {
       expect(e.message).toContain("You cannot create threads on deleted messages.")
     })
   }, 20000)
@@ -1090,8 +1087,7 @@ describe("Send message test", () => {
     const historyBeforeThread = await channel.getHistory()
 
     const originalMessage = historyBeforeThread.messages[0]
-    const newThread = await originalMessage.createThread()
-    await newThread.sendText("First message")
+    const newThread = await originalMessage.createThread("First message")
     await sleep(250)
 
     const historyWithThread = await channel.getHistory()
@@ -1127,8 +1123,7 @@ describe("Send message test", () => {
 
     expect(messageBeforeThread.hasThread).toBe(false)
 
-    const newThread = await messageBeforeThread.createThread()
-    await newThread.sendText("Hello!")
+    const newThread = await messageBeforeThread.createThread("Initial thread message")
     await sleep(150)
 
     const historyWithThread = await channel.getHistory()
@@ -1923,8 +1918,7 @@ describe("Send message test", () => {
     const history = await channel.getHistory()
     const parentMessage = history.messages[0]
 
-    const threadChannel = await parentMessage.createThread()
-    await threadChannel.sendText("Thread message to pin to parent")
+    const threadChannel = await parentMessage.createThread("Thread message to pin to parent")
     await sleep(150)
 
     const threadChannelHistory = await threadChannel.getHistory()
@@ -1947,8 +1941,7 @@ describe("Send message test", () => {
     const history = await channel.getHistory()
     const parentMessage = history.messages[0]
 
-    const threadChannel = await parentMessage.createThread()
-    await threadChannel.sendText("Thread message to unpin")
+    const threadChannel = await parentMessage.createThread("Thread message to unpin")
     await sleep(350)
 
     const threadChannelHistory = await threadChannel.getHistory()
@@ -2047,8 +2040,7 @@ describe("Send message test", () => {
     const historyBeforeThread = await channel.getHistory()
     const messageBeforeThread = historyBeforeThread.messages[0]
 
-    const threadChannel = await messageBeforeThread.createThread()
-    await threadChannel.sendText("Thread message")
+    const threadChannel = await messageBeforeThread.createThread("Initial thread message")
     await sleep(300)
 
     const historyWithThread = await channel.getHistory()
@@ -2073,9 +2065,8 @@ describe("Send message test", () => {
 
     const history = await channel.getHistory()
     const parentMessage = history.messages[0]
-    const threadChannel = await parentMessage.createThread()
+    const threadChannel = await parentMessage.createThread("First thread message")
 
-    await threadChannel.sendText("First thread message")
     await threadChannel.sendText("Second thread message")
     await sleep(300)
 

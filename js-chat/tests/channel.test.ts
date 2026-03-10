@@ -269,8 +269,7 @@ describe("Channel test", () => {
 
     expect(messageBeforeThread.hasThread).toBe(false)
 
-    const threadDraft = await messageBeforeThread.createThread()
-    await threadDraft.sendText("Some random text in a thread")
+    const threadDraft = await messageBeforeThread.createThread("Initial thread message")
     await sleep(150)
 
     const historyAfterThread = await channel.getHistory()
@@ -384,8 +383,7 @@ describe("Channel test", () => {
     const history = await channel.getHistory()
     const parentMessage = history.messages[0]
 
-    const threadChannel = await parentMessage.createThread()
-    await threadChannel.sendText("Initial thread message")
+    const threadChannel = await parentMessage.createThread("Initial thread message")
     await sleep(150)
 
     const callback = (channels: ThreadChannel[]) => {
@@ -865,8 +863,7 @@ describe("Channel test", () => {
     const messageBeforeThread = historyBeforeThread.messages[0]
     expect(messageBeforeThread.hasThread).toBe(false)
 
-    const threadChannel = await messageBeforeThread.createThread()
-    await threadChannel.sendText("Initial message in the thread")
+    const threadChannel = await messageBeforeThread.createThread("Initial thread message")
     await sleep(150)
 
     const historyAfterThread = await channel.getHistory()
@@ -884,8 +881,7 @@ describe("Channel test", () => {
     const history = await channel.getHistory()
     const message = history.messages[0]
 
-    const threadChannel = await message.createThread()
-    await threadChannel.sendText("Initial message in the thread")
+    const threadChannel = await message.createThread("Initial thread message")
     await sleep(150)
 
     const replyText = "Replying to the thread"
@@ -906,8 +902,7 @@ describe("Channel test", () => {
     const initialHistory = await channel.getHistory()
     const initialMessage = initialHistory.messages[0]
 
-    const threadChannel = await initialMessage.createThread()
-    await threadChannel.sendText("Initial message in the thread")
+    const threadChannel = await initialMessage.createThread("Initial thread message")
     await sleep(150)
 
     const historyWithThread = await channel.getHistory()
@@ -1369,8 +1364,7 @@ describe("Channel test", () => {
     const parentHistory = await channel.getHistory()
     const parentMessage = parentHistory.messages[0]
 
-    const threadChannel = await parentMessage.createThread()
-    await threadChannel.sendText("Thread message to pin")
+    const threadChannel = await parentMessage.createThread("Thread message to pin")
     await sleep(300)
 
     const threadHistory = await threadChannel.getHistory()
@@ -1398,8 +1392,7 @@ describe("Channel test", () => {
     const history = await channel.getHistory()
     const message = history.messages[0]
 
-    const threadChannel = await message.createThread()
-    await threadChannel.sendText("Thread message")
+    const threadChannel = await message.createThread("Thread message")
     await sleep(1000)
 
     const threadChannelHistory = await threadChannel.getHistory()
@@ -1421,8 +1414,7 @@ describe("Channel test", () => {
     const history = await channel.getHistory()
     const message = history.messages[0]
 
-    const threadChannel = await message.createThread()
-    await threadChannel.sendText("Thread message to unpin")
+    const threadChannel = await message.createThread("Thread message to unpin")
     await sleep(150)
 
     const threadChannelHistory = await threadChannel.getHistory()

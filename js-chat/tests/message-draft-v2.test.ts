@@ -1,10 +1,11 @@
-import { Channel, Chat, MessageDraftV2, MixedTextTypedElement } from "../dist-test"
+import { Channel, Chat, Message, MessageDraftV2, MixedTextTypedElement } from "../dist-test"
 import {
   createChatInstance,
   renderMessagePart,
   generateRandomString,
   createRandomChannel,
-  createRandomUser
+  createRandomUser,
+  sleep
 } from "./utils"
 import { jest } from "@jest/globals"
 
@@ -175,4 +176,44 @@ describe("MessageDraft2", function () {
           user4.delete({ soft: false }),
       ])
     }, 25000)
+
+  test("should send and receive a message with quotedMessage", async () => {
+    // Send a preliminary message to quote
+    const quoteText = "Message to quote"
+    await channel.sendText(quoteText)
+    await sleep(150)
+
+    // Retrieve it from history to get a full Message object
+    const history = await channel.getHistory()
+    const quotedMsg = history.messages[0]
+
+    // Set up onMessageReceived listener
+    let receivedMessage: Message | null = null
+    let resolveReceived: () => void
+    const messageReceived = new Promise<void>((resolve) => {
+      resolveReceived = resolve
+    })
+
+    const disconnect = channel.onMessageReceived((message) => {
+      receivedMessage = message
+      resolveReceived()
+    })
+    await sleep(2000)
+
+    // Create draft with quote, update text, and send
+    messageDraft.addQuote(quotedMsg)
+    messageDraft.update("Some text with a mention")
+    messageDraft.addMention(17, 7, "mention", "someUser")
+    await messageDraft.send()
+
+    // Wait for message and verify
+    await messageReceived
+
+    expect(receivedMessage).not.toBeNull()
+    expect(receivedMessage!.quotedMessage).toBeDefined()
+    expect(receivedMessage!.quotedMessage!.text).toBe(quoteText)
+    expect(receivedMessage!.quotedMessage!.userId).toBe(chat.currentUser.id)
+
+    disconnect()
+  }, 30000)
 })

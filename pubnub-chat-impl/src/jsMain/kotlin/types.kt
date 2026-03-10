@@ -405,9 +405,6 @@ external interface CreateThreadResultJs {
  * @property storeInHistory Whether to store the message in history.
  * @property sendByPost Whether to use POST request instead of GET.
  * @property ttl Time-to-live for the message in hours.
- * @property quotedMessage A message to quote in the thread's initial message.
- * @property files Files to attach to the initial message.
- * @property usersToMention Array of user IDs to mention in the message.
  * @property customPushData Custom data to include in push notifications.
  */
 external interface CreateThreadOptionsParams {
@@ -415,9 +412,6 @@ external interface CreateThreadOptionsParams {
     val storeInHistory: Boolean?
     val sendByPost: Boolean?
     val ttl: Number?
-    val quotedMessage: MessageJs?
-    val files: Any?
-    val usersToMention: Array<String>?
     val customPushData: JsMap<String>?
 }
 

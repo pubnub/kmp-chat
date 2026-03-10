@@ -989,9 +989,20 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
     @Test
     fun messageDraft_send() = runTest {
+        // Send a preliminary message to use as a quoted message
+        val quoteText = "Message to quote"
+        val publishResult = channel01.sendText(quoteText).await()
+        val history = channel01.getHistory(
+            startTimetoken = publishResult.timetoken + 1,
+            endTimetoken = publishResult.timetoken,
+            count = 1
+        ).await()
+        val quotedMsg = history.messages.first()
+
         val draft = MessageDraftImpl(channel01, isTypingIndicatorTriggered = false)
         draft.update("Some text with a mention")
         draft.addMention(17, 7, MentionTarget.User("someUser"))
+        draft.quotedMessage = quotedMsg
         val message = CompletableDeferred<Message>()
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var unsubscribe: AutoCloseable? = null
@@ -1004,7 +1015,8 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
                 }
             }
             draft.send().await()
-            val elements = MessageDraftImpl.getMessageElements(message.await().text)
+            val received = message.await()
+            val elements = MessageDraftImpl.getMessageElements(received.text)
 
             assertEquals(
                 listOf(
@@ -1013,6 +1025,11 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
                 ),
                 elements
             )
+
+            assertNotNull(received.quotedMessage)
+            assertEquals(quotedMsg.timetoken, received.quotedMessage!!.timetoken)
+            assertEquals(quoteText, received.quotedMessage!!.text)
+            assertEquals(quotedMsg.userId, received.quotedMessage!!.userId)
         }
     }
 
