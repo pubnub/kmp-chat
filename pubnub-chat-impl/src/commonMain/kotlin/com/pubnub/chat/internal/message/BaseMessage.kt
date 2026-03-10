@@ -236,7 +236,10 @@ abstract class BaseMessage<T : Message>(
         )
     }
 
-    @Deprecated("Use `createThread(text, ...)` to create a thread by sending the first reply, or `createThreadMessageDraft()` to get a draft for composing the first reply.")
+    @Deprecated(
+        "Use `createThread(text, ...)` to create a thread by sending the first reply, " +
+            "or `createThreadMessageDraft()` to get a draft for composing the first reply."
+    )
     override fun createThread(): PNFuture<ThreadChannel> {
         if (channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
             return log.logErrorAndReturnException(ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED).asFuture()
