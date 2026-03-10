@@ -517,6 +517,7 @@ declare class Message {
     getThread(): Promise<ThreadChannel>;
     createThread(text: string, options?: CreateThreadOptions): Promise<ThreadChannel>;
     createThreadWithResult(text: string, options?: CreateThreadOptions): Promise<CreateThreadResult>;
+    createThreadMessageDraftV2(config?: Partial<MessageDraftConfig>): Promise<MessageDraftV2>;
     removeThread(): Promise<[
         {
             data: {};

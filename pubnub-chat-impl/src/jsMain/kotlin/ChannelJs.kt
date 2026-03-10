@@ -475,6 +475,6 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
 
 internal fun Channel.asJs(chat: ChatJs) = ChannelJs(this, chat)
 
-private fun userSuggestionSourceFrom(lowercaseString: String): MessageDraft.UserSuggestionSource {
+internal fun userSuggestionSourceFrom(lowercaseString: String): MessageDraft.UserSuggestionSource {
     return MessageDraft.UserSuggestionSource.entries.first { it.name.lowercase() == lowercaseString }
 }

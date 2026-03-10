@@ -234,6 +234,34 @@ describe("Send message test", () => {
     await parentMessage.removeThread()
   }, 20000)
 
+  test("should create thread message draft via createThreadMessageDraftV2", async () => {
+    // given - a sent message
+    await channel.sendText("Parent message for thread draft")
+    await sleep(150)
+
+    const history = await channel.getHistory()
+    const message = history.messages[history.messages.length - 1]
+
+    // when - create thread message draft
+    const draft = await message.createThreadMessageDraftV2({ userSuggestionSource: "global" })
+
+    // then - draft should be defined and functional
+    expect(draft).toBeDefined()
+    expect(draft.value).toBe("")
+
+    // send a message via the draft
+    await draft.update("Thread message via draft")
+    await draft.send()
+    await sleep(300)
+
+    // verify message was sent to the thread
+    const thread = await message.getThread()
+    expect(thread).toBeDefined()
+    const threadHistory = await thread.getHistory()
+    const draftMessage = threadHistory.messages.find((m: any) => m.text === "Thread message via draft")
+    expect(draftMessage).toBeDefined()
+  }, 30000)
+
   test("should soft delete message with thread", async () => {
     await channel.sendText("Test message")
     await sleep(150) // History calls have around 130ms of cache time

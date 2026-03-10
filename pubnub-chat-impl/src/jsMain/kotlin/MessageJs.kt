@@ -155,6 +155,13 @@ open class MessageJs internal constructor(internal val message: Message, interna
         }.asPromise()
     }
 
+    fun createThreadMessageDraftV2(config: MessageDraftConfig? = null): Promise<MessageDraftV2Js> {
+        return message.createThread().then { threadChannel ->
+            val channelJs = threadChannel.asJs(chatJs)
+            channelJs.createMessageDraftV2(config)
+        }.asPromise()
+    }
+
     fun removeThread(): Promise<Array<Any>> {
         return message.removeThread().then {
             arrayOf(

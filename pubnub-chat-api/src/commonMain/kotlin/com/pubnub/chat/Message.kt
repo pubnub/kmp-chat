@@ -181,7 +181,7 @@ interface Message {
      * @return PNFuture that returns a ThreadChannel object which can be used for sending and reading messages from the newly created message thread.
      */
     @Deprecated(
-        message = "Use `createThread(text, ...)` or `createThreadMessageDraft()` instead to create a thread by sending the first reply.`"
+        message = "Use `createThread(text, ...)` to create a thread by sending the first reply, or `createThreadMessageDraft()` to get a draft for composing the first reply."
     )
     fun createThread(): PNFuture<ThreadChannel>
 
