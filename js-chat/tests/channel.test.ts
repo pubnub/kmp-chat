@@ -6,6 +6,7 @@ import {
   Chat,
   MessageDraft, ReadReceipt,
   CustomEventData, CustomEventEmitOptions, CustomEventListenOptions,
+  MessageReport,
 } from "../dist-test"
 import {
   sleep,
@@ -1857,5 +1858,28 @@ describe("Channel test", () => {
     expect(typeof stop).toBe("function")
     stop()
   }, 10000)
+
+  test("should receive message reports via channel.onMessageReported", async () => {
+    const messageText = "Message to report"
+    const reason = "rude"
+
+    const { timetoken } = await channel.sendText(messageText)
+    await sleep(150)
+    const message = await channel.getMessage(timetoken)
+
+    let receivedReport: MessageReport | undefined
+    const stop = channel.onMessageReported((report) => { receivedReport = report })
+    await sleep(2000)
+
+    await message.report(reason)
+    await sleep(1000)
+
+    expect(receivedReport).toBeDefined()
+    expect(receivedReport!.reason).toEqual(reason)
+    expect(receivedReport!.text).toEqual(messageText)
+    expect(receivedReport!.reportedMessageChannelId).toEqual(channel.id)
+
+    stop()
+  }, 20000)
 
 })

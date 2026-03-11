@@ -86,4 +86,42 @@ class ThreadChannelIntegrationTest : BaseChatIntegrationTest() {
 
         parentMessage.removeThread().await()
     }
+
+    @Test
+    fun onThreadMessageUpdated() = runTest {
+        val channel = chat.createChannel(randomString()).await()
+        val parentMessageText = "Parent message ${randomString()}"
+        channel.sendText(parentMessageText).await()
+        delayForHistory()
+        val history = channel.getHistory().await()
+        val parentMessage = history.messages.first()
+
+        val threadMessageText = "Thread reply ${randomString()}"
+        val threadChannel: ThreadChannel = parentMessage.createThread(threadMessageText).await()
+        delayForHistory()
+        val threadHistory = threadChannel.getHistory().await()
+        val threadMessage = threadHistory.messages.first()
+
+        val reactionValue = "like"
+        val receivedMessage = CompletableDeferred<ThreadMessage>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var closeable: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(threadChannel.id)) {
+                closeable = threadMessage.onThreadMessageUpdated { updatedMessage ->
+                    receivedMessage.complete(updatedMessage)
+                }
+            }
+
+            threadMessage.toggleReaction(reactionValue).await()
+
+            val result = receivedMessage.await()
+            assertIs<ThreadMessage>(result)
+            assertEquals(true, result.hasUserReaction(reactionValue))
+
+            closeable?.close()
+        }
+
+        parentMessage.removeThread().await()
+    }
 }

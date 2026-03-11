@@ -1,6 +1,7 @@
 import {
   Channel,
   ThreadChannel,
+  ThreadMessage,
   Chat,
 } from "../dist-test"
 import {
@@ -69,6 +70,30 @@ describe("ThreadChannel test", () => {
 
     expect(updatedTC).toBeDefined()
     expect(updatedTC.name).toEqual("Updated Thread")
+    stop()
+  }, 30000)
+
+  test("should receive thread message updates via threadMessage.onThreadMessageUpdated", async () => {
+    await channel.sendText("Parent message")
+    await sleep(150)
+    const history = await channel.getHistory()
+    const parentMessage = history.messages[0]
+    const threadChannel = await parentMessage.createThread("Initial thread message")
+    await sleep(150)
+
+    const threadHistory = await threadChannel.getHistory()
+    const threadMessage = threadHistory.messages[0]
+
+    let updatedMessage: ThreadMessage | undefined
+    const stop = threadMessage.onThreadMessageUpdated((msg) => { updatedMessage = msg })
+    await sleep(2000)
+
+    await threadMessage.toggleReaction("like")
+    await sleep(1000)
+
+    expect(updatedMessage).toBeDefined()
+    expect(updatedMessage!.hasUserReaction("like")).toBe(true)
+
     stop()
   }, 30000)
 })
