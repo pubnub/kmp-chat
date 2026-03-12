@@ -6,6 +6,7 @@ import {
   Chat,
   MessageDraft, ReadReceipt,
   CustomEventData, CustomEventEmitOptions, CustomEventListenOptions,
+  MessageReport,
 } from "../dist-test"
 import {
   sleep,
@@ -269,8 +270,7 @@ describe("Channel test", () => {
 
     expect(messageBeforeThread.hasThread).toBe(false)
 
-    const threadDraft = await messageBeforeThread.createThread()
-    await threadDraft.sendText("Some random text in a thread")
+    const threadDraft = await messageBeforeThread.createThread("Initial thread message")
     await sleep(150)
 
     const historyAfterThread = await channel.getHistory()
@@ -384,8 +384,7 @@ describe("Channel test", () => {
     const history = await channel.getHistory()
     const parentMessage = history.messages[0]
 
-    const threadChannel = await parentMessage.createThread()
-    await threadChannel.sendText("Initial thread message")
+    const threadChannel = await parentMessage.createThread("Initial thread message")
     await sleep(150)
 
     const callback = (channels: ThreadChannel[]) => {
@@ -865,8 +864,7 @@ describe("Channel test", () => {
     const messageBeforeThread = historyBeforeThread.messages[0]
     expect(messageBeforeThread.hasThread).toBe(false)
 
-    const threadChannel = await messageBeforeThread.createThread()
-    await threadChannel.sendText("Initial message in the thread")
+    const threadChannel = await messageBeforeThread.createThread("Initial thread message")
     await sleep(150)
 
     const historyAfterThread = await channel.getHistory()
@@ -884,8 +882,7 @@ describe("Channel test", () => {
     const history = await channel.getHistory()
     const message = history.messages[0]
 
-    const threadChannel = await message.createThread()
-    await threadChannel.sendText("Initial message in the thread")
+    const threadChannel = await message.createThread("Initial thread message")
     await sleep(150)
 
     const replyText = "Replying to the thread"
@@ -906,8 +903,7 @@ describe("Channel test", () => {
     const initialHistory = await channel.getHistory()
     const initialMessage = initialHistory.messages[0]
 
-    const threadChannel = await initialMessage.createThread()
-    await threadChannel.sendText("Initial message in the thread")
+    const threadChannel = await initialMessage.createThread("Initial thread message")
     await sleep(150)
 
     const historyWithThread = await channel.getHistory()
@@ -1369,8 +1365,7 @@ describe("Channel test", () => {
     const parentHistory = await channel.getHistory()
     const parentMessage = parentHistory.messages[0]
 
-    const threadChannel = await parentMessage.createThread()
-    await threadChannel.sendText("Thread message to pin")
+    const threadChannel = await parentMessage.createThread("Thread message to pin")
     await sleep(300)
 
     const threadHistory = await threadChannel.getHistory()
@@ -1398,8 +1393,7 @@ describe("Channel test", () => {
     const history = await channel.getHistory()
     const message = history.messages[0]
 
-    const threadChannel = await message.createThread()
-    await threadChannel.sendText("Thread message")
+    const threadChannel = await message.createThread("Thread message")
     await sleep(1000)
 
     const threadChannelHistory = await threadChannel.getHistory()
@@ -1421,8 +1415,7 @@ describe("Channel test", () => {
     const history = await channel.getHistory()
     const message = history.messages[0]
 
-    const threadChannel = await message.createThread()
-    await threadChannel.sendText("Thread message to unpin")
+    const threadChannel = await message.createThread("Thread message to unpin")
     await sleep(150)
 
     const threadChannelHistory = await threadChannel.getHistory()
@@ -1519,26 +1512,39 @@ describe("Channel test", () => {
     expect(reportsHistory.events[0].payload.reason).toEqual(reason)
   }, 20000)
 
-  test("should upload and retrieve files from channel", async () => {
-    const fileContent = "Test file content for PubNub"
-    const buffer = Buffer.from(fileContent, 'utf-8')
-    const file = chat.sdk.File.create({ name: "test.txt", mimeType: "text/plain", data: buffer })
+  // "should upload and retrieve files from channel" test moved to message-draft-v2.test.ts
 
-    const messageText = "Message with file"
-    await channel.sendText(messageText, { files: [file] })
-    await sleep(1000)
+  test("should send a simple message with all SendTextParams via channel.sendText", async () => {
+    let receivedMessage: Message | null = null
+    let resolveReceived: () => void
+    const messageReceived = new Promise<void>((resolve) => {
+      resolveReceived = resolve
+    })
 
-    const filesResult = await channel.getFiles({ limit: 10 })
-    expect(filesResult).toBeDefined()
-    expect(filesResult.files.length).toBeGreaterThan(0)
+    const disconnect = channel.onMessageReceived((message) => {
+      receivedMessage = message
+      resolveReceived()
+    })
+    await sleep(2000)
 
-    const uploadedFile = filesResult.files[0]
-    expect(uploadedFile.name).toBe("test.txt")
+    await channel.sendText("Hello with all params", {
+      meta: { source: "test", priority: 1 },
+      storeInHistory: true,
+      sendByPost: false,
+      ttl: 5,
+      customPushData: { alert: "New message received" },
+    })
 
-    const deleteResult = await channel.deleteFile({ id: uploadedFile.id, name: uploadedFile.name })
-    expect(deleteResult).toBeDefined()
-    expect(deleteResult.status).toBe(200)
-  }, 20000)
+    await messageReceived
+
+    expect(receivedMessage).not.toBeNull()
+    expect(receivedMessage!.text).toBe("Hello with all params")
+    expect(receivedMessage!.meta).toBeDefined()
+    expect(receivedMessage!.meta.source).toBe("test")
+    expect(receivedMessage!.meta.priority).toBe(1)
+
+    disconnect()
+  }, 30000)
 
   test("should stream presence updates on a channel", async () => {
     const testChannel = await chat.createPublicConversation({
@@ -1865,5 +1871,28 @@ describe("Channel test", () => {
     expect(typeof stop).toBe("function")
     stop()
   }, 10000)
+
+  test("should receive message reports via channel.onMessageReported", async () => {
+    const messageText = "Message to report"
+    const reason = "rude"
+
+    const { timetoken } = await channel.sendText(messageText)
+    await sleep(150)
+    const message = await channel.getMessage(timetoken)
+
+    let receivedReport: MessageReport | undefined
+    const stop = channel.onMessageReported((report) => { receivedReport = report })
+    await sleep(2000)
+
+    await message.report(reason)
+    await sleep(1000)
+
+    expect(receivedReport).toBeDefined()
+    expect(receivedReport!.reason).toEqual(reason)
+    expect(receivedReport!.text).toEqual(messageText)
+    expect(receivedReport!.reportedMessageChannelId).toEqual(channel.id)
+
+    stop()
+  }, 20000)
 
 })

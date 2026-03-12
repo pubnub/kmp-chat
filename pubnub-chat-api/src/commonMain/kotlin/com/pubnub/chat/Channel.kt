@@ -23,6 +23,7 @@ import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.ReadReceipt
 import com.pubnub.chat.types.ReadReceiptsResponse
 import com.pubnub.chat.types.Report
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -230,6 +231,19 @@ interface Channel {
      * Sends text to the [Channel]
      *
      * @param text Text that you want to send to the selected channel.
+     * @param params [SendTextParams] containing additional parameters for the message.
+     *
+     * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the sent message.
+     */
+    fun sendText(
+        text: String,
+        params: SendTextParams = SendTextParams(),
+    ): PNFuture<PNPublishResult>
+
+    /**
+     * Sends text to the [Channel]
+     *
+     * @param text Text that you want to send to the selected channel.
      * @param meta Publish additional details with the request.
      * @param shouldStore If true, the messages are stored in Message Persistence if enabled in Admin Portal.
      * @param usePost Use HTTP POST
@@ -248,6 +262,10 @@ interface Channel {
      *
      * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the sent message.
      */
+    @Deprecated(
+        message = "Use sendText(text, SendTextParams) instead",
+        level = DeprecationLevel.WARNING,
+    )
     fun sendText(
         text: String,
         meta: Map<String, Any>? = null,

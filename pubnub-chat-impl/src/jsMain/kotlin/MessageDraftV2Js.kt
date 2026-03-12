@@ -6,11 +6,9 @@ import com.pubnub.chat.MessageElement
 import com.pubnub.chat.SuggestedMention
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.types.InputFile
-import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.UploadableImpl
 import com.pubnub.kmp.then
-import com.pubnub.kmp.toMap
 import kotlin.js.Promise
 
 @JsExport
@@ -49,7 +47,7 @@ class MessageDraftV2Js internal constructor(
         return messageDraft.getMessageElements().toJs()
     }
 
-    fun send(options: PubNub.PublishParameters?): Promise<PubNub.PublishResponse> {
+    fun send(options: SendTextParamsJs?): Promise<PubNub.PublishResponse> {
         val filesArray = files?.let {
             it as? Array<*> ?: arrayOf(it)
         } ?: arrayOf()
@@ -61,12 +59,8 @@ class MessageDraftV2Js internal constructor(
         }
         messageDraft.quotedMessage = quotedMessage?.message
 
-        return messageDraft.send(
-            options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
-            options?.storeInHistory ?: true,
-            options?.sendByPost ?: false,
-            options?.ttl?.toInt()
-        ).then { it.toPublishResponse() }.asPromise()
+        return messageDraft.send(options.toSendTextParams())
+            .then { it.toPublishResponse() }.asPromise()
     }
 
     fun addChangeListener(listener: (MessageDraftState) -> Unit) {

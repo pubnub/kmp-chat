@@ -23,6 +23,7 @@ import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
@@ -139,6 +140,19 @@ data class ThreadChannelImpl(
 
     override fun sendText(
         text: String,
+        params: SendTextParams,
+    ): PNFuture<PNPublishResult> {
+        return createThreadAndSend {
+            super.sendText(
+                text = text,
+                params = params,
+            )
+        }
+    }
+
+    @Deprecated("Use sendText(text, SendTextParams) instead", level = DeprecationLevel.WARNING)
+    override fun sendText(
+        text: String,
         meta: Map<String, Any>?,
         shouldStore: Boolean,
         usePost: Boolean,
@@ -149,6 +163,7 @@ data class ThreadChannelImpl(
         customPushData: Map<String, String>?,
     ): PNFuture<PNPublishResult> {
         return createThreadAndSend {
+            @Suppress("DEPRECATION")
             super.sendText(
                 text = text,
                 meta = meta,

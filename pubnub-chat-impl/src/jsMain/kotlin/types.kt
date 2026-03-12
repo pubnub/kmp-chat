@@ -2,11 +2,10 @@
 
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.chat.types.GetFileItem
-import com.pubnub.chat.types.MessageMentionedUser
-import com.pubnub.chat.types.MessageReferencedChannel
-import com.pubnub.chat.types.TextLink
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.createJsObject
+import com.pubnub.kmp.toMap
 
 external interface GetEventsHistoryParams {
     val channel: String
@@ -219,13 +218,31 @@ external interface MessageDraftConfig {
     var channelLimit: Int?
 }
 
-external interface SendTextOptionParams : PubNub.PublishParameters {
-    var mentionedUsers: JsMap<MessageMentionedUser>?
-    var referencedChannels: JsMap<MessageReferencedChannel>?
-    var textLinks: Array<TextLink>?
-    var quotedMessage: MessageJs?
-    var files: Any?
-    var customPushData: JsMap<String>?
+/**
+ * Parameters for sending text messages, aligned with Kotlin's SendTextParams.
+ *
+ * @property meta Additional metadata to include with the message.
+ * @property storeInHistory Whether to store the message in history.
+ * @property sendByPost Whether to use POST request instead of GET.
+ * @property ttl Time-to-live for the message in hours.
+ * @property customPushData Custom data to include in push notifications.
+ */
+external interface SendTextParamsJs {
+    val meta: Any?
+    val storeInHistory: Boolean?
+    val sendByPost: Boolean?
+    val ttl: Number?
+    val customPushData: JsMap<String>?
+}
+
+fun SendTextParamsJs?.toSendTextParams(): SendTextParams {
+    return SendTextParams(
+        meta = this?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
+        shouldStore = this?.storeInHistory ?: true,
+        usePost = this?.sendByPost ?: false,
+        ttl = this?.ttl?.toInt(),
+        customPushData = this?.customPushData?.toMap(),
+    )
 }
 
 external interface CustomEventEmitOptions {
@@ -396,29 +413,6 @@ external interface UpdateMembershipParams {
 external interface CreateThreadResultJs {
     var threadChannel: ThreadChannelJs
     var parentMessage: MessageJs
-}
-
-/**
- * Options for creating a thread with an initial message.
- *
- * @property meta Additional metadata to include with the message.
- * @property storeInHistory Whether to store the message in history.
- * @property sendByPost Whether to use POST request instead of GET.
- * @property ttl Time-to-live for the message in hours.
- * @property quotedMessage A message to quote in the thread's initial message.
- * @property files Files to attach to the initial message.
- * @property usersToMention Array of user IDs to mention in the message.
- * @property customPushData Custom data to include in push notifications.
- */
-external interface CreateThreadOptionsParams {
-    val meta: Any?
-    val storeInHistory: Boolean?
-    val sendByPost: Boolean?
-    val ttl: Number?
-    val quotedMessage: MessageJs?
-    val files: Any?
-    val usersToMention: Array<String>?
-    val customPushData: JsMap<String>?
 }
 
 external interface MessageReportJs {

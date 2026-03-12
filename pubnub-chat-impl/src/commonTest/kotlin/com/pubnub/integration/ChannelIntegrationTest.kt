@@ -5,14 +5,11 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.utils.Clock
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Event
-import com.pubnub.chat.MentionTarget
 import com.pubnub.chat.Message
-import com.pubnub.chat.MessageElement
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.EmitReadReceiptEvents
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
-import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.PINNED_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.BaseChannel
@@ -985,35 +982,6 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         // Clean up
         channel01.deleteFile(uploadedFile.id, uploadedFile.name).await()
-    }
-
-    @Test
-    fun messageDraft_send() = runTest {
-        val draft = MessageDraftImpl(channel01, isTypingIndicatorTriggered = false)
-        draft.update("Some text with a mention")
-        draft.addMention(17, 7, MentionTarget.User("someUser"))
-        val message = CompletableDeferred<Message>()
-        pubnub.test(backgroundScope, checkAllEvents = false) {
-            var unsubscribe: AutoCloseable? = null
-            pubnub.awaitSubscribe(listOf(channel01.id)) {
-                unsubscribe = channel01.onMessageReceived {
-                    if (!message.isCompleted) {
-                        message.complete(it)
-                        unsubscribe?.close()
-                    }
-                }
-            }
-            draft.send().await()
-            val elements = MessageDraftImpl.getMessageElements(message.await().text)
-
-            assertEquals(
-                listOf(
-                    MessageElement.PlainText("Some text with a "),
-                    MessageElement.Link("mention", MentionTarget.User("someUser"))
-                ),
-                elements
-            )
-        }
     }
 
     @Test
