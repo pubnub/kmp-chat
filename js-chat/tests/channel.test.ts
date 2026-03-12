@@ -1512,26 +1512,39 @@ describe("Channel test", () => {
     expect(reportsHistory.events[0].payload.reason).toEqual(reason)
   }, 20000)
 
-  test("should upload and retrieve files from channel", async () => {
-    const fileContent = "Test file content for PubNub"
-    const buffer = Buffer.from(fileContent, 'utf-8')
-    const file = chat.sdk.File.create({ name: "test.txt", mimeType: "text/plain", data: buffer })
+  // "should upload and retrieve files from channel" test moved to message-draft-v2.test.ts
 
-    const messageText = "Message with file"
-    await channel.sendText(messageText, { files: [file] })
-    await sleep(1000)
+  test("should send a simple message with all SendTextParams via channel.sendText", async () => {
+    let receivedMessage: Message | null = null
+    let resolveReceived: () => void
+    const messageReceived = new Promise<void>((resolve) => {
+      resolveReceived = resolve
+    })
 
-    const filesResult = await channel.getFiles({ limit: 10 })
-    expect(filesResult).toBeDefined()
-    expect(filesResult.files.length).toBeGreaterThan(0)
+    const disconnect = channel.onMessageReceived((message) => {
+      receivedMessage = message
+      resolveReceived()
+    })
+    await sleep(2000)
 
-    const uploadedFile = filesResult.files[0]
-    expect(uploadedFile.name).toBe("test.txt")
+    await channel.sendText("Hello with all params", {
+      meta: { source: "test", priority: 1 },
+      storeInHistory: true,
+      sendByPost: false,
+      ttl: 5,
+      customPushData: { alert: "New message received" },
+    })
 
-    const deleteResult = await channel.deleteFile({ id: uploadedFile.id, name: uploadedFile.name })
-    expect(deleteResult).toBeDefined()
-    expect(deleteResult.status).toBe(200)
-  }, 20000)
+    await messageReceived
+
+    expect(receivedMessage).not.toBeNull()
+    expect(receivedMessage!.text).toBe("Hello with all params")
+    expect(receivedMessage!.meta).toBeDefined()
+    expect(receivedMessage!.meta.source).toBe("test")
+    expect(receivedMessage!.meta.priority).toBe(1)
+
+    disconnect()
+  }, 30000)
 
   test("should stream presence updates on a channel", async () => {
     const testChannel = await chat.createPublicConversation({

@@ -7,7 +7,6 @@ import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
-import com.pubnub.chat.types.SendTextParams
 import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
@@ -136,14 +135,14 @@ open class MessageJs internal constructor(internal val message: Message, interna
         return message.getThread().then { it.asJs(chatJs) }.asPromise()
     }
 
-    fun createThread(text: String, options: CreateThreadOptionsParams? = null): Promise<ThreadChannelJs> {
+    fun createThread(text: String, options: SendTextParamsJs? = null): Promise<ThreadChannelJs> {
         return message.createThread(
             text = text,
             params = options.toSendTextParams(),
         ).then { it.asJs(chatJs) }.asPromise()
     }
 
-    fun createThreadWithResult(text: String, options: CreateThreadOptionsParams? = null): Promise<CreateThreadResultJs> {
+    fun createThreadWithResult(text: String, options: SendTextParamsJs? = null): Promise<CreateThreadResultJs> {
         return message.createThreadWithResult(
             text = text,
             params = options.toSendTextParams(),
@@ -206,13 +205,3 @@ open class MessageJs internal constructor(internal val message: Message, interna
 }
 
 internal fun Message.asJs(chat: ChatJs) = MessageJs(this, chat)
-
-private fun CreateThreadOptionsParams?.toSendTextParams(): SendTextParams {
-    return SendTextParams(
-        meta = this?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
-        shouldStore = this?.storeInHistory ?: true,
-        usePost = this?.sendByPost ?: false,
-        ttl = this?.ttl?.toInt(),
-        customPushData = this?.customPushData?.toMap(),
-    )
-}

@@ -5,10 +5,7 @@ import com.pubnub.chat.MessageDraft
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.types.ChannelType
-import com.pubnub.chat.types.InputFile
-import com.pubnub.chat.types.SendTextParams
 import com.pubnub.kmp.JsMap
-import com.pubnub.kmp.UploadableImpl
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
@@ -60,60 +57,10 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return closeable::close
     }
 
-    fun sendText(text: String, options: SendTextOptionParams?): Promise<PubNub.PublishResponse> {
-        @Suppress("USELESS_CAST") // cast required to be able to call "let" extension function
-        val files = (options?.files as? Any)?.let { files ->
-            val filesArray =
-                files as? Array<*> ?: arrayOf(files)
-            filesArray.filterNotNull().map { file ->
-                InputFile("", file.asDynamic().type ?: file.asDynamic().mimeType ?: "", UploadableImpl(file))
-            }
-        } ?: listOf()
-        val mentionedUsers = options?.mentionedUsers?.toMap()?.mapKeys { it.key.toInt() }
-        val referencedChannels = options?.referencedChannels?.toMap()?.mapKeys { it.key.toInt() }
-        val textLinks = options?.textLinks?.toList()
-        if (mentionedUsers != null || referencedChannels != null || textLinks != null) {
-            @Suppress("DEPRECATION")
-            return channel.sendText(
-                text = text,
-                meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
-                shouldStore = options?.storeInHistory ?: true,
-                usePost = options?.sendByPost ?: false,
-                ttl = options?.ttl?.toInt(),
-                mentionedUsers = mentionedUsers,
-                referencedChannels = referencedChannels,
-                textLinks = textLinks,
-                quotedMessage = options?.quotedMessage?.message,
-                files = files,
-                customPushData = options?.customPushData?.toMap()
-            ).then { result ->
-                result.toPublishResponse()
-            }.asPromise()
-        }
-        if (files.isNotEmpty() || options?.quotedMessage != null) {
-            @Suppress("DEPRECATION")
-            return channel.sendText(
-                text = text,
-                meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
-                shouldStore = options?.storeInHistory ?: true,
-                usePost = options?.sendByPost ?: false,
-                ttl = options?.ttl?.toInt(),
-                quotedMessage = options?.quotedMessage?.message,
-                files = files,
-                customPushData = options?.customPushData?.toMap(),
-            ).then { result ->
-                result.toPublishResponse()
-            }.asPromise()
-        }
+    fun sendText(text: String, options: SendTextParamsJs?): Promise<PubNub.PublishResponse> {
         return channel.sendText(
             text = text,
-            params = SendTextParams(
-                meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
-                shouldStore = options?.storeInHistory ?: true,
-                usePost = options?.sendByPost ?: false,
-                ttl = options?.ttl?.toInt(),
-                customPushData = options?.customPushData?.toMap(),
-            ),
+            params = options.toSendTextParams(),
         ).then { result ->
             result.toPublishResponse()
         }.asPromise()

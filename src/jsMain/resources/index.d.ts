@@ -324,16 +324,12 @@ type MessageReferencedChannels = {
         name: string;
     };
 };
-type MessageDraftOptions = Omit<Publish.PublishParameters, "message" | "channel">;
-type SendTextOptionParams = Omit<Publish.PublishParameters, "message" | "channel"> & {
-    mentionedUsers?: MessageMentionedUsers;
-    referencedChannels?: MessageReferencedChannels;
-    textLinks?: TextLink[];
-    quotedMessage?: Message;
-    files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
-    customPushData?: {
-        [key: string]: string;
-    };
+type SendTextParams = {
+    meta?: any;
+    storeInHistory?: boolean;
+    sendByPost?: boolean;
+    ttl?: number;
+    customPushData?: { [key: string]: string };
 };
 type EnhancedMessageEvent = Subscription.Message;
 type MessageDTOParams = History.FetchMessagesForChannelsResponse['channels'][string][number] | History.FetchMessagesWithActionsResponse['channels'][string][number] | EnhancedMessageEvent;
@@ -441,13 +437,6 @@ type CreateThreadResult = {
     threadChannel: ThreadChannel;
     parentMessage: Message;
 };
-type CreateThreadOptions = {
-    meta?: Payload;
-    storeInHistory?: boolean;
-    sendByPost?: boolean;
-    ttl?: number;
-    customPushData?: { [key: string]: string };
-};
 declare class Message {
     protected chat: Chat;
     readonly timetoken: string;
@@ -515,8 +504,8 @@ declare class Message {
      * Threads
      */
     getThread(): Promise<ThreadChannel>;
-    createThread(text: string, options?: CreateThreadOptions): Promise<ThreadChannel>;
-    createThreadWithResult(text: string, options?: CreateThreadOptions): Promise<CreateThreadResult>;
+    createThread(text: string, options?: SendTextParams): Promise<ThreadChannel>;
+    createThreadWithResult(text: string, options?: SendTextParams): Promise<CreateThreadResult>;
     createThreadMessageDraftV2(config?: Partial<MessageDraftConfig>): Promise<MessageDraftV2>;
     removeThread(): Promise<[
         {
@@ -547,7 +536,7 @@ export declare class MessageDraftV2 {
     addLinkedText(params: AddLinkedTextParams): void;
     removeLinkedText(positionInInput: number): void;
     getMessagePreview(): MixedTextTypedElement[];
-    send(params?: MessageDraftOptions): Promise<Publish.PublishResponse>;
+    send(params?: SendTextParams): Promise<Publish.PublishResponse>;
     addChangeListener(listener: (p0: MessageDraftState) => void): void;
     removeChangeListener(listener: (p0: MessageDraftState) => void): void;
     insertText(offset: number, text: string): void;
@@ -592,7 +581,7 @@ declare class MessageDraft {
     addReferencedChannel(channel: Channel, channelNameOccurrenceIndex: number): void;
     removeReferencedChannel(channelNameOccurrenceIndex: number): void;
     removeMentionedUser(nameOccurrenceIndex: number): void;
-    send(params?: MessageDraftOptions): Promise<unknown>;
+    send(params?: SendTextParams): Promise<unknown>;
     getHighlightedMention(selectionStart: number): {
         mentionedUser: null;
         nameOccurrenceIndex: number;
@@ -629,7 +618,7 @@ declare class Channel {
     streamUpdates(callback: (channel: Channel | null) => unknown): () => void;
     onUpdated(callback: (channel: Channel) => void): () => void;
     onDeleted(callback: () => void): () => void;
-    sendText(text: string, options?: SendTextOptionParams): Promise<unknown>;
+    sendText(text: string, options?: SendTextParams): Promise<unknown>;
     forwardMessage(message: Message): Promise<Publish.PublishResponse>;
     startTyping(): Promise<Signal.SignalResponse | undefined>;
     stopTyping(): Promise<Signal.SignalResponse | undefined>;
@@ -1054,7 +1043,7 @@ export {
     MessageActions, MessageReaction,
     DeleteParameters,
     MessageMentionedUsers, MessageReferencedChannels,
-    MessageDraftOptions, SendTextOptionParams,
+    SendTextParams,
     EnhancedMessageEvent,
     MessageDTOParams, ThreadMessageDTOParams,
     MembershipResponse, OptionalAllBut,
@@ -1068,7 +1057,7 @@ export {
     TimetokenUtils, CryptoUtils,
     MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX,
     CryptoModule,
-    CreateThreadResult, CreateThreadOptions,
+    CreateThreadResult,
     ReadReceipt, ReadReceiptsResponse,
     MessageReport,
     CustomEventData, CustomEventEmitOptions, CustomEventListenOptions
