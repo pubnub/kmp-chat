@@ -201,7 +201,7 @@ describe("Send message test", () => {
     expect(messageWithThread.hasThread).toBe(true)
     expect(await messageWithThread.getThread()).toBeDefined()
 
-    // Await messageThread.delete()
+    // await messageThread.delete()
   }, 20000)
 
   test("should create thread with result and return updated parent message with hasThread true", async () => {
@@ -285,7 +285,7 @@ describe("Send message test", () => {
     expect(deletedMessage.deleted).toBe(true)
     expect(deletedMessage.hasThread).toBe(false)
 
-    // Await messageThread.delete()
+    // await messageThread.delete()
   }, 15000)
 
   test("should restore message and preserve thread", async () => {
@@ -326,7 +326,7 @@ describe("Send message test", () => {
     expect(await historicRestoredMessage.getThread()).toBeDefined()
     expect((await historicRestoredMessage.getThread()).id).toBe(chat.getThreadId(historicRestoredMessage.channelId, historicRestoredMessage.timetoken))
 
-    // Await messageThread.delete()
+    // await messageThread.delete()
   }, 25000)
 
   test("should only log a warning if you try to restore an undeleted message", async () => {
@@ -1215,8 +1215,6 @@ describe("Send message test", () => {
     disconnect2()
   }, 30000)
 
-  // "should encrypt and decrypt a file" test moved to message-draft-v2.test.ts
-
   test("should still view text messages sent before enabling encryption", async () => {
     const encryptedChat = await createChatInstance({
       config: {
@@ -1260,10 +1258,6 @@ describe("Send message test", () => {
     await someRandomUser1.delete()
     await encryptedChat.currentUser.delete()
   }, 35000)
-
-  // "should still view files sent before enabling encryption" test moved to message-draft-v2.test.ts
-
-  // "should be able to decrypt text and file messages sent using a previous encryption key" test moved to message-draft-v2.test.ts
 
   test("should send a message with custom body and transform it to TextMessageContent when received", async () => {
     const chat = await createChatInstance({
@@ -1779,7 +1773,7 @@ describe("Send message test", () => {
     expect(pinnedInParent).toBeDefined()
     expect(pinnedInParent?.content.text).toEqual("Thread message to pin to parent")
 
-    // Await threadChannel.delete()
+    // await threadChannel.delete()
   }, 20000)
 
   test("should unpin thread message from parent channel via threadMessage.unpinFromParentChannel", async () => {
@@ -1808,7 +1802,7 @@ describe("Send message test", () => {
     const pinnedMessageAfterUnpin = await channelAfterUnpin.getPinnedMessage()
     expect(pinnedMessageAfterUnpin).toBeNull()
 
-    // Await threadChannel.delete()
+    // await threadChannel.delete()
   }, 25000)
 
   test("should get message elements with text, mentions, and links", async () => {
@@ -1940,6 +1934,6 @@ describe("Send message test", () => {
     expect(Array.isArray(streamUpdatesOnCallbacks[0])).toBe(true)
     expect(streamUpdatesOnCallbacks[0].length).toBe(2)
 
-    // Await threadChannel.delete()
+    // await threadChannel.delete()
   }, 30000)
 })
