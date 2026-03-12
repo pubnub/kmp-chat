@@ -85,6 +85,7 @@ import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.ReadReceipt
 import com.pubnub.chat.types.ReadReceiptsResponse
 import com.pubnub.chat.types.Report
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -333,6 +334,24 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
+    override fun sendText(
+        text: String,
+        params: SendTextParams,
+    ): PNFuture<PNPublishResult> {
+        return sendTextInternal(
+            text = text,
+            meta = buildMetaForPublish(params.meta, quotedMessage = null),
+            shouldStore = params.shouldStore,
+            usePost = params.usePost,
+            ttl = params.ttl,
+            quotedMessage = null,
+            files = null,
+            usersToMention = null,
+            customPushData = params.customPushData,
+        )
+    }
+
+    @Deprecated("Use sendText(text, SendTextParams) instead", level = DeprecationLevel.WARNING)
     override fun sendText(
         text: String,
         meta: Map<String, Any>?,

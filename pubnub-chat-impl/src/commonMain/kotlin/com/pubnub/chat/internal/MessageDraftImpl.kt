@@ -16,6 +16,7 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.InputFile
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.awaitAll
 import com.pubnub.kmp.then
@@ -131,11 +132,30 @@ class MessageDraftImpl(
     }
 
     override fun send(
+        params: SendTextParams,
+    ): PNFuture<PNPublishResult> {
+        @Suppress("DEPRECATION")
+        return channel.sendText(
+            text = render(getMessageElements()),
+            meta = params.meta,
+            shouldStore = params.shouldStore,
+            usePost = params.usePost,
+            ttl = params.ttl,
+            quotedMessage = quotedMessage,
+            files = files,
+            usersToMention = mentions.mapNotNull { it.target as? MentionTarget.User }.map { it.userId },
+            customPushData = params.customPushData,
+        )
+    }
+
+    @Deprecated("Use send(SendTextParams) instead", level = DeprecationLevel.WARNING)
+    override fun send(
         meta: Map<String, Any>?,
         shouldStore: Boolean,
         usePost: Boolean,
         ttl: Int?
     ): PNFuture<PNPublishResult> {
+        @Suppress("DEPRECATION")
         return channel.sendText(
             text = render(getMessageElements()),
             meta = meta,
@@ -144,7 +164,7 @@ class MessageDraftImpl(
             ttl = ttl,
             quotedMessage = quotedMessage,
             files = files,
-            usersToMention = mentions.mapNotNull { it.target as? MentionTarget.User }.map { it.userId }
+            usersToMention = mentions.mapNotNull { it.target as? MentionTarget.User }.map { it.userId },
         )
     }
 
