@@ -223,16 +223,17 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.getPinnedMessage().then { it?.asJs(chatJs) }.asPromise()
     }
 
-    fun createMessageDraft(config: MessageDraftConfig?): MessageDraftV1Js {
-        return MessageDraftV1Js(
-            chatJs,
-            this,
-            config
-        )
+    @Deprecated("Use MessageDraft with addChangeListener for suggestions instead.")
+    fun getUserSuggestions(text: String, options: GetSuggestionsParams?): Promise<Array<MembershipJs>> {
+        val limit = options?.limit
+        val cacheKey = MessageElementsUtils.getPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<MembershipJs>())
+        return channel.getUserSuggestions(cacheKey, limit?.toInt() ?: 10).then { memberships ->
+            memberships.map { it.asJs(chatJs) }.toTypedArray()
+        }.asPromise()
     }
 
-    fun createMessageDraftV2(config: MessageDraftConfig?): MessageDraftV2Js {
-        return MessageDraftV2Js(
+    fun createMessageDraft(config: MessageDraftConfig?): MessageDraftJs {
+        return MessageDraftJs(
             this.chatJs,
             MessageDraftImpl(
                 this.channel,
@@ -250,6 +251,11 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
                 this.channelLimit = config?.channelLimit ?: 10
             }
         )
+    }
+
+    @Deprecated("Use createMessageDraft() instead.")
+    fun createMessageDraftV1(config: MessageDraftConfig?): MessageDraftV1Js {
+        return MessageDraftV1Js(chatJs, this, config)
     }
 
     fun registerForPush(): Promise<Any> {
@@ -344,15 +350,6 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         channel.streamMessageReports { event ->
             callback(event.toJs(chatJs))
         }::close
-
-    @Deprecated("Only for internal MessageDraft V1 use")
-    fun getUserSuggestions(text: String, options: GetSuggestionsParams?): Promise<Array<MembershipJs>> {
-        val limit = options?.limit
-        val cacheKey = MessageElementsUtils.getPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<MembershipJs>())
-        return channel.getUserSuggestions(cacheKey, limit?.toInt() ?: 10).then { memberships ->
-            memberships.map { it.asJs(chatJs) }.toTypedArray()
-        }.asPromise()
-    }
 
     fun getMessageReportsHistory(params: GetHistoryParams?): Promise<GetMessageReportsHistoryResult> {
         return this.channel.getMessageReportsHistory(

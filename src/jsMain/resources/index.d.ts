@@ -383,6 +383,7 @@ type PayloadForTextTypes = {
     };
 };
 type TextTypes = keyof PayloadForTextTypes;
+type MentionType = "mention" | "channelReference" | "textLink";
 type TextTypeElement<T extends TextTypes> = {
     type: T;
     content: PayloadForTextTypes[T];
@@ -506,7 +507,7 @@ declare class Message {
     getThread(): Promise<ThreadChannel>;
     createThread(text: string, options?: SendTextParams): Promise<ThreadChannel>;
     createThreadWithResult(text: string, options?: SendTextParams): Promise<CreateThreadResult>;
-    createThreadMessageDraftV2(config?: Partial<MessageDraftConfig>): Promise<MessageDraftV2>;
+    createThreadMessageDraft(config?: Partial<MessageDraftConfig>): Promise<MessageDraft>;
     removeThread(): Promise<[
         {
             data: {};
@@ -525,7 +526,7 @@ type AddLinkedTextParams = {
     positionInInput: number;
 };
 
-export declare class MessageDraftV2 {
+export declare class MessageDraft {
     get channel(): Channel;
     get value(): string;
     quotedMessage: Message | undefined;
@@ -542,31 +543,20 @@ export declare class MessageDraftV2 {
     insertText(offset: number, text: string): void;
     removeText(offset: number, length: number): void;
     insertSuggestedMention(mention: SuggestedMention, text: string): void;
-    addMention(offset: number, length: number, mentionType: TextTypes, mentionTarget: string): void;
+    addMention(offset: number, length: number, mentionType: MentionType, mentionTarget: string): void;
     removeMention(offset: number): void;
     update(text: string): void;
 }
 
-export declare class MessageDraftState {
-    private constructor();
-    get messageElements(): Array<MixedTextTypedElement>;
-    get suggestedMentions(): Promise<Array<SuggestedMention>>;
-}
-
-export declare class SuggestedMention {
-    offset: number;
-    replaceFrom: string;
-    replaceWith: string;
-    type: TextTypes;
-    target: string;
-}
-
-declare class MessageDraft {
-    private chat;
+/**
+ * @deprecated Use MessageDraft instead. MessageDraftV1 will be removed in a future release.
+ */
+export declare class MessageDraftV1 {
     value: string;
+    readonly textLinks: TextLink[];
     quotedMessage: Message | undefined;
     readonly config: MessageDraftConfig;
-    files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
+    files?: FileList | File[] | { name: string; type: string; data: any }[];
     onChange(text: string): Promise<{
         users: {
             nameOccurrenceIndex: number;
@@ -581,12 +571,8 @@ declare class MessageDraft {
     addReferencedChannel(channel: Channel, channelNameOccurrenceIndex: number): void;
     removeReferencedChannel(channelNameOccurrenceIndex: number): void;
     removeMentionedUser(nameOccurrenceIndex: number): void;
-    send(params?: SendTextParams): Promise<unknown>;
     getHighlightedMention(selectionStart: number): {
-        mentionedUser: null;
-        nameOccurrenceIndex: number;
-    } | {
-        mentionedUser: User;
+        mentionedUser: User | null;
         nameOccurrenceIndex: number;
     };
     addLinkedText(params: AddLinkedTextParams): void;
@@ -594,7 +580,23 @@ declare class MessageDraft {
     getMessagePreview(): MixedTextTypedElement[];
     addQuote(message: Message): void;
     removeQuote(): void;
+    send(params?: SendTextParams): Promise<Publish.PublishResponse>;
 }
+
+export declare class MessageDraftState {
+    private constructor();
+    get messageElements(): Array<MixedTextTypedElement>;
+    get suggestedMentions(): Promise<Array<SuggestedMention>>;
+}
+
+export declare class SuggestedMention {
+    offset: number;
+    replaceFrom: string;
+    replaceWith: string;
+    type: MentionType;
+    target: string;
+}
+
 type ChannelFields = Pick<Channel, "id" | "name" | "custom" | "description" | "updated" | "status" | "type">;
 declare class Channel {
     protected chat: Chat;
@@ -675,11 +677,13 @@ declare class Channel {
     pinMessage(message: Message): Promise<Channel>;
     unpinMessage(): Promise<Channel>;
     getPinnedMessage(): Promise<Message | null>;
-    getUserSuggestions(text: string, options?: {
-        limit: number;
-    }): Promise<Membership[]>;
     createMessageDraft(config?: Partial<MessageDraftConfig>): MessageDraft;
-    createMessageDraftV2(config?: Partial<MessageDraftConfig>): MessageDraftV2;
+    /**
+     * @deprecated Use createMessageDraft() instead.
+     */
+    createMessageDraftV1(config?: Partial<MessageDraftConfig>): MessageDraftV1;
+    /** @deprecated Use MessageDraft with addChangeListener for suggestions instead. */
+    getUserSuggestions(text: string, options?: { limit: number }): Promise<Membership[]>;
     registerForPush(): Promise<void>;
     unregisterFromPush(): Promise<void>;
     fetchReadReceipts(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<ReadReceiptsResponse>;
@@ -865,12 +869,6 @@ declare class Chat {
         hostMembership: Membership;
         inviteesMemberships: Membership[];
     }>;
-    getUserSuggestions(text: string, options?: {
-        limit: number;
-    }): Promise<User[]>;
-    getChannelSuggestions(text: string, options?: {
-        limit: number;
-    }): Promise<Channel[]>;
     registerPushChannels(channels: string[]): Promise<void>;
     unregisterPushChannels(channels: string[]): Promise<void>;
     unregisterAllPushChannels(): Promise<void>;
@@ -919,6 +917,10 @@ declare class Chat {
         mute?: boolean;
         reason?: string;
     }): Promise<void>;
+    /** @deprecated Use MessageDraft with addChangeListener for suggestions instead. */
+    getUserSuggestions(text: string, options?: { limit: number }): Promise<User[]>;
+    /** @deprecated Use MessageDraft with addChangeListener for suggestions instead. */
+    getChannelSuggestions(text: string, options?: { limit: number }): Promise<Channel[]>;
     /**
      * Channel group
      */
@@ -1035,7 +1037,7 @@ export {
     UserFields, User,
     MessageFields, Message,
     MembershipFields, Membership,
-    ThreadChannel, ThreadMessage, MessageDraft,
+    ThreadChannel, ThreadMessage, MessageDraft, MessageDraftV1,
     EventFields, Event,
     ChannelType, MessageType, MessageActionType, TextMessageContent,
     EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams,
@@ -1050,7 +1052,7 @@ export {
     ChannelDTOParams, ThreadChannelDTOParams,
     MessageDraftConfig,
     TextLink, GetLinkedTextParams,
-    PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement,
+    PayloadForTextTypes, TextTypes, MentionType, TextTypeElement, MixedTextTypedElement,
     ErrorLoggerSetParams, ErrorLoggerImplementation,
     UserMention,
     ChannelMentionData, ThreadMentionData, UserMentionData,

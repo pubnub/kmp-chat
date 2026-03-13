@@ -363,8 +363,9 @@ describe("Chat tests", () => {
     const channel = await createRandomChannel(chat)
     const messageDraft = channel.createMessageDraft()
 
-    await messageDraft.onChange(`Hello @${chat.currentUser.name}`)
-    messageDraft.addMentionedUser(chat.currentUser, 0)
+    const mentionText = `Hello @${chat.currentUser.name}`
+    messageDraft.update(mentionText)
+    messageDraft.addMention(6, chat.currentUser.name.length + 1, "mention", chat.currentUser.id)
     await messageDraft.send()
     await sleep(500)
 

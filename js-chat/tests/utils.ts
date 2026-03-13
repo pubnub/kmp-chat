@@ -213,30 +213,38 @@ export function generateExpectedLinkedText(
     },
   ]
 
-  let mentionCounter = 0
+  // Build the message text using V2 API
+  let text = "Hello world!! This is a mention to "
+  messageDraft.update(text)
 
-  for (const element of expectedLinkedText) {
-    if (element.type === "text") {
-      messageDraft.onChange(messageDraft.value + element.content.text)
-    } else if (element.type === "textLink") {
-      messageDraft.addLinkedText({
-        text: element.content.text,
-        link: element.content.link,
-        positionInInput: messageDraft.value.length,
-      })
-    } else if (element.type === "plainLink") {
-      messageDraft.onChange(messageDraft.value + element.content.link)
-    } else if (element.type === "mention") {
-      if (mentionCounter === 0) {
-        messageDraft.onChange(messageDraft.value + `@${someUser.name.substring(0, 3)}`)
-        messageDraft.addMentionedUser(someUser, 0)
-      } else if (mentionCounter === 1) {
-        messageDraft.onChange(messageDraft.value + `@${someUser2.name.substring(0, 3)}`)
-        messageDraft.addMentionedUser(someUser2, 1)
-      }
-      mentionCounter++
-    }
-  }
+  // Add first mention
+  const mention1Text = `@${someUser.name}`
+  text += mention1Text
+  messageDraft.update(text)
+  const mention1Offset = text.indexOf(mention1Text)
+  messageDraft.addMention(mention1Offset, mention1Text.length, "mention", someUser.id)
+
+  // Add text
+  text += " and this is a "
+  messageDraft.update(text)
+
+  // Add text link
+  messageDraft.addLinkedText({
+    text: "text link",
+    link: "https://pubnub.com",
+    positionInInput: messageDraft.value.length,
+  })
+
+  // Add more text including plain link
+  text = messageDraft.value + " that leads to https://pubnub.com. Isn't it great? "
+  messageDraft.update(text)
+
+  // Add second mention
+  const mention2Text = `@${someUser2.name}`
+  text += mention2Text
+  messageDraft.update(text)
+  const mention2Offset = text.lastIndexOf(mention2Text)
+  messageDraft.addMention(mention2Offset, mention2Text.length, "mention", someUser2.id)
 
   return expectedLinkedText
 }
@@ -250,10 +258,7 @@ export const sendMessageAndWaitForHistory = async (
   await sleep(waitTimeMs)
 
   const history = await channel.getHistory()
-  const messageInHistory = history.messages.find(
-    (message: any) => message.content.text === messageDraft.value
-  )
-  return messageInHistory
+  return history.messages[0]
 }
 
 export const renderMessagePart = (messagePart: MixedTextTypedElement) => {
@@ -267,10 +272,10 @@ export const renderMessagePart = (messagePart: MixedTextTypedElement) => {
     return messagePart.content.text
   }
   if (messagePart.type === "mention") {
-    return `@${messagePart.content.name}`
+    return messagePart.content.name
   }
   if (messagePart.type === "channelReference") {
-    return `#${messagePart.content.name}`
+    return messagePart.content.name
   }
 
   return null

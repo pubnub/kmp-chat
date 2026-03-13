@@ -1,5 +1,6 @@
 @file:OptIn(ExperimentalJsExport::class)
 
+import com.pubnub.api.PubNubException
 import com.pubnub.chat.MentionTarget
 import com.pubnub.chat.MessageDraftChangeListener
 import com.pubnub.chat.MessageElement
@@ -12,8 +13,8 @@ import com.pubnub.kmp.then
 import kotlin.js.Promise
 
 @JsExport
-@JsName("MessageDraftV2")
-class MessageDraftV2Js internal constructor(
+@JsName("MessageDraft")
+class MessageDraftJs internal constructor(
     private val chat: ChatJs,
     private val messageDraft: MessageDraftImpl,
     val config: MessageDraftConfig,
@@ -171,10 +172,10 @@ fun List<MessageElement>.toJs() = map { element ->
     when (element) {
         is MessageElement.Link -> when (val target = element.target) {
             is MentionTarget.Channel -> MixedTextTypedElement.ChannelReference(
-                ChannelReferenceContent(target.channelId, element.text)
+                ChannelReferenceContent(target.channelId, "#${element.text}")
             )
             is MentionTarget.Url -> MixedTextTypedElement.TextLink(TextLinkContent(target.url, element.text))
-            is MentionTarget.User -> MixedTextTypedElement.Mention(MentionContent(target.userId, element.text))
+            is MentionTarget.User -> MixedTextTypedElement.Mention(MentionContent(target.userId, "@${element.text}"))
         }
         is MessageElement.PlainText -> MixedTextTypedElement.Text(TextContent(element.text))
     }

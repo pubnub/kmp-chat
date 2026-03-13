@@ -418,7 +418,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         return json("config" to config, "currentUser" to currentUser)
     }
 
-    @Deprecated("Only for internal MessageDraft V1 use")
+    @Deprecated("Use MessageDraft with addChangeListener for suggestions instead.")
     fun getUserSuggestions(text: String, options: GetSuggestionsParams?): Promise<Array<UserJs>> {
         val limit = options?.limit
         val cacheKey = MessageElementsUtils.getPhraseToLookFor(text) ?: return Promise.resolve(emptyArray<UserJs>())
@@ -427,7 +427,7 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         }.asPromise()
     }
 
-    @Deprecated("Only for internal MessageDraft V1 use")
+    @Deprecated("Use MessageDraft with addChangeListener for suggestions instead.")
     fun getChannelSuggestions(text: String, options: GetSuggestionsParams?): Promise<Array<ChannelJs>> {
         val limit = options?.limit
         val cacheKey =

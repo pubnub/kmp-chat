@@ -4,7 +4,7 @@ import {
   Message,
   Membership,
   Chat,
-  MessageDraft, ReadReceipt,
+  MessageDraft, MessageDraftV1, ReadReceipt,
   CustomEventData, CustomEventEmitOptions, CustomEventListenOptions,
   MessageReport,
 } from "../dist-test"
@@ -439,11 +439,14 @@ describe("Channel test", () => {
     const user2Id = `user2_${Date.now()}`
     const user2 = await chat.createUser(user2Id, { name: "User2" })
 
-    await messageDraft.onChange("Hello, @Use")
-    messageDraft.addMentionedUser(user1, 0)
-    await messageDraft.onChange(`Hello, @${user1.name} and @Use`)
-    messageDraft.addMentionedUser(user2, 1)
-    await messageDraft.onChange(`Hello, @${user1.name} and @${user2.name} here is my mail test@pubnub.com`)
+    const messageText = `Hello, @${user1.name} and @${user2.name} here is my mail test@pubnub.com`
+    messageDraft.update(messageText)
+
+    const mention1Offset = messageText.indexOf(`@${user1.name}`)
+    messageDraft.addMention(mention1Offset, user1.name.length + 1, "mention", user1.id)
+
+    const mention2Offset = messageText.indexOf(`@${user2.name}`)
+    messageDraft.addMention(mention2Offset, user2.name.length + 1, "mention", user2.id)
 
     await messageDraft.send()
     await sleep(150)
@@ -457,9 +460,7 @@ describe("Channel test", () => {
     const mentionElements = messageElements.filter(element => element.type === "mention")
     expect(mentionElements.length).toBe(2)
     expect(mentionElements[0].content.id).toEqual(user1.id)
-    expect(mentionElements[0].content.name).toEqual(user1.name)
     expect(mentionElements[1].content.id).toEqual(user2.id)
-    expect(mentionElements[1].content.name).toEqual(user2.name)
 
     await Promise.all([user1.delete(), user2.delete()])
   }, 20000)
@@ -471,28 +472,27 @@ describe("Channel test", () => {
     const user2 = await chat.createUser(user2Id, { name: "User2" })
     const messageText = `Hello, @${user1.name} and @${user2.name} here is my mail test@pubnub.com`
 
-    await messageDraft.onChange("Hello, @Use")
-    messageDraft.addMentionedUser(user1, 0)
-    await messageDraft.onChange(`Hello, @${user1.name} and @Use`)
-    messageDraft.addMentionedUser(user2, 1)
-    await messageDraft.onChange(messageText)
+    messageDraft.update(messageText)
+
+    const mention1Offset = messageText.indexOf(`@${user1.name}`)
+    messageDraft.addMention(mention1Offset, user1.name.length + 1, "mention", user1.id)
+
+    const mention2Offset = messageText.indexOf(`@${user2.name}`)
+    messageDraft.addMention(mention2Offset, user2.name.length + 1, "mention", user2.id)
 
     await messageDraft.send()
-    await sleep(150) // History calls have around 130ms of cache time
+    await sleep(150)
 
     const history = await channel.getHistory()
-    const messageInHistory = history.messages.find(
-      (message: any) => message.content.text === messageText
-    )
+    const messageInHistory = history.messages[0]
 
-    expect(messageInHistory).toBeDefined()
-    expect(Object.keys(messageInHistory.mentionedUsers).length).toBe(2)
-    expect(messageInHistory.mentionedUsers["0"].id).toEqual(user1.id)
-    expect(messageInHistory.mentionedUsers["1"].id).toEqual(user2.id)
+    const messageElements = messageInHistory.getMessageElements()
+    expect(messageElements).toBeDefined()
 
-    const extractedNamesFromText = extractMentionedUserIds(messageText)
-    expect(messageInHistory.mentionedUsers["0"].name).toEqual(extractedNamesFromText[0])
-    expect(messageInHistory.mentionedUsers["1"].name).toEqual(extractedNamesFromText[1])
+    const mentionElements = messageElements.filter(element => element.type === "mention")
+    expect(mentionElements.length).toBe(2)
+    expect(mentionElements[0].content.id).toEqual(user1.id)
+    expect(mentionElements[1].content.id).toEqual(user2.id)
 
     await Promise.all([user1.delete(), user2.delete()])
   }, 20000)
@@ -504,25 +504,27 @@ describe("Channel test", () => {
     const user2 = await chat.createUser(user2Id, { name: "User Two" })
 
     const messageText = `Hello, @${user1.name} and @${user2.name} here is my mail test@pubnub.com`
+    messageDraft.update(messageText)
 
-    await messageDraft.onChange("Hello, @Use")
-    messageDraft.addMentionedUser(user1, 0)
-    await messageDraft.onChange(`Hello, @${user1.name} and @Use`)
-    messageDraft.addMentionedUser(user2, 1)
-    await messageDraft.onChange(`Hello, @${user1.name} and @${user2.name} here is my mail test@pubnub.com`)
+    const mention1Offset = messageText.indexOf(`@${user1.name}`)
+    messageDraft.addMention(mention1Offset, user1.name.length + 1, "mention", user1.id)
+
+    const mention2Offset = messageText.indexOf(`@${user2.name}`)
+    messageDraft.addMention(mention2Offset, user2.name.length + 1, "mention", user2.id)
 
     await messageDraft.send()
-    await sleep(150) // History calls have around 130ms of cache time
+    await sleep(150)
 
     const history = await channel.getHistory()
-    const messageInHistory = history.messages.find(
-      (message: any) => message.content.text === messageText
-    )
+    const messageInHistory = history.messages[0]
 
-    expect(messageInHistory).toBeDefined()
-    expect(Object.keys(messageInHistory.mentionedUsers).length).toBe(2)
-    expect(messageInHistory.mentionedUsers["0"].id).toEqual(user1.id)
-    expect(messageInHistory.mentionedUsers["1"].id).toEqual(user2.id)
+    const messageElements = messageInHistory.getMessageElements()
+    expect(messageElements).toBeDefined()
+
+    const mentionElements = messageElements.filter(element => element.type === "mention")
+    expect(mentionElements.length).toBe(2)
+    expect(mentionElements[0].content.id).toEqual(user1.id)
+    expect(mentionElements[1].content.id).toEqual(user2.id)
 
     await chat.deleteUser(user1.id)
     await chat.deleteUser(user2.id)
@@ -530,26 +532,27 @@ describe("Channel test", () => {
 
   test("should send a message with words that start with @ but are not user mentions", async () => {
     const messageText = "Test message with words that start with @ but are not user mentions: @test, @example, @check."
-    const messageInHistory = await sendMessageAndWaitForHistory(channel.createMessageDraft(messageText), channel)
+    const md = channel.createMessageDraft()
+    md.update(messageText)
+    const messageInHistory = await sendMessageAndWaitForHistory(md, channel)
 
     expect(messageInHistory).toBeDefined()
-    expect(Object.keys(messageInHistory.mentionedUsers).length).toBe(0)
+    expect(Object.keys(messageInHistory.mentionedUsers ?? {}).length).toBe(0)
   }, 20000)
 
-  test("should try to mention users with incorrect usernames and validate no users are mentioned", async () => {
+  test("should send a message without mentions when no addMention is called", async () => {
     const user1Id = `user1_${Date.now()}`
     const user1 = await chat.createUser(user1Id, { name: "User One" })
-    const incorrectUserId = user1Id.substring(0, user1Id.length - 1)
 
-    await messageDraft.onChange("Hello, @Use")
-    messageDraft.addMentionedUser(user1, 0)
-    await messageDraft.onChange(`Hello, @${user1.name}, I tried to mention you`)
-    const finalMessageTextToSend = `Hello, @${incorrectUserId}, I tried to mention you`
-    await messageDraft.onChange(finalMessageTextToSend)
+    const messageText = `Hello, @someuser, I tried to mention you`
+    messageDraft.update(messageText)
 
     const messageInHistory = await sendMessageAndWaitForHistory(messageDraft, channel)
     expect(messageInHistory).toBeDefined()
-    expect(Object.keys(messageInHistory.mentionedUsers).length).toBe(0)
+
+    const messageElements = messageInHistory.getMessageElements()
+    const mentionElements = messageElements.filter(element => element.type === "mention")
+    expect(mentionElements.length).toBe(0)
 
     await chat.deleteUser(user1.id)
   }, 20000)
@@ -559,18 +562,22 @@ describe("Channel test", () => {
     const user1 = await chat.createUser(user1Id, { name: "User 1" })
     const messageText = `Hello, @${user1.name}, how are you? @${user1.name}, are you there?`
 
-    await messageDraft.onChange("Hello, @Use")
-    messageDraft.addMentionedUser(user1, 0)
-    await messageDraft.onChange(`Hello, @${user1.name}, how are you? @Use`)
-    messageDraft.addMentionedUser(user1, 1)
-    await messageDraft.onChange(messageText)
+    messageDraft.update(messageText)
+
+    const mention1Offset = messageText.indexOf(`@${user1.name}`)
+    messageDraft.addMention(mention1Offset, user1.name.length + 1, "mention", user1.id)
+
+    const mention2Offset = messageText.indexOf(`@${user1.name}`, mention1Offset + 1)
+    messageDraft.addMention(mention2Offset, user1.name.length + 1, "mention", user1.id)
 
     const messageInHistory = await sendMessageAndWaitForHistory(messageDraft, channel)
 
     expect(messageInHistory).toBeDefined()
-    expect(Object.keys(messageInHistory.mentionedUsers).length).toBe(2)
-    expect(messageInHistory.mentionedUsers["0"].id).toEqual(user1.id)
-    expect(messageInHistory.mentionedUsers["1"].id).toEqual(user1.id)
+    const messageElements = messageInHistory.getMessageElements()
+    const mentionElements = messageElements.filter(element => element.type === "mention")
+    expect(mentionElements.length).toBe(2)
+    expect(mentionElements[0].content.id).toEqual(user1.id)
+    expect(mentionElements[1].content.id).toEqual(user1.id)
 
     await chat.deleteUser(user1.id)
   }, 20000)
@@ -584,12 +591,15 @@ describe("Channel test", () => {
     const messageDraft = channel.createMessageDraft()
 
     const originalMessage = `Hello, @${user1.name}, how are you? @${user2.name}, are you there?`
-    await messageDraft.onChange("Hello, @Use")
-    messageDraft.addMentionedUser(user1, 0)
-    await messageDraft.onChange(`Hello, @${user1.name}, how are you? @Use`)
-    messageDraft.addMentionedUser(user2, 1)
-    await messageDraft.onChange(originalMessage)
-    messageDraft.removeMentionedUser(1)
+    messageDraft.update(originalMessage)
+
+    const mention1Offset = originalMessage.indexOf(`@${user1.name}`)
+    messageDraft.addMention(mention1Offset, user1.name.length + 1, "mention", user1.id)
+
+    const mention2Offset = originalMessage.indexOf(`@${user2.name}`)
+    messageDraft.addMention(mention2Offset, user2.name.length + 1, "mention", user2.id)
+
+    messageDraft.removeMention(mention2Offset)
 
     await messageDraft.send()
     await sleep(150)
@@ -603,7 +613,6 @@ describe("Channel test", () => {
     const mentionElements = messageElements.filter(element => element.type === "mention")
     expect(mentionElements.length).toBe(1)
     expect(mentionElements[0].content.id).toEqual(user1.id)
-    expect(mentionElements[0].content.name).toEqual(user1.name)
 
     await Promise.all([user1.delete(), user2.delete()])
   }, 20000)
@@ -617,18 +626,23 @@ describe("Channel test", () => {
     const messageDraft = channel.createMessageDraft()
 
     const originalMessage = `Hello, @${user1.name}, how are you? @${user2.name}, are you there?`
-    await messageDraft.onChange("Hello, @Use")
-    messageDraft.addMentionedUser(user1, 0)
-    await messageDraft.onChange(`Hello, @${user1.name}, how are you? @Use`)
-    messageDraft.addMentionedUser(user2, 1)
-    await messageDraft.onChange(originalMessage)
-    messageDraft.removeMentionedUser(1)
+    messageDraft.update(originalMessage)
+
+    const mention1Offset = originalMessage.indexOf(`@${user1.name}`)
+    messageDraft.addMention(mention1Offset, user1.name.length + 1, "mention", user1.id)
+
+    const mention2Offset = originalMessage.indexOf(`@${user2.name}`)
+    messageDraft.addMention(mention2Offset, user2.name.length + 1, "mention", user2.id)
+
+    messageDraft.removeMention(mention2Offset)
 
     const messageInHistory = await sendMessageAndWaitForHistory(messageDraft, channel)
 
     expect(messageInHistory).toBeDefined()
-    expect(Object.keys(messageInHistory.mentionedUsers).length).toBe(1)
-    expect(messageInHistory.mentionedUsers["0"].id).toBe(user1.id)
+    const messageElements = messageInHistory.getMessageElements()
+    const mentionElements = messageElements.filter(element => element.type === "mention")
+    expect(mentionElements.length).toBe(1)
+    expect(mentionElements[0].content.id).toBe(user1.id)
 
     await Promise.all([user1.delete(), user2.delete()])
   }, 20000)
@@ -643,22 +657,27 @@ describe("Channel test", () => {
 
     const messageDraft = channel.createMessageDraft()
 
-    await messageDraft.onChange("Hello, @Use")
-    messageDraft.addMentionedUser(user1, 0)
-    await messageDraft.onChange(`Hello, @${user1.name}, how are you? @Use`)
-    messageDraft.addMentionedUser(user2, 1)
-    await messageDraft.onChange(`Hello, @${user1.name}, how are you? @${user2.name}, are you there? Test: @Use`)
-    messageDraft.addMentionedUser(user3, 2)
+    const messageText = `Hello, @${user1.name}, how are you? @${user2.name}, are you there? Test: @${user3.name}`
+    messageDraft.update(messageText)
 
-    expect(messageDraft.value).toEqual(`Hello, @${user1.name}, how are you? @User 2, are you there? Test: @${user3.name}`)
-    messageDraft.removeMentionedUser(1)
+    const mention1Offset = messageText.indexOf(`@${user1.name}`)
+    messageDraft.addMention(mention1Offset, user1.name.length + 1, "mention", user1.id)
+
+    const mention2Offset = messageText.indexOf(`@${user2.name}`)
+    messageDraft.addMention(mention2Offset, user2.name.length + 1, "mention", user2.id)
+
+    const mention3Offset = messageText.indexOf(`@${user3.name}`)
+    messageDraft.addMention(mention3Offset, user3.name.length + 1, "mention", user3.id)
+
+    messageDraft.removeMention(mention2Offset)
     const messageInHistory = await sendMessageAndWaitForHistory(messageDraft, channel)
 
     expect(messageInHistory).toBeDefined()
-    expect(Object.keys(messageInHistory.mentionedUsers).length).toBe(2)
-    expect(messageInHistory.mentionedUsers["0"].id).toBe(user1.id)
-    expect(messageInHistory.mentionedUsers["1"]).toBeUndefined()
-    expect(messageInHistory.mentionedUsers["2"].id).toBe(user3.id)
+    const messageElements = messageInHistory.getMessageElements()
+    const mentionElements = messageElements.filter(element => element.type === "mention")
+    expect(mentionElements.length).toBe(2)
+    expect(mentionElements[0].content.id).toBe(user1.id)
+    expect(mentionElements[1].content.id).toBe(user3.id)
 
     await chat.deleteUser(user1.id)
     await chat.deleteUser(user2.id)
@@ -675,25 +694,22 @@ describe("Channel test", () => {
     messageDraft.addQuote(sentMessage)
     expect(messageDraft.quotedMessage).toEqual(sentMessage)
     messageDraft.removeQuote()
-    expect(messageDraft.quotedMessage).toBeUndefined()
+    expect(messageDraft.quotedMessage).toBeNull()
   }, 20000)
 
   test("should throw an error when trying to quote a message from another channel", async () => {
     const otherChannel = await createRandomChannel(chat)
+    const v1Draft: MessageDraftV1 = channel.createMessageDraftV1()
 
-    try {
-      const messageText = "Test message"
-      await otherChannel.sendText(messageText)
-      await sleep(150) // History calls have around 130ms of cache time
-      const history = await otherChannel.getHistory()
-      const otherMessage: Message = history.messages[0]
-      messageDraft.addQuote(otherMessage)
-      fail("Should have thrown an error")
-    } catch (error) {
-      expect(error.message).toEqual("You cannot quote messages from other channels")
-    } finally {
-      await otherChannel.delete()
-    }
+    const messageText = "Test message"
+    await otherChannel.sendText(messageText)
+    await sleep(150) // History calls have around 130ms of cache time
+    const history = await otherChannel.getHistory()
+    const otherMessage: Message = history.messages[0]
+
+    expect(() => v1Draft.addQuote(otherMessage)).toThrow("You cannot quote messages from other channels")
+
+    await otherChannel.delete()
   }, 20000)
 
   test("should quote multiple messages", async () => {
@@ -715,7 +731,7 @@ describe("Channel test", () => {
 
     expect(messageDraft.quotedMessage).toEqual(history.messages[2])
     messageDraft.removeQuote()
-    expect(messageDraft.quotedMessage).toBeUndefined()
+    expect(messageDraft.quotedMessage).toBeNull()
   }, 20000)
 
   test("should invite a user to the channel", async () => {
@@ -823,14 +839,17 @@ describe("Channel test", () => {
     const user2 = await chat.createUser(user2Id, { name: "User2" })
 
     const messageText = `Hello, @${user1.name} and @${user2.name} here is a test mention`
-    await messageDraft.onChange("Hello, @Use")
-    messageDraft.addMentionedUser(user1, 0)
-    await messageDraft.onChange(`Hello, @${user1.name} and @Use`)
-    messageDraft.addMentionedUser(user2, 1)
-    await messageDraft.onChange(messageText)
+    messageDraft.update(messageText)
+
+    const mention1Offset = messageText.indexOf(`@${user1.name}`)
+    messageDraft.addMention(mention1Offset, user1.name.length + 1, "mention", user1.id)
+
+    const mention2Offset = messageText.indexOf(`@${user2.name}`)
+    messageDraft.addMention(mention2Offset, user2.name.length + 1, "mention", user2.id)
+
     await messageDraft.send()
 
-    await sleep(150) // History calls have around 130ms of cache time
+    await sleep(150)
     const mentionsResult = await chat.getCurrentUserMentions({ count: 10 })
 
     expect(mentionsResult).toBeDefined()
@@ -932,25 +951,26 @@ describe("Channel test", () => {
     const user2 = await chat.createUser(user2Id, { name: `User${specialChar2}2` })
 
     const messageText = `Hello, @${user1.name} and @${user2.name} here is my mail test@pubnub.com`
+    messageDraft.update(messageText)
 
-    await messageDraft.onChange("Hello, @Use")
-    messageDraft.addMentionedUser(user1, 0)
-    await messageDraft.onChange(`Hello, @${user1.name} and @Use`)
-    messageDraft.addMentionedUser(user2, 1)
-    await messageDraft.onChange(`Hello, @${user1.name} and @${user2.name} here is my mail test@pubnub.com`)
+    const mention1Offset = messageText.indexOf(`@${user1.name}`)
+    messageDraft.addMention(mention1Offset, user1.name.length + 1, "mention", user1.id)
+
+    const mention2Offset = messageText.indexOf(`@${user2.name}`)
+    messageDraft.addMention(mention2Offset, user2.name.length + 1, "mention", user2.id)
 
     await messageDraft.send()
-    await sleep(150) // Wait for the message to be sent and cached
+    await sleep(150)
     const history = await channel.getHistory()
+    const messageInHistory = history.messages[0]
 
-    const messageInHistory = history.messages.find(
-      (message: any) => message.content.text === messageText
-    )
+    const messageElements = messageInHistory.getMessageElements()
+    expect(messageElements).toBeDefined()
 
-    expect(messageInHistory).toBeDefined()
-    expect(Object.keys(messageInHistory.mentionedUsers).length).toBe(2)
-    expect(messageInHistory.mentionedUsers["0"].id).toEqual(user1.id)
-    expect(messageInHistory.mentionedUsers["1"].id).toEqual(user2.id)
+    const mentionElements = messageElements.filter(element => element.type === "mention")
+    expect(mentionElements.length).toBe(2)
+    expect(mentionElements[0].content.id).toEqual(user1.id)
+    expect(mentionElements[1].content.id).toEqual(user2.id)
 
     await chat.deleteUser(user1.id)
     await chat.deleteUser(user2.id)

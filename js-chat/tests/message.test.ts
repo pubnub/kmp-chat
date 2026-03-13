@@ -234,7 +234,7 @@ describe("Send message test", () => {
     await parentMessage.removeThread()
   }, 20000)
 
-  test("should create thread message draft via createThreadMessageDraftV2", async () => {
+  test("should create thread message draft via createThreadMessageDraft", async () => {
     // Given - a sent message
     await channel.sendText("Parent message for thread draft")
     await sleep(150)
@@ -242,8 +242,8 @@ describe("Send message test", () => {
     const history = await channel.getHistory()
     const message = history.messages[history.messages.length - 1]
 
-    // When - create thread message draft
-    const draft = await message.createThreadMessageDraftV2({ userSuggestionSource: "global" })
+    // when - create thread message draft
+    const draft = await message.createThreadMessageDraft({ userSuggestionSource: "global" })
 
     // Then - draft should be defined and functional
     expect(draft).toBeDefined()

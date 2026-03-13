@@ -154,10 +154,10 @@ open class MessageJs internal constructor(internal val message: Message, interna
         }.asPromise()
     }
 
-    fun createThreadMessageDraftV2(config: MessageDraftConfig? = null): Promise<MessageDraftV2Js> {
+    fun createThreadMessageDraft(config: MessageDraftConfig? = null): Promise<MessageDraftJs> {
         return message.createThread().then { threadChannel ->
             val channelJs = threadChannel.asJs(chatJs)
-            channelJs.createMessageDraftV2(config)
+            channelJs.createMessageDraft(config)
         }.asPromise()
     }
 
