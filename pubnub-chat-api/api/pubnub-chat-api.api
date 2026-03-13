@@ -346,14 +346,17 @@ public final class com/pubnub/chat/SuggestedMention {
 public abstract interface class com/pubnub/chat/ThreadChannel : com/pubnub/chat/Channel {
 	public static final field Companion Lcom/pubnub/chat/ThreadChannel$Companion;
 	public abstract fun getHistory (Ljava/lang/Long;Ljava/lang/Long;I)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun getMessage (J)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getParentChannelId ()Ljava/lang/String;
 	public abstract fun getParentMessage ()Lcom/pubnub/chat/Message;
+	public abstract fun getPinnedMessage ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun onThreadChannelUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun onThreadMessageReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pinMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun pinMessageToParentChannel (Lcom/pubnub/chat/ThreadMessage;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun unpinMessage ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun unpinMessageFromParentChannel ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun update (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Lcom/pubnub/chat/types/ChannelType;)Lcom/pubnub/kmp/PNFuture;
 }
 
 public final class com/pubnub/chat/ThreadChannel$Companion {
@@ -361,9 +364,12 @@ public final class com/pubnub/chat/ThreadChannel$Companion {
 
 public abstract interface class com/pubnub/chat/ThreadMessage : com/pubnub/chat/Message {
 	public static final field Companion Lcom/pubnub/chat/ThreadMessage$Companion;
+	public abstract fun editText (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getParentChannelId ()Ljava/lang/String;
 	public abstract fun onThreadMessageUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pinToParentChannel ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun restore ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun toggleReaction (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun unpinFromParentChannel ()Lcom/pubnub/kmp/PNFuture;
 }
 

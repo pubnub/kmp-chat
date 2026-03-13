@@ -1,6 +1,8 @@
 package com.pubnub.chat
 
+import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.HistoryResponse
+import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 
 /**
@@ -34,6 +36,13 @@ interface ThreadChannel : Channel {
     override fun unpinMessage(): PNFuture<ThreadChannel>
 
     /**
+     * Fetches the message that is currently pinned to the channel. There can be only one pinned message on a channel at a time.
+     *
+     * @return [PNFuture] containing pinned [Message]
+     */
+    override fun getPinnedMessage(): PNFuture<ThreadMessage?>
+
+    /**
      *  Returns historical messages for the [ThreadChannel]
      *
      *  @param startTimetoken
@@ -44,6 +53,40 @@ interface ThreadChannel : Channel {
      *  this future can be processed using the `async` method of `PNFuture`.
      */
     override fun getHistory(startTimetoken: Long?, endTimetoken: Long?, count: Int): PNFuture<HistoryResponse<ThreadMessage>>
+
+    /**
+     * Allows to update the [Channel] metadata
+     *
+     * @param name Display name for the channel.
+     * @param custom Any custom properties or metadata associated with the channel in the form of a `Map`.
+     * Values must be scalar only; arrays or objects are not supported.
+     * @param description Additional details about the channel.
+     * @param status Current status of the channel, like online, offline, or archived.
+     * @param type Represents the type of channel, which can be one of the following:
+     *       - `ChannelType.DIRECT`: A one-on-one chat between two participants.
+     *       - `ChannelType.GROUP`: A private group chat restricted to invited participants.
+     *       - `ChannelType.PUBLIC`: A public chat open to a large audience, where anyone can join.
+     *       - `ChannelType.UNKNOWN`: Used for channels created with the Kotlin SDK, where the channel type
+     *         in the metadata does not match any of the three default Chat SDK types.
+     *
+     * @return [PNFuture] containing the updated [Channel] object with its metadata.
+     */
+    override fun update(
+        name: String?,
+        custom: CustomObject?,
+        description: String?,
+        status: String?,
+        type: ChannelType?
+    ): PNFuture<ThreadChannel>
+
+    /**
+     * Fetches the [Message] from Message Persistence based on the message [Message.timetoken].
+     *
+     * @param timetoken of the message you want to retrieve from Message Persistence
+     *
+     * @return [PNFuture] containing [Message]
+     */
+    override fun getMessage(timetoken: Long): PNFuture<ThreadMessage?>
 
     /**
      * Pins a selected thread message to the parent channel. This updates the parent channel's metadata with the

@@ -27,7 +27,7 @@ data class ThreadMessageImpl(
     override val channelId: String,
     override val userId: String,
     override val actions: Map<String, Map<String, List<Action>>>? = null,
-    val metaInternal: JsonElement? = null,
+    override val metaInternal: JsonElement? = null,
     override val error: PubNubError? = null,
 ) : BaseMessage<ThreadMessage>(
         chat = chat,
@@ -99,6 +99,60 @@ data class ThreadMessageImpl(
             }
             ChatImpl.pinOrUnpinMessageToChannel(chat.pubNub, message, parentChannel).then {
                 ChannelImpl.fromDTO(chat, it.data)
+            }
+        }
+    }
+
+    override fun editText(newText: String): PNFuture<ThreadMessage> {
+        return super.editText(newText).then { message ->
+            (message as BaseMessage<*>).run {
+                ThreadMessageImpl(
+                    chat = chat,
+                    parentChannelId = parentChannelId,
+                    timetoken = message.timetoken,
+                    content = message.content,
+                    channelId = message.channelId,
+                    userId = message.userId,
+                    actions = message.actions,
+                    metaInternal = message.metaInternal,
+                    error = message.error
+                )
+            }
+        }
+    }
+
+    override fun toggleReaction(reaction: String): PNFuture<ThreadMessage> {
+        return super.toggleReaction(reaction).then { message ->
+            (message as BaseMessage<*>).run {
+                ThreadMessageImpl(
+                    chat = chat,
+                    parentChannelId = parentChannelId,
+                    timetoken = message.timetoken,
+                    content = message.content,
+                    channelId = message.channelId,
+                    userId = message.userId,
+                    actions = message.actions,
+                    metaInternal = message.metaInternal,
+                    error = message.error
+                )
+            }
+        }
+    }
+
+    override fun restore(): PNFuture<ThreadMessage> {
+        return super.restore().then { message ->
+            (message as BaseMessage<*>).run {
+                ThreadMessageImpl(
+                    chat = chat,
+                    parentChannelId = parentChannelId,
+                    timetoken = message.timetoken,
+                    content = message.content,
+                    channelId = message.channelId,
+                    userId = message.userId,
+                    actions = message.actions,
+                    metaInternal = message.metaInternal,
+                    error = message.error
+                )
             }
         }
     }

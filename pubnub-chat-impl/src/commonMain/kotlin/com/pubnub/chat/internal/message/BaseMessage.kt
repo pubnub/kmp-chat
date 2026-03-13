@@ -75,7 +75,7 @@ abstract class BaseMessage<T : Message>(
     override val channelId: String,
     override val userId: String,
     override val actions: Map<String, Map<String, List<PNFetchMessageItem.Action>>>? = null,
-    private val metaInternal: JsonElement? = null,
+    open val metaInternal: JsonElement? = null,
     override val error: PubNubError? = null,
 ) : Message {
     override val meta: Map<String, Any>? get() = metaInternal?.decode() as? Map<String, Any>
