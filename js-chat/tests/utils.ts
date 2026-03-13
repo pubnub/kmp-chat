@@ -272,10 +272,10 @@ export const renderMessagePart = (messagePart: MixedTextTypedElement) => {
     return messagePart.content.text
   }
   if (messagePart.type === "mention") {
-    return messagePart.content.name
+    return (messagePart.content as any).display ?? `@${messagePart.content.name}`
   }
   if (messagePart.type === "channelReference") {
-    return messagePart.content.name
+    return (messagePart.content as any).display ?? `#${messagePart.content.name}`
   }
 
   return null

@@ -27,10 +27,10 @@ data class TextLinkContent(val link: String, val text: String)
 data class PlainLinkContent(val link: String)
 
 @JsExport
-data class MentionContent(val id: String, val name: String)
+data class MentionContent(val id: String, val name: String, val display: String)
 
 @JsExport
-data class ChannelReferenceContent(val id: String, val name: String)
+data class ChannelReferenceContent(val id: String, val name: String, val display: String)
 
 external interface AddLinkedTextParams {
     val text: String
@@ -218,7 +218,8 @@ object MessageElementsUtils {
                         MixedTextTypedElement.Mention(
                             MentionContent(
                                 id = userId,
-                                name = "@$userName"
+                                name = userName,
+                                display = "@$userName"
                             )
                         )
                     )
@@ -261,7 +262,8 @@ object MessageElementsUtils {
                         MixedTextTypedElement.ChannelReference(
                             ChannelReferenceContent(
                                 id = channelId,
-                                name = "#$channelName"
+                                name = channelName,
+                                display = "#$channelName"
                             )
                         )
                     )

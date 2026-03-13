@@ -548,7 +548,7 @@ describe("Send message test", () => {
 
   test("should add linked text correctly", () => {
     const initialText = "Check out this link: "
-    messageDraft.onChange(initialText)
+    messageDraft.update(initialText)
 
     const textToAdd = "example link"
     const linkToAdd = "https://www.example.com"
@@ -1124,7 +1124,7 @@ describe("Send message test", () => {
 
     const thread = await threadedMessage.getThread()
     const firstThreadMessage = (await thread.getHistory()).messages[0]
-    const messageDraft = thread.createMessageDraftV2()
+    const messageDraft = thread.createMessageDraft()
 
     messageDraft.addQuote(firstThreadMessage)
 
@@ -1808,7 +1808,7 @@ describe("Send message test", () => {
   test("should get message elements with text, mentions, and links", async () => {
     const mentionedUser1 = await createRandomUser(chat, "mentioned1_")
     const mentionedUser2 = await createRandomUser(chat, "mentioned2_")
-    const messageDraft = channel.createMessageDraftV2()
+    const messageDraft = channel.createMessageDraft()
 
     // Build message with user mentions and a linked URL
     messageDraft.update(`Hello @${mentionedUser1.name}, check out `)
@@ -1851,7 +1851,8 @@ describe("Send message test", () => {
     // Element 1: mention for first user
     expect(elements[1].type).toBe("mention")
     expect(elements[1].content.id).toBe(mentionedUser1.id)
-    expect(elements[1].content.name).toBe("@" + mentionedUser1.name)
+    expect(elements[1].content.name).toBe(mentionedUser1.name)
+    expect((elements[1].content as any).display).toBe("@" + mentionedUser1.name)
 
     // Element 2: plainText ", check out "
     expect(elements[2].type).toBe("text")
@@ -1869,7 +1870,8 @@ describe("Send message test", () => {
     // Element 5: mention for second user
     expect(elements[5].type).toBe("mention")
     expect(elements[5].content.id).toBe(mentionedUser2.id)
-    expect(elements[5].content.name).toBe("@" + mentionedUser2.name)
+    expect(elements[5].content.name).toBe(mentionedUser2.name)
+    expect((elements[5].content as any).display).toBe("@" + mentionedUser2.name)
 
     await mentionedUser1.delete()
     await mentionedUser2.delete()

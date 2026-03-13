@@ -172,10 +172,20 @@ fun List<MessageElement>.toJs() = map { element ->
     when (element) {
         is MessageElement.Link -> when (val target = element.target) {
             is MentionTarget.Channel -> MixedTextTypedElement.ChannelReference(
-                ChannelReferenceContent(target.channelId, "#${element.text}")
+                ChannelReferenceContent(
+                    id = target.channelId,
+                    name = element.text.removePrefix("#"),
+                    display = if (element.text.startsWith("#")) element.text else "#${element.text}",
+                )
             )
             is MentionTarget.Url -> MixedTextTypedElement.TextLink(TextLinkContent(target.url, element.text))
-            is MentionTarget.User -> MixedTextTypedElement.Mention(MentionContent(target.userId, "@${element.text}"))
+            is MentionTarget.User -> MixedTextTypedElement.Mention(
+                MentionContent(
+                    id = target.userId,
+                    name = element.text.removePrefix("@"),
+                    display = if (element.text.startsWith("@")) element.text else "@${element.text}",
+                )
+            )
         }
         is MessageElement.PlainText -> MixedTextTypedElement.Text(TextContent(element.text))
     }

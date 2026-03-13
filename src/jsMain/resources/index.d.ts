@@ -369,6 +369,7 @@ type PayloadForTextTypes = {
     mention: {
         name: string;
         id: string;
+        display: string;
     };
     plainLink: {
         link: string;
@@ -380,6 +381,7 @@ type PayloadForTextTypes = {
     channelReference: {
         name: string;
         id: string;
+        display: string;
     };
 };
 type TextTypes = keyof PayloadForTextTypes;
@@ -529,7 +531,7 @@ type AddLinkedTextParams = {
 export declare class MessageDraft {
     get channel(): Channel;
     get value(): string;
-    quotedMessage: Message | undefined;
+    quotedMessage: Message | null | undefined;
     readonly config: MessageDraftConfig;
     files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
     addQuote(message: Message): void;
@@ -554,7 +556,7 @@ export declare class MessageDraft {
 export declare class MessageDraftV1 {
     value: string;
     readonly textLinks: TextLink[];
-    quotedMessage: Message | undefined;
+    quotedMessage: Message | null |undefined ;
     readonly config: MessageDraftConfig;
     files?: FileList | File[] | { name: string; type: string; data: any }[];
     onChange(text: string): Promise<{
