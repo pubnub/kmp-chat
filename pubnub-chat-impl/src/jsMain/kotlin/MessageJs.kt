@@ -98,7 +98,7 @@ open class MessageJs internal constructor(internal val message: Message, interna
         }
     }
 
-    fun editText(newText: String): Promise<MessageJs> {
+    open fun editText(newText: String): Promise<MessageJs> {
         return message.editText(newText).then { it.asJs(chatJs) }.asPromise()
     }
 
@@ -109,7 +109,7 @@ open class MessageJs internal constructor(internal val message: Message, interna
             }.asPromise()
     }
 
-    fun restore(): Promise<MessageJs> {
+    open fun restore(): Promise<MessageJs> {
         return message.restore().then { it.asJs(chatJs) }.asPromise()
     }
 
@@ -117,7 +117,7 @@ open class MessageJs internal constructor(internal val message: Message, interna
         return message.hasUserReaction(reaction)
     }
 
-    fun toggleReaction(reaction: String): Promise<MessageJs> {
+    open fun toggleReaction(reaction: String): Promise<MessageJs> {
         return message.toggleReaction(reaction).then { it.asJs(chatJs) }.asPromise()
     }
 
