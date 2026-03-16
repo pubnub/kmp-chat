@@ -107,7 +107,7 @@ data class ThreadChannelImpl(
 
     override fun getPinnedMessage(): PNFuture<ThreadMessage?> {
         return super.getPinnedMessage().then { message ->
-            (message as BaseMessage<*>).run {
+            (message as? BaseMessage<*>)?.let {
                 ThreadMessageImpl(
                     this@ThreadChannelImpl.chat,
                     this@ThreadChannelImpl.parentChannelId,
@@ -125,7 +125,7 @@ data class ThreadChannelImpl(
 
     override fun getMessage(timetoken: Long): PNFuture<ThreadMessage?> {
         return super.getMessage(timetoken).then { message ->
-            (message as BaseMessage<*>).run {
+            (message as? BaseMessage<*>)?.let {
                 ThreadMessageImpl(
                     chat = chat,
                     parentChannelId = parentChannelId,
