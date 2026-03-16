@@ -54,6 +54,7 @@ import com.pubnub.chat.types.MessageReaction
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.alsoAsync
@@ -235,7 +236,10 @@ abstract class BaseMessage<T : Message>(
         )
     }
 
-    @Deprecated("Use `createThread(text, ...)` or `createThreadMessageDraft()` instead to create a thread by sending the first reply.`")
+    @Deprecated(
+        "Use `createThread(text, ...)` to create a thread by sending the first reply, " +
+            "or `createThreadMessageDraft()` to get a draft for composing the first reply."
+    )
     override fun createThread(): PNFuture<ThreadChannel> {
         if (channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
             return log.logErrorAndReturnException(ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED).asFuture()
@@ -262,6 +266,17 @@ abstract class BaseMessage<T : Message>(
 
     override fun createThread(
         text: String,
+        params: SendTextParams,
+    ): PNFuture<ThreadChannel> {
+        @Suppress("DEPRECATION")
+        return createThread().alsoAsync {
+            it.sendText(text, params)
+        }
+    }
+
+    @Deprecated("Use createThread(text, SendTextParams) instead", level = DeprecationLevel.WARNING)
+    override fun createThread(
+        text: String,
         meta: Map<String, Any>?,
         shouldStore: Boolean,
         usePost: Boolean,
@@ -274,11 +289,35 @@ abstract class BaseMessage<T : Message>(
         @Suppress("DEPRECATION")
         return createThread().alsoAsync {
             it.sendText(
-                text, meta, shouldStore, usePost, ttl, quotedMessage, files, usersToMention, customPushData
+                text = text,
+                meta = meta,
+                shouldStore = shouldStore,
+                usePost = usePost,
+                ttl = ttl,
+                quotedMessage = quotedMessage,
+                files = files,
+                usersToMention = usersToMention,
+                customPushData = customPushData,
             )
         }
     }
 
+    override fun createThreadWithResult(
+        text: String,
+        params: SendTextParams,
+    ): PNFuture<CreateThreadResult> {
+        @Suppress("DEPRECATION")
+        return createThread().thenAsync { threadChannel ->
+            threadChannel.sendText(text, params).thenAsync {
+                // Re-fetch message from server to get accurate actions with correct timetokens
+                BaseChannel.getMessage(chat, channelId, timetoken)
+            }.then { fetchedMessage ->
+                CreateThreadResult(threadChannel, fetchedMessage ?: this)
+            }
+        }
+    }
+
+    @Deprecated("Use createThreadWithResult(text, SendTextParams) instead", level = DeprecationLevel.WARNING)
     override fun createThreadWithResult(
         text: String,
         meta: Map<String, Any>?,
@@ -293,9 +332,16 @@ abstract class BaseMessage<T : Message>(
         @Suppress("DEPRECATION")
         return createThread().thenAsync { threadChannel ->
             threadChannel.sendText(
-                text, meta, shouldStore, usePost, ttl, quotedMessage, files, usersToMention, customPushData
+                text = text,
+                meta = meta,
+                shouldStore = shouldStore,
+                usePost = usePost,
+                ttl = ttl,
+                quotedMessage = quotedMessage,
+                files = files,
+                usersToMention = usersToMention,
+                customPushData = customPushData,
             ).thenAsync {
-                // Re-fetch message from server to get accurate actions with correct timetokens
                 BaseChannel.getMessage(chat, channelId, timetoken)
             }.then { fetchedMessage ->
                 CreateThreadResult(threadChannel, fetchedMessage ?: this)
