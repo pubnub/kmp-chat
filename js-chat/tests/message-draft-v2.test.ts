@@ -1,4 +1,4 @@
-import { Channel, Chat, Message, MessageDraftV2, MixedTextTypedElement, CryptoUtils, CryptoModule } from "../dist-test"
+import { Channel, Chat, Message, MessageDraft, MessageDraftV2, MixedTextTypedElement, CryptoUtils, CryptoModule } from "../dist-test"
 import {
   createChatInstance,
   renderMessagePart,
@@ -10,17 +10,19 @@ import {
 import { jest } from "@jest/globals"
 import * as fs from "fs"
 
+jest.setTimeout(60000)
+
 describe("MessageDraft2", function () {
   jest.retryTimes(2)
 
   let chat: Chat
   let channel: Channel
-  let messageDraft: MessageDraftV2
+  let messageDraft: MessageDraft
 
   beforeEach(async () => {
     chat = await createChatInstance({ userId: generateRandomString() })
     channel = await createRandomChannel(chat)
-    messageDraft = channel.createMessageDraftV2({ userSuggestionSource: "global" })
+    messageDraft = channel.createMessageDraft({ userSuggestionSource: "global" })
   })
 
   afterEach(async () => {
@@ -28,6 +30,28 @@ describe("MessageDraft2", function () {
     await chat.currentUser.delete()
     await chat.sdk.disconnect()
   })
+
+  test("deprecated createMessageDraftV2() should still work", async () => {
+    const quoteText = "Message to quote"
+    await channel.sendText(quoteText)
+    await sleep(150)
+
+    const history = await channel.getHistory()
+    const quotedMsg = history.messages[0]
+
+    const deprecatedDraft: MessageDraftV2 = channel.createMessageDraftV2()
+    deprecatedDraft.addQuote(quotedMsg)
+    const sentText = "Message sent via deprecated draft"
+    deprecatedDraft.update(sentText)
+    await deprecatedDraft.send()
+    await sleep(300)
+
+    const historyAfter = await channel.getHistory()
+    const sent = historyAfter.messages.find((m) => m.content?.text === sentText)
+
+    expect(sent.quotedMessage).toBeDefined()
+    expect(sent.quotedMessage!.text).toBe(quoteText)
+  }, 20000)
 
   test("should mention 2 users", async () => {
     const [user1, user2] = await Promise.all([createRandomUser(chat), createRandomUser(chat)])
@@ -275,7 +299,7 @@ describe("MessageDraft2", function () {
     const someRandomUser1 = await encryptedChat1.createUser(generateRandomString(), { name: "random-1" })
     const someGroupChannel = await encryptedChat1.createGroupConversation({ users: [someRandomUser1] })
 
-    const draft = someGroupChannel.channel.createMessageDraftV2()
+    const draft = someGroupChannel.channel.createMessageDraft()
     draft.update("Random text")
     draft.files = filesFromInput
     await draft.send()

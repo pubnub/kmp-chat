@@ -2,7 +2,10 @@
 
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.chat.types.GetFileItem
+import com.pubnub.chat.types.MessageMentionedUser
+import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.SendTextParams
+import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.toMap
@@ -216,6 +219,15 @@ external interface MessageDraftConfig {
     var isTypingIndicatorTriggered: Boolean?
     var userLimit: Int?
     var channelLimit: Int?
+}
+
+external interface SendTextOptionParams : PubNub.PublishParameters {
+    var mentionedUsers: JsMap<MessageMentionedUser>?
+    var referencedChannels: JsMap<MessageReferencedChannel>?
+    var textLinks: Array<TextLink>?
+    var quotedMessage: MessageJs?
+    var files: Any?
+    var customPushData: JsMap<String>?
 }
 
 /**

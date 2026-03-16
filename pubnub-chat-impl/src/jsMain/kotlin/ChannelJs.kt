@@ -5,7 +5,9 @@ import com.pubnub.chat.MessageDraft
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.InputFile
 import com.pubnub.kmp.JsMap
+import com.pubnub.kmp.UploadableImpl
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
@@ -61,6 +63,40 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.sendText(
             text = text,
             params = options.toSendTextParams(),
+        ).then { result ->
+            result.toPublishResponse()
+        }.asPromise()
+    }
+
+    @Deprecated("Use sendText(text, SendTextParams) for simple messages or MessageDraft for rich composition.")
+    fun sendTextLegacy(text: String, options: SendTextOptionParams?): Promise<PubNub.PublishResponse> {
+        @Suppress("USELESS_CAST") // cast required to be able to call "let" extension function
+        val files = (options?.files as? Any)?.let { files ->
+            val filesArray =
+                files as? Array<*> ?: arrayOf(files)
+            filesArray.filterNotNull().map { file ->
+                val name = file.asDynamic().name ?: ""
+                val type = file.asDynamic().type ?: file.asDynamic().mimeType ?: ""
+                InputFile(name.unsafeCast<String>(), type.unsafeCast<String>(), UploadableImpl(file))
+            }
+        } ?: listOf()
+        @Suppress("DEPRECATION")
+        return channel.sendText(
+            text = text,
+            meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
+            shouldStore = options?.storeInHistory ?: true,
+            usePost = options?.sendByPost ?: false,
+            ttl = options?.ttl?.toInt(),
+            mentionedUsers = options?.mentionedUsers?.toMap()?.entries?.associate { (key, value) ->
+                key.toInt() to value
+            },
+            referencedChannels = options?.referencedChannels?.toMap()?.entries?.associate { (key, value) ->
+                key.toInt() to value
+            },
+            textLinks = options?.textLinks?.toList(),
+            quotedMessage = options?.quotedMessage?.message,
+            files = files,
+            customPushData = options?.customPushData?.toMap()
         ).then { result ->
             result.toPublishResponse()
         }.asPromise()
@@ -223,15 +259,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.getPinnedMessage().then { it?.asJs(chatJs) }.asPromise()
     }
 
-    fun createMessageDraft(config: MessageDraftConfig?): MessageDraftV1Js {
-        return MessageDraftV1Js(
-            chatJs,
-            this,
-            config
-        )
-    }
-
-    fun createMessageDraftV2(config: MessageDraftConfig?): MessageDraftV2Js {
+    fun createMessageDraft(config: MessageDraftConfig?): MessageDraftV2Js {
         return MessageDraftV2Js(
             this.chatJs,
             MessageDraftImpl(
@@ -250,6 +278,19 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
                 this.channelLimit = config?.channelLimit ?: 10
             }
         )
+    }
+
+    fun createMessageDraftV1(config: MessageDraftConfig?): MessageDraftV1Js {
+        return MessageDraftV1Js(
+            chatJs,
+            this,
+            config
+        )
+    }
+
+    @Deprecated("Use createMessageDraft() instead.")
+    fun createMessageDraftV2(config: MessageDraftConfig?): MessageDraftV2DeprecatedJs {
+        return MessageDraftV2DeprecatedJs(createMessageDraft(config))
     }
 
     fun registerForPush(): Promise<Any> {

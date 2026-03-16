@@ -331,6 +331,17 @@ type SendTextParams = {
     ttl?: number;
     customPushData?: { [key: string]: string };
 };
+type MessageDraftOptions = Omit<Publish.PublishParameters, "message" | "channel">;
+type SendTextOptionParams = Omit<Publish.PublishParameters, "message" | "channel"> & {
+    mentionedUsers?: MessageMentionedUsers;
+    referencedChannels?: MessageReferencedChannels;
+    textLinks?: TextLink[];
+    quotedMessage?: Message;
+    files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
+    customPushData?: {
+        [key: string]: string;
+    };
+};
 type EnhancedMessageEvent = Subscription.Message;
 type MessageDTOParams = History.FetchMessagesForChannelsResponse['channels'][string][number] | History.FetchMessagesWithActionsResponse['channels'][string][number] | EnhancedMessageEvent;
 type ThreadMessageDTOParams = MessageDTOParams & {
@@ -383,6 +394,7 @@ type PayloadForTextTypes = {
     };
 };
 type TextTypes = keyof PayloadForTextTypes;
+type MentionType = "mention" | "channelReference" | "textLink";
 type TextTypeElement<T extends TextTypes> = {
     type: T;
     content: PayloadForTextTypes[T];
@@ -506,6 +518,8 @@ declare class Message {
     getThread(): Promise<ThreadChannel>;
     createThread(text: string, options?: SendTextParams): Promise<ThreadChannel>;
     createThreadWithResult(text: string, options?: SendTextParams): Promise<CreateThreadResult>;
+    createThreadMessageDraft(config?: Partial<MessageDraftConfig>): Promise<MessageDraft>;
+    /** @deprecated Use createThreadMessageDraft() instead. */
     createThreadMessageDraftV2(config?: Partial<MessageDraftConfig>): Promise<MessageDraftV2>;
     removeThread(): Promise<[
         {
@@ -525,10 +539,10 @@ type AddLinkedTextParams = {
     positionInInput: number;
 };
 
-export declare class MessageDraftV2 {
+declare class MessageDraft {
     get channel(): Channel;
     get value(): string;
-    quotedMessage: Message | undefined;
+    quotedMessage: Message | null | undefined;
     readonly config: MessageDraftConfig;
     files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
     addQuote(message: Message): void;
@@ -542,31 +556,40 @@ export declare class MessageDraftV2 {
     insertText(offset: number, text: string): void;
     removeText(offset: number, length: number): void;
     insertSuggestedMention(mention: SuggestedMention, text: string): void;
-    addMention(offset: number, length: number, mentionType: TextTypes, mentionTarget: string): void;
+    addMention(offset: number, length: number, mentionType: MentionType, mentionTarget: string): void;
     removeMention(offset: number): void;
     update(text: string): void;
 }
 
-export declare class MessageDraftState {
-    private constructor();
-    get messageElements(): Array<MixedTextTypedElement>;
-    get suggestedMentions(): Promise<Array<SuggestedMention>>;
-}
-
-export declare class SuggestedMention {
-    offset: number;
-    replaceFrom: string;
-    replaceWith: string;
-    type: TextTypes;
-    target: string;
-}
-
-declare class MessageDraft {
-    private chat;
-    value: string;
-    quotedMessage: Message | undefined;
+/** @deprecated Use MessageDraft instead. */
+declare class MessageDraftV2 {
+    get channel(): Channel;
+    get value(): string;
+    quotedMessage: Message | null | undefined;
     readonly config: MessageDraftConfig;
     files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
+    addQuote(message: Message): void;
+    removeQuote(): void;
+    addLinkedText(params: AddLinkedTextParams): void;
+    removeLinkedText(positionInInput: number): void;
+    getMessagePreview(): MixedTextTypedElement[];
+    send(params?: SendTextParams): Promise<Publish.PublishResponse>;
+    addChangeListener(listener: (p0: MessageDraftState) => void): void;
+    removeChangeListener(listener: (p0: MessageDraftState) => void): void;
+    insertText(offset: number, text: string): void;
+    removeText(offset: number, length: number): void;
+    insertSuggestedMention(mention: SuggestedMention, text: string): void;
+    addMention(offset: number, length: number, mentionType: MentionType, mentionTarget: string): void;
+    removeMention(offset: number): void;
+    update(text: string): void;
+}
+
+declare class MessageDraftV1 {
+    value: string;
+    readonly textLinks: TextLink[];
+    quotedMessage: Message | null | undefined;
+    readonly config: MessageDraftConfig;
+    files?: FileList | File[] | { name: string; type: string; data: any }[];
     onChange(text: string): Promise<{
         users: {
             nameOccurrenceIndex: number;
@@ -581,12 +604,8 @@ declare class MessageDraft {
     addReferencedChannel(channel: Channel, channelNameOccurrenceIndex: number): void;
     removeReferencedChannel(channelNameOccurrenceIndex: number): void;
     removeMentionedUser(nameOccurrenceIndex: number): void;
-    send(params?: SendTextParams): Promise<unknown>;
     getHighlightedMention(selectionStart: number): {
-        mentionedUser: null;
-        nameOccurrenceIndex: number;
-    } | {
-        mentionedUser: User;
+        mentionedUser: User | null;
         nameOccurrenceIndex: number;
     };
     addLinkedText(params: AddLinkedTextParams): void;
@@ -594,7 +613,23 @@ declare class MessageDraft {
     getMessagePreview(): MixedTextTypedElement[];
     addQuote(message: Message): void;
     removeQuote(): void;
+    send(params?: MessageDraftOptions): Promise<unknown>;
 }
+
+declare class MessageDraftState {
+    private constructor();
+    get messageElements(): Array<MixedTextTypedElement>;
+    get suggestedMentions(): Promise<Array<SuggestedMention>>;
+}
+
+declare class SuggestedMention {
+    offset: number;
+    replaceFrom: string;
+    replaceWith: string;
+    type: MentionType;
+    target: string;
+}
+
 type ChannelFields = Pick<Channel, "id" | "name" | "custom" | "description" | "updated" | "status" | "type">;
 declare class Channel {
     protected chat: Chat;
@@ -618,7 +653,9 @@ declare class Channel {
     streamUpdates(callback: (channel: Channel | null) => unknown): () => void;
     onUpdated(callback: (channel: Channel) => void): () => void;
     onDeleted(callback: () => void): () => void;
-    sendText(text: string, options?: SendTextParams): Promise<unknown>;
+    sendText(text: string, options?: SendTextParams): Promise<Publish.PublishResponse>;
+    /** @deprecated Use sendText(text, SendTextParams) for simple messages or MessageDraft for rich composition. */
+    sendTextLegacy(text: string, options?: SendTextOptionParams): Promise<Publish.PublishResponse>;
     forwardMessage(message: Message): Promise<Publish.PublishResponse>;
     startTyping(): Promise<Signal.SignalResponse | undefined>;
     stopTyping(): Promise<Signal.SignalResponse | undefined>;
@@ -675,11 +712,14 @@ declare class Channel {
     pinMessage(message: Message): Promise<Channel>;
     unpinMessage(): Promise<Channel>;
     getPinnedMessage(): Promise<Message | null>;
-    getUserSuggestions(text: string, options?: {
-        limit: number;
-    }): Promise<Membership[]>;
     createMessageDraft(config?: Partial<MessageDraftConfig>): MessageDraft;
+    /**
+     * @deprecated Use createMessageDraft() instead.
+     */
     createMessageDraftV2(config?: Partial<MessageDraftConfig>): MessageDraftV2;
+    createMessageDraftV1(config?: Partial<MessageDraftConfig>): MessageDraftV1;
+    /** @deprecated Use MessageDraft with addChangeListener for suggestions instead. */
+    getUserSuggestions(text: string, options?: { limit: number }): Promise<Membership[]>;
     registerForPush(): Promise<void>;
     unregisterFromPush(): Promise<void>;
     fetchReadReceipts(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<ReadReceiptsResponse>;
@@ -865,12 +905,6 @@ declare class Chat {
         hostMembership: Membership;
         inviteesMemberships: Membership[];
     }>;
-    getUserSuggestions(text: string, options?: {
-        limit: number;
-    }): Promise<User[]>;
-    getChannelSuggestions(text: string, options?: {
-        limit: number;
-    }): Promise<Channel[]>;
     registerPushChannels(channels: string[]): Promise<void>;
     unregisterPushChannels(channels: string[]): Promise<void>;
     unregisterAllPushChannels(): Promise<void>;
@@ -919,6 +953,10 @@ declare class Chat {
         mute?: boolean;
         reason?: string;
     }): Promise<void>;
+    /** @deprecated Use MessageDraft with addChangeListener for suggestions instead. */
+    getUserSuggestions(text: string, options?: { limit: number }): Promise<User[]>;
+    /** @deprecated Use MessageDraft with addChangeListener for suggestions instead. */
+    getChannelSuggestions(text: string, options?: { limit: number }): Promise<Channel[]>;
     /**
      * Channel group
      */
@@ -1041,7 +1079,9 @@ export {
     UserFields, User,
     MessageFields, Message,
     MembershipFields, Membership,
-    ThreadChannel, ThreadMessage, MessageDraft,
+    ThreadChannel, ThreadMessage,
+    MessageDraft, MessageDraftV1, MessageDraftV2,
+    MessageDraftOptions, MessageDraftState, SuggestedMention,
     EventFields, Event,
     ChannelType, MessageType, MessageActionType, TextMessageContent,
     EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams,
@@ -1049,14 +1089,14 @@ export {
     MessageActions, MessageReaction,
     DeleteParameters,
     MessageMentionedUsers, MessageReferencedChannels,
-    SendTextParams,
+    SendTextParams, SendTextOptionParams,
     EnhancedMessageEvent,
     MessageDTOParams, ThreadMessageDTOParams,
     MembershipResponse, OptionalAllBut,
     ChannelDTOParams, ThreadChannelDTOParams,
     MessageDraftConfig,
     TextLink, GetLinkedTextParams,
-    PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement,
+    PayloadForTextTypes, TextTypes, MentionType, TextTypeElement, MixedTextTypedElement,
     ErrorLoggerSetParams, ErrorLoggerImplementation,
     UserMention,
     ChannelMentionData, ThreadMentionData, UserMentionData,
