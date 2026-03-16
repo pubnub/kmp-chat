@@ -38,7 +38,7 @@ interface ThreadChannel : Channel {
     /**
      * Fetches the message that is currently pinned to the channel. There can be only one pinned message on a channel at a time.
      *
-     * @return [PNFuture] containing pinned [Message]
+     * @return [PNFuture] containing pinned [ThreadMessage]
      */
     override fun getPinnedMessage(): PNFuture<ThreadMessage?>
 
@@ -69,7 +69,7 @@ interface ThreadChannel : Channel {
      *       - `ChannelType.UNKNOWN`: Used for channels created with the Kotlin SDK, where the channel type
      *         in the metadata does not match any of the three default Chat SDK types.
      *
-     * @return [PNFuture] containing the updated [Channel] object with its metadata.
+     * @return [PNFuture] containing the updated [ThreadChannel] object with its metadata.
      */
     override fun update(
         name: String?,
@@ -84,7 +84,7 @@ interface ThreadChannel : Channel {
      *
      * @param timetoken of the message you want to retrieve from Message Persistence
      *
-     * @return [PNFuture] containing [Message]
+     * @return [PNFuture] containing [ThreadMessage]
      */
     override fun getMessage(timetoken: Long): PNFuture<ThreadMessage?>
 

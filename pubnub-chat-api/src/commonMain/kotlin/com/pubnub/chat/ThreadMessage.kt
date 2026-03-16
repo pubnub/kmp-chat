@@ -38,7 +38,7 @@ interface ThreadMessage : Message {
      *
      * Requires Message Persistence configuration. To manage messages, you must enable Message Persistence for your app's keyset in the Admin Portal and mark the Enable Delete-From-History option.
      *
-     * @return Object returning the restored Message object.
+     * @return Object returning the restored [ThreadMessage] object.
      */
     override fun restore(): PNFuture<ThreadMessage>
 
