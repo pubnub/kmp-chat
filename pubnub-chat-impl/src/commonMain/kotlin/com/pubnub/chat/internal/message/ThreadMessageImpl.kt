@@ -7,6 +7,7 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.chat.Channel
+import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
@@ -82,6 +83,15 @@ data class ThreadMessageImpl(
                 error = messageItem.error
             )
         }
+    }
+
+    @Deprecated(
+        "Use onThreadMessageUpdated() for properly-typed ThreadMessage objects.",
+        ReplaceWith("onThreadMessageUpdated(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
+    override fun onUpdated(callback: (message: Message) -> Unit): AutoCloseable {
+        return super.onUpdated(callback)
     }
 
     override fun onThreadMessageUpdated(callback: (message: ThreadMessage) -> Unit): AutoCloseable {

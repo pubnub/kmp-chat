@@ -298,7 +298,7 @@ data class ThreadChannelImpl(
     }
 
     @Deprecated(
-        "Use onThreadChannelUpdated() for properly-typed ThreadMessage objects.",
+        "Use onThreadChannelUpdated() for properly-typed ThreadChannel objects.",
         ReplaceWith("onThreadChannelUpdated(callback)"),
         level = DeprecationLevel.WARNING,
     )
