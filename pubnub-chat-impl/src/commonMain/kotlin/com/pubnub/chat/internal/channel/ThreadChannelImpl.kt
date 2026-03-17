@@ -297,6 +297,15 @@ data class ThreadChannelImpl(
         return subscription
     }
 
+    @Deprecated(
+        "Use onThreadChannelUpdated() for properly-typed ThreadMessage objects.",
+        ReplaceWith("onThreadChannelUpdated(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
+    override fun onUpdated(callback: (channel: Channel) -> Unit): AutoCloseable {
+        return super.onUpdated(callback)
+    }
+
     override fun onThreadChannelUpdated(callback: (ThreadChannel) -> Unit): AutoCloseable {
         return onUpdated { channel ->
             callback(
