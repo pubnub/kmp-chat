@@ -16,7 +16,7 @@ jobs:
   pubnub-yml:
     name: "Validate .pubnub.yml"
     runs-on:
-      group: macos-gh
+      group: organization/Default
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
