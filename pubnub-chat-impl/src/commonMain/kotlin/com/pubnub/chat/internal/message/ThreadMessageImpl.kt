@@ -7,6 +7,7 @@ import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult
 import com.pubnub.chat.Channel
+import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
@@ -27,7 +28,7 @@ data class ThreadMessageImpl(
     override val channelId: String,
     override val userId: String,
     override val actions: Map<String, Map<String, List<Action>>>? = null,
-    val metaInternal: JsonElement? = null,
+    override val metaInternal: JsonElement? = null,
     override val error: PubNubError? = null,
 ) : BaseMessage<ThreadMessage>(
         chat = chat,
@@ -84,8 +85,33 @@ data class ThreadMessageImpl(
         }
     }
 
+    @Deprecated(
+        "Use onThreadMessageUpdated() for properly-typed ThreadMessage objects.",
+        ReplaceWith("onThreadMessageUpdated(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
+    override fun onUpdated(callback: (message: Message) -> Unit): AutoCloseable {
+        return super.onUpdated(callback)
+    }
+
     override fun onThreadMessageUpdated(callback: (message: ThreadMessage) -> Unit): AutoCloseable {
-        return onUpdated { message -> callback(message as ThreadMessage) }
+        return onUpdated { message ->
+            callback(
+                (message as BaseMessage<*>).run {
+                    ThreadMessageImpl(
+                        chat = chat,
+                        parentChannelId = parentChannelId,
+                        timetoken = message.timetoken,
+                        content = message.content,
+                        channelId = message.channelId,
+                        userId = message.userId,
+                        actions = message.actions,
+                        metaInternal = metaInternal,
+                        error = message.error
+                    )
+                }
+            )
+        }
     }
 
     override fun pinToParentChannel() = pinOrUnpinFromParentChannel(this)
@@ -99,6 +125,60 @@ data class ThreadMessageImpl(
             }
             ChatImpl.pinOrUnpinMessageToChannel(chat.pubNub, message, parentChannel).then {
                 ChannelImpl.fromDTO(chat, it.data)
+            }
+        }
+    }
+
+    override fun editText(newText: String): PNFuture<ThreadMessage> {
+        return super.editText(newText).then { message ->
+            (message as BaseMessage<*>).run {
+                ThreadMessageImpl(
+                    chat = chat,
+                    parentChannelId = parentChannelId,
+                    timetoken = message.timetoken,
+                    content = message.content,
+                    channelId = message.channelId,
+                    userId = message.userId,
+                    actions = message.actions,
+                    metaInternal = message.metaInternal,
+                    error = message.error
+                )
+            }
+        }
+    }
+
+    override fun toggleReaction(reaction: String): PNFuture<ThreadMessage> {
+        return super.toggleReaction(reaction).then { message ->
+            (message as BaseMessage<*>).run {
+                ThreadMessageImpl(
+                    chat = chat,
+                    parentChannelId = parentChannelId,
+                    timetoken = message.timetoken,
+                    content = message.content,
+                    channelId = message.channelId,
+                    userId = message.userId,
+                    actions = message.actions,
+                    metaInternal = message.metaInternal,
+                    error = message.error
+                )
+            }
+        }
+    }
+
+    override fun restore(): PNFuture<ThreadMessage> {
+        return super.restore().then { message ->
+            (message as BaseMessage<*>).run {
+                ThreadMessageImpl(
+                    chat = chat,
+                    parentChannelId = parentChannelId,
+                    timetoken = message.timetoken,
+                    content = message.content,
+                    channelId = message.channelId,
+                    userId = message.userId,
+                    actions = message.actions,
+                    metaInternal = message.metaInternal,
+                    error = message.error
+                )
             }
         }
     }

@@ -4,6 +4,7 @@ import com.pubnub.chat.Event
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.internal.TYPE_OF_MESSAGE
 import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_CUSTOM
+import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
@@ -23,6 +24,26 @@ class ThreadChannelJs internal constructor(internal val threadChannel: ThreadCha
 
     override fun unpinMessage(): Promise<ThreadChannelJs> {
         return threadChannel.unpinMessage().then { it.asJs(chatJs) }.asPromise()
+    }
+
+    override fun update(data: ChannelFields): Promise<ThreadChannelJs> {
+        return threadChannel.update(
+            data.name,
+            data.custom?.let { convertToCustomObject(it) },
+            data.description,
+            data.status,
+            data.type?.let { ChannelType.from(it) }
+        ).then {
+            it.asJs(chatJs)
+        }.asPromise()
+    }
+
+    override fun getMessage(timetoken: String): Promise<ThreadMessageJs> {
+        return threadChannel.getMessage(timetoken.tryLong()!!).then { it!!.asJs(chatJs) }.asPromise()
+    }
+
+    override fun getPinnedMessage(): Promise<MessageJs?> {
+        return threadChannel.getPinnedMessage().then { it?.asJs(chatJs) }.asPromise()
     }
 
     fun pinMessageToParentChannel(message: ThreadMessageJs): Promise<ChannelJs> {

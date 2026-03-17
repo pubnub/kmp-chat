@@ -10,6 +10,18 @@ import kotlin.js.Promise
 class ThreadMessageJs internal constructor(internal val threadMessage: ThreadMessage, chatJs: ChatJs) : MessageJs(threadMessage, chatJs) {
     val parentChannelId by threadMessage::parentChannelId
 
+    override fun editText(newText: String): Promise<ThreadMessageJs> {
+        return threadMessage.editText(newText).then { it.asJs(chatJs) }.asPromise()
+    }
+
+    override fun toggleReaction(reaction: String): Promise<ThreadMessageJs> {
+        return threadMessage.toggleReaction(reaction).then { it.asJs(chatJs) }.asPromise()
+    }
+
+    override fun restore(): Promise<ThreadMessageJs> {
+        return threadMessage.restore().then { it.asJs(chatJs) }.asPromise()
+    }
+
     fun pinToParentChannel(): Promise<ChannelJs> {
         return threadMessage.pinToParentChannel().then { it.asJs(chatJs) }.asPromise()
     }

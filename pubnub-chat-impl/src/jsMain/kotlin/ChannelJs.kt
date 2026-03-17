@@ -27,7 +27,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
     override val status: String? by channel::status
     override val type: String? get() = channel.type?.stringValue
 
-    fun update(data: ChannelFields): Promise<ChannelJs> {
+    open fun update(data: ChannelFields): Promise<ChannelJs> {
         return channel.update(
             data.name,
             data.custom?.let { convertToCustomObject(it) },
@@ -160,7 +160,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
-    fun getMessage(timetoken: String): Promise<MessageJs> {
+    open fun getMessage(timetoken: String): Promise<MessageJs> {
         return channel.getMessage(timetoken.tryLong()!!).then { it!!.asJs(chatJs) }.asPromise()
     }
 
@@ -219,7 +219,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.unpinMessage().then { it.asJs(chatJs) }.asPromise()
     }
 
-    fun getPinnedMessage(): Promise<MessageJs?> {
+    open fun getPinnedMessage(): Promise<MessageJs?> {
         return channel.getPinnedMessage().then { it?.asJs(chatJs) }.asPromise()
     }
 

@@ -16,6 +16,7 @@ import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.defaultGetMessageResponseBody
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_HANDLING_ONMESSAGE_EVENT
 import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
+import com.pubnub.chat.internal.message.BaseMessage
 import com.pubnub.chat.internal.message.ThreadMessageImpl
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.types.ChannelType
@@ -25,6 +26,7 @@ import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.SendTextParams
 import com.pubnub.chat.types.TextLink
+import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.awaitAll
@@ -76,6 +78,66 @@ data class ThreadChannelImpl(
             }
             ChatImpl.pinOrUnpinMessageToChannel(chat.pubNub, message, parentChannel).then {
                 ChannelImpl.fromDTO(chat, it.data)
+            }
+        }
+    }
+
+    override fun update(
+        name: String?,
+        custom: CustomObject?,
+        description: String?,
+        status: String?,
+        type: ChannelType?
+    ): PNFuture<ThreadChannel> {
+        return super.update(name, custom, description, status, type).then { channel ->
+            ThreadChannelImpl(
+                parentMessage = parentMessage,
+                chat = chat,
+                clock = clock,
+                id = id,
+                name = channel.name,
+                custom = channel.custom,
+                description = channel.description,
+                updated = channel.updated,
+                status = channel.status,
+                type = channel.type,
+                threadCreated = threadCreated
+            )
+        }
+    }
+
+    override fun getPinnedMessage(): PNFuture<ThreadMessage?> {
+        return super.getPinnedMessage().then { message ->
+            (message as? BaseMessage<*>)?.let {
+                ThreadMessageImpl(
+                    this@ThreadChannelImpl.chat,
+                    this@ThreadChannelImpl.parentChannelId,
+                    message.timetoken,
+                    message.content,
+                    message.channelId,
+                    message.userId,
+                    message.actions,
+                    message.metaInternal,
+                    message.error
+                )
+            }
+        }
+    }
+
+    override fun getMessage(timetoken: Long): PNFuture<ThreadMessage?> {
+        return super.getMessage(timetoken).then { message ->
+            (message as? BaseMessage<*>)?.let {
+                ThreadMessageImpl(
+                    chat = chat,
+                    parentChannelId = parentChannelId,
+                    timetoken = message.timetoken,
+                    content = message.content,
+                    channelId = message.channelId,
+                    userId = message.userId,
+                    actions = message.actions,
+                    metaInternal = message.metaInternal,
+                    error = message.error
+                )
             }
         }
     }
@@ -193,6 +255,15 @@ data class ThreadChannelImpl(
         )
     }
 
+    @Deprecated(
+        "Use onThreadMessageReceived() for properly-typed ThreadMessage objects.",
+        ReplaceWith("onThreadMessageReceived(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
+    override fun onMessageReceived(callback: (Message) -> Unit): AutoCloseable {
+        return super.onMessageReceived(callback)
+    }
+
     override fun onThreadMessageReceived(callback: (ThreadMessage) -> Unit): AutoCloseable {
         val channelEntity = chat.pubNub.channel(id)
         val subscription = channelEntity.subscription()
@@ -226,8 +297,33 @@ data class ThreadChannelImpl(
         return subscription
     }
 
+    @Deprecated(
+        "Use onThreadChannelUpdated() for properly-typed ThreadChannel objects.",
+        ReplaceWith("onThreadChannelUpdated(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
+    override fun onUpdated(callback: (channel: Channel) -> Unit): AutoCloseable {
+        return super.onUpdated(callback)
+    }
+
     override fun onThreadChannelUpdated(callback: (ThreadChannel) -> Unit): AutoCloseable {
-        return onUpdated { channel -> callback(channel as ThreadChannel) }
+        return onUpdated { channel ->
+            callback(
+                ThreadChannelImpl(
+                    parentMessage = parentMessage,
+                    chat = chat,
+                    clock = clock,
+                    id = id,
+                    name = channel.name,
+                    custom = channel.custom,
+                    description = channel.description,
+                    updated = channel.updated,
+                    status = channel.status,
+                    type = channel.type,
+                    threadCreated = threadCreated
+                )
+            )
+        }
     }
 
     companion object {
