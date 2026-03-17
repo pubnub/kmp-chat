@@ -3,14 +3,11 @@
 @file:OptIn(ExperimentalJsExport::class)
 
 import com.pubnub.api.PubNubException
-import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.JsMap
-import com.pubnub.kmp.UploadableImpl
 import com.pubnub.kmp.createJsObject
-import com.pubnub.kmp.then
 import com.pubnub.kmp.toJsMap
 import com.pubnub.kmp.toMap
 import kotlin.js.Promise
@@ -854,7 +851,7 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
         val combined = (
             baseOptions.unsafeCast<JsMap<Any>>().toMap() +
                 (options?.unsafeCast<JsMap<Any>>()?.toMap() ?: emptyMap())
-            ).toJsMap().unsafeCast<SendTextOptionParams>()
+        ).toJsMap().unsafeCast<SendTextOptionParams>()
 
         @Suppress("DEPRECATION")
         return channel.sendTextLegacy(value, combined)

@@ -111,6 +111,9 @@ class MessageDraftV2Js internal constructor(
 }
 
 @JsExport
+/**
+ * Deprecated wrapper for [MessageDraftV2Js]. Use [MessageDraftV2Js] directly via [ChannelJs.createMessageDraft].
+ */
 @JsName("MessageDraftV2")
 @Deprecated(
     message = "Use MessageDraft instead.",
@@ -137,20 +140,32 @@ class MessageDraftV2DeprecatedJs internal constructor(
         }
 
     fun addQuote(message: MessageJs) = delegate.addQuote(message)
+
     fun removeQuote() = delegate.removeQuote()
+
     fun addLinkedText(params: AddLinkedTextParams) = delegate.addLinkedText(params)
+
     fun removeLinkedText(positionOnInput: Int) = delegate.removeLinkedText(positionOnInput)
+
     fun getMessagePreview(): Array<MixedTextTypedElement> = delegate.getMessagePreview()
+
     fun send(options: SendTextParamsJs?): Promise<PubNub.PublishResponse> = delegate.send(options)
+
     fun addChangeListener(listener: (MessageDraftState) -> Unit) = delegate.addChangeListener(listener)
+
     fun removeChangeListener(listener: (MessageDraftState) -> Unit) = delegate.removeChangeListener(listener)
+
     fun insertText(offset: Int, text: String) = delegate.insertText(offset, text)
+
     fun removeText(offset: Int, length: Int) = delegate.removeText(offset, length)
+
     fun insertSuggestedMention(mention: SuggestedMentionJs, text: String) = delegate.insertSuggestedMention(mention, text)
+
     fun addMention(offset: Int, length: Int, mentionType: String, mentionTarget: String) =
         delegate.addMention(offset, length, mentionType, mentionTarget)
 
     fun removeMention(offset: Int) = delegate.removeMention(offset)
+
     fun update(text: String) = delegate.update(text)
 }
 
