@@ -948,6 +948,9 @@ declare class ThreadMessage extends Message {
     pinToParentChannel(): Promise<Channel>;
     unpinFromParentChannel(): Promise<Channel>;
     onThreadMessageUpdated(callback: (message: ThreadMessage) => void): () => void;
+    editText(newText: string): Promise<ThreadMessage>;
+    restore(): Promise<ThreadMessage | undefined>;
+    toggleReaction(reaction: string): Promise<ThreadMessage>;
 }
 declare class ThreadChannel extends Channel {
     readonly parentChannelId: string;
@@ -957,6 +960,7 @@ declare class ThreadChannel extends Channel {
     unpinMessageFromParentChannel(): Promise<Channel>;
     onThreadMessageReceived(callback: (message: ThreadMessage) => void): () => void;
     onThreadChannelUpdated(callback: (threadChannel: ThreadChannel) => void): () => void;
+    getMessage(timetoken: string): Promise<ThreadMessage>;
     getHistory(params?: {
         startTimetoken?: string;
         endTimetoken?: string;
@@ -965,6 +969,8 @@ declare class ThreadChannel extends Channel {
         messages: ThreadMessage[];
         isMore: boolean;
     }>;
+    update(data: Omit<ChannelFields, "id">): Promise<ThreadChannel>;
+    getPinnedMessage(): Promise<ThreadMessage | null>;
     delete(options?: DeleteParameters): Promise<true | Channel>;
 }
 declare class TimetokenUtils {

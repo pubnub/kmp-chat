@@ -17,7 +17,7 @@ data class MessageImpl(
     override val channelId: String,
     override val userId: String,
     override val actions: Map<String, Map<String, List<Action>>>? = null,
-    val metaInternal: JsonElement? = null,
+    override val metaInternal: JsonElement? = null,
     override val error: PubNubError? = null,
 ) : BaseMessage<Message>(
         chat = chat,
