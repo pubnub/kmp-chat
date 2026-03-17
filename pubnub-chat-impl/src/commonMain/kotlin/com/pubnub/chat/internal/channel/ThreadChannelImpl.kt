@@ -255,6 +255,15 @@ data class ThreadChannelImpl(
         )
     }
 
+    @Deprecated(
+        "Use onThreadMessageReceived() for properly-typed ThreadMessage objects.",
+        ReplaceWith("onThreadMessageReceived(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
+    override fun onMessageReceived(callback: (Message) -> Unit): AutoCloseable {
+        return super.onMessageReceived(callback)
+    }
+
     override fun onThreadMessageReceived(callback: (ThreadMessage) -> Unit): AutoCloseable {
         val channelEntity = chat.pubNub.channel(id)
         val subscription = channelEntity.subscription()
