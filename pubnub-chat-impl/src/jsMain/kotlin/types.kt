@@ -221,6 +221,10 @@ external interface MessageDraftConfig {
     var channelLimit: Int?
 }
 
+/**
+ * Legacy parameters for sending text messages with rich composition options.
+ * @deprecated Use [SendTextParamsJs] with [Channel.sendText] instead.
+ */
 external interface SendTextOptionParams : PubNub.PublishParameters {
     var mentionedUsers: JsMap<MessageMentionedUser>?
     var referencedChannels: JsMap<MessageReferencedChannel>?
