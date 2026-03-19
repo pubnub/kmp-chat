@@ -40,12 +40,7 @@ describe("User test", () => {
   })
 
   test("Should be able to delete user", async () => {
-    const deleteOptions = { soft: true }
-    const { status } = (await user.delete(deleteOptions)) as User
-    expect(status).toBe("deleted")
-
-    const deleteResult = await user.delete()
-    expect(deleteResult).toBe(true)
+    await user.delete()
     const fetchedUser = await chat.getUser(user.id)
     expect(fetchedUser).toBeNull()
   })
@@ -433,13 +428,6 @@ describe("User test", () => {
     expect(updatedUser.updated).toBeDefined()
 
     await updatedUser.delete()
-  })
-
-  test("should soft delete user", async () => {
-    const testUser = await createRandomUser(chat)
-    const softDeleteResult = await testUser.delete({ soft: true })
-    expect(softDeleteResult).toBeDefined()
-    expect((softDeleteResult as User).status).toBe("deleted")
   })
 
   test("should invoke onUpdated callback when user is updated", async () => {

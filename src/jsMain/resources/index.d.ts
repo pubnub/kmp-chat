@@ -46,7 +46,7 @@ declare class User {
     * CRUD
     */
     update(data: Omit<UserFields, "id">): Promise<User>;
-    delete(options?: DeleteParameters): Promise<true | User>;
+    delete(): Promise<true>;
     /*
     * Updates
     */
@@ -609,7 +609,7 @@ declare class Channel {
     * CRUD
     */
     update(data: Omit<ChannelFields, "id">): Promise<Channel>;
-    delete(options?: DeleteParameters): Promise<true | Channel>;
+    delete(): Promise<true>;
     /*
     * Updates
     */
@@ -805,7 +805,7 @@ declare class Chat {
     getUser(id: string): Promise<User | null>;
     createUser(id: string, data: Omit<UserFields, "id">): Promise<User>;
     updateUser(id: string, data: Omit<UserFields, "id">): Promise<User>;
-    deleteUser(id: string, params?: DeleteParameters): Promise<true | User>;
+    deleteUser(id: string): Promise<true>;
     getUsers(params?: Omit<AppContext.GetAllMetadataParameters<AppContext.UUIDMetadataObject<AppContext.CustomData>>, "include">): Promise<{
         users: User[];
         page: {
@@ -827,7 +827,7 @@ declare class Chat {
         };
         total: number | undefined;
     }>;
-    deleteChannel(id: string, params?: DeleteParameters): Promise<true | Channel>;
+    deleteChannel(id: string): Promise<true>;
     /**
      * Channel types
      */
@@ -971,7 +971,7 @@ declare class ThreadChannel extends Channel {
     }>;
     update(data: Omit<ChannelFields, "id">): Promise<ThreadChannel>;
     getPinnedMessage(): Promise<ThreadMessage | null>;
-    delete(options?: DeleteParameters): Promise<true | Channel>;
+    delete(): Promise<true>;
 }
 declare class TimetokenUtils {
     static unixToTimetoken(unixTime: string | number): number;

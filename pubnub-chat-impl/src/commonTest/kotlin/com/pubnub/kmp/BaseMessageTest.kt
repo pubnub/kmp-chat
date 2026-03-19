@@ -301,11 +301,11 @@ class BaseMessageTest : BaseTest() {
             channelId = messageChannelId,
             userId = "testUserId"
         )
-        val mockResult = Pair(PNRemoveMessageActionResult(), null as Channel?)
+        val mockResult = Pair(PNRemoveMessageActionResult(), Unit)
 
         every { chat.removeThreadChannel(chat, message) } returns mockResult.asFuture()
 
-        message.removeThread().async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+        message.removeThread().async { result: Result<Pair<PNRemoveMessageActionResult, Unit>> ->
             assertTrue(result.isSuccess)
         }
     }
@@ -325,7 +325,7 @@ class BaseMessageTest : BaseTest() {
 
         every { chat.removeThreadChannel(chat, message) } returns PubNubException(errorMessage).asFuture()
 
-        message.removeThread().async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+        message.removeThread().async { result: Result<Pair<PNRemoveMessageActionResult, Unit>> ->
             assertTrue(result.isFailure)
             assertEquals(errorMessage, result.exceptionOrNull()?.message)
         }

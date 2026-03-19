@@ -76,8 +76,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     override fun removeThreadChannel(
         chat: Chat,
         message: Message,
-        soft: Boolean
-    ): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> {
+    ): PNFuture<Pair<PNRemoveMessageActionResult, Unit>> {
         TODO("Not yet implemented")
     }
 
@@ -137,7 +136,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun deleteUser(id: String, soft: Boolean): PNFuture<User?> {
+    override fun deleteUser(id: String): PNFuture<Unit> {
         TODO("Not yet implemented")
     }
 
@@ -184,7 +183,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
         TODO("Not yet implemented")
     }
 
-    override fun deleteChannel(id: String, soft: Boolean): PNFuture<Channel?> {
+    override fun deleteChannel(id: String): PNFuture<Unit> {
         TODO("Not yet implemented")
     }
 

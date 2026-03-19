@@ -11,7 +11,6 @@ import kotlin.time.Duration.Companion.seconds
 
 private val log = Logger.withTag("DefaultGetMessage")
 
-internal const val DELETED = "deleted"
 internal const val ORIGINAL_PUBLISHER = "originalPublisher"
 internal const val ORIGINAL_CHANNEL_ID = "originalChannelId"
 internal const val HTTP_ERROR_404 = 404

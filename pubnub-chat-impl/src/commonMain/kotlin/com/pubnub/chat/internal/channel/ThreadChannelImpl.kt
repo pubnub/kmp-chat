@@ -11,7 +11,6 @@ import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
-import com.pubnub.chat.internal.DELETED
 import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.defaultGetMessageResponseBody
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_HANDLING_ONMESSAGE_EVENT
@@ -142,8 +141,8 @@ data class ThreadChannelImpl(
         }
     }
 
-    override fun delete(soft: Boolean): PNFuture<Channel?> {
-        return chat.removeThreadChannel(chat, parentMessage, soft).then { it.second }
+    override fun delete(): PNFuture<Unit> {
+        return chat.removeThreadChannel(chat, parentMessage).then { it.second }
     }
 
     private fun createThreadAndSend(sendAction: () -> PNFuture<PNPublishResult>): PNFuture<PNPublishResult> {
@@ -239,8 +238,6 @@ data class ThreadChannelImpl(
             )
         }
     }
-
-    override fun copyWithStatusDeleted(): ThreadChannel = copy(status = DELETED)
 
     override fun emitUserMention(
         userId: String,

@@ -80,47 +80,22 @@ class UserTest {
     )
 
     @Test
-    fun canSoftDeleteUser() {
-        // given
-        val softDelete = true
-        val chat = object : FakeChat(chatConfig, pubNub) {
-            var soft: Boolean? = null
-
-            override fun deleteUser(id: String, soft: Boolean): PNFuture<User?> {
-                this.soft = soft
-                return objectUnderTest.asFuture()
-            }
-        }
-        val sut = createUser(chat)
-
-        // when
-        sut.delete(softDelete).async {}
-
-        // then
-        assertEquals(softDelete, chat.soft)
-    }
-
-    @Test
     fun canHardDeleteUser() {
         // given
-        val softDelete = false
         val chat = object : FakeChat(chatConfig, pubNub) {
-            var softDeleted: Boolean? = null
             var deletedUserId: String? = null
 
-            override fun deleteUser(id: String, soft: Boolean): PNFuture<User?> {
-                this.softDeleted = soft
+            override fun deleteUser(id: String): PNFuture<Unit> {
                 this.deletedUserId = id
-                return objectUnderTest.asFuture()
+                return Unit.asFuture()
             }
         }
         val sut = createUser(chat)
 
         // when
-        sut.delete(softDelete).async {}
+        sut.delete().async {}
 
         // then
-        assertEquals(softDelete, chat.softDeleted)
         assertEquals(sut.id, chat.deletedUserId)
     }
 

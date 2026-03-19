@@ -279,69 +279,21 @@ class ChatTest : BaseTest() {
             }
         every { pubnub.removeUUIDMetadata(any()) } returns removeUUIDMetadataEndpoint
         every { removeUUIDMetadataEndpoint.async(any()) } returns Unit
-        val softDeleteFalse = false
 
         // when
-        objectUnderTest.deleteUser(id, softDeleteFalse).async {}
+        objectUnderTest.deleteUser(id).async {}
 
         // then
         verify { pubnub.removeUUIDMetadata(uuid = id) }
     }
 
     @Test
-    fun canSoftDeleteUser() {
-        // given
-        every {
-            pubnub.setUUIDMetadata(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any()
-            )
-        } returns setUUIDMetadataEndpoint
-        every { setUUIDMetadataEndpoint.async(any()) } returns Unit
-
-        val pnUuidMetadataResult = getPNUuidMetadataResult()
-        every { pubnub.getUUIDMetadata(any(), any()) } returns getUUIDMetadataEndpoint
-        every { getUUIDMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNUUIDMetadataResult>>) ->
-            callback1.accept(Result.success(pnUuidMetadataResult))
-        }
-        val softDelete = true
-        val status = "deleted"
-        val includeCustomFalse = false
-
-        // when
-        objectUnderTest.deleteUser(id, softDelete).async {}
-
-        // then
-        verify {
-            pubnub.setUUIDMetadata(
-                id,
-                name,
-                externalId,
-                profileUrl,
-                email,
-                any(),
-                includeCustomFalse,
-                typeAsString,
-                status
-            )
-        }
-    }
-
-    @Test
     fun whenIdIsEmptyThenDeleteShouldResultsFailure() {
         // given
         val emptyID = ""
-        val softDelete = true
 
         // when
-        objectUnderTest.deleteUser(emptyID, softDelete).async { result: Result<User?> ->
+        objectUnderTest.deleteUser(emptyID).async { result: Result<Unit> ->
             // then
             assertTrue(result.isFailure)
             assertEquals("Id is required", result.exceptionOrNull()?.message)
@@ -617,43 +569,9 @@ class ChatTest : BaseTest() {
         every { pubnub.removeChannelMetadata(any()) } returns removeChannelMetadataEndpoint
         every { removeChannelMetadataEndpoint.async(any()) } returns Unit
 
-        objectUnderTest.deleteChannel(id = id, soft = false).async {}
+        objectUnderTest.deleteChannel(id = id).async {}
 
         verify { pubnub.removeChannelMetadata(channel = id) }
-    }
-
-    @Test
-    fun canSoftDeleteChannel() {
-        // given
-        every {
-            pubnub.setChannelMetadata(any(), any(), any(), any(), any(), any(), any())
-        } returns setChannelMetadataEndpoint
-        every { setChannelMetadataEndpoint.async(any()) } returns Unit
-        val pnChannelMetadataResult: PNChannelMetadataResult =
-            getPNChannelMetadataResult(id, name, description, customData, updated, typeAsString, status)
-        every { pubnub.getChannelMetadata(any(), any()) } returns getChannelMetadataEndpoint
-        every { getChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataResult>>) ->
-            callback1.accept(Result.success(pnChannelMetadataResult))
-        }
-        val softDelete = true
-        val status = "deleted"
-        val includeCustomFalse = false
-
-        // when
-        objectUnderTest.deleteChannel(id, softDelete).async {}
-
-        // then
-        verify {
-            pubnub.setChannelMetadata(
-                channel = id,
-                name = name,
-                description = description,
-                custom = any(),
-                includeCustom = includeCustomFalse,
-                type = typeAsString.lowercase(),
-                status = status
-            )
-        }
     }
 
     @Test
@@ -1802,8 +1720,8 @@ class ChatTest : BaseTest() {
         val message = createMessage(messageChannelId, userId, messageTimetoken)
 
         // when
-        objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
-            .async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+        objectUnderTest.removeThreadChannel(objectUnderTest, message)
+            .async { result: Result<Pair<PNRemoveMessageActionResult, Unit>> ->
                 // then
                 assertTrue(result.isFailure)
                 assertEquals("There is no thread to be deleted.", result.exceptionOrNull()?.message)
@@ -1862,8 +1780,8 @@ class ChatTest : BaseTest() {
         val message = createMessage(messageChannelId, userId, messageTimetoken)
 
         // when
-        objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
-            .async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+        objectUnderTest.removeThreadChannel(objectUnderTest, message)
+            .async { result: Result<Pair<PNRemoveMessageActionResult, Unit>> ->
                 // then
                 assertTrue(result.isFailure)
                 assertEquals(
@@ -1933,8 +1851,8 @@ class ChatTest : BaseTest() {
         val message = createMessage(messageChannelId, userId, messageTimetoken)
 
         // when
-        objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
-            .async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+        objectUnderTest.removeThreadChannel(objectUnderTest, message)
+            .async { result: Result<Pair<PNRemoveMessageActionResult, Unit>> ->
                 // then
                 assertTrue(result.isFailure)
                 assertTrue(result.exceptionOrNull()?.message?.contains("There is no thread with id:") == true)
@@ -2016,27 +1934,15 @@ class ChatTest : BaseTest() {
             callback.accept(Result.success(PNRemoveMessageActionResult()))
         }
 
-        // Mock channel delete (soft delete uses setChannelMetadata)
-        every {
-            pubnub.setChannelMetadata(
-                channel = threadId,
-                name = any(),
-                description = any(),
-                custom = any(),
-                includeCustom = any(),
-                type = any(),
-                status = "deleted"
-            )
-        } returns setChannelMetadataEndpoint
-        every { setChannelMetadataEndpoint.async(any()) } calls { (callback: Consumer<Result<PNChannelMetadataResult>>) ->
-            callback.accept(Result.success(getPNChannelMetadataResult(updatedId = threadId, updatedStatus = "deleted")))
-        }
+        // Mock channel delete (hard delete uses removeChannelMetadata)
+        every { pubnub.removeChannelMetadata(channel = threadId) } returns removeChannelMetadataEndpoint
+        every { removeChannelMetadataEndpoint.async(any()) } returns Unit
 
         val message = createMessage(messageChannelId, userId, messageTimetoken)
 
         // when
-        objectUnderTest.removeThreadChannel(objectUnderTest, message, soft = true)
-            .async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+        objectUnderTest.removeThreadChannel(objectUnderTest, message)
+            .async { result: Result<Pair<PNRemoveMessageActionResult, Unit>> ->
                 // then
                 assertTrue(result.isSuccess)
             }
