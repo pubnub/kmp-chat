@@ -3,14 +3,11 @@
 @file:OptIn(ExperimentalJsExport::class)
 
 import com.pubnub.api.PubNubException
-import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.JsMap
-import com.pubnub.kmp.UploadableImpl
 import com.pubnub.kmp.createJsObject
-import com.pubnub.kmp.then
 import com.pubnub.kmp.toJsMap
 import com.pubnub.kmp.toMap
 import kotlin.js.Promise
@@ -349,7 +346,7 @@ fun range(start: Int, stop: Int, step: Int = 1): List<Int> {
 }
 
 @JsExport
-@JsName("MessageDraft")
+@JsName("MessageDraftV1")
 class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs, config: MessageDraftConfig? = null) {
     private var previousValue = ""
     private val mentionedUsers: MutableMap<Int, UserJs> = mutableMapOf()
@@ -842,27 +839,22 @@ class MessageDraftV1Js(private val chat: ChatJs, private val channel: ChannelJs,
         }.toJsMap()
     }
 
-    fun send(options: SendTextParamsJs?): Promise<Any> {
-        val filesArray = files?.let {
-            val arr = it as? Array<*> ?: arrayOf(it)
-            arr.filterNotNull().map { file: dynamic ->
-                InputFile(file.name ?: "", file.type ?: file.mimeType ?: "", UploadableImpl(file))
-            }
+    fun send(options: PubNub.PublishParameters?): Promise<Any> {
+        val baseOptions = createJsObject<SendTextOptionParams> {
+            this.files = this@MessageDraftV1Js.files
+            this.mentionedUsers = transformMentionedUsersToSend()
+            this.referencedChannels = transformReferencedChannelsToSend()
+            this.textLinks = this@MessageDraftV1Js._textLinks.toTypedArray()
+            this.quotedMessage = this@MessageDraftV1Js.quotedMessage
         }
+
+        val combined = (
+            baseOptions.unsafeCast<JsMap<Any>>().toMap() +
+                (options?.unsafeCast<JsMap<Any>>()?.toMap() ?: emptyMap())
+        ).toJsMap().unsafeCast<SendTextOptionParams>()
+
         @Suppress("DEPRECATION")
-        return channel.channel.sendText(
-            text = value,
-            meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
-            shouldStore = options?.storeInHistory ?: true,
-            usePost = options?.sendByPost ?: false,
-            ttl = options?.ttl?.toInt(),
-            mentionedUsers = transformMentionedUsersToSend().toMap().mapKeys { it.key.toInt() },
-            referencedChannels = transformReferencedChannelsToSend().toMap().mapKeys { it.key.toInt() },
-            textLinks = _textLinks.toList(),
-            quotedMessage = quotedMessage?.message,
-            files = filesArray,
-            customPushData = options?.customPushData?.toMap(),
-        ).then { it.toPublishResponse() }.asPromise()
+        return channel.sendTextLegacy(value, combined)
     }
 
     fun getHighlightedMention(selectionStart: Int): JsMap<Any?> {

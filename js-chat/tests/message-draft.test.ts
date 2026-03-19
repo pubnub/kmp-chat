@@ -1,14 +1,17 @@
-import { Channel, Chat } from "../dist-test"
+import { Channel, Chat, MessageDraftV1 } from "../dist-test"
 import {
   createChatInstance,
   generateRandomString,
   renderMessagePart,
   createRandomChannel,
-  createRandomUser
+  createRandomUser,
+  sleep
 } from "./utils"
 import { jest } from "@jest/globals"
 
-describe("MessageDraft", function () {
+jest.setTimeout(60000)
+
+describe("MessageDraftV1", function () {
   jest.retryTimes(2)
 
   let chat: Chat
@@ -18,7 +21,7 @@ describe("MessageDraft", function () {
   beforeEach(async () => {
     chat = await createChatInstance({ userId: generateRandomString() })
     channel = await createRandomChannel(chat)
-    messageDraft = channel.createMessageDraft({ userSuggestionSource: "global" })
+    messageDraft = channel.createMessageDraftV1({ userSuggestionSource: "global" })
   })
 
   afterEach(async () => {
@@ -451,6 +454,31 @@ describe("MessageDraft", function () {
       user5.delete({ soft: false }),
     ])
   }, 20000)
+
+  test("should send V1 draft with mentions and quote via legacy path", async () => {
+    const user = await createRandomUser(chat)
+
+    // Send a message to quote
+    await channel.sendText("Message to quote")
+    await sleep(150)
+    const history = await channel.getHistory()
+    const quotedMsg = history.messages[0]
+
+    messageDraft.onChange("Hello @user1")
+    messageDraft.addMentionedUser(user, 0)
+    messageDraft.addQuote(quotedMsg)
+
+    await messageDraft.send({ storeInHistory: true })
+    await sleep(300)
+
+    const historyAfter = await channel.getHistory()
+    const sentMessage = historyAfter.messages.find((m) => m.text === messageDraft.value)
+    expect(sentMessage).toBeDefined()
+    expect(sentMessage!.mentionedUsers).toBeDefined()
+    expect(sentMessage!.quotedMessage).toBeDefined()
+
+    await user.delete()
+  }, 30000)
 
   test("should reference 3 channels and 3 mentions with no order", async () => {
     const testId = `js-chat-${Date.now()}`

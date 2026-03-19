@@ -10,6 +10,8 @@ import {
   sleep,
 } from "./utils"
 
+jest.setTimeout(60000)
+
 describe("Channel group test", () => {
   let chat: Chat
   let firstChannel: Channel

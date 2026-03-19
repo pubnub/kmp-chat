@@ -1,5 +1,5 @@
 // lib/tests/testUtils.ts
-import { Chat, MessageDraft, Channel, Message, ChatConfig } from "../dist-test"
+import { Chat, MessageDraft, MessageDraftV1, Channel, Message, ChatConfig } from "../dist-test"
 import * as dotenv from "dotenv"
 import { User } from "../dist-test"
 import { MixedTextTypedElement } from "../dist-test"
@@ -155,7 +155,7 @@ export const extractMentionedUserIds = (messageText: string): string[] => {
 }
 
 export function generateExpectedLinkedText(
-  messageDraft: MessageDraft,
+  messageDraft: MessageDraftV1,
   someUser: User,
   someUser2: User
 ) {
@@ -242,7 +242,7 @@ export function generateExpectedLinkedText(
 }
 
 export const sendMessageAndWaitForHistory = async (
-  messageDraft: MessageDraft,
+  messageDraft: MessageDraftV1 | MessageDraft,
   channel: Channel,
   waitTimeMs = 150
 ): Promise<Message | undefined> => {

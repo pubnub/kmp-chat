@@ -12,7 +12,7 @@ import com.pubnub.kmp.then
 import kotlin.js.Promise
 
 @JsExport
-@JsName("MessageDraftV2")
+@JsName("MessageDraft")
 class MessageDraftV2Js internal constructor(
     private val chat: ChatJs,
     private val messageDraft: MessageDraftImpl,
@@ -108,6 +108,65 @@ class MessageDraftV2Js internal constructor(
     fun removeMention(offset: Int) = messageDraft.removeMention(offset)
 
     fun update(text: String) = messageDraft.update(text)
+}
+
+@JsExport
+/**
+ * Deprecated wrapper for [MessageDraftV2Js]. Use [MessageDraftV2Js] directly via [ChannelJs.createMessageDraft].
+ */
+@JsName("MessageDraftV2")
+@Deprecated(
+    message = "Use MessageDraft instead.",
+    replaceWith = ReplaceWith("MessageDraft"),
+    level = DeprecationLevel.WARNING
+)
+class MessageDraftV2DeprecatedJs internal constructor(
+    private val delegate: MessageDraftV2Js
+) {
+    val channel: ChannelJs get() = delegate.channel
+    val value: String get() = delegate.value
+    val config: MessageDraftConfig get() = delegate.config
+
+    var quotedMessage: MessageJs?
+        get() = delegate.quotedMessage
+        set(value) {
+            delegate.quotedMessage = value
+        }
+
+    var files: Any?
+        get() = delegate.files
+        set(value) {
+            delegate.files = value
+        }
+
+    fun addQuote(message: MessageJs) = delegate.addQuote(message)
+
+    fun removeQuote() = delegate.removeQuote()
+
+    fun addLinkedText(params: AddLinkedTextParams) = delegate.addLinkedText(params)
+
+    fun removeLinkedText(positionOnInput: Int) = delegate.removeLinkedText(positionOnInput)
+
+    fun getMessagePreview(): Array<MixedTextTypedElement> = delegate.getMessagePreview()
+
+    fun send(options: SendTextParamsJs?): Promise<PubNub.PublishResponse> = delegate.send(options)
+
+    fun addChangeListener(listener: (MessageDraftState) -> Unit) = delegate.addChangeListener(listener)
+
+    fun removeChangeListener(listener: (MessageDraftState) -> Unit) = delegate.removeChangeListener(listener)
+
+    fun insertText(offset: Int, text: String) = delegate.insertText(offset, text)
+
+    fun removeText(offset: Int, length: Int) = delegate.removeText(offset, length)
+
+    fun insertSuggestedMention(mention: SuggestedMentionJs, text: String) = delegate.insertSuggestedMention(mention, text)
+
+    fun addMention(offset: Int, length: Int, mentionType: String, mentionTarget: String) =
+        delegate.addMention(offset, length, mentionType, mentionTarget)
+
+    fun removeMention(offset: Int) = delegate.removeMention(offset)
+
+    fun update(text: String) = delegate.update(text)
 }
 
 @JsExport
