@@ -42,7 +42,7 @@ describe("Send message test", () => {
   beforeEach(async () => {
     chat = await createChatInstance({ userId: generateRandomString() })
     channel = await createRandomChannel(chat)
-    messageDraft = channel.createMessageDraft()
+    messageDraft = channel.createMessageDraftV1()
   }, 15000)
 
   afterEach(async () => {
@@ -531,7 +531,7 @@ describe("Send message test", () => {
   }, 15000)
 
   test("should render URLs correctly", async () => {
-    const messageDraft = channel.createMessageDraft()
+    const messageDraft = channel.createMessageDraftV1()
     const someUser = await chat.createUser(generateRandomString(), { name: "Lukasz" })
     const someUser2 = await chat.createUser(generateRandomString(), { name: "Anton" })
 
@@ -984,6 +984,7 @@ describe("Send message test", () => {
       }
     })
 
+    await sleep(150)
     for (const longMessage of longMessages) {
       await channel.sendText(longMessage)
       const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -1124,7 +1125,7 @@ describe("Send message test", () => {
 
     const thread = await threadedMessage.getThread()
     const firstThreadMessage = (await thread.getHistory()).messages[0]
-    const messageDraft = thread.createMessageDraftV2()
+    const messageDraft = thread.createMessageDraft()
 
     messageDraft.addQuote(firstThreadMessage)
 
@@ -1236,7 +1237,7 @@ describe("Send message test", () => {
     const disconnect2 = sameEncryptedGroupChannel.connect((msg) => {
       cipheredMessage = msg
     })
-
+    await sleep(150)
     await somePlainGroupChannel.channel.sendText("Random text")
     await sleep(1000) // History calls have around 130ms of cache time
 
@@ -1808,7 +1809,7 @@ describe("Send message test", () => {
   test("should get message elements with text, mentions, and links", async () => {
     const mentionedUser1 = await createRandomUser(chat, "mentioned1_")
     const mentionedUser2 = await createRandomUser(chat, "mentioned2_")
-    const messageDraft = channel.createMessageDraftV2()
+    const messageDraft = channel.createMessageDraft()
 
     // Build message with user mentions and a linked URL
     messageDraft.update(`Hello @${mentionedUser1.name}, check out `)

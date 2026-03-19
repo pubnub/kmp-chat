@@ -4,7 +4,7 @@ import {
   Message,
   Membership,
   Chat,
-  MessageDraft, ReadReceipt,
+  MessageDraftV1, ReadReceipt,
   CustomEventData, CustomEventEmitOptions, CustomEventListenOptions,
   MessageReport,
 } from "../dist-test"
@@ -27,14 +27,14 @@ describe("Channel test", () => {
   let chatPamServer: Chat
   let chatPamServerWithRefIntegrity: Chat
   let channel: Channel
-  let messageDraft: MessageDraft
+  let messageDraft: MessageDraftV1
 
   beforeEach(async () => {
     chat = await createChatInstance({ userId: generateRandomString() })
     chatPamServer = await createChatInstance( { userId: generateRandomString(), clientType: 'PamServer' })
     chatPamServerWithRefIntegrity = await createChatInstance({ userId: generateRandomString(), clientType: 'PamServerWithRefIntegrity' })
     channel = await createRandomChannel(chat)
-    messageDraft = channel.createMessageDraft()
+    messageDraft = channel.createMessageDraftV1()
   }, 15000)
 
   afterEach(async () => {
@@ -530,7 +530,9 @@ describe("Channel test", () => {
 
   test("should send a message with words that start with @ but are not user mentions", async () => {
     const messageText = "Test message with words that start with @ but are not user mentions: @test, @example, @check."
-    const messageInHistory = await sendMessageAndWaitForHistory(channel.createMessageDraft(messageText), channel)
+    const draft = channel.createMessageDraftV1()
+    await draft.onChange(messageText)
+    const messageInHistory = await sendMessageAndWaitForHistory(draft, channel)
 
     expect(messageInHistory).toBeDefined()
     expect(Object.keys(messageInHistory.mentionedUsers).length).toBe(0)
@@ -581,7 +583,7 @@ describe("Channel test", () => {
     const user2Id = `user2_${Date.now()}`
     const user2 = await chat.createUser(user2Id, { name: "User 2" })
 
-    const messageDraft = channel.createMessageDraft()
+    const messageDraft = channel.createMessageDraftV1()
 
     const originalMessage = `Hello, @${user1.name}, how are you? @${user2.name}, are you there?`
     await messageDraft.onChange("Hello, @Use")
@@ -614,7 +616,7 @@ describe("Channel test", () => {
     const user2Id = `user2_${Date.now()}`
     const user2 = await chat.createUser(user2Id, { name: "User 2" })
 
-    const messageDraft = channel.createMessageDraft()
+    const messageDraft = channel.createMessageDraftV1()
 
     const originalMessage = `Hello, @${user1.name}, how are you? @${user2.name}, are you there?`
     await messageDraft.onChange("Hello, @Use")
@@ -641,7 +643,7 @@ describe("Channel test", () => {
     const user3Id = `user3_${Date.now()}`
     const user3 = await chat.createUser(user3Id, { name: "User 3" })
 
-    const messageDraft = channel.createMessageDraft()
+    const messageDraft = channel.createMessageDraftV1()
 
     await messageDraft.onChange("Hello, @Use")
     messageDraft.addMentionedUser(user1, 0)
@@ -707,7 +709,7 @@ describe("Channel test", () => {
     await sleep(150) // History calls have around 130ms of cache time
 
     const history = await channel.getHistory()
-    const messageDraft = channel.createMessageDraft()
+    const messageDraft = channel.createMessageDraftV1()
 
     messageDraft.addQuote(history.messages[0])
     messageDraft.addQuote(history.messages[1])
@@ -1894,5 +1896,24 @@ describe("Channel test", () => {
 
     stop()
   }, 20000)
+
+  test("should send a message via sendTextLegacy with rich options", async () => {
+    const user = await createRandomUser(chat)
+
+    const messageText = "Hello @user via legacy"
+    await channel.sendTextLegacy(messageText, {
+      mentionedUsers: { 0: { id: user.id, name: user.name! } },
+      storeInHistory: true,
+    })
+    await sleep(150)
+
+    const history = await channel.getHistory()
+    expect(history.messages.length).toBeGreaterThanOrEqual(1)
+    const sentMessage = history.messages.find((m) => m.text === messageText)
+    expect(sentMessage).toBeDefined()
+    expect(sentMessage!.mentionedUsers).toBeDefined()
+
+    await user.delete()
+  }, 30000)
 
 })

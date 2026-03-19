@@ -154,7 +154,15 @@ open class MessageJs internal constructor(internal val message: Message, interna
         }.asPromise()
     }
 
-    fun createThreadMessageDraftV2(config: MessageDraftConfig? = null): Promise<MessageDraftV2Js> {
+    fun createThreadMessageDraft(config: MessageDraftConfig? = null): Promise<MessageDraftV2Js> {
+        return message.createThread().then { threadChannel ->
+            val channelJs = threadChannel.asJs(chatJs)
+            channelJs.createMessageDraft(config)
+        }.asPromise()
+    }
+
+    @Deprecated("Use createThreadMessageDraft() instead.")
+    fun createThreadMessageDraftV2(config: MessageDraftConfig? = null): Promise<MessageDraftV2DeprecatedJs> {
         return message.createThread().then { threadChannel ->
             val channelJs = threadChannel.asJs(chatJs)
             channelJs.createMessageDraftV2(config)

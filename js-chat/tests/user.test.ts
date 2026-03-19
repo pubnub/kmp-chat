@@ -555,7 +555,7 @@ describe("User test", () => {
     const stop = user.onMentioned((mention: Mention) => { receivedMention = mention })
     await sleep(950)
 
-    const messageDraft = channel.createMessageDraft()
+    const messageDraft = channel.createMessageDraftV1()
     await messageDraft.onChange(`Hello @${user.name}`)
 
     messageDraft.addMentionedUser(user, 0)
