@@ -3,7 +3,6 @@ package com.pubnub.kmp.utils
 import com.pubnub.api.PubNub
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
-import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
@@ -76,7 +75,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     override fun removeThreadChannel(
         chat: Chat,
         message: Message,
-    ): PNFuture<Pair<PNRemoveMessageActionResult, Unit>> {
+    ): PNFuture<Unit> {
         TODO("Not yet implemented")
     }
 

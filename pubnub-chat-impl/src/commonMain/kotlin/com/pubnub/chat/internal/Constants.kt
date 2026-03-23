@@ -57,3 +57,4 @@ internal const val PREFIX_PUBNUB_PRIVATE = "PN_PRV."
 internal const val SUFFIX_MUTE_1 = "mute1"
 
 internal const val METADATA_AUTO_MODERATION_ID = "pn_mod_id"
+internal const val DELETED = "deleted"

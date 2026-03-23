@@ -281,7 +281,7 @@ class ChatImpl(
                     }
                     awaitAll(
                         chat.pubNub.removeMessageAction(msg.channelId, msg.timetoken, actionTimetoken),
-                        threadChannel.delete()
+                        threadChannel.update(status = DELETED)
                     ).then { }
                 }
             }
