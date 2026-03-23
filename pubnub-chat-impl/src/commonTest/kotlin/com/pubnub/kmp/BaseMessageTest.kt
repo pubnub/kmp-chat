@@ -9,7 +9,6 @@ import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
-import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
@@ -301,11 +300,9 @@ class BaseMessageTest : BaseTest() {
             channelId = messageChannelId,
             userId = "testUserId"
         )
-        val mockResult = Pair(PNRemoveMessageActionResult(), Unit)
+        every { chat.removeThreadChannel(chat, message) } returns Unit.asFuture()
 
-        every { chat.removeThreadChannel(chat, message) } returns mockResult.asFuture()
-
-        message.removeThread().async { result: Result<Pair<PNRemoveMessageActionResult, Unit>> ->
+        message.removeThread().async { result: Result<Unit> ->
             assertTrue(result.isSuccess)
         }
     }
@@ -325,7 +322,7 @@ class BaseMessageTest : BaseTest() {
 
         every { chat.removeThreadChannel(chat, message) } returns PubNubException(errorMessage).asFuture()
 
-        message.removeThread().async { result: Result<Pair<PNRemoveMessageActionResult, Unit>> ->
+        message.removeThread().async { result: Result<Unit> ->
             assertTrue(result.isFailure)
             assertEquals(errorMessage, result.exceptionOrNull()?.message)
         }

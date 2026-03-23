@@ -1721,7 +1721,7 @@ class ChatTest : BaseTest() {
 
         // when
         objectUnderTest.removeThreadChannel(objectUnderTest, message)
-            .async { result: Result<Pair<PNRemoveMessageActionResult, Unit>> ->
+            .async { result: Result<Unit> ->
                 // then
                 assertTrue(result.isFailure)
                 assertEquals("There is no thread to be deleted.", result.exceptionOrNull()?.message)
@@ -1781,7 +1781,7 @@ class ChatTest : BaseTest() {
 
         // when
         objectUnderTest.removeThreadChannel(objectUnderTest, message)
-            .async { result: Result<Pair<PNRemoveMessageActionResult, Unit>> ->
+            .async { result: Result<Unit> ->
                 // then
                 assertTrue(result.isFailure)
                 assertEquals(
@@ -1852,7 +1852,7 @@ class ChatTest : BaseTest() {
 
         // when
         objectUnderTest.removeThreadChannel(objectUnderTest, message)
-            .async { result: Result<Pair<PNRemoveMessageActionResult, Unit>> ->
+            .async { result: Result<Unit> ->
                 // then
                 assertTrue(result.isFailure)
                 assertTrue(result.exceptionOrNull()?.message?.contains("There is no thread with id:") == true)
@@ -1942,7 +1942,7 @@ class ChatTest : BaseTest() {
 
         // when
         objectUnderTest.removeThreadChannel(objectUnderTest, message)
-            .async { result: Result<Pair<PNRemoveMessageActionResult, Unit>> ->
+            .async { result: Result<Unit> ->
                 // then
                 assertTrue(result.isSuccess)
             }

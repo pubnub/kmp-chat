@@ -3,7 +3,6 @@ package com.pubnub.chat
 import com.pubnub.api.PubNubError
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
-import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.chat.types.CreateThreadResult
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
@@ -305,9 +304,9 @@ interface Message {
     /**
      * Removes a thread (channel) for a selected message.
      *
-     * @return A pair of values containing an object with details about the result of the remove message action and Unit.
+     * @return [PNFuture] that completes when the thread channel is removed.
      */
-    fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Unit>>
+    fun removeThread(): PNFuture<Unit>
 
     /**
      * Add or remove a reaction to a message.

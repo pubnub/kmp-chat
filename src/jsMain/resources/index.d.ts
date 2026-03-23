@@ -508,12 +508,7 @@ declare class Message {
     createThread(text: string, options?: SendTextParams): Promise<ThreadChannel>;
     createThreadWithResult(text: string, options?: SendTextParams): Promise<CreateThreadResult>;
     createThreadMessageDraftV2(config?: Partial<MessageDraftConfig>): Promise<MessageDraftV2>;
-    removeThread(): Promise<[
-        {
-            data: {};
-        },
-        true | Channel
-    ]>;
+    removeThread(): Promise<boolean>;
 }
 declare global {
     interface Array<T> {

@@ -2,7 +2,6 @@ package com.pubnub.chat.internal
 
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
-import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Chat
 import com.pubnub.chat.Event
@@ -28,7 +27,7 @@ interface ChatInternal : Chat {
     fun removeThreadChannel(
         chat: Chat,
         message: Message,
-    ): PNFuture<Pair<PNRemoveMessageActionResult, Unit>>
+    ): PNFuture<Unit>
 
     fun restoreThreadChannel(message: Message): PNFuture<PNMessageAction?>
 

@@ -1206,9 +1206,9 @@ describe("Send message test", () => {
     expect(encryptedHistory.messages[0].text).toBe("Random text")
     expect(cipheredHistory.messages[0].text.startsWith("UE5FRAFBQ1JIE")).toBeTruthy()
 
-    await someEncryptedGroupChannel.channel.delete({ soft: false })
-    await sameCipheredGroupChannel.delete({ soft: false })
-    await someRandomUser1.delete({ soft: false })
+    await someEncryptedGroupChannel.channel.delete()
+    await sameCipheredGroupChannel.delete()
+    await someRandomUser1.delete()
     await encryptedChat.currentUser.delete()
 
     disconnect1()

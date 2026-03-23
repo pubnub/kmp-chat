@@ -15,7 +15,6 @@ import com.pubnub.api.models.consumer.PNStatus
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
-import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
@@ -259,7 +258,7 @@ class ChatImpl(
     override fun removeThreadChannel(
         chat: Chat,
         message: Message,
-    ): PNFuture<Pair<PNRemoveMessageActionResult, Unit>> {
+    ): PNFuture<Unit> {
         // get message to make sure that message data are up to date e.g. message.hasThread
         return BaseChannel.getMessage(chat = this, channelId = message.channelId, timetoken = message.timetoken)
             .thenAsync { msg: Message? ->
@@ -283,7 +282,7 @@ class ChatImpl(
                     awaitAll(
                         chat.pubNub.removeMessageAction(msg.channelId, msg.timetoken, actionTimetoken),
                         threadChannel.delete()
-                    )
+                    ).then { }
                 }
             }
     }

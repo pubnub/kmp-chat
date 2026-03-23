@@ -46,7 +46,7 @@ describe("MessageDraft2", function () {
     expect(messageDraft.value).toBe(`Hello @user1 and @user2`)
     expect(messagePreview.map(renderMessagePart).join("")).toBe(`Hello @@user1 and @@user2`)
 
-    await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
+    await Promise.all([user1.delete(), user2.delete()])
   })
 
   test("should mention 2 - 3 users next to each other", async () => {
@@ -87,9 +87,9 @@ describe("MessageDraft2", function () {
     expect(messagePreview.map(renderMessagePart).join("")).toBe(elements[2].map(renderMessagePart).join(""))
 
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false }),
-      user3.delete({ soft: false }),
+      user1.delete(),
+      user2.delete(),
+      user3.delete(),
     ])
   }, 20000)
 
@@ -168,13 +168,13 @@ describe("MessageDraft2", function () {
           `Hello pubnub at https://pubnub.com! Hello to google at https://google.com. Referencing ${channel1.name}, ${channel2.name}, #blankchannel, ${user1.name}, ${user2.name}, and mentioning @blankuser3 ${user4.name} ${user5.name}`
       )
       await Promise.all([
-          channel1.delete({ soft: false }),
-          channel2.delete({ soft: false })
+          channel1.delete(),
+          channel2.delete()
       ])
       await Promise.all([
-          user1.delete({ soft: false }),
-          user2.delete({ soft: false }),
-          user4.delete({ soft: false }),
+          user1.delete(),
+          user2.delete(),
+          user4.delete(),
       ])
     }, 25000)
 
@@ -325,8 +325,8 @@ describe("MessageDraft2", function () {
       expect(decryptedMessages[0].files[index].type).toBe(fileFromInput.mimeType)
     })
 
-    await someGroupChannel.channel.delete({ soft: false })
-    await someRandomUser1.delete({ soft: false })
+    await someGroupChannel.channel.delete()
+    await someRandomUser1.delete()
     await encryptedChat1.currentUser.delete()
     await encryptedChat2.currentUser.delete()
   }, 35000)

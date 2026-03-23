@@ -161,9 +161,9 @@ open class MessageJs internal constructor(internal val message: Message, interna
         }.asPromise()
     }
 
-    fun removeThread(): Promise<Array<Any>> {
+    fun removeThread(): Promise<Boolean> {
         return message.removeThread().then {
-            arrayOf(Any())
+            true
         }.asPromise()
     }
 

@@ -253,7 +253,7 @@ describe("Channel test", () => {
       user1.delete(),
       user2.delete(),
       user3.delete(),
-      channel.delete({ soft: false }),
+      channel.delete(),
     ])
   }, 20000)
 
@@ -1856,7 +1856,7 @@ describe("Channel test", () => {
 
     const stop = testChannel.onDeleted(() => { deletedCalled = true })
     await sleep(1500)
-    await testChannel.delete({ soft: false })
+    await testChannel.delete()
     await sleep(500)
 
     expect(deletedCalled).toBe(true)

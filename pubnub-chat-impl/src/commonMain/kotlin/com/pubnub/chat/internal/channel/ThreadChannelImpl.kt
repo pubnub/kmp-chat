@@ -142,7 +142,7 @@ data class ThreadChannelImpl(
     }
 
     override fun delete(): PNFuture<Unit> {
-        return chat.removeThreadChannel(chat, parentMessage).then { it.second }
+        return chat.removeThreadChannel(chat, parentMessage)
     }
 
     private fun createThreadAndSend(sendAction: () -> PNFuture<PNPublishResult>): PNFuture<PNPublishResult> {
