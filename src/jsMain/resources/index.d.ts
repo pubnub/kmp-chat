@@ -11,6 +11,7 @@ declare class Membership {
     readonly eTag: string;
     readonly status?: string;
     readonly type?: string;
+    delete(): Promise<boolean>;
     update(params?: { custom?: AppContext.CustomData }): Promise<Membership>;
     /*
     * Updates
