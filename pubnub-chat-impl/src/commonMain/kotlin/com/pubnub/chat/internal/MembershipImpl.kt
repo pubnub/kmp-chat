@@ -205,10 +205,14 @@ data class MembershipImpl(
 
     @Suppress("UNCHECKED_CAST")
     private fun mergeCustomWithLastReadTimetoken(custom: CustomObject?): CustomObject? {
-        if (custom == null) return null
+        if (custom == null) {
+            return null
+        }
         val existingTimetoken = this.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN) ?: return custom
         val customMap = custom as Map<String, Any?>
-        if (customMap.containsKey(METADATA_LAST_READ_MESSAGE_TIMETOKEN)) return custom
+        if (customMap.containsKey(METADATA_LAST_READ_MESSAGE_TIMETOKEN)) {
+            return custom
+        }
         return createCustomObject(
             buildMap {
                 putAll(customMap)
