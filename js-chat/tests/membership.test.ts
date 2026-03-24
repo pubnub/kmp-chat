@@ -63,7 +63,8 @@ describe("Membership test", () => {
     await sleep(150)
 
     expect(updatedMembership).toBeDefined()
-    expect(updatedMembership.custom).toEqual(customData)
+    expect(updatedMembership.custom).toMatchObject(customData)
+    expect(updatedMembership.custom).toHaveProperty("lastReadMessageTimetoken")
     expect(updatedMembership.status).toEqual(status)
     expect(updatedMembership.type).toEqual(type)
     expect(updatedMembership.user.id).toEqual(user.id)
@@ -171,7 +172,8 @@ describe("Membership test", () => {
     })
 
     expect(foundMembership).toBeDefined()
-    expect(foundMembership?.custom).toEqual({ role: "moderator" })
+    expect(foundMembership?.custom).toMatchObject({ role: "moderator" })
+    expect(foundMembership?.custom).toHaveProperty("lastReadMessageTimetoken")
     expect(foundMembership?.status).toEqual("moderatorStatus")
     expect(foundMembership?.type).toEqual("moderatorType")
 
