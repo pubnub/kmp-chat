@@ -58,7 +58,7 @@ internal fun EventContent.encodeForSending(
             put(TYPE_OF_MESSAGE, TYPE_OF_MESSAGE_IS_CUSTOM)
         }
     } else {
-        PNDataEncoder.encode(this) as Map<String, Any?>
+        encodeEventContent(this)
     }
 
     if (mergeMessageWith != null) {
@@ -68,4 +68,29 @@ internal fun EventContent.encodeForSending(
         }
     }
     return finalMessage
+}
+
+private fun encodeEventContent(content: EventContent): Map<String, Any?> {
+    return when (content) {
+        is EventContent.Typing ->
+            PNDataEncoder.encode(EventContent.Typing.serializer(), content) as Map<String, Any?>
+        is EventContent.Report ->
+            PNDataEncoder.encode(EventContent.Report.serializer(), content) as Map<String, Any?>
+        is EventContent.Receipt ->
+            PNDataEncoder.encode(EventContent.Receipt.serializer(), content) as Map<String, Any?>
+        is EventContent.Mention ->
+            PNDataEncoder.encode(EventContent.Mention.serializer(), content) as Map<String, Any?>
+        is EventContent.Invite ->
+            PNDataEncoder.encode(EventContent.Invite.serializer(), content) as Map<String, Any?>
+        is EventContent.Moderation ->
+            PNDataEncoder.encode(EventContent.Moderation.serializer(), content) as Map<String, Any?>
+        is EventContent.UnknownMessageFormat ->
+            PNDataEncoder.encode(EventContent.TextMessageContent.serializer(), content) as Map<String, Any?>
+        is EventContent.TextMessageContent ->
+            PNDataEncoder.encode(EventContent.TextMessageContent.serializer(), content) as Map<String, Any?>
+        is EventContent.Custom ->
+            error("Custom event content should be handled before generic serialization.")
+        else ->
+            error("Unsupported EventContent subtype for serialization: ${content::class}")
+    }
 }
