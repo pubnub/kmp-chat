@@ -348,8 +348,8 @@ abstract class BaseMessage<T : Message>(
         }
     }
 
-    override fun removeThread(soft: Boolean): PNFuture<Unit> =
-        chat.removeThreadChannel(chat, this, soft)
+    override fun removeThread(): PNFuture<Unit> =
+        chat.removeThreadChannel(chat, this, soft = false)
 
     override fun toggleReaction(reaction: String): PNFuture<Message> {
         val existingReaction = reactionsMap[reaction]?.find {

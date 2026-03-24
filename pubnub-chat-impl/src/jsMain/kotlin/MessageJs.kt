@@ -161,8 +161,8 @@ open class MessageJs internal constructor(internal val message: Message, interna
         }.asPromise()
     }
 
-    fun removeThread(params: DeleteParameters?): Promise<Boolean> {
-        return message.removeThread(params?.soft ?: false).then {
+    fun removeThread(): Promise<Boolean> {
+        return message.removeThread().then {
             true
         }.asPromise()
     }

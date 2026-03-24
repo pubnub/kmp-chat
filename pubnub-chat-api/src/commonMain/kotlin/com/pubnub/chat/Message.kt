@@ -304,12 +304,9 @@ interface Message {
     /**
      * Removes a thread (channel) for a selected message.
      *
-     * @param soft If true, the thread channel is marked as deleted (status set to "DELETED") but its metadata is
-     * retained. If false (default), the thread channel metadata is permanently removed.
-     *
      * @return [PNFuture] that completes when the thread channel is removed.
      */
-    fun removeThread(soft: Boolean = false): PNFuture<Unit>
+    fun removeThread(): PNFuture<Unit>
 
     /**
      * Add or remove a reaction to a message.
