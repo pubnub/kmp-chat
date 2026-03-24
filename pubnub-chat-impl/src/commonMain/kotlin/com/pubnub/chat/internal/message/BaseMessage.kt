@@ -178,7 +178,7 @@ abstract class BaseMessage<T : Message>(
                 // add action related to delete
                 updatedActions = assignAction(updatedActions, addMessageActionResult)
             }.alsoAsync {
-                deleteThread()
+                deleteThread(soft = true)
             }.then {
                 // deleteThread method deletes reaction related to thread from PN and here be want to remove this action from "actions" map
                 updatedActions = updatedActions.filterNot { it.key == THREAD_ROOT_ID }
@@ -348,8 +348,8 @@ abstract class BaseMessage<T : Message>(
         }
     }
 
-    override fun removeThread(): PNFuture<Unit> =
-        chat.removeThreadChannel(chat, this)
+    override fun removeThread(soft: Boolean): PNFuture<Unit> =
+        chat.removeThreadChannel(chat, this, soft)
 
     override fun toggleReaction(reaction: String): PNFuture<Message> {
         val existingReaction = reactionsMap[reaction]?.find {
@@ -434,12 +434,10 @@ abstract class BaseMessage<T : Message>(
         return actions?.get(chat.deleteMessageActionName)?.get(chat.deleteMessageActionName)
     }
 
-    private fun deleteThread(): PNFuture<Unit> {
+    private fun deleteThread(soft: Boolean = false): PNFuture<Unit> {
         // Always attempt to delete thread (don't rely on local hasThread state which may be stale
         // e.g. after createThread(text) the local message doesn't have updated actions)
-        return getThread().thenAsync {
-            it.delete()
-        }.catch {
+        return chat.removeThreadChannel(chat, this, soft = soft).catch {
             // Ignore if thread doesn't exist, propagate other errors
             if (it is PubNubException && errorMessageIndicatesThatThreadDoesNotExist(it.message)) {
                 Result.success(Unit)

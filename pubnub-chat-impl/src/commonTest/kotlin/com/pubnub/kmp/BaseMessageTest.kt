@@ -300,7 +300,7 @@ class BaseMessageTest : BaseTest() {
             channelId = messageChannelId,
             userId = "testUserId"
         )
-        every { chat.removeThreadChannel(chat, message) } returns Unit.asFuture()
+        every { chat.removeThreadChannel(chat, message, false) } returns Unit.asFuture()
 
         message.removeThread().async { result: Result<Unit> ->
             assertTrue(result.isSuccess)
@@ -320,7 +320,7 @@ class BaseMessageTest : BaseTest() {
         )
         val errorMessage = "There is no thread to be deleted."
 
-        every { chat.removeThreadChannel(chat, message) } returns PubNubException(errorMessage).asFuture()
+        every { chat.removeThreadChannel(chat, message, false) } returns PubNubException(errorMessage).asFuture()
 
         message.removeThread().async { result: Result<Unit> ->
             assertTrue(result.isFailure)

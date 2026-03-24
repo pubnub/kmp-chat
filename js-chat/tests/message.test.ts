@@ -1889,11 +1889,8 @@ describe("Send message test", () => {
     const messageWithThread = historyWithThread.messages[0]
     expect(messageWithThread.hasThread).toBe(true)
 
-    const [deleteData, channelOrBoolean] = await messageWithThread.removeThread()
+    await messageWithThread.removeThread()
     await sleep(300)
-
-    expect(deleteData).toBeDefined()
-    expect(channelOrBoolean).toBeDefined()
 
     const historyAfterRemoval = await channel.getHistory()
     const messageAfterRemoval = historyAfterRemoval.messages[0]

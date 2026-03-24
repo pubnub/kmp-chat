@@ -75,6 +75,7 @@ abstract class FakeChat(override val config: ChatConfiguration, override val pub
     override fun removeThreadChannel(
         chat: Chat,
         message: Message,
+        soft: Boolean,
     ): PNFuture<Unit> {
         TODO("Not yet implemented")
     }

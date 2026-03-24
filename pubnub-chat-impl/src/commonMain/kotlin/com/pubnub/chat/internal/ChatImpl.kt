@@ -217,8 +217,13 @@ class ChatImpl(
                     value = threadChannelId,
                     messageTimetoken = message.timetoken
                 )
-                pubNub.addMessageAction(channel = message.channelId, messageAction = messageAction)
-                // we don't update action map here but we do this in message#restore()
+
+                channel.update(status = null).thenAsync {
+                    pubNub.addMessageAction(
+                        channel = message.channelId,
+                        messageAction = messageAction
+                    )
+                }
             }
         }
     }
@@ -258,6 +263,7 @@ class ChatImpl(
     override fun removeThreadChannel(
         chat: Chat,
         message: Message,
+        soft: Boolean,
     ): PNFuture<Unit> {
         // get message to make sure that message data are up to date e.g. message.hasThread
         return BaseChannel.getMessage(chat = this, channelId = message.channelId, timetoken = message.timetoken)
@@ -279,9 +285,14 @@ class ChatImpl(
                         return@thenAsync PubNubException("$THERE_IS_NO_THREAD_WITH_ID$threadId")
                             .logErrorAndReturnException(log).asFuture()
                     }
+                    val deleteAction = if (soft) {
+                        threadChannel.update(status = DELETED).then { }
+                    } else {
+                        performChannelDelete(threadId)
+                    }
                     awaitAll(
                         chat.pubNub.removeMessageAction(msg.channelId, msg.timetoken, actionTimetoken),
-                        threadChannel.update(status = DELETED)
+                        deleteAction
                     ).then { }
                 }
             }
