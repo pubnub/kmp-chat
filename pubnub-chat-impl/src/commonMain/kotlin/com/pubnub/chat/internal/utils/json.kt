@@ -1,7 +1,7 @@
 import com.pubnub.chat.internal.TYPE_OF_MESSAGE
 import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_CUSTOM
 import com.pubnub.chat.internal.defaultGetMessagePublishBody
-import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.internal.encodeEventContentWithType
 import com.pubnub.chat.types.EventContent
 
 internal fun Any?.tryLong(): Long? {
@@ -73,21 +73,21 @@ internal fun EventContent.encodeForSending(
 private fun encodeEventContent(content: EventContent): Map<String, Any?> {
     return when (content) {
         is EventContent.Typing ->
-            PNDataEncoder.encode(EventContent.Typing.serializer(), content) as Map<String, Any?>
+            encodeEventContentWithType(EventContent.Typing.serializer(), content)
         is EventContent.Report ->
-            PNDataEncoder.encode(EventContent.Report.serializer(), content) as Map<String, Any?>
+            encodeEventContentWithType(EventContent.Report.serializer(), content)
         is EventContent.Receipt ->
-            PNDataEncoder.encode(EventContent.Receipt.serializer(), content) as Map<String, Any?>
+            encodeEventContentWithType(EventContent.Receipt.serializer(), content)
         is EventContent.Mention ->
-            PNDataEncoder.encode(EventContent.Mention.serializer(), content) as Map<String, Any?>
+            encodeEventContentWithType(EventContent.Mention.serializer(), content)
         is EventContent.Invite ->
-            PNDataEncoder.encode(EventContent.Invite.serializer(), content) as Map<String, Any?>
+            encodeEventContentWithType(EventContent.Invite.serializer(), content)
         is EventContent.Moderation ->
-            PNDataEncoder.encode(EventContent.Moderation.serializer(), content) as Map<String, Any?>
+            encodeEventContentWithType(EventContent.Moderation.serializer(), content)
         is EventContent.UnknownMessageFormat ->
-            PNDataEncoder.encode(EventContent.TextMessageContent.serializer(), content) as Map<String, Any?>
+            encodeEventContentWithType(EventContent.TextMessageContent.serializer(), content)
         is EventContent.TextMessageContent ->
-            PNDataEncoder.encode(EventContent.TextMessageContent.serializer(), content) as Map<String, Any?>
+            encodeEventContentWithType(EventContent.TextMessageContent.serializer(), content)
         is EventContent.Custom ->
             error("Custom event content should be handled before generic serialization.")
         else ->

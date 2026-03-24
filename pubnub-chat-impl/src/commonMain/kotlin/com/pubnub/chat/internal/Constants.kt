@@ -6,6 +6,7 @@ import com.pubnub.api.asString
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_CALLING_DEFAULT_GET_MESSAGE_RESPONSE_BODY
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
+import kotlinx.serialization.SerializationStrategy
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -28,7 +29,17 @@ internal const val PINNED_MESSAGE_CHANNEL_ID = "pinnedMessageChannelID"
 internal const val LAST_ACTIVE_TIMESTAMP = "lastActiveTimestamp"
 
 fun defaultGetMessagePublishBody(m: EventContent.TextMessageContent): Map<String, Any> =
-    PNDataEncoder.encode(m as EventContent) as Map<String, Any>
+    encodeEventContentWithType(EventContent.TextMessageContent.serializer(), m) as Map<String, Any>
+
+internal fun <T : EventContent> encodeEventContentWithType(
+    serializer: SerializationStrategy<T>,
+    value: T,
+): Map<String, Any?> {
+    return buildMap {
+        put(TYPE_OF_MESSAGE, serializer.descriptor.serialName)
+        putAll(PNDataEncoder.encode(serializer, value) as Map<String, Any?>)
+    }
+}
 
 fun defaultGetMessageResponseBody(message: JsonElement): EventContent.TextMessageContent? {
     return message.asString()?.let { messageString -> EventContent.TextMessageContent(messageString, null) }
