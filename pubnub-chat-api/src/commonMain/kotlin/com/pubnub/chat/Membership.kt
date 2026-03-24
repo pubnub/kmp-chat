@@ -68,10 +68,29 @@ interface Membership {
     /**
      * Updates the channel membership information for a given user.
      *
+     * @param status Optional membership status value.
+     * @param type Optional membership type value.
      * @param custom Any custom properties or metadata associated with the channel-user membership in a `Map`. Values must be scalar only; arrays or objects are not supported. App Context filtering language doesn’t support filtering by custom properties.
      * @return A [PNFuture] that returns an updated [Membership] object.
      */
-    fun update(custom: CustomObject?): PNFuture<Membership>
+    fun update(
+        status: String? = null,
+        type: String? = null,
+        custom: CustomObject? = null,
+    ): PNFuture<Membership>
+
+    /**
+     * Updates the channel membership information for a given user.
+     *
+     * @param custom Any custom properties or metadata associated with the channel-user membership in a `Map`. Values must be scalar only; arrays or objects are not supported. App Context filtering language doesn't support filtering by custom properties.
+     * @return A [PNFuture] that returns an updated [Membership] object.
+     */
+    @Deprecated(
+        message = "Use update(status, type, custom) instead.",
+        replaceWith = ReplaceWith("update(custom = custom)"),
+        level = DeprecationLevel.WARNING,
+    )
+    fun update(custom: CustomObject?): PNFuture<Membership> = update(status = null, type = null, custom = custom)
 
     /**
      * Setting the last read message for users lets you implement the Read Receipts feature and monitor which channel member read which message.

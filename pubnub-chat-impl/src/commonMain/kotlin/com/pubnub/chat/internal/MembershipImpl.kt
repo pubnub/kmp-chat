@@ -54,14 +54,21 @@ data class MembershipImpl(
         ).then { Unit }
     }
 
-    override fun update(custom: CustomObject?): PNFuture<Membership> {
+    override fun update(status: String?, type: String?, custom: CustomObject?): PNFuture<Membership> {
         return exists().thenAsync { exists ->
             if (!exists) {
                 log.pnError(NO_SUCH_MEMBERSHIP_EXISTS)
             }
             chat.pubNub.setMemberships(
                 userId = user.id,
-                channels = listOf(PNChannelMembership.Partial(channel.id, custom)),
+                channels = listOf(
+                    PNChannelMembership.Partial(
+                        channelId = channel.id,
+                        custom = mergeCustomWithLastReadTimetoken(custom),
+                        status = status,
+                        type = type,
+                    )
+                ),
                 include = MembershipInclude(
                     includeCustom = true,
                     includeStatus = true,
@@ -86,7 +93,7 @@ data class MembershipImpl(
             // returns values that differ by one
             put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, timetoken.toString())
         }
-        return update(createCustomObject(newCustom)).alsoAsync {
+        return update(custom = createCustomObject(newCustom)).alsoAsync {
             val shouldEmitReadReceiptEvent = channel.type?.let { chat.config.emitReadReceiptEvents[it] } != false
 
             if (!shouldEmitReadReceiptEvent) {
@@ -192,6 +199,20 @@ data class MembershipImpl(
                 } else {
                     type
                 }
+            }
+        )
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun mergeCustomWithLastReadTimetoken(custom: CustomObject?): CustomObject? {
+        if (custom == null) return null
+        val existingTimetoken = this.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN) ?: return custom
+        val customMap = custom as Map<String, Any?>
+        if (customMap.containsKey(METADATA_LAST_READ_MESSAGE_TIMETOKEN)) return custom
+        return createCustomObject(
+            buildMap {
+                putAll(customMap)
+                put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, existingTimetoken)
             }
         )
     }
