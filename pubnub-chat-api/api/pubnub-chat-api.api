@@ -181,7 +181,9 @@ public abstract interface class com/pubnub/chat/Membership {
 	public abstract fun setLastReadMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun setLastReadMessageTimetoken (J)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun streamUpdates (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
-	public abstract fun update (Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public fun update (Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun update (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun update$default (Lcom/pubnub/chat/Membership;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 }
 
 public final class com/pubnub/chat/Membership$Companion {
@@ -695,7 +697,7 @@ public final class com/pubnub/chat/types/EventContent$Invite : com/pubnub/chat/t
 	public final fun getChannelType ()Lcom/pubnub/chat/types/ChannelType;
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$Invite$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$Invite$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$Invite$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$Invite;
@@ -703,7 +705,6 @@ public synthetic class com/pubnub/chat/types/EventContent$Invite$$serializer : k
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$Invite;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$Invite$Companion {
@@ -719,7 +720,7 @@ public final class com/pubnub/chat/types/EventContent$Mention : com/pubnub/chat/
 	public final fun getParentChannel ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$Mention$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$Mention$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$Mention$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$Mention;
@@ -727,7 +728,6 @@ public synthetic class com/pubnub/chat/types/EventContent$Mention$$serializer : 
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$Mention;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$Mention$Companion {
@@ -743,7 +743,7 @@ public final class com/pubnub/chat/types/EventContent$Moderation : com/pubnub/ch
 	public final fun getRestriction ()Lcom/pubnub/chat/restrictions/RestrictionType;
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$Moderation$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$Moderation$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$Moderation$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$Moderation;
@@ -751,7 +751,6 @@ public synthetic class com/pubnub/chat/types/EventContent$Moderation$$serializer
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$Moderation;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$Moderation$Companion {
@@ -764,7 +763,7 @@ public final class com/pubnub/chat/types/EventContent$Receipt : com/pubnub/chat/
 	public final fun getMessageTimetoken ()J
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$Receipt$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$Receipt$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$Receipt$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$Receipt;
@@ -772,7 +771,6 @@ public synthetic class com/pubnub/chat/types/EventContent$Receipt$$serializer : 
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$Receipt;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$Receipt$Companion {
@@ -791,7 +789,7 @@ public final class com/pubnub/chat/types/EventContent$Report : com/pubnub/chat/t
 	public final fun getText ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$Report$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$Report$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$Report$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$Report;
@@ -799,7 +797,6 @@ public synthetic class com/pubnub/chat/types/EventContent$Report$$serializer : k
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$Report;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$Report$Companion {
@@ -819,7 +816,7 @@ public class com/pubnub/chat/types/EventContent$TextMessageContent : com/pubnub/
 	public static final synthetic fun write$Self (Lcom/pubnub/chat/types/EventContent$TextMessageContent;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$TextMessageContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$TextMessageContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$TextMessageContent$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$TextMessageContent;
@@ -827,7 +824,6 @@ public synthetic class com/pubnub/chat/types/EventContent$TextMessageContent$$se
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$TextMessageContent;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$TextMessageContent$Companion {
@@ -840,7 +836,7 @@ public final class com/pubnub/chat/types/EventContent$Typing : com/pubnub/chat/t
 	public final fun getValue ()Z
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$Typing$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$Typing$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$Typing$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$Typing;
@@ -848,7 +844,6 @@ public synthetic class com/pubnub/chat/types/EventContent$Typing$$serializer : k
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$Typing;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$Typing$Companion {
@@ -870,7 +865,7 @@ public final class com/pubnub/chat/types/File {
 	public final fun getUrl ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/File$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/File$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/File$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/File;
@@ -878,7 +873,6 @@ public synthetic class com/pubnub/chat/types/File$$serializer : kotlinx/serializ
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/File;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/File$Companion {
@@ -951,7 +945,7 @@ public final class com/pubnub/chat/types/MessageMentionedUser {
 	public final fun getName ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/MessageMentionedUser$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/MessageMentionedUser$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/MessageMentionedUser$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/MessageMentionedUser;
@@ -959,7 +953,6 @@ public synthetic class com/pubnub/chat/types/MessageMentionedUser$$serializer : 
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/MessageMentionedUser;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/MessageMentionedUser$Companion {
@@ -989,7 +982,7 @@ public final class com/pubnub/chat/types/MessageReferencedChannel {
 	public final fun getName ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/MessageReferencedChannel$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/MessageReferencedChannel$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/MessageReferencedChannel$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/MessageReferencedChannel;
@@ -997,7 +990,6 @@ public synthetic class com/pubnub/chat/types/MessageReferencedChannel$$serialize
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/MessageReferencedChannel;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/MessageReferencedChannel$Companion {
@@ -1012,7 +1004,7 @@ public final class com/pubnub/chat/types/QuotedMessage {
 	public final fun getUserId ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/QuotedMessage$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/QuotedMessage$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/QuotedMessage$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/QuotedMessage;
@@ -1020,7 +1012,6 @@ public synthetic class com/pubnub/chat/types/QuotedMessage$$serializer : kotlinx
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/QuotedMessage;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/QuotedMessage$Companion {
@@ -1108,7 +1099,7 @@ public final class com/pubnub/chat/types/TextLink {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/TextLink$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/TextLink$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/TextLink$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/TextLink;
@@ -1116,7 +1107,6 @@ public synthetic class com/pubnub/chat/types/TextLink$$serializer : kotlinx/seri
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/TextLink;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/TextLink$Companion {
