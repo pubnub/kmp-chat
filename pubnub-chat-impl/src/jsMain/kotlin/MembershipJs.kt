@@ -35,7 +35,6 @@ class MembershipJs internal constructor(internal val membership: Membership, int
         return membership.delete().then { true }.asPromise()
     }
 
-
     @Deprecated("Use onUpdated(callback) and onDeleted(callback) instead.")
     fun streamUpdates(callback: (MembershipJs?) -> Unit): () -> Unit {
         return streamUpdatesOn(arrayOf(this)) {

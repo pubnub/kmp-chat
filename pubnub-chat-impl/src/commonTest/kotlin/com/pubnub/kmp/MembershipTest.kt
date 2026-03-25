@@ -157,6 +157,7 @@ class MembershipTest {
             pubNub.setMemberships(
                 channels = matching<List<ChannelMembershipInput>> { channels ->
                     val partial = channels.single() as PNChannelMembership.Partial
+
                     @Suppress("UNCHECKED_CAST")
                     val customMap = (partial.custom as? Map<String, Any?>)?.toMap()
                     customMap == expectedCustomMap
