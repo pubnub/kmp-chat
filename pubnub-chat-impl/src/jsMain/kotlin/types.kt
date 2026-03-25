@@ -292,30 +292,6 @@ external interface WhoIsPresentParams {
     val offset: Int?
 }
 
-external interface DeleteUserResult
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun DeleteUserResult(user: UserJs): DeleteUserResult {
-    return user.unsafeCast<DeleteUserResult>()
-}
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun DeleteUserResult(boolean: Boolean): DeleteUserResult {
-    return boolean.unsafeCast<DeleteUserResult>()
-}
-
-external interface DeleteChannelResult
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun DeleteChannelResult(channel: ChannelJs): DeleteChannelResult {
-    return channel.unsafeCast<DeleteChannelResult>()
-}
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun DeleteChannelResult(boolean: Boolean): DeleteChannelResult {
-    return boolean.unsafeCast<DeleteChannelResult>()
-}
-
 external interface JoinParams {
     val status: String?
     val type: String?

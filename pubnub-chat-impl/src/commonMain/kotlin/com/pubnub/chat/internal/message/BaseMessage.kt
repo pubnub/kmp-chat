@@ -11,7 +11,6 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
-import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
@@ -179,7 +178,7 @@ abstract class BaseMessage<T : Message>(
                 // add action related to delete
                 updatedActions = assignAction(updatedActions, addMessageActionResult)
             }.alsoAsync {
-                deleteThread(soft)
+                deleteThread(soft = true)
             }.then {
                 // deleteThread method deletes reaction related to thread from PN and here be want to remove this action from "actions" map
                 updatedActions = updatedActions.filterNot { it.key == THREAD_ROOT_ID }
@@ -192,7 +191,7 @@ abstract class BaseMessage<T : Message>(
                 previousTimetoken,
                 timetoken
             ).alsoAsync {
-                deleteThread(soft)
+                deleteThread()
             }.alsoAsync {
                 if (files.isNotEmpty() && !preserveFiles) {
                     files.map { file ->
@@ -349,8 +348,8 @@ abstract class BaseMessage<T : Message>(
         }
     }
 
-    override fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> =
-        chat.removeThreadChannel(chat, this)
+    override fun removeThread(): PNFuture<Unit> =
+        chat.removeThreadChannel(chat, this, soft = false)
 
     override fun toggleReaction(reaction: String): PNFuture<Message> {
         val existingReaction = reactionsMap[reaction]?.find {
@@ -435,14 +434,10 @@ abstract class BaseMessage<T : Message>(
         return actions?.get(chat.deleteMessageActionName)?.get(chat.deleteMessageActionName)
     }
 
-    private fun deleteThread(soft: Boolean): PNFuture<Unit> {
+    private fun deleteThread(soft: Boolean = false): PNFuture<Unit> {
         // Always attempt to delete thread (don't rely on local hasThread state which may be stale
         // e.g. after createThread(text) the local message doesn't have updated actions)
-        return getThread().thenAsync {
-            it.delete(soft)
-        }.then {
-            Unit
-        }.catch {
+        return chat.removeThreadChannel(chat, this, soft = soft).catch {
             // Ignore if thread doesn't exist, propagate other errors
             if (it is PubNubException && errorMessageIndicatesThatThreadDoesNotExist(it.message)) {
                 Result.success(Unit)

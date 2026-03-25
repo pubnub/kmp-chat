@@ -11,6 +11,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class MembershipIntegrationTest : BaseChatIntegrationTest() {
     @Test
@@ -152,6 +153,23 @@ class MembershipIntegrationTest : BaseChatIntegrationTest() {
 
             dispose?.close()
         }
+    }
+
+    @Test
+    fun delete() = runTest {
+        val channel = chat.createChannel(
+            channel01.id,
+            channel01.name,
+            channel01.description,
+            channel01.custom?.let { createCustomObject(it) },
+            channel01.type,
+            channel01.status
+        ).await()
+
+        val membership = channel.join().await()
+        membership.delete().await()
+        val isMember = chat.currentUser.isMemberOf(channel.id).await()
+        assertFalse(isMember)
     }
 
     @Test

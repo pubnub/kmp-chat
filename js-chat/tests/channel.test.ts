@@ -57,12 +57,9 @@ describe("Channel test", () => {
   }, 20000)
 
   test("Should be able to delete channel", async () => {
-    const { status } = await channel.delete( {soft: true} ) as Channel
-    const deleteResult = await channel.delete()
+    await channel.delete()
     const fetchedChannel = await chat.getChannel(channel.id)
 
-    expect(status).toBe("deleted")
-    expect(deleteResult).toBe(true)
     expect(fetchedChannel).toBeNull()
   }, 20000)
 
@@ -187,9 +184,9 @@ describe("Channel test", () => {
     expect(newChannels[1].channel.id).toBe(someFakeGroupId)
     expect(newChannels[2].id).toBe(someFakePublicId)
 
-    await newChannels[0].channel.delete({ soft: false })
-    await newChannels[1].channel.delete({ soft: false })
-    await newChannels[2].delete({ soft: false })
+    await newChannels[0].channel.delete()
+    await newChannels[1].channel.delete()
+    await newChannels[2].delete()
     await user.delete()
   }, 20000)
 
@@ -256,7 +253,7 @@ describe("Channel test", () => {
       user1.delete(),
       user2.delete(),
       user3.delete(),
-      channel.delete({ soft: false }),
+      channel.delete(),
     ])
   }, 20000)
 
@@ -1861,7 +1858,7 @@ describe("Channel test", () => {
 
     const stop = testChannel.onDeleted(() => { deletedCalled = true })
     await sleep(1500)
-    await testChannel.delete({ soft: false })
+    await testChannel.delete()
     await sleep(500)
 
     expect(deletedCalled).toBe(true)

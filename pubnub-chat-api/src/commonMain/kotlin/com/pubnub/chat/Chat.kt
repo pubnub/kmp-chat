@@ -159,17 +159,13 @@ interface Chat {
     ): PNFuture<User>
 
     /**
-     * Deletes a [User] with or without deleting its historical data from the App Context storage.
+     * Deletes a [User], permanently removing their metadata from the App Context storage.
      *
      * @param id Unique user identifier.
-     * @param soft Decide if you want to permanently remove user metadata. The user metadata gets permanently deleted
-     * from the App Context storage by default. If you set this parameter to true, the User object gets the deleted
-     * status, and you can still restore/get their metadata.
      *
-     * @return For hard delete, the method returns [PNFuture] without a value (`null`).
-     * For soft delete, [PNFuture] containing an updated [User] instance with the status field set to "deleted".
+     * @return [PNFuture] that completes when the user is deleted.
      */
-    fun deleteUser(id: String, soft: Boolean = false): PNFuture<User?>
+    fun deleteUser(id: String): PNFuture<Unit>
 
     /**
      * Retrieves list of [Channel.id] where a given user is present.
@@ -240,17 +236,13 @@ interface Chat {
     ): PNFuture<Channel>
 
     /**
-     * Allows to delete [Channel] (with or without deleting its historical data from the App Context storage)
+     * Deletes a [Channel], permanently removing its metadata from the App Context storage.
      *
      * @param id Unique channel identifier (up to 92 UTF-8 byte sequences).
-     * @param soft Decide if you want to permanently remove channel metadata. The channel metadata gets permanently
-     * deleted from the App Context storage by default. If you set this parameter to true, the Channel object
-     * gets the deleted status, and you can still restore/get its data.
      *
-     * @return For hard delete, the method returns [PNFuture] without a value (`null`).
-     *         For soft delete, [PNFuture] containing an updated [Channel] instance with the status field set to "deleted".
+     * @return [PNFuture] that completes when the channel is deleted.
      */
-    fun deleteChannel(id: String, soft: Boolean = false): PNFuture<Channel?>
+    fun deleteChannel(id: String): PNFuture<Unit>
 
     /**
      * Returns a list of [User.id] present on the given [Channel].

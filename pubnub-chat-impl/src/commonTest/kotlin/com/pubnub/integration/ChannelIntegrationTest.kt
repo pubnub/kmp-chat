@@ -336,28 +336,6 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
-    fun canGetSoftDeletedUsers() = runTest {
-        val userId = "user2"
-        try {
-            chat.deleteUser(userId, false).await()
-        } catch (_: Exception) {
-        }
-        chat.createUser(UserImpl(chat, userId)).await()
-        chat.deleteUser(id = userId, soft = true).await()
-
-        val getUsersResponse = chat.getUsers(filter = "id == '$userId' && status=='deleted'").await()
-
-        assertEquals(userId, getUsersResponse.users.first().id)
-        assertEquals("deleted", getUsersResponse.users.first().status)
-
-        // clean
-        try {
-            chat.deleteUser(userId, false).await()
-        } catch (_: Exception) {
-        }
-    }
-
-    @Test
     fun fetchReadReceipts() = runTest(timeout = 10.seconds) {
         val user = chat.createUser(UserImpl(chat, randomString())).await()
         val channel = chat.createDirectConversation(user).await().channel
@@ -1174,41 +1152,6 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         // cleanup
         chat.deleteChannel(testChannelId).await()
         chat.deleteUser(userToInvite.id).await()
-    }
-
-    @Test
-    fun sendText_afterChannelSoftDelete_shouldSucceed() = runTest {
-        // given - create and delete a channel
-        val testChannelId = randomString()
-        val testChannel = chat.createChannel(testChannelId).await()
-
-        // when - delete the channel (soft delete)
-        testChannel.delete(soft = true).await()
-
-        delayForHistory()
-
-        // then - verify channel is soft-deleted
-        val deletedChannel = chat.getChannel(testChannelId).await()
-        assertNotNull(deletedChannel, "Channel should still exist after soft delete")
-        assertEquals("deleted", deletedChannel.status, "Channel status should be 'deleted'")
-
-        // when - try to send message to deleted channel
-        // Note: PubNub allows publishing to any channel ID, even if channel metadata is deleted
-        // This is because channels are implicit in PubNub - they exist when you publish to them
-        val publishResult = deletedChannel.sendText("Message after delete").await()
-
-        // then - publish should succeed (PubNub allows this)
-        assertNotNull(publishResult, "Should be able to publish to deleted channel")
-        assertTrue(publishResult.timetoken > 0, "Should get valid timetoken")
-
-        // verify message was actually published
-        delayForHistory()
-        val message = deletedChannel.getMessage(publishResult.timetoken).await()
-        assertNotNull(message, "Message should be retrievable even on deleted channel")
-        assertEquals("Message after delete", message.text)
-
-        // cleanup - hard delete
-        chat.deleteChannel(testChannelId, soft = false).await()
     }
 
     @Test
