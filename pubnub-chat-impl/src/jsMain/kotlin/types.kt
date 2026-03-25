@@ -393,6 +393,8 @@ external interface ReadReceiptsResponseJs {
 }
 
 external interface UpdateMembershipParams {
+    val status: String?
+    val type: String?
     val custom: PubNub.CustomObject?
 }
 
