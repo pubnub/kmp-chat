@@ -1,7 +1,7 @@
 import com.pubnub.chat.internal.TYPE_OF_MESSAGE
 import com.pubnub.chat.internal.TYPE_OF_MESSAGE_IS_CUSTOM
 import com.pubnub.chat.internal.defaultGetMessagePublishBody
-import com.pubnub.chat.internal.serialization.PNDataEncoder
+import com.pubnub.chat.internal.encodeEventContentWithType
 import com.pubnub.chat.types.EventContent
 
 internal fun Any?.tryLong(): Long? {
@@ -58,7 +58,7 @@ internal fun EventContent.encodeForSending(
             put(TYPE_OF_MESSAGE, TYPE_OF_MESSAGE_IS_CUSTOM)
         }
     } else {
-        PNDataEncoder.encode(this) as Map<String, Any?>
+        encodeEventContent(this)
     }
 
     if (mergeMessageWith != null) {
@@ -68,4 +68,29 @@ internal fun EventContent.encodeForSending(
         }
     }
     return finalMessage
+}
+
+private fun encodeEventContent(content: EventContent): Map<String, Any?> {
+    return when (content) {
+        is EventContent.Typing ->
+            encodeEventContentWithType(EventContent.Typing.serializer(), content)
+        is EventContent.Report ->
+            encodeEventContentWithType(EventContent.Report.serializer(), content)
+        is EventContent.Receipt ->
+            encodeEventContentWithType(EventContent.Receipt.serializer(), content)
+        is EventContent.Mention ->
+            encodeEventContentWithType(EventContent.Mention.serializer(), content)
+        is EventContent.Invite ->
+            encodeEventContentWithType(EventContent.Invite.serializer(), content)
+        is EventContent.Moderation ->
+            encodeEventContentWithType(EventContent.Moderation.serializer(), content)
+        is EventContent.UnknownMessageFormat ->
+            encodeEventContentWithType(EventContent.TextMessageContent.serializer(), content)
+        is EventContent.TextMessageContent ->
+            encodeEventContentWithType(EventContent.TextMessageContent.serializer(), content)
+        is EventContent.Custom ->
+            error("Custom event content should be handled before generic serialization.")
+        else ->
+            error("Unsupported EventContent subtype for serialization: ${content::class}")
+    }
 }
