@@ -235,19 +235,6 @@ external interface SendTextOptionParams : PubNub.PublishParameters {
 }
 
 /**
- * Legacy parameters for sending text messages with rich composition options.
- * @deprecated Use [SendTextParamsJs] with [Channel.sendText] instead.
- */
-external interface SendTextOptionParams : PubNub.PublishParameters {
-    var mentionedUsers: JsMap<MessageMentionedUser>?
-    var referencedChannels: JsMap<MessageReferencedChannel>?
-    var textLinks: Array<TextLink>?
-    var quotedMessage: MessageJs?
-    var files: Any?
-    var customPushData: JsMap<String>?
-}
-
-/**
  * Parameters for sending text messages, aligned with Kotlin's SendTextParams.
  *
  * @property meta Additional metadata to include with the message.
