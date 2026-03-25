@@ -118,11 +118,9 @@ class MembershipTest {
         )
         val membership = MembershipImpl(chat, channel, user, existingCustom, null, null, null, null)
         val newCustom = createCustomObject(mapOf("role" to "admin"))
-        val expectedCustom = createCustomObject(
-            mapOf(
-                "role" to "admin",
-                "lastReadMessageTimetoken" to lastMessageTimetoken.toString()
-            )
+        val expectedCustomMap = mapOf(
+            "role" to "admin",
+            "lastReadMessageTimetoken" to lastMessageTimetoken.toString()
         )
 
         every {
@@ -159,7 +157,9 @@ class MembershipTest {
             pubNub.setMemberships(
                 channels = matching<List<ChannelMembershipInput>> { channels ->
                     val partial = channels.single() as PNChannelMembership.Partial
-                    partial.custom == expectedCustom
+                    @Suppress("UNCHECKED_CAST")
+                    val customMap = (partial.custom as? Map<String, Any?>)?.toMap()
+                    customMap == expectedCustomMap
                 },
                 userId = user.id,
                 limit = any<Int?>(),
