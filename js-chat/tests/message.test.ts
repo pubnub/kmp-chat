@@ -1207,9 +1207,9 @@ describe("Send message test", () => {
     expect(encryptedHistory.messages[0].text).toBe("Random text")
     expect(cipheredHistory.messages[0].text.startsWith("UE5FRAFBQ1JIE")).toBeTruthy()
 
-    await someEncryptedGroupChannel.channel.delete({ soft: false })
-    await sameCipheredGroupChannel.delete({ soft: false })
-    await someRandomUser1.delete({ soft: false })
+    await someEncryptedGroupChannel.channel.delete()
+    await sameCipheredGroupChannel.delete()
+    await someRandomUser1.delete()
     await encryptedChat.currentUser.delete()
 
     disconnect1()
@@ -1890,11 +1890,8 @@ describe("Send message test", () => {
     const messageWithThread = historyWithThread.messages[0]
     expect(messageWithThread.hasThread).toBe(true)
 
-    const [deleteData, channelOrBoolean] = await messageWithThread.removeThread()
+    await messageWithThread.removeThread()
     await sleep(300)
-
-    expect(deleteData).toBeDefined()
-    expect(channelOrBoolean).toBeDefined()
 
     const historyAfterRemoval = await channel.getHistory()
     const messageAfterRemoval = historyAfterRemoval.messages[0]

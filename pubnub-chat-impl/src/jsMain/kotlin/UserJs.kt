@@ -39,14 +39,8 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
         }.asPromise()
     }
 
-    fun delete(options: DeleteParameters?): Promise<DeleteUserResult> {
-        return user.delete(options?.soft ?: false).then {
-            if (it != null) {
-                DeleteUserResult(it.asJs(chatJs))
-            } else {
-                DeleteUserResult(true)
-            }
-        }.asPromise()
+    fun delete(): Promise<Boolean> {
+        return user.delete().then { true }.asPromise()
     }
 
     fun onUpdated(callback: (user: UserJs) -> Unit): () -> Unit {

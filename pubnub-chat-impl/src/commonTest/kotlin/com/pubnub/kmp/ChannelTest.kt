@@ -146,18 +146,6 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
-    fun canSoftDeleteChannel() {
-        val softDelete = true
-        val channelFutureMock: PNFuture<Channel> = mock(MockMode.strict)
-        every { chat.deleteChannel(any(), any()) } returns channelFutureMock
-
-        val deleteChannelFuture: PNFuture<Channel?> = objectUnderTest.delete(soft = softDelete)
-
-        assertEquals(channelFutureMock, deleteChannelFuture)
-        verify { chat.deleteChannel(id = channelId, soft = softDelete) }
-    }
-
-    @Test
     fun canForwardMessage() {
         val message = createMessage()
         val publishResultMock: PNFuture<PNPublishResult> = mock(MockMode.strict)

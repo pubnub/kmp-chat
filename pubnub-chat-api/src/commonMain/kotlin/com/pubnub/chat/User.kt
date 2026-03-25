@@ -130,13 +130,11 @@ interface User {
     ): PNFuture<User>
 
     /**
-     * Deletes the user. If soft deletion is enabled, the user's data is retained but marked as inactive.
+     * Deletes the user, permanently removing their metadata from the App Context storage.
      *
-     * @param soft If true, the user is soft deleted, retaining their data but making them inactive.
-     * @return For hard delete, the method returns [PNFuture] without a value (`null`).
-     * For soft delete, [PNFuture] containing an updated [User] instance with the status field set to "deleted".
+     * @return [PNFuture] that completes when the user is deleted.
      */
-    fun delete(soft: Boolean = false): PNFuture<User?>
+    fun delete(): PNFuture<Unit>
 
     /**
      * Retrieves a list of channels where the user is currently present.

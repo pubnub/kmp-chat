@@ -130,15 +130,8 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         ).then { it.asJs(this@ChatJs) }.asPromise()
     }
 
-    fun deleteUser(id: String, params: DeleteParameters?): Promise<DeleteUserResult> {
-        return chat.deleteUser(id, params?.soft ?: false)
-            .then {
-                if (it != null) {
-                    DeleteUserResult(it.asJs(this@ChatJs))
-                } else {
-                    DeleteUserResult(true)
-                }
-            }.asPromise()
+    fun deleteUser(id: String): Promise<Boolean> {
+        return chat.deleteUser(id).then { true }.asPromise()
     }
 
     fun getUsers(params: PubNub.GetAllMetadataParameters?): Promise<GetUsersResponseJs> {
@@ -186,15 +179,8 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         }.asPromise()
     }
 
-    fun deleteChannel(id: String, params: DeleteParameters?): Promise<DeleteChannelResult> {
-        return chat.deleteChannel(id, params?.soft ?: false)
-            .then {
-                if (it != null) {
-                    DeleteChannelResult(it.asJs(this@ChatJs))
-                } else {
-                    DeleteChannelResult(true)
-                }
-            }.asPromise()
+    fun deleteChannel(id: String): Promise<Boolean> {
+        return chat.deleteChannel(id).then { true }.asPromise()
     }
 
     // internal

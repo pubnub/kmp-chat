@@ -49,7 +49,7 @@ describe("MessageDraftV1", function () {
     expect(messageDraft.value).toBe(`Hello @${user1.name} and @${user2.name}`)
     expect(messagePreview.map(renderMessagePart).join("")).toBe(`Hello @${user1.name} and @${user2.name}`)
 
-    await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
+    await Promise.all([user1.delete(), user2.delete()])
   })
 
   test("should mention 2 - 3 users next to each other", async () => {
@@ -77,9 +77,9 @@ describe("MessageDraftV1", function () {
     expect(messageDraft.value).toBe(`Hello @${user1.name} @${user2.name} @${user3.name}`)
 
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false }),
-      user3.delete({ soft: false }),
+      user1.delete(),
+      user2.delete(),
+      user3.delete(),
     ])
   })
 
@@ -110,9 +110,9 @@ describe("MessageDraftV1", function () {
     expect(messageDraft.value).toBe(`Hello @${user1.name} @${user2.name} and @${user3.name}`)
 
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false }),
-      user3.delete({ soft: false }),
+      user1.delete(),
+      user2.delete(),
+      user3.delete(),
     ])
   })
 
@@ -133,7 +133,7 @@ describe("MessageDraftV1", function () {
     expect(messagePreview.map(renderMessagePart).join("")).toBe(`Hello #${channel1.name} and #${channel2.name}`)
     expect(messageDraft.value).toBe(`Hello #${channel1.name} and #${channel2.name}`)
 
-    await Promise.all([channel1.delete({ soft: false }), channel2.delete({ soft: false })])
+    await Promise.all([channel1.delete(), channel2.delete()])
   })
 
   test("should reference 2 channels and 2 mentions", async () => {
@@ -165,8 +165,8 @@ describe("MessageDraftV1", function () {
       `Hello #${channel1.name} and @${user1.name} and #${channel2.name} or @${user2.name}.`
     )
 
-    await Promise.all([channel1.delete({ soft: false }), channel2.delete({ soft: false })])
-    await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
+    await Promise.all([channel1.delete(), channel2.delete()])
+    await Promise.all([user1.delete(), user2.delete()])
   })
 
   test("should reference 2 channels and 2 mentions with commas", async () => {
@@ -198,8 +198,8 @@ describe("MessageDraftV1", function () {
       `Hello #${channel1.name}, @${user1.name}, #${channel2.name} or @${user2.name}`
     )
 
-    await Promise.all([channel1.delete({ soft: false }), channel2.delete({ soft: false })])
-    await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
+    await Promise.all([channel1.delete(), channel2.delete()])
+    await Promise.all([user1.delete(), user2.delete()])
   })
 
   test("should reference 2 channels and 2 mentions with commas - another variation", async () => {
@@ -238,13 +238,13 @@ describe("MessageDraftV1", function () {
     )
 
     await Promise.all([
-      channel1.delete({ soft: false }),
-      channel2.delete({ soft: false }),
-      channel3.delete({ soft: false }),
+      channel1.delete(),
+      channel2.delete(),
+      channel3.delete(),
     ])
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false })
+      user1.delete(),
+      user2.delete()
     ])
   })
 
@@ -358,14 +358,14 @@ describe("MessageDraftV1", function () {
     )
 
     await Promise.all([
-      channel1.delete({ soft: false }),
-      channel2.delete({ soft: false })
+      channel1.delete(),
+      channel2.delete()
     ])
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false }),
-      user4.delete({ soft: false }),
-      user5.delete({ soft: false }),
+      user1.delete(),
+      user2.delete(),
+      user4.delete(),
+      user5.delete(),
     ])
   }, 20000)
 
@@ -444,14 +444,14 @@ describe("MessageDraftV1", function () {
     )
 
     await Promise.all([
-      channel1.delete({ soft: false }),
-      channel2.delete({ soft: false })
+      channel1.delete(),
+      channel2.delete()
     ])
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false }),
-      user4.delete({ soft: false }),
-      user5.delete({ soft: false }),
+      user1.delete(),
+      user2.delete(),
+      user4.delete(),
+      user5.delete(),
     ])
   }, 20000)
 
@@ -515,14 +515,14 @@ describe("MessageDraftV1", function () {
     )
 
     await Promise.all([
-      channel1.delete({ soft: false }),
-      channel2.delete({ soft: false }),
-      channel3.delete({ soft: false }),
+      channel1.delete(),
+      channel2.delete(),
+      channel3.delete(),
     ])
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false }),
-      user3.delete({ soft: false }),
+      user1.delete(),
+      user2.delete(),
+      user3.delete(),
     ])
   })
 })

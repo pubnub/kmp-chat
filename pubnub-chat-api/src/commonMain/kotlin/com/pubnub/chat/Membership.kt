@@ -85,6 +85,13 @@ interface Membership {
     fun setLastReadMessageTimetoken(timetoken: Long): PNFuture<Membership>
 
     /**
+     * Deletes this membership, removing the user-channel relationship.
+     *
+     * @return [PNFuture] that completes when the membership is deleted.
+     */
+    fun delete(): PNFuture<Unit>
+
+    /**
      * Returns the number of messages you didn't read on a given channel. You can display this number on UI in the channel list of your chat app.
      *
      * @return A [PNFuture] that returns the number of unread messages on the membership's channel or `null` when [lastReadMessageTimetoken] is also `null`.

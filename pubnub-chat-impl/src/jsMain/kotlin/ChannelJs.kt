@@ -41,14 +41,8 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
-    fun delete(options: DeleteParameters?): Promise<DeleteChannelResult> {
-        return channel.delete(options?.soft ?: false).then {
-            if (it != null) {
-                DeleteChannelResult(it.asJs(chatJs))
-            } else {
-                DeleteChannelResult(true)
-            }
-        }.asPromise()
+    fun delete(): Promise<Boolean> {
+        return channel.delete().then { true }.asPromise()
     }
 
     @Deprecated("Use onUpdated(callback) and onDeleted(callback) instead.")

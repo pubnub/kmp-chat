@@ -169,13 +169,9 @@ open class MessageJs internal constructor(internal val message: Message, interna
         }.asPromise()
     }
 
-    fun removeThread(): Promise<Array<Any>> {
+    fun removeThread(): Promise<Boolean> {
         return message.removeThread().then {
-            arrayOf(
-                Any(),
-                it.second?.asJs(chatJs)?.let { channelJs -> DeleteChannelResult(channelJs) }
-                    ?: DeleteChannelResult(true)
-            )
+            true
         }.asPromise()
     }
 

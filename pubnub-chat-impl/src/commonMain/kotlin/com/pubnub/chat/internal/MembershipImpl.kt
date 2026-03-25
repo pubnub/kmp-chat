@@ -47,6 +47,13 @@ data class MembershipImpl(
         return setLastReadMessageTimetoken(message.timetoken)
     }
 
+    override fun delete(): PNFuture<Unit> {
+        return chat.pubNub.removeMemberships(
+            userId = user.id,
+            channels = listOf(channel.id)
+        ).then { Unit }
+    }
+
     override fun update(custom: CustomObject?): PNFuture<Membership> {
         return exists().thenAsync { exists ->
             if (!exists) {

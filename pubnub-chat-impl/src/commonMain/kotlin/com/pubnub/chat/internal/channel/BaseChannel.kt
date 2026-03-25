@@ -141,8 +141,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return chat.updateChannel(id, name, custom, description, status, type)
     }
 
-    override fun delete(soft: Boolean): PNFuture<Channel?> {
-        return chat.deleteChannel(id, soft)
+    override fun delete(): PNFuture<Unit> {
+        return chat.deleteChannel(id)
     }
 
     override fun forwardMessage(message: Message): PNFuture<PNPublishResult> {
@@ -992,8 +992,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
             payload = EventContent.Typing(value),
         )
     }
-
-    internal abstract fun copyWithStatusDeleted(): C
 
     private fun toPNChannelMetadata(): PNChannelMetadata {
         return PNChannelMetadata(

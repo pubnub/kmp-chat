@@ -9,7 +9,6 @@ import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
-import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
@@ -301,11 +300,9 @@ class BaseMessageTest : BaseTest() {
             channelId = messageChannelId,
             userId = "testUserId"
         )
-        val mockResult = Pair(PNRemoveMessageActionResult(), null as Channel?)
+        every { chat.removeThreadChannel(chat, message, false) } returns Unit.asFuture()
 
-        every { chat.removeThreadChannel(chat, message) } returns mockResult.asFuture()
-
-        message.removeThread().async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+        message.removeThread().async { result: Result<Unit> ->
             assertTrue(result.isSuccess)
         }
     }
@@ -323,9 +320,9 @@ class BaseMessageTest : BaseTest() {
         )
         val errorMessage = "There is no thread to be deleted."
 
-        every { chat.removeThreadChannel(chat, message) } returns PubNubException(errorMessage).asFuture()
+        every { chat.removeThreadChannel(chat, message, false) } returns PubNubException(errorMessage).asFuture()
 
-        message.removeThread().async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+        message.removeThread().async { result: Result<Unit> ->
             assertTrue(result.isFailure)
             assertEquals(errorMessage, result.exceptionOrNull()?.message)
         }
@@ -539,8 +536,8 @@ class BaseMessageTest : BaseTest() {
             }
             callback.accept(Result.success(PNAddMessageActionResult(action)))
         }
-        // Thread doesn't exist - getThread returns "This message is not a thread."
-        every { chat.getThreadChannel(message) } returns PubNubException("This message is not a thread.").asFuture()
+        // Thread doesn't exist - removeThreadChannel returns "This message is not a thread."
+        every { chat.removeThreadChannel(chat, message, soft = true) } returns PubNubException("This message is not a thread.").asFuture()
 
         message.delete(soft = true).async { result: Result<Message?> ->
             assertTrue(result.isSuccess, "Delete should succeed when thread doesn't exist")
@@ -575,7 +572,7 @@ class BaseMessageTest : BaseTest() {
         }
         // Non-404 error (e.g., network error, auth error)
         val networkError = PubNubException("Network error", statusCode = 500)
-        every { chat.getThreadChannel(message) } returns networkError.asFuture()
+        every { chat.removeThreadChannel(chat, message, soft = true) } returns networkError.asFuture()
 
         message.delete(soft = true).async { result: Result<Message?> ->
             assertTrue(result.isFailure, "Delete should fail when thread returns non-404 error")

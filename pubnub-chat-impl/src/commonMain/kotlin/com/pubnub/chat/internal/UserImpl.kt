@@ -95,8 +95,8 @@ data class UserImpl(
         return updateInternal(this, updateAction)
     }
 
-    override fun delete(soft: Boolean): PNFuture<User?> {
-        return chat.deleteUser(id, soft)
+    override fun delete(): PNFuture<Unit> {
+        return chat.deleteUser(id)
     }
 
     override fun wherePresent(): PNFuture<List<String>> {

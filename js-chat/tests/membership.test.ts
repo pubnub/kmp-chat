@@ -213,6 +213,15 @@ describe("Membership test", () => {
     stop()
   }, 20000)
 
+  test("should delete membership via membership.delete", async () => {
+    const membership = await channel.invite(user)
+    const result = await membership.delete()
+    expect(result).toBe(true)
+
+    const isMember = await user.isMemberOf(channel.id)
+    expect(isMember).toBe(false)
+  }, 20000)
+
   test("should fire callback when membership is deleted via membership.onDeleted", async () => {
     const membership = await channel.join()
     await sleep(150)
