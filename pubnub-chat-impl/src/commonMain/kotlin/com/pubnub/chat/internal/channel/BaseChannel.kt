@@ -560,7 +560,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         sort: Collection<PNSortKey<PNMemberKey>>,
     ): PNFuture<MembersResponse> {
         val pendingFilter = "status == \"$MEMBERSHIP_PENDING_STATUS\""
-        val combinedFilter = if (filter.isNullOrEmpty()) {
+        val combinedFilter = if (filter.isNullOrBlank()) {
             pendingFilter
         } else {
             "($filter) && $pendingFilter"
@@ -683,7 +683,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
                     status = status,
                     type = type
                 )
-            ),
+            ), // todo should null overwrite? Waiting for optionals?
             filter = channelFilterString,
             include = MembershipInclude(
                 includeCustom = true,

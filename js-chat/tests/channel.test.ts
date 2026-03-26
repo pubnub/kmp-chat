@@ -1957,6 +1957,25 @@ describe("Channel test", () => {
     await userToInvite.delete()
   }, 20000)
 
+  test("getInvitees with filter should return only matching pending members", async () => {
+    const userToInvite1 = await createRandomUser(chat)
+    const userToInvite2 = await createRandomUser(chat)
+
+    // Invite both users (status = "pending")
+    await channel.invite(userToInvite1)
+    await channel.invite(userToInvite2)
+
+    // getInvitees with filter should return only the matching invited user
+    const invitees = await channel.getInvitees({ filter: `uuid.id == '${userToInvite1.id}'` })
+
+    expect(invitees.members.length).toBe(1)
+    expect(invitees.members[0].user.id).toEqual(userToInvite1.id)
+    expect(invitees.members[0].status).toEqual("pending")
+
+    await userToInvite1.delete()
+    await userToInvite2.delete()
+  }, 20000)
+
   test("createDirectConversation should set invitee status to pending", async () => {
     const user = await createRandomUser(chat)
     const directConversation = await chat.createDirectConversation({ user })

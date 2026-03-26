@@ -1475,6 +1475,29 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         chat.deleteChannel(testChannelId).await()
         chat.deleteUser(invitedUser.id).await()
     }
+
+    @Test
+    fun getInvitees_withFilter_shouldReturnOnlyMatchingPendingMembers() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val invitedUser1 = chat.createUser(UserImpl(chat, randomString(), name = "Invited User 1")).await()
+        val invitedUser2 = chat.createUser(UserImpl(chat, randomString(), name = "Invited User 2")).await()
+
+        // Invite both users (both get "pending" status)
+        testChannel.invite(invitedUser1).await()
+        testChannel.invite(invitedUser2).await()
+
+        // getInvitees with filter should return only the matching invited user
+        val invitees = testChannel.getInvitees(filter = "uuid.id == '${invitedUser1.id}'").await()
+
+        assertEquals(1, invitees.members.size)
+        assertEquals(invitedUser1.id, invitees.members.first().user.id)
+        assertEquals("pending", invitees.members.first().status)
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(invitedUser1.id).await()
+        chat.deleteUser(invitedUser2.id).await()
+    }
 }
 
 private fun Channel.asImpl(): ChannelImpl {
