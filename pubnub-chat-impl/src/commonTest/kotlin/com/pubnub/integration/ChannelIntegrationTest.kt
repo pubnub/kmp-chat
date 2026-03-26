@@ -1223,7 +1223,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         // when - create a thread and send a message
         val threadMessageText = "Thread message to pin ${randomString()}"
-        val threadChannel = parentMessage.createThread(threadMessageText).await()
+        val threadChannel = parentMessage.createThread(threadMessageText).await().threadChannel
         delayForHistory()
 
         val threadHistory = threadChannel.getHistory().await()

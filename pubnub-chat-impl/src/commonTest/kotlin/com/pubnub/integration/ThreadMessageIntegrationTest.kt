@@ -26,7 +26,7 @@ class ThreadMessageIntegrationTest : BaseChatIntegrationTest() {
 
         val parentMessage = channel.getHistory().await().messages.first()
         val threadMessageText = "Thread reply ${randomString()}"
-        val threadChannel = parentMessage.createThread(threadMessageText).await()
+        val threadChannel = parentMessage.createThread(threadMessageText).await().threadChannel
         delayForHistory()
 
         val threadMessage = threadChannel.getHistory().await().messages.first()
@@ -49,7 +49,7 @@ class ThreadMessageIntegrationTest : BaseChatIntegrationTest() {
 
         val parentMessage = channel.getHistory().await().messages.first()
         val threadMessageText = "Thread reply ${randomString()}"
-        val threadChannel = parentMessage.createThread(threadMessageText).await()
+        val threadChannel = parentMessage.createThread(threadMessageText).await().threadChannel
         delayForHistory()
 
         val threadMessage = threadChannel.getHistory().await().messages.first()
@@ -78,7 +78,7 @@ class ThreadMessageIntegrationTest : BaseChatIntegrationTest() {
 
         val parentMessage = channel.getHistory().await().messages.first()
         val threadMessageText = "Thread reply ${randomString()}"
-        val threadChannel = parentMessage.createThread(threadMessageText).await()
+        val threadChannel = parentMessage.createThread(threadMessageText).await().threadChannel
         delayForHistory()
 
         val threadMessage = threadChannel.getHistory().await().messages.first()
@@ -104,7 +104,7 @@ class ThreadMessageIntegrationTest : BaseChatIntegrationTest() {
 
         val parentMessage = channel.getHistory().await().messages.first()
         val threadMessageText = "Thread reply ${randomString()}"
-        val threadChannel = parentMessage.createThread(threadMessageText).await()
+        val threadChannel = parentMessage.createThread(threadMessageText).await().threadChannel
         delayForHistory()
 
         val threadMessage = threadChannel.getHistory().await().messages.first()
@@ -125,7 +125,7 @@ class ThreadMessageIntegrationTest : BaseChatIntegrationTest() {
 
         val parentMessage = channel.getHistory().await().messages.first()
         val threadMessageText = "Thread reply ${randomString()}"
-        val threadChannel = parentMessage.createThread(threadMessageText).await()
+        val threadChannel = parentMessage.createThread(threadMessageText).await().threadChannel
         delayForHistory()
 
         val threadMessage = threadChannel.getHistory().await().messages.first()
@@ -149,7 +149,7 @@ class ThreadMessageIntegrationTest : BaseChatIntegrationTest() {
 
         val parentMessage = channel.getHistory().await().messages.first()
         val threadMessageText = "Thread reply ${randomString()}"
-        val threadChannel = parentMessage.createThread(threadMessageText).await()
+        val threadChannel = parentMessage.createThread(threadMessageText).await().threadChannel
         delayForHistory()
 
         val threadMessage = threadChannel.getHistory().await().messages.first()

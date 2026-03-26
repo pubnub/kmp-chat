@@ -266,10 +266,15 @@ abstract class BaseMessage<T : Message>(
     override fun createThread(
         text: String,
         params: SendTextParams,
-    ): PNFuture<ThreadChannel> {
+    ): PNFuture<CreateThreadResult> {
         @Suppress("DEPRECATION")
-        return createThread().alsoAsync {
-            it.sendText(text, params)
+        return createThread().thenAsync { threadChannel ->
+            threadChannel.sendText(text, params).thenAsync {
+                // Re-fetch message from server to get accurate actions with correct timetokens
+                BaseChannel.getMessage(chat, channelId, timetoken)
+            }.then { fetchedMessage ->
+                CreateThreadResult(threadChannel, fetchedMessage ?: this)
+            }
         }
     }
 
@@ -301,22 +306,16 @@ abstract class BaseMessage<T : Message>(
         }
     }
 
+    @Deprecated(
+        "Use createThread(text, SendTextParams) instead",
+        level = DeprecationLevel.WARNING
+    )
     override fun createThreadWithResult(
         text: String,
         params: SendTextParams,
-    ): PNFuture<CreateThreadResult> {
-        @Suppress("DEPRECATION")
-        return createThread().thenAsync { threadChannel ->
-            threadChannel.sendText(text, params).thenAsync {
-                // Re-fetch message from server to get accurate actions with correct timetokens
-                BaseChannel.getMessage(chat, channelId, timetoken)
-            }.then { fetchedMessage ->
-                CreateThreadResult(threadChannel, fetchedMessage ?: this)
-            }
-        }
-    }
+    ): PNFuture<CreateThreadResult> = createThread(text, params)
 
-    @Deprecated("Use createThreadWithResult(text, SendTextParams) instead", level = DeprecationLevel.WARNING)
+    @Deprecated("Use createThread(text, SendTextParams) instead", level = DeprecationLevel.WARNING)
     override fun createThreadWithResult(
         text: String,
         meta: Map<String, Any>?,
