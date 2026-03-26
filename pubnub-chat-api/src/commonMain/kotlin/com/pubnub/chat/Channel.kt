@@ -359,6 +359,26 @@ interface Channel {
     ): PNFuture<MembersResponse>
 
     /**
+     * Returns the list of channel members whose membership status is "pending" (i.e., invited but not yet joined).
+     *
+     * This method calls [getMembers] under the hood with a filter for `status == "pending"`.
+     * If a [filter] is provided, it is merged with the pending status filter using `&&`.
+     *
+     * @param limit Number of objects to return in response. The default (and maximum) value is 100.
+     * @param page Object used for pagination to define which previous or next result page you want to fetch.
+     * @param filter Expression used to filter the results. This filter will be combined with the pending status filter.
+     * @param sort A collection to specify the sort order.
+     *
+     * @return [PNFuture] containing [MembersResponse] with only pending (invited) members.
+     */
+    fun getInvitees(
+        limit: Int? = 100,
+        page: PNPage? = null,
+        filter: String? = null,
+        sort: Collection<PNSortKey<PNMemberKey>> = listOf(),
+    ): PNFuture<MembersResponse>
+
+    /**
      * Checks if a specific user is a member of the channel.
      *
      * @param userId The ID of the user to check for membership.
