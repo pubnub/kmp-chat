@@ -135,15 +135,8 @@ open class MessageJs internal constructor(internal val message: Message, interna
         return message.getThread().then { it.asJs(chatJs) }.asPromise()
     }
 
-    fun createThread(text: String, options: SendTextParamsJs? = null): Promise<ThreadChannelJs> {
+    fun createThread(text: String, options: SendTextParamsJs? = null): Promise<CreateThreadResultJs> {
         return message.createThread(
-            text = text,
-            params = options.toSendTextParams(),
-        ).then { it.asJs(chatJs) }.asPromise()
-    }
-
-    fun createThreadWithResult(text: String, options: SendTextParamsJs? = null): Promise<CreateThreadResultJs> {
-        return message.createThreadWithResult(
             text = text,
             params = options.toSendTextParams(),
         ).then { result ->
@@ -152,6 +145,11 @@ open class MessageJs internal constructor(internal val message: Message, interna
                 this.parentMessage = result.parentMessage.asJs(chatJs)
             }
         }.asPromise()
+    }
+
+    @Deprecated("Use createThread(text, options) instead")
+    fun createThreadWithResult(text: String, options: SendTextParamsJs? = null): Promise<CreateThreadResultJs> {
+        return createThread(text, options)
     }
 
     fun createThreadMessageDraft(config: MessageDraftConfig? = null): Promise<MessageDraftV2Js> {

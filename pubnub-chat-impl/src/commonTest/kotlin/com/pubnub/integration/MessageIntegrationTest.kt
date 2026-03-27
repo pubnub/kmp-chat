@@ -79,7 +79,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val publishTimetoken = pnPublishResult.timetoken
         delayForHistory()
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
-        val threadChannel: ThreadChannel = message.createThread("message in thread_${randomString()}").await()
+        val threadChannel = message.createThread("message in thread_${randomString()}").await().threadChannel
         delayForHistory()
         val history: HistoryResponse<ThreadMessage> = threadChannel.getHistory().await()
 
@@ -476,7 +476,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
 
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
         val threadReplyText = "First thread reply_${randomString()}"
-        val threadChannel: ThreadChannel = message.createThread(threadReplyText).await()
+        val threadChannel = message.createThread(threadReplyText).await().threadChannel
         delayForHistory()
 
         // when - get thread channel using chat.getThreadChannel
@@ -506,7 +506,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         delayForHistory()
 
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
-        val threadChannel: ThreadChannel = message.createThread("First thread message_${randomString()}").await()
+        val threadChannel = message.createThread("First thread message_${randomString()}").await().threadChannel
 
         // add more messages to thread
         val additionalMessageCount = 5

@@ -519,7 +519,8 @@ declare class Message {
      * Threads
      */
     getThread(): Promise<ThreadChannel>;
-    createThread(text: string, options?: SendTextParams): Promise<ThreadChannel>;
+    createThread(text: string, options?: SendTextParams): Promise<CreateThreadResult>;
+    /** @deprecated Use createThread() instead. */
     createThreadWithResult(text: string, options?: SendTextParams): Promise<CreateThreadResult>;
     createThreadMessageDraft(config?: Partial<MessageDraftConfig>): Promise<MessageDraft>;
     /** @deprecated Use createThreadMessageDraft() instead. */
