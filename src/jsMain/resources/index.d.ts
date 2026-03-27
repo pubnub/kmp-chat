@@ -708,6 +708,15 @@ declare class Channel {
     getMember(userId: string): Promise<Membership | null>;
     invite(user: User): Promise<Membership>;
     inviteMultiple(users: User[]): Promise<Membership[]>;
+    getInvitees(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<{
+        page: {
+            next: string | undefined;
+            prev: string | undefined;
+        };
+        total: number | undefined;
+        status: number;
+        members: Membership[];
+    }>;
     pinMessage(message: Message): Promise<Channel>;
     unpinMessage(): Promise<Channel>;
     getPinnedMessage(): Promise<Message | null>;

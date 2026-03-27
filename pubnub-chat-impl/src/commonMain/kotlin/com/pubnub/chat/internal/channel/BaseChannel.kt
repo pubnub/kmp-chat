@@ -39,6 +39,7 @@ import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl.Companion.pinOrUnpinMessageToChannel
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
+import com.pubnub.chat.internal.MEMBERSHIP_PENDING_STATUS
 import com.pubnub.chat.internal.METADATA_LAST_READ_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.METADATA_MENTIONED_USERS
 import com.pubnub.chat.internal.METADATA_QUOTED_MESSAGE
@@ -451,12 +452,12 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 return@thenAsync channelMembers.members.first().asFuture()
             } else {
                 chat.pubNub.setMemberships(
-                    channels = listOf(PNChannelMembership.Partial(this.id)),
+                    channels = listOf(PNChannelMembership.Partial(channelId = this.id, status = MEMBERSHIP_PENDING_STATUS)),
                     userId = user.id,
                     filter = channelFilterString,
                     include = MembershipInclude(
                         includeCustom = true,
-                        includeStatus = false,
+                        includeStatus = true,
                         includeType = false,
                         includeTotalCount = true,
                         includeChannel = true,
@@ -488,10 +489,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
         return chat.pubNub.setChannelMembers(
             this.id,
-            users.map { PNMember.Partial(it.id) },
+            users.map { PNMember.Partial(uuidId = it.id, status = MEMBERSHIP_PENDING_STATUS) },
             include = MemberInclude(
                 includeCustom = true,
-                includeStatus = false,
+                includeStatus = true,
                 includeType = false,
                 includeTotalCount = true,
                 includeUser = true,
@@ -531,8 +532,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
             sort = sort,
             include = MemberInclude(
                 includeCustom = true,
-                includeStatus = false,
-                includeType = false,
+                includeStatus = true,
+                includeType = true,
                 includeTotalCount = true,
                 includeUser = true,
                 includeUserCustom = true,
@@ -550,6 +551,21 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 }
             )
         }
+    }
+
+    override fun getInvitees(
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNMemberKey>>,
+    ): PNFuture<MembersResponse> {
+        val pendingFilter = "status == \"$MEMBERSHIP_PENDING_STATUS\""
+        val combinedFilter = if (filter.isNullOrBlank()) {
+            pendingFilter
+        } else {
+            "($filter) && $pendingFilter"
+        }
+        return getMembers(limit = limit, page = page, filter = combinedFilter, sort = sort)
     }
 
     override fun hasMember(userId: String): PNFuture<Boolean> {
@@ -664,10 +680,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 PNChannelMembership.Partial(
                     channelId = this.id,
                     custom = custom,
-                    status = status,
+                    status = status ?: "",
                     type = type
                 )
-            ), // todo should null overwrite? Waiting for optionals?
+            ),
             filter = channelFilterString,
             include = MembershipInclude(
                 includeCustom = true,

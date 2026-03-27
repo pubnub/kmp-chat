@@ -234,6 +234,22 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.invite(user.user).then { it.asJs(chatJs) }.asPromise()
     }
 
+    fun getInvitees(params: PubNub.GetChannelMembersParameters?): Promise<MembersResponseJs> {
+        return channel.getInvitees(
+            params?.limit?.toInt() ?: 100,
+            params?.page?.toKmp(),
+            params?.filter,
+            extractSortKeys(params?.sort)
+        ).then { result ->
+            createJsObject<MembersResponseJs> {
+                this.page = MetadataPage(result.next, result.prev)
+                this.total = result.total
+                this.status = result.status
+                this.members = result.members.map { it.asJs(chatJs) }.toTypedArray()
+            }
+        }.asPromise()
+    }
+
     fun inviteMultiple(users: Array<UserJs>): Promise<Array<MembershipJs>> {
         return channel.inviteMultiple(users.map { it.user })
             .then { memberships ->
