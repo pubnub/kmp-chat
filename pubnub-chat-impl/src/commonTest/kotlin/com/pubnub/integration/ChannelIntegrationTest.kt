@@ -1436,6 +1436,10 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         val joinedMembership = testChannel.join().await()
         assertEquals("", joinedMembership.status)
 
+        // Verify status is empty after join
+        val membersAfterJoin = testChannel.getMembers(filter = "uuid.id == '${chat.currentUser.id}'").await()
+        assertEquals("", membersAfterJoin.members.first().status)
+
         chat.deleteChannel(testChannelId).await()
     }
 

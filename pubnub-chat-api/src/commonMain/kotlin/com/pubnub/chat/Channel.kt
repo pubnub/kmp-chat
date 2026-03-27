@@ -361,9 +361,6 @@ interface Channel {
     /**
      * Returns the list of channel members whose membership status is "pending" (i.e., invited but not yet joined).
      *
-     * This method calls [getMembers] under the hood with a filter for `status == "pending"`.
-     * If a [filter] is provided, it is merged with the pending status filter using `&&`.
-     *
      * @param limit Number of objects to return in response. The default (and maximum) value is 100.
      * @param page Object used for pagination to define which previous or next result page you want to fetch.
      * @param filter Expression used to filter the results. This filter will be combined with the pending status filter.

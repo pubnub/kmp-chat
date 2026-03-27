@@ -1918,16 +1918,22 @@ describe("Channel test", () => {
   }, 20000)
 
   test("join should clear pending membership status", async () => {
-    const userToInvite = await createRandomUser(chat)
-    await channel.invite(userToInvite)
+    // Invite current user to set pending status
+    await channel.invite(chat.currentUser)
 
-    // Current user joins (this clears any pending status)
+    // Verify pending status is set
+    const membersBeforeJoin = await channel.getMembers({ filter: `uuid.id == '${chat.currentUser.id}'` })
+    expect(membersBeforeJoin.members[0].status).toEqual("pending")
+
+    // Join should clear the pending status
     const membership = await channel.join()
-    expect(membership).toBeDefined()
     expect(membership.status).toEqual("")
 
+    // Verify status is empty after join
+    const membersAfterJoin = await channel.getMembers({ filter: `uuid.id == '${chat.currentUser.id}'` })
+    expect(membersAfterJoin.members[0].status).toEqual("")
+
     await channel.leave()
-    await userToInvite.delete()
   }, 20000)
 
   test("join with explicit status should set that status", async () => {
