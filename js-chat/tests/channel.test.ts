@@ -1924,7 +1924,7 @@ describe("Channel test", () => {
     // Current user joins (this clears any pending status)
     const membership = await channel.join()
     expect(membership).toBeDefined()
-    expect(membership.status).toBeNull()
+    expect(membership.status).toEqual("")
 
     await channel.leave()
     await userToInvite.delete()

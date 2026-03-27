@@ -680,10 +680,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 PNChannelMembership.Partial(
                     channelId = this.id,
                     custom = custom,
-                    status = status,
+                    status = status ?: "",
                     type = type
                 )
-            ), // todo should null overwrite? Waiting for optionals?
+            ),
             filter = channelFilterString,
             include = MembershipInclude(
                 includeCustom = true,

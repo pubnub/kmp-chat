@@ -1434,7 +1434,7 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
 
         // Join should clear the pending status
         val joinedMembership = testChannel.join().await()
-        assertNull(joinedMembership.status)
+        assertEquals("", joinedMembership.status)
 
         chat.deleteChannel(testChannelId).await()
     }
