@@ -25,6 +25,7 @@ import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.CreateThreadResult
 import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.utils.BaseTest
 import com.pubnub.kmp.utils.get
@@ -221,7 +222,7 @@ class BaseMessageTest : BaseTest() {
             userId = "testUserId"
         )
 
-        message.createThread("First reply").async { result: Result<ThreadChannel> ->
+        message.createThread("First reply").async { result: Result<CreateThreadResult> ->
             assertTrue(result.isFailure)
             assertEquals("Only one level of thread nesting is allowed.", result.exceptionOrNull()?.message)
         }
@@ -251,7 +252,7 @@ class BaseMessageTest : BaseTest() {
 
         every { chat.deleteMessageActionName } returns deleteActionName
 
-        message.createThread("First reply").async { result: Result<ThreadChannel> ->
+        message.createThread("First reply").async { result: Result<CreateThreadResult> ->
             assertTrue(result.isFailure)
             assertEquals("You cannot create threads on deleted messages.", result.exceptionOrNull()?.message)
         }
@@ -283,7 +284,7 @@ class BaseMessageTest : BaseTest() {
         every { chat.deleteMessageActionName } returns "deleted"
         every { chat.getChannel(threadChannelId) } returns existingChannel.asFuture()
 
-        message.createThread("First reply").async { result: Result<ThreadChannel> ->
+        message.createThread("First reply").async { result: Result<CreateThreadResult> ->
             assertTrue(result.isFailure)
             assertEquals("Thread for this message already exists.", result.exceptionOrNull()?.message)
         }
