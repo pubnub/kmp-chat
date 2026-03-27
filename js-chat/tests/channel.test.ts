@@ -1889,6 +1889,116 @@ describe("Channel test", () => {
     stop()
   }, 20000)
 
+  test("invite should set membership status to pending", async () => {
+    const userToInvite = await createRandomUser(chat)
+    const membership = await channel.invite(userToInvite)
+
+    expect(membership).toBeDefined()
+    expect(membership.status).toEqual("pending")
+
+    await channel.leave()
+    await userToInvite.delete()
+  }, 20000)
+
+  test("inviteMultiple should set membership status to pending", async () => {
+    const [user1, user2] = await Promise.all([createRandomUser(chat), createRandomUser(chat)])
+    const memberships = await channel.inviteMultiple([user1, user2])
+
+    expect(memberships.length).toBe(2)
+    memberships.forEach(membership => {
+      expect(membership.status).toEqual("pending")
+    })
+
+    await Promise.all([user1.delete(), user2.delete()])
+  }, 20000)
+
+  test("join should clear pending membership status", async () => {
+    // Invite current user to set pending status
+    await channel.invite(chat.currentUser)
+
+    // Verify pending status is set
+    const membersBeforeJoin = await channel.getMembers({ filter: `uuid.id == '${chat.currentUser.id}'` })
+    expect(membersBeforeJoin.members[0].status).toEqual("pending")
+
+    // Join should clear the pending status
+    const membership = await channel.join()
+    expect(membership.status).toEqual("")
+
+    // Verify status is empty after join
+    const membersAfterJoin = await channel.getMembers({ filter: `uuid.id == '${chat.currentUser.id}'` })
+    expect(membersAfterJoin.members[0].status).toEqual("")
+
+    await channel.leave()
+  }, 20000)
+
+  test("join with explicit status should set that status", async () => {
+    const membership = await channel.join({ status: "active" })
+
+    expect(membership).toBeDefined()
+    expect(membership.status).toEqual("active")
+
+    await channel.leave()
+  }, 20000)
+
+  test("getInvitees should return only pending members", async () => {
+    const userToInvite = await createRandomUser(chat)
+
+    // Invite a user (status = "pending")
+    await channel.invite(userToInvite)
+    // Current user joins directly (status is cleared)
+    await channel.join()
+    // getInvitees should return only the invited user
+    const invitees = await channel.getInvitees()
+
+    expect(invitees.members.length).toBe(1)
+    expect(invitees.members[0].user.id).toEqual(userToInvite.id)
+    expect(invitees.members[0].status).toEqual("pending")
+
+    await channel.leave()
+    await userToInvite.delete()
+  }, 20000)
+
+  test("getInvitees with filter should return only matching pending members", async () => {
+    const userToInvite1 = await createRandomUser(chat)
+    const userToInvite2 = await createRandomUser(chat)
+
+    // Invite both users (status = "pending")
+    await channel.invite(userToInvite1)
+    await channel.invite(userToInvite2)
+
+    // getInvitees with filter should return only the matching invited user
+    const invitees = await channel.getInvitees({ filter: `uuid.id == '${userToInvite1.id}'` })
+
+    expect(invitees.members.length).toBe(1)
+    expect(invitees.members[0].user.id).toEqual(userToInvite1.id)
+    expect(invitees.members[0].status).toEqual("pending")
+
+    await userToInvite1.delete()
+    await userToInvite2.delete()
+  }, 20000)
+
+  test("createDirectConversation should set invitee status to pending", async () => {
+    const user = await createRandomUser(chat)
+    const directConversation = await chat.createDirectConversation({ user })
+
+    expect(directConversation.inviteeMembership.status).toEqual("pending")
+
+    await directConversation.channel.delete()
+    await user.delete()
+  }, 20000)
+
+  test("createGroupConversation should set invitees status to pending", async () => {
+    const [user1, user2] = await Promise.all([createRandomUser(chat), createRandomUser(chat)])
+    const result = await chat.createGroupConversation({ users: [user1, user2] })
+
+    result.inviteesMemberships.forEach(membership => {
+      expect(membership.status).toEqual("pending")
+    })
+
+    await result.channel.delete()
+    await Promise.all([user1.delete(), user2.delete()])
+  }, 20000)
+
   test("should send a message via sendTextLegacy with rich options", async () => {
     const user = await createRandomUser(chat)
 

@@ -1387,6 +1387,121 @@ class ChannelIntegrationTest : BaseChatIntegrationTest() {
         chat.deleteChannel(testChannelId).await()
         chat.deleteUser(nonMemberUser.id).await()
     }
+
+    @Test
+    fun invite_shouldSetMembershipStatusToPending() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val userToInvite = chat.createUser(UserImpl(chat, randomString(), name = "Invitee")).await()
+
+        val membership = testChannel.invite(userToInvite).await()
+
+        assertEquals("pending", membership.status, "Invited user's membership status should be 'pending'")
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(userToInvite.id).await()
+    }
+
+    @Test
+    fun inviteMultiple_shouldSetMembershipStatusToPending() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val user1 = chat.createUser(UserImpl(chat, randomString(), name = "User 1")).await()
+        val user2 = chat.createUser(UserImpl(chat, randomString(), name = "User 2")).await()
+
+        val memberships = testChannel.inviteMultiple(listOf(user1, user2)).await()
+
+        memberships.forEach { membership ->
+            assertEquals("pending", membership.status)
+        }
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(user1.id).await()
+        chat.deleteUser(user2.id).await()
+    }
+
+    @Test
+    fun join_shouldClearPendingStatus() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+
+        // Invite current user to set pending status
+        testChannel.invite(chat.currentUser).await()
+
+        // Verify pending status is set
+        val membersBeforeJoin = testChannel.getMembers(filter = "uuid.id == '${chat.currentUser.id}'").await()
+        assertEquals("pending", membersBeforeJoin.members.first().status)
+
+        // Join should clear the pending status
+        val joinedMembership = testChannel.join().await()
+        assertEquals("", joinedMembership.status)
+
+        // Verify status is empty after join
+        val membersAfterJoin = testChannel.getMembers(filter = "uuid.id == '${chat.currentUser.id}'").await()
+        assertEquals("", membersAfterJoin.members.first().status)
+
+        chat.deleteChannel(testChannelId).await()
+    }
+
+    @Test
+    fun join_withExplicitStatus_shouldSetThatStatus() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+
+        val membership = testChannel.invite(chat.currentUser).await()
+        val joinedMembership = testChannel.join(status = "active").await()
+
+        assertEquals("active", joinedMembership.status, "Status should be 'active' after join with explicit status")
+
+        membership.delete().await()
+        chat.deleteChannel(testChannelId).await()
+    }
+
+    @Test
+    fun getInvitees_shouldReturnOnlyPendingMembers() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val invitedUser = chat.createUser(UserImpl(chat, randomString(), name = "Invited User")).await()
+
+        // Invite a user (gets "pending" status)
+        testChannel.invite(invitedUser).await()
+
+        // Current user joins the channel directly (gets non-pending status)
+        testChannel.join().await()
+
+        // getInvitees should return only the invited user who hasn't joined yet
+        val invitees = testChannel.getInvitees().await()
+
+        assertEquals(1, invitees.members.size)
+        assertEquals(invitedUser.id, invitees.members.first().user.id)
+        assertEquals("pending", invitees.members.first().status)
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(invitedUser.id).await()
+    }
+
+    @Test
+    fun getInvitees_withFilter_shouldReturnOnlyMatchingPendingMembers() = runTest {
+        val testChannelId = randomString()
+        val testChannel = chat.createChannel(testChannelId).await()
+        val invitedUser1 = chat.createUser(UserImpl(chat, randomString(), name = "Invited User 1")).await()
+        val invitedUser2 = chat.createUser(UserImpl(chat, randomString(), name = "Invited User 2")).await()
+
+        // Invite both users (both get "pending" status)
+        testChannel.invite(invitedUser1).await()
+        testChannel.invite(invitedUser2).await()
+
+        // getInvitees with filter should return only the matching invited user
+        val invitees = testChannel.getInvitees(filter = "uuid.id == '${invitedUser1.id}'").await()
+
+        assertEquals(1, invitees.members.size)
+        assertEquals(invitedUser1.id, invitees.members.first().user.id)
+        assertEquals("pending", invitees.members.first().status)
+
+        chat.deleteChannel(testChannelId).await()
+        chat.deleteUser(invitedUser1.id).await()
+        chat.deleteUser(invitedUser2.id).await()
+    }
 }
 
 private fun Channel.asImpl(): ChannelImpl {

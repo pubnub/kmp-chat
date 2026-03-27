@@ -69,3 +69,4 @@ internal const val SUFFIX_MUTE_1 = "mute1"
 
 internal const val METADATA_AUTO_MODERATION_ID = "pn_mod_id"
 internal const val DELETED = "deleted"
+internal const val MEMBERSHIP_PENDING_STATUS = "pending"
