@@ -18,7 +18,7 @@ describe("Membership test", () => {
     await channel.delete()
     await user.delete()
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
 
     jest.clearAllMocks()
   })

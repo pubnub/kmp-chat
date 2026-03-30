@@ -30,7 +30,7 @@ describe("Channel group test", () => {
     await secondChannel.delete()
     await chat.removeChannelGroup(channelGroup.id)
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
   })
 
   test("successfully adds channels to a channel group", async () => {
