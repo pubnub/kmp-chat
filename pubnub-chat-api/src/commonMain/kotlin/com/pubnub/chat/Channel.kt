@@ -459,6 +459,8 @@ interface Channel {
      * @param custom Any custom properties or metadata associated with the channel-user membership in the form of a `Map`.
      * Values must be scalar only; arrays or objects are not supported.
      *
+     * Note: when [status] is omitted (`null`), the SDK sends an empty string (`""`) as the membership status.
+     *
      * @return [PNFuture] containing the created [Membership].
      */
     fun join(status: String? = null, type: String? = null, custom: CustomObject? = null): PNFuture<Membership>

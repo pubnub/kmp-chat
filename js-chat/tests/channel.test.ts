@@ -1847,7 +1847,7 @@ describe("Channel test", () => {
     stop()
   }, 20000)
 
-  test("should fire callback when channel is soft-deleted via channel.onDeleted", async () => {
+  test("should fire channel.onDeleted callback when channel is deleted", async () => {
     const testChannel = await createRandomChannel(chat)
     let deletedCalled = false
 

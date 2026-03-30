@@ -500,7 +500,7 @@ declare class Message {
     delete(params?: DeleteParameters & {
         preserveFiles?: boolean;
     }): Promise<true | Message>;
-    restore(): Promise<Message | undefined>;
+    restore(): Promise<Message>;
     /**
      * Reactions
      */
@@ -689,6 +689,7 @@ declare class Channel {
         isMore: boolean;
     }>;
     getMessage(timetoken: string): Promise<Message>;
+    /** Note: when `status` is omitted, the SDK sends an empty string (`""`) as the membership status. */
     join(params?: {
         status?: string;
         type?: string;
@@ -995,7 +996,7 @@ declare class ThreadMessage extends Message {
     unpinFromParentChannel(): Promise<Channel>;
     onThreadMessageUpdated(callback: (message: ThreadMessage) => void): () => void;
     editText(newText: string): Promise<ThreadMessage>;
-    restore(): Promise<ThreadMessage | undefined>;
+    restore(): Promise<ThreadMessage>;
     toggleReaction(reaction: string): Promise<ThreadMessage>;
 }
 declare class ThreadChannel extends Channel {
