@@ -14,9 +14,9 @@ describe("Typing indicator test", () => {
 
   afterEach(async () => {
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
     await chat2.currentUser.delete()
-    await chat2.sdk.disconnect()
+    chat2.destroy()
 
     jest.clearAllMocks()
   })

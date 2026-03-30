@@ -30,7 +30,9 @@ describe("Access Manager test test", () => {
 
     afterEach(async () => {
         await chatPamClient.currentUser.delete()
+        chatPamClient.destroy()
         await chatPamServer.currentUser.delete()
+        chatPamServer.destroy()
         jest.clearAllMocks()
     })
 

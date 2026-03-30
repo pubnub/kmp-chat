@@ -467,6 +467,10 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         return chat.removeChannelGroup(id).asPromise()
     }
 
+    fun destroy() {
+        chat.destroy()
+    }
+
     companion object {
         @JsStatic
         fun init(config: ChatConstructor): Promise<ChatJs> {
