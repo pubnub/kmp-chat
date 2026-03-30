@@ -87,7 +87,7 @@ class ChannelGroupIntegrationTest : BaseChatIntegrationTest() {
         assertEquals(whoIsPresent[channel02.id], listOf(chat.currentUser.id))
 
         chat.pubNub.deleteChannelGroup(channelGroup.id).await()
-        autoCloseable?.close()
+        autoCloseable.close()
     }
 
     @Test

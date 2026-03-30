@@ -28,7 +28,7 @@ describe("MessageDraft2", function () {
   afterEach(async () => {
     await channel.delete()
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
   })
 
   test("deprecated createMessageDraftV2() should still work", async () => {

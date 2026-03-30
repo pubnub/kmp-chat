@@ -25,7 +25,7 @@ describe("Mute list test", () => {
   afterEach(async () => {
     await channel.delete()
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
 
     jest.clearAllMocks()
   })
