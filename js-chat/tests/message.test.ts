@@ -756,7 +756,7 @@ describe("Send message test", () => {
       }
     })
 
-    await channel.sendText(textMessage, {
+    await channel.sendTextLegacy(textMessage, {
       files: filesFromInput,
     })
 
@@ -801,7 +801,7 @@ describe("Send message test", () => {
       }
     })
 
-    await channel.sendText(textMessage, {
+    await channel.sendTextLegacy(textMessage, {
       files: filesFromInput,
     })
 
@@ -834,7 +834,7 @@ describe("Send message test", () => {
       }
     })
 
-    await channel.sendText(textMessage, {
+    await channel.sendTextLegacy(textMessage, {
       files: filesFromInput,
     })
 
@@ -868,7 +868,7 @@ describe("Send message test", () => {
       }
     })
 
-    await channel.sendText(textMessage, {
+    await channel.sendTextLegacy(textMessage, {
       files: filesFromInput,
     })
 
@@ -909,7 +909,7 @@ describe("Send message test", () => {
       }
     })
 
-    await channel.sendText(textMessage, {
+    await channel.sendTextLegacy(textMessage, {
       files: filesFromInput,
     })
 
