@@ -30,7 +30,7 @@ describe("Channel test", () => {
   let messageDraft: MessageDraftV1
 
   beforeEach(async () => {
-    chat = await createChatInstance({ userId: generateRandomString() })
+    chat = await createChatInstance({ userId: generateRandomString(), config: { enableEventEngine: true } })
     chatPamServer = await createChatInstance( { userId: generateRandomString(), clientType: 'PamServer' })
     chatPamServerWithRefIntegrity = await createChatInstance({ userId: generateRandomString(), clientType: 'PamServerWithRefIntegrity' })
     channel = await createRandomChannel(chat)
@@ -764,6 +764,7 @@ describe("Channel test", () => {
   test("should verify if user is online on a channel", async () => {
     const chat2 = await createChatInstance({
       userId: "user-one",
+      config: { enableEventEngine: true }
     })
     const channel = await chat2.createChannel(generateRandomString(), {
       name: "Test Channel",
@@ -791,6 +792,7 @@ describe("Channel test", () => {
   test("should get present users on channel via channel.whoIsPresent with limit parameter", async () => {
     const chat2 = await createChatInstance({
       userId: "user-two",
+      config: { enableEventEngine: true }
     })
     const channel = await chat2.createChannel(generateRandomString(), {
       name: "Test Channel for whoIsPresent",
