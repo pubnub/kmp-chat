@@ -1041,7 +1041,7 @@ class ChannelTest : BaseTest() {
                 channels = matching<List<ChannelMembershipInput>> { channels ->
                     val partial = channels.single() as PNChannelMembership.Partial
                     partial.channelId == channelId &&
-                        partial.status == null &&
+                        partial.status == "" &&
                         partial.type == null &&
                         partial.custom == null
                 },
