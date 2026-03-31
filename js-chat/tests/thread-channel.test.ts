@@ -196,7 +196,10 @@ describe("ThreadChannel test", () => {
   test("should pin thread message to parent channel", async () => {
     await channel.sendText("Parent message")
     await sleep(150)
-0
+
+    const history = await channel.getHistory()
+    const parentMessage = history.messages[0]
+
     const result = await parentMessage.createThreadWithResult("Thread reply")
     const threadChannel = result.threadChannel
     await sleep(150)

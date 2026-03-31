@@ -19,7 +19,7 @@ describe("Channel group test", () => {
   let channelGroup: ChannelGroup
 
   beforeEach(async () => {
-    chat = await createChatInstance({ userId: generateRandomString() })
+    chat = await createChatInstance({ userId: generateRandomString(), config: { enableEventEngine: true } })
     firstChannel = await createRandomChannel(chat)
     secondChannel = await createRandomChannel(chat)
     channelGroup = chat.getChannelGroup(generateRandomString())

@@ -559,7 +559,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
         filter: String?,
         sort: Collection<PNSortKey<PNMemberKey>>,
     ): PNFuture<MembersResponse> {
-        val pendingFilter = "status == \"$MEMBERSHIP_PENDING_STATUS\""
+        val pendingFilter = "status == '$MEMBERSHIP_PENDING_STATUS'"
         val combinedFilter = if (filter.isNullOrBlank()) {
             pendingFilter
         } else {
