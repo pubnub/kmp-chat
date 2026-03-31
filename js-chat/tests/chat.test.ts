@@ -13,7 +13,7 @@ describe("Chat tests", () => {
 
   afterEach(async () => {
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
 
     jest.clearAllMocks()
   })
@@ -443,6 +443,16 @@ describe("Chat tests", () => {
     expect(suggestionIds).toContain(channel3.id)
 
     await Promise.all([channel1.delete(), channel2.delete(), channel3.delete()])
+  }, 20000)
+
+  test("should destroy chat instance without throwing", async () => {
+    const tempChat = await createChatInstance({ userId: generateRandomString() })
+
+    // clean up backend fixtures before destroying
+    await tempChat.currentUser.delete()
+
+    // destroy should not throw
+    expect(() => tempChat.destroy()).not.toThrow()
   }, 20000)
 
   test("should get user suggestions", async () => {

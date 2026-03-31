@@ -1014,7 +1014,7 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
-    fun join_without_params_passes_null_status_type_custom() = runTest {
+    fun join_without_params_passes_empty_status_but_null_for_type_custom() = runTest {
         val userId = "user-id"
         val manageMemberships: ManageMemberships = mock(MockMode.strict)
 

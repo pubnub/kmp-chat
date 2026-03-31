@@ -40,11 +40,11 @@ describe("Channel test", () => {
   afterEach(async () => {
     await channel.delete()
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
     await chatPamServer.currentUser.delete()
-    await chatPamServer.sdk.disconnect()
+    chatPamServer.destroy()
     await chatPamServerWithRefIntegrity.currentUser.delete()
-    await chatPamServerWithRefIntegrity.sdk.disconnect()
+    chatPamServerWithRefIntegrity.destroy()
 
     jest.clearAllMocks()
   }, 15000)
@@ -1740,7 +1740,7 @@ describe("Channel test", () => {
     await testUser.delete()
     await directConversation.channel.delete()
     await chatNoReceipts.currentUser.delete()
-    await chatNoReceipts.sdk.disconnect()
+    chatNoReceipts.destroy()
   }, 40000)
 
   test("should check if user is a member of channel via channel.hasMember", async () => {

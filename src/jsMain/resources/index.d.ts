@@ -985,9 +985,22 @@ declare class Chat {
     reconnectSubscriptions(): Promise<void>;
 
     /**
-     * Disconnect all subscriptions
+     * Disconnects all active subscriptions.
+     *
+     * This method stops all active connections to:
+     * - Channels that were connected via channel.onMessageReceived()
+     * - Channel groups that were connected via channelGroup.onMessageReceived()
+     *
+     * The Chat instance remains active and can be used to reconnect later by either:
+     * - Using reconnectSubscriptions() to restore all previous connections at once
+     * - Manually rejoining using the original connection methods
      */
     disconnectSubscriptions(): Promise<void>;
+
+    /**
+     * Clears resources of Chat instance and related PubNub SDK instance.
+     */
+    destroy(): void;
 }
 declare class ThreadMessage extends Message {
     readonly parentChannelId: string;
