@@ -1,5 +1,5 @@
 name: pubnub-js-chat
-version: 0.14.2
+version: 1.0.0
 scm: github.com/pubnub/js-chat
 schema: 1
 files:
@@ -82,6 +82,57 @@ sdks:
                   - 'Microsoft Edge 87.0.664.60"'
                   - 'Safari 13.0'
 changelog:
+  - date: 2026-04-01
+    version: 1.0.0
+    changes:
+      - type: feature
+        text: "BREAKING CHANGES: `Channel.join()` signature changed from `join(callback, params)` returning `JoinResult` to `join(params)` returning `Membership`. It no longer subscribes to messages or sets `lastReadMessageTimetoken`."
+      - type: feature
+        text: "Added `Chat.destroy()` method for explicit cleanup of Chat SDK resources."
+      - type: feature
+        text: "Added `onMessageReceived()`, `onTypingChanged()`, `onUpdated()`, `onDeleted()` callbacks on `Channel`. Deprecates `connect()` and `getTyping()`."
+      - type: feature
+        text: "Added `onThreadMessageReceived()` and `onThreadChannelUpdated()` callbacks on `ThreadChannel` returning typed `ThreadMessage` and `ThreadChannel`."
+      - type: feature
+        text: "Added `onUpdated()` and `onDeleted()` entity-first streaming callbacks on `Membership`, deprecating `streamUpdates()`."
+      - type: feature
+        text: "Added `onUpdated()`, `onDeleted()`, `onMentioned()`, `onInvited()`, `onRestrictionChanged()` callbacks on `User`. Deprecates `streamUpdates()`."
+      - type: feature
+        text: "Added `onUpdated()` on `Message` and `onThreadMessageUpdated()` on `ThreadMessage`. Deprecates `streamUpdates()`."
+      - type: feature
+        text: "Added `onMessageReceived()` callback on `ChannelGroup` entity."
+      - type: feature
+        text: "Added `Channel.emitCustomEvent()` and `Channel.onCustomEvent()` for custom event publishing and listening with optional message type filtering."
+      - type: feature
+        text: "Added `Channel.getInvitees()` to return channel members with pending (invited) status."
+      - type: feature
+        text: "Added `Channel.hasMember()` and `Channel.getMember()` convenience methods for checking and retrieving a user's membership on a channel."
+      - type: feature
+        text: "Added `User.isMemberOf()` and `User.getMembership()` convenience methods for checking and retrieving the user's membership on a specific channel."
+      - type: feature
+        text: "Added `Membership.delete()` for deleting a membership relationship."
+      - type: feature
+        text: "`Membership.update()` now accepts optional `status` and `type` alongside `custom`."
+      - type: feature
+        text: "Added `Message.createThread(text, SendTextParams)` returning `CreateThreadResult` with thread channel and updated parent message. Deprecates `createThreadWithResult()`."
+      - type: feature
+        text: "`ThreadChannel` returns typed `ThreadMessage` from `getHistory()`, `getMessage()`, `getPinnedMessage()`. `ThreadMessage` returns typed results from `editText()`, `toggleReaction()`, `restore()`."
+      - type: improvement
+        text: "BREAKING CHANGES: `Chat.deleteUser()` and `Chat.deleteChannel()` no longer accept `DeleteParameters` with `soft` flag. They permanently delete and return `Promise<true>`."
+      - type: improvement
+        text: "BREAKING CHANGES: `Channel.delete()` and `User.delete()` no longer support soft delete parameter. They permanently delete and return `Promise<true>`."
+      - type: improvement
+        text: "BREAKING CHANGES: `Message.reactions` changed from `{ [key: string]: Action[] }` to `MessageReaction[]` with `value`, `isMine`, `userIds`, and `count` properties."
+      - type: improvement
+        text: "BREAKING CHANGES: `Message.removeThread()` no longer returns action result and channel data. It now resolves when the thread is removed."
+      - type: improvement
+        text: "BREAKING CHANGES: `Channel.sendText()` options changed from `SendTextOptionParams` to `SendTextParams`. Use `sendTextLegacy()` for the old rich-send behavior."
+      - type: improvement
+        text: "`createMessageDraft()` is now V2 by default. `createMessageDraftV1()` provides backward compat. `createMessageDraftV2()` is deprecated."
+      - type: improvement
+        text: "`GetCurrentUserMentionsResult` adds `mentions` array using `UserMention` type. Old `enhancedMentionsData` field is deprecated."
+      - type: improvement
+        text: "`Chat.emitEvent()` and `Chat.listenForEvents()` marked `@deprecated`. Use entity-level methods instead: `channel.emitCustomEvent()`, `user.onMentioned()`, etc."
   - date: 2026-01-16
     version: 0.14.2
     changes:
