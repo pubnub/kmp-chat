@@ -132,6 +132,8 @@ changelog:
         text: "`GetCurrentUserMentionsResult` adds `mentions` field using `UserMention` type. Old `enhancedMentionsData` field is deprecated."
       - type: improvement
         text: "`Chat.emitEvent()` and `Chat.listenForEvents()` deprecated. Replaced by entity-level methods like `Channel.emitCustomEvent()` and `User.onMentioned()`."
+      - type: improvement
+        text: "Updated Kotlin to 2.2.21."
   - date: 2026-02-11
     version: 0.16.3
     changes:
