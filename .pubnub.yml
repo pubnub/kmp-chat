@@ -1,5 +1,5 @@
 name: kmp-chat
-version: 0.16.3
+version: 1.0.0
 schema: 1
 scm: github.com/pubnub/kmp-chat
 sdks:
@@ -21,8 +21,8 @@ sdks:
             -
               distribution-type: library
               distribution-repository: maven
-              package-name: pubnub-chat-0.16.3
-              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/0.16.3/
+              package-name: pubnub-chat-1.0.0
+              location: https://repo.maven.apache.org/maven2/com/pubnub/pubnub-chat/1.0.0/
               supported-platforms:
                 supported-operating-systems:
                   Android:
@@ -77,6 +77,61 @@ sdks:
                   license-url: https://github.com/pubnub/kotlin/blob/master/LICENSE
                   is-required: Required
 changelog:
+  - date: 2026-04-01
+    version: 1.0.0
+    changes:
+      - type: feature
+        text: "BREAKING CHANGES: `Channel.join()` now only creates membership without subscribing or setting `lastReadMessageTimetoken`. Previous `join()` signature removed along with `JoinResult` type."
+      - type: feature
+        text: "Added `Channel.onMessageReceived()` and `Channel.onTypingChanged()`. Deprecates `connect()` and `getTyping()`."
+      - type: feature
+        text: "Added `Channel.sendText(text, SendTextParams)` with new `SendTextParams` data class. Previous multi-param `sendText()` overload is deprecated."
+      - type: feature
+        text: "Added `Channel.emitCustomEvent()` and `Channel.onCustomEvent()` for publishing and listening to custom events with message type filtering."
+      - type: feature
+        text: "Added `Channel.getInvitees()` to return channel members with pending (invited) status."
+      - type: feature
+        text: "Added `Channel.hasMember()` and `Channel.getMember()` membership-oriented convenience methods."
+      - type: feature
+        text: "Added `User.onUpdated()`, `User.onDeleted()`, `User.onMentioned()`, `User.onInvited()`, `User.onRestrictionChanged()`. Deprecates `streamUpdates()`."
+      - type: feature
+        text: "Added `User.isMemberOf()` and `User.getMembership()` membership-oriented convenience methods."
+      - type: feature
+        text: "Added `Membership.onUpdated()` and `Membership.onDeleted()`. Deprecates `streamUpdates()` in favor of separate callbacks."
+      - type: feature
+        text: "`Membership.update()` now accepts optional `status` and `type` alongside `custom`. Previous `update(custom)` is deprecated."
+      - type: feature
+        text: "Added `Membership.delete()` for deleting a membership relationship."
+      - type: feature
+        text: "Added `Message.onUpdated()` for emitting updated message on edits, reaction changes, or metadata changes. Deprecates `streamUpdates()`."
+      - type: feature
+        text: "Added `Message.createThread(text, SendTextParams)` returning `CreateThreadResult` with thread channel and updated parent message. Deprecates `createThreadWithResult()`."
+      - type: feature
+        text: "`ThreadChannel` returns typed `ThreadChannel` and `ThreadMessage` from `update()`, `getMessage()`, `getPinnedMessage()`, `getHistory()`."
+      - type: feature
+        text: "Added `ThreadChannel.onThreadMessageReceived()` and `ThreadChannel.onThreadChannelUpdated()` returning typed `ThreadMessage` and `ThreadChannel`."
+      - type: feature
+        text: "`ThreadMessage` returns typed `ThreadMessage` from `editText()`, `toggleReaction()`, `restore()`."
+      - type: feature
+        text: "Added `ThreadMessage.onThreadMessageUpdated()` for entity-first streaming of thread message updates."
+      - type: feature
+        text: "Added `ChatConfiguration.emitReadReceiptEvents` for per-channel-type control over read receipt event emission. Defaults to `true` except for public channels."
+      - type: feature
+        text: "Added `UserMention`, `Mention`, `Invite`, `CustomEvent`, `MessageReaction`, `ReadReceipt`, `ReadReceiptsResponse`, `Report`, `SendTextParams` types."
+      - type: improvement
+        text: "BREAKING CHANGES: `Message.reactions` changed from `Map<String, List<Action>>` to `List<MessageReaction>` with `isMine`, `userIds`, `count` per reaction."
+      - type: improvement
+        text: "BREAKING CHANGES: `Message.removeThread()` returns `PNFuture<Unit>` instead of `PNFuture<Pair<PNRemoveMessageActionResult, Channel?>>`."
+      - type: improvement
+        text: "BREAKING CHANGES: `Channel.delete()` and `Chat.deleteChannel()` now permanently delete. The `soft` parameter is removed."
+      - type: improvement
+        text: "BREAKING CHANGES: `User.delete()` and `Chat.deleteUser()` now permanently delete. The `soft` parameter is removed."
+      - type: improvement
+        text: "`createMessageDraft()` is now V2 by default. `createMessageDraftV1()` provides backward compat. `createMessageDraftV2()` is deprecated."
+      - type: improvement
+        text: "`GetCurrentUserMentionsResult` adds `mentions` field using `UserMention` type. Old `enhancedMentionsData` field is deprecated."
+      - type: improvement
+        text: "`Chat.emitEvent()` and `Chat.listenForEvents()` deprecated. Replaced by entity-level methods like `Channel.emitCustomEvent()` and `User.onMentioned()`."
   - date: 2026-02-11
     version: 0.16.3
     changes:
