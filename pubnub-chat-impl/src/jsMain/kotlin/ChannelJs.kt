@@ -29,7 +29,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
     override val status: String? by channel::status
     override val type: String? get() = channel.type?.stringValue
 
-    fun update(data: ChannelFields): Promise<ChannelJs> {
+    open fun update(data: ChannelFields): Promise<ChannelJs> {
         return channel.update(
             data.name,
             data.custom?.let { convertToCustomObject(it) },
@@ -41,16 +41,11 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
-    fun delete(options: DeleteParameters?): Promise<DeleteChannelResult> {
-        return channel.delete(options?.soft ?: false).then {
-            if (it != null) {
-                DeleteChannelResult(it.asJs(chatJs))
-            } else {
-                DeleteChannelResult(true)
-            }
-        }.asPromise()
+    fun delete(): Promise<Boolean> {
+        return channel.delete().then { true }.asPromise()
     }
 
+    @Deprecated("Use onUpdated(callback) and onDeleted(callback) instead.")
     fun streamUpdates(callback: (channel: ChannelJs?) -> Unit): () -> Unit {
         val closeable = channel.streamUpdates {
             callback(it?.asJs(chatJs))
@@ -58,23 +53,40 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return closeable::close
     }
 
-    fun sendText(text: String, options: SendTextOptionParams?): Promise<PubNub.PublishResponse> {
+    fun sendText(text: String, options: SendTextParamsJs?): Promise<PubNub.PublishResponse> {
+        return channel.sendText(
+            text = text,
+            params = options.toSendTextParams(),
+        ).then { result ->
+            result.toPublishResponse()
+        }.asPromise()
+    }
+
+    @Deprecated("Use sendText(text, SendTextParams) for simple messages or MessageDraft for rich composition.")
+    fun sendTextLegacy(text: String, options: SendTextOptionParams?): Promise<PubNub.PublishResponse> {
         @Suppress("USELESS_CAST") // cast required to be able to call "let" extension function
         val files = (options?.files as? Any)?.let { files ->
             val filesArray =
                 files as? Array<*> ?: arrayOf(files)
             filesArray.filterNotNull().map { file ->
-                InputFile("", file.asDynamic().type ?: file.asDynamic().mimeType ?: "", UploadableImpl(file))
+                val name = file.asDynamic().name ?: ""
+                val type = file.asDynamic().type ?: file.asDynamic().mimeType ?: ""
+                InputFile(name.unsafeCast<String>(), type.unsafeCast<String>(), UploadableImpl(file))
             }
         } ?: listOf()
+        @Suppress("DEPRECATION")
         return channel.sendText(
             text = text,
             meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
             shouldStore = options?.storeInHistory ?: true,
             usePost = options?.sendByPost ?: false,
             ttl = options?.ttl?.toInt(),
-            mentionedUsers = options?.mentionedUsers?.toMap()?.mapKeys { it.key.toInt() },
-            referencedChannels = options?.referencedChannels?.toMap()?.mapKeys { it.key.toInt() },
+            mentionedUsers = options?.mentionedUsers?.toMap()?.entries?.associate { (key, value) ->
+                key.toInt() to value
+            },
+            referencedChannels = options?.referencedChannels?.toMap()?.entries?.associate { (key, value) ->
+                key.toInt() to value
+            },
             textLinks = options?.textLinks?.toList(),
             quotedMessage = options?.quotedMessage?.message,
             files = files,
@@ -96,6 +108,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.stopTyping().then { it?.toPublishResponse() ?: undefined }.asPromise()
     }
 
+    @Deprecated("Will be removed from SDK in the future. Use onTypingChanged(callback) instead.")
     fun getTyping(callback: (Array<String>) -> Unit): () -> Unit {
         return channel.getTyping { callback(it.toTypedArray()) }
             .let { autoCloseable ->
@@ -103,9 +116,46 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
             }
     }
 
+    fun onTypingChanged(callback: (Array<String>) -> Unit): () -> Unit {
+        return channel.onTypingChanged { callback(it.toTypedArray()) }
+            .let { autoCloseable ->
+                autoCloseable::close
+            }
+    }
+
+    @Deprecated("Will be removed from SDK in the future. Use onMessageReceived(callback) instead.")
     fun connect(callback: (MessageJs) -> Unit): () -> Unit {
         return channel.connect {
             callback(it.asJs(chatJs))
+        }::close
+    }
+
+    fun onMessageReceived(callback: (MessageJs) -> Unit): () -> Unit {
+        return channel.onMessageReceived {
+            callback(it.asJs(chatJs))
+        }::close
+    }
+
+    fun emitCustomEvent(payload: JsMap<Any?>, options: CustomEventEmitOptions?): Promise<PubNub.PublishResponse> {
+        return channel.emitCustomEvent(
+            payload = payload.toMap(),
+            messageType = options?.messageType,
+            storeInHistory = options?.storeInHistory ?: true
+        ).then { result ->
+            result.toPublishResponse()
+        }.asPromise()
+    }
+
+    fun onCustomEvent(callback: (CustomEventData) -> Unit, options: CustomEventListenOptions?): () -> Unit {
+        return channel.onCustomEvent(options?.messageType) { event ->
+            callback(
+                createJsObject<CustomEventData> {
+                    timetoken = event.timetoken.toString()
+                    userId = event.userId
+                    payload = event.payload.toJsMap()
+                    type = event.type
+                }
+            )
         }::close
     }
 
@@ -120,6 +170,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.isPresent(userId).asPromise()
     }
 
+    @Deprecated("Use onPresenceChanged(callback) instead.")
     fun streamPresence(callback: (Array<String>) -> Unit): Promise<() -> Unit> {
         return channel.streamPresence { callback(it.toTypedArray()) }.let {
             it::close
@@ -139,17 +190,16 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
-    fun getMessage(timetoken: String): Promise<MessageJs> {
+    open fun getMessage(timetoken: String): Promise<MessageJs> {
         return channel.getMessage(timetoken.tryLong()!!).then { it!!.asJs(chatJs) }.asPromise()
     }
 
-    fun join(callback: (MessageJs) -> Unit, params: PubNub.SetMembershipsParameters?): Promise<JoinResultJs> {
-        return channel.join { callback(it.asJs(chatJs)) }.then {
-            createJsObject<JoinResultJs> {
-                membership = it.membership.asJs(chatJs)
-                disconnect = it.disconnect?.let { autoCloseable -> autoCloseable::close } ?: {}
-            }
-        }.asPromise()
+    fun join(params: JoinParams?): Promise<MembershipJs> {
+        return channel.join(
+            status = params?.status,
+            type = params?.type,
+            custom = params?.custom?.let { convertToCustomObject(it) }
+        ).then { it.asJs(chatJs) }.asPromise()
     }
 
     fun leave(): Promise<Boolean> {
@@ -172,8 +222,32 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
+    fun hasMember(userId: String): Promise<Boolean> {
+        return channel.hasMember(userId).asPromise()
+    }
+
+    fun getMember(userId: String): Promise<MembershipJs?> {
+        return channel.getMember(userId).then { it?.asJs(chatJs) }.asPromise()
+    }
+
     fun invite(user: UserJs): Promise<MembershipJs> {
         return channel.invite(user.user).then { it.asJs(chatJs) }.asPromise()
+    }
+
+    fun getInvitees(params: PubNub.GetChannelMembersParameters?): Promise<MembersResponseJs> {
+        return channel.getInvitees(
+            params?.limit?.toInt() ?: 100,
+            params?.page?.toKmp(),
+            params?.filter,
+            extractSortKeys(params?.sort)
+        ).then { result ->
+            createJsObject<MembersResponseJs> {
+                this.page = MetadataPage(result.next, result.prev)
+                this.total = result.total
+                this.status = result.status
+                this.members = result.members.map { it.asJs(chatJs) }.toTypedArray()
+            }
+        }.asPromise()
     }
 
     fun inviteMultiple(users: Array<UserJs>): Promise<Array<MembershipJs>> {
@@ -191,11 +265,38 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.unpinMessage().then { it.asJs(chatJs) }.asPromise()
     }
 
-    fun getPinnedMessage(): Promise<MessageJs?> {
+    open fun getPinnedMessage(): Promise<MessageJs?> {
         return channel.getPinnedMessage().then { it?.asJs(chatJs) }.asPromise()
     }
 
-    fun createMessageDraft(config: MessageDraftConfig?): MessageDraftV1Js {
+    fun createMessageDraft(config: MessageDraftConfig?): MessageDraftV2Js {
+        val userSuggestionSource = config?.userSuggestionSource
+            ?.let { userSuggestionSourceFrom(it) }
+            ?: MessageDraft.UserSuggestionSource.CHANNEL
+        val isTypingIndicatorTriggered = config?.isTypingIndicatorTriggered
+            ?: (channel.type != ChannelType.PUBLIC)
+        val userLimit = config?.userLimit ?: 10
+        val channelLimit = config?.channelLimit ?: 10
+
+        return MessageDraftV2Js(
+            this.chatJs,
+            MessageDraftImpl(
+                this.channel,
+                userSuggestionSource,
+                isTypingIndicatorTriggered,
+                userLimit,
+                channelLimit
+            ),
+            createJsObject<MessageDraftConfig> {
+                this.userSuggestionSource = config?.userSuggestionSource ?: "channel"
+                this.isTypingIndicatorTriggered = isTypingIndicatorTriggered
+                this.userLimit = userLimit
+                this.channelLimit = channelLimit
+            }
+        )
+    }
+
+    fun createMessageDraftV1(config: MessageDraftConfig?): MessageDraftV1Js {
         return MessageDraftV1Js(
             chatJs,
             this,
@@ -203,25 +304,9 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         )
     }
 
-    fun createMessageDraftV2(config: MessageDraftConfig?): MessageDraftV2Js {
-        return MessageDraftV2Js(
-            this.chatJs,
-            MessageDraftImpl(
-                this.channel,
-                config?.userSuggestionSource?.let {
-                    userSuggestionSourceFrom(it)
-                } ?: MessageDraft.UserSuggestionSource.CHANNEL,
-                config?.isTypingIndicatorTriggered ?: (channel.type != ChannelType.PUBLIC),
-                config?.userLimit ?: 10,
-                config?.channelLimit ?: 10
-            ),
-            createJsObject<MessageDraftConfig> {
-                this.userSuggestionSource = config?.userSuggestionSource ?: "channel"
-                this.isTypingIndicatorTriggered = config?.isTypingIndicatorTriggered ?: (channel.type != ChannelType.PUBLIC)
-                this.userLimit = config?.userLimit ?: 10
-                this.channelLimit = config?.channelLimit ?: 10
-            }
-        )
+    @Deprecated("Use createMessageDraft() instead.")
+    fun createMessageDraftV2(config: MessageDraftConfig?): MessageDraftV2DeprecatedJs {
+        return MessageDraftV2DeprecatedJs(createMessageDraft(config))
     }
 
     fun registerForPush(): Promise<Any> {
@@ -232,6 +317,28 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         return channel.unregisterFromPush().asPromise()
     }
 
+    fun fetchReadReceipts(params: PubNub.GetChannelMembersParameters?): Promise<ReadReceiptsResponseJs> {
+        return channel.fetchReadReceipts(
+            params?.limit?.toInt() ?: 100,
+            params?.page?.toKmp(),
+            params?.filter,
+            extractSortKeys(params?.sort)
+        ).then { result ->
+            createJsObject<ReadReceiptsResponseJs> {
+                this.page = MetadataPage(result.next, result.prev)
+                this.total = result.total
+                this.status = result.status
+                this.receipts = result.receipts.map { receipt ->
+                    createJsObject<ReadReceiptJs> {
+                        userId = receipt.userId
+                        lastReadTimetoken = receipt.lastReadTimetoken.toString()
+                    }
+                }.toTypedArray()
+            }
+        }.asPromise()
+    }
+
+    @Deprecated("Use onReadReceiptReceived(callback) instead.")
     fun streamReadReceipts(callback: (JsMap<Array<String>>) -> Unit): Promise<() -> Unit> {
         return channel.streamReadReceipts {
             callback(
@@ -289,6 +396,7 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
         }.asPromise()
     }
 
+    @Deprecated("Use onMessageReported(callback) instead.")
     fun streamMessageReports(callback: (EventJs) -> Unit): () -> Unit =
         channel.streamMessageReports { event ->
             callback(event.toJs(chatJs))
@@ -314,6 +422,35 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
                 isMore = result.isMore
             }
         }.asPromise()
+    }
+
+    fun onUpdated(callback: (ChannelJs) -> Unit): () -> Unit {
+        return channel.onUpdated { callback(it.asJs(chatJs)) }::close
+    }
+
+    fun onDeleted(callback: () -> Unit): () -> Unit {
+        return channel.onDeleted { callback() }::close
+    }
+
+    fun onPresenceChanged(callback: (Array<String>) -> Unit): () -> Unit {
+        return channel.onPresenceChanged { callback(it.toTypedArray()) }::close
+    }
+
+    fun onReadReceiptReceived(callback: (ReadReceiptJs) -> Unit): () -> Unit {
+        return channel.onReadReceiptReceived { receipt ->
+            callback(
+                createJsObject<ReadReceiptJs> {
+                    userId = receipt.userId
+                    lastReadTimetoken = receipt.lastReadTimetoken.toString()
+                }
+            )
+        }::close
+    }
+
+    fun onMessageReported(callback: (MessageReportJs) -> Unit): () -> Unit {
+        return channel.onMessageReported { report ->
+            callback(report.toJs())
+        }::close
     }
 
     fun toJSON(): Json {
@@ -342,6 +479,6 @@ open class ChannelJs internal constructor(internal val channel: Channel, interna
 
 internal fun Channel.asJs(chat: ChatJs) = ChannelJs(this, chat)
 
-private fun userSuggestionSourceFrom(lowercaseString: String): MessageDraft.UserSuggestionSource {
+internal fun userSuggestionSourceFrom(lowercaseString: String): MessageDraft.UserSuggestionSource {
     return MessageDraft.UserSuggestionSource.entries.first { it.name.lowercase() == lowercaseString }
 }

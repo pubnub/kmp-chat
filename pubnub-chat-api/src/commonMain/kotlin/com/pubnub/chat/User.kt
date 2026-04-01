@@ -7,6 +7,8 @@ import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.chat.user.Invite
+import com.pubnub.chat.user.Mention
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 import kotlin.js.JsName
@@ -128,13 +130,11 @@ interface User {
     ): PNFuture<User>
 
     /**
-     * Deletes the user. If soft deletion is enabled, the user's data is retained but marked as inactive.
+     * Deletes the user, permanently removing their metadata from the App Context storage.
      *
-     * @param soft If true, the user is soft deleted, retaining their data but making them inactive.
-     * @return For hard delete, the method returns [PNFuture] without a value (`null`).
-     * For soft delete, [PNFuture] containing an updated [User] instance with the status field set to "deleted".
+     * @return [PNFuture] that completes when the user is deleted.
      */
-    fun delete(soft: Boolean = false): PNFuture<User?>
+    fun delete(): PNFuture<Unit>
 
     /**
      * Retrieves a list of channels where the user is currently present.
@@ -169,7 +169,28 @@ interface User {
     ): PNFuture<MembershipsResponse>
 
     /**
+     * Checks if the user is a member of a specific channel.
+     *
+     * @param channelId The ID of the channel to check for membership.
+     *
+     * @return [PNFuture] containing a Boolean indicating whether the user is a member of the channel.
+     */
+    fun isMemberOf(channelId: String): PNFuture<Boolean>
+
+    /**
+     * Retrieves the user's membership for a specific channel.
+     *
+     * @param channelId The ID of the channel for which to retrieve the membership.
+     *
+     * @return [PNFuture] containing the [Membership] if the user is a member of the channel, or null otherwise.
+     */
+    fun getMembership(channelId: String): PNFuture<Membership?>
+
+    /**
      * Sets/unset restrictions on the user within a specified channel, such as ban/unban or mut/unmute them.
+     *
+     * This method requires the `secretKey` to be set in the PubNub configuration and is intended for
+     * server-side or admin-like usage.
      *
      * @param channel The [Channel] where the restrictions will be applied.
      * @param ban If true, the user is banned from the channel.
@@ -209,12 +230,55 @@ interface User {
     ): PNFuture<GetRestrictionsResponse>
 
     /**
+     * Emits the updated user entity whenever this user's metadata (name, etc.) is modified.
+     *
+     * @param callback Function triggered with the updated [User] entity reflecting the new metadata state.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onUpdated(callback: (user: User) -> Unit): AutoCloseable
+
+    /**
+     * Fires when this user is deleted.
+     *
+     * The user identity is already known from the entity the method was called on.
+     *
+     * @param callback Function triggered when this user is deleted.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onDeleted(callback: () -> Unit): AutoCloseable
+
+    /**
+     * Emits when this user is mentioned in a message.
+     *
+     * @param callback Function triggered with a [Mention] event.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onMentioned(callback: (mention: Mention) -> Unit): AutoCloseable
+
+    /**
+     * Emits when this user is invited to a channel.
+     *
+     * @param callback Function triggered with an [Invite] event.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onInvited(callback: (invite: Invite) -> Unit): AutoCloseable
+
+    /**
+     * Emits when this user is muted, banned, or has a restriction lifted in a channel.
+     *
+     * @param callback Function triggered with a [Restriction] event.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onRestrictionChanged(callback: (restriction: Restriction) -> Unit): AutoCloseable
+
+    /**
      * Receives updates on a single User object.
      *
      * @param callback A Function that is triggered whenever the user's information are changed (added, edited, or removed)
      * @return AutoCloseable Interface that lets you stop receiving user-related updates (objects events)
      * and clean up resources by invoking the close() method.
      */
+    @Deprecated("Use onUpdated() and onDeleted() instead.", ReplaceWith("onUpdated(callback)"), level = DeprecationLevel.WARNING)
     fun streamUpdates(callback: (user: User?) -> Unit): AutoCloseable
 
     /**

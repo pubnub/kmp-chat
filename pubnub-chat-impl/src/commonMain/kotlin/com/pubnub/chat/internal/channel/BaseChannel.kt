@@ -2,6 +2,7 @@ package com.pubnub.chat.internal.channel
 
 import co.touchlab.kermit.Logger
 import com.pubnub.api.PubNubException
+import com.pubnub.api.decode
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
 import com.pubnub.api.models.consumer.PNBoundedPage
 import com.pubnub.api.models.consumer.PNPublishResult
@@ -38,6 +39,7 @@ import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.ChatImpl.Companion.pinOrUnpinMessageToChannel
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
+import com.pubnub.chat.internal.MEMBERSHIP_PENDING_STATUS
 import com.pubnub.chat.internal.METADATA_LAST_READ_MESSAGE_TIMETOKEN
 import com.pubnub.chat.internal.METADATA_MENTIONED_USERS
 import com.pubnub.chat.internal.METADATA_QUOTED_MESSAGE
@@ -70,6 +72,7 @@ import com.pubnub.chat.membership.MembersResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.CustomEvent
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.chat.types.GetEventsHistoryResult
@@ -77,10 +80,13 @@ import com.pubnub.chat.types.GetFileItem
 import com.pubnub.chat.types.GetFilesResult
 import com.pubnub.chat.types.HistoryResponse
 import com.pubnub.chat.types.InputFile
-import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
+import com.pubnub.chat.types.ReadReceipt
+import com.pubnub.chat.types.ReadReceiptsResponse
+import com.pubnub.chat.types.Report
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
@@ -136,8 +142,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return chat.updateChannel(id, name, custom, description, status, type)
     }
 
-    override fun delete(soft: Boolean): PNFuture<Channel?> {
-        return chat.deleteChannel(id, soft)
+    override fun delete(): PNFuture<Unit> {
+        return chat.deleteChannel(id)
     }
 
     override fun forwardMessage(message: Message): PNFuture<PNPublishResult> {
@@ -177,6 +183,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun getTyping(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable {
+        return onTypingChanged(callback)
+    }
+
+    override fun onTypingChanged(callback: (typingUserIds: Collection<String>) -> Unit): AutoCloseable {
         val typingIndicators = mutableMapOf<String, Instant>()
         val typingIndicatorsLock = reentrantLock()
         val atomicClosed = atomic(false)
@@ -233,9 +243,53 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun streamUpdates(callback: (channel: Channel?) -> Unit): AutoCloseable {
-        return streamUpdatesOn(listOf(this)) {
-            callback(it.firstOrNull())
+        val onUpdatedCloseable = onUpdated { channel -> callback(channel) }
+        val onDeletedCloseable = onDeleted { callback(null) }
+        return AutoCloseable {
+            onUpdatedCloseable.close()
+            onDeletedCloseable.close()
         }
+    }
+
+    override fun onUpdated(callback: (channel: Channel) -> Unit): AutoCloseable {
+        val channelEntity = chat.pubNub.channel(id)
+        val subscription = channelEntity.subscription()
+        var latestChannel: Channel = this
+        val listener = createEventListener(chat.pubNub, onObjects = { _, event: PNObjectEventResult ->
+            when (val message = event.extractedMessage) {
+                is PNSetChannelMetadataEventMessage -> {
+                    if (message.data.id == id) {
+                        val updatedChannel = latestChannel + message.data
+                        latestChannel = updatedChannel
+                        callback(updatedChannel)
+                    }
+                }
+
+                else -> return@createEventListener
+            }
+        })
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
+    }
+
+    override fun onDeleted(callback: () -> Unit): AutoCloseable {
+        val channelEntity = chat.pubNub.channel(id)
+        val subscription = channelEntity.subscription()
+        val listener = createEventListener(chat.pubNub, onObjects = { _, event: PNObjectEventResult ->
+            when (val message = event.extractedMessage) {
+                is PNDeleteChannelMetadataEventMessage -> {
+                    if (message.channel == id) {
+                        callback()
+                    }
+                }
+
+                else -> return@createEventListener
+            }
+        })
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
     }
 
     override fun getHistory(
@@ -281,6 +335,24 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
+    override fun sendText(
+        text: String,
+        params: SendTextParams,
+    ): PNFuture<PNPublishResult> {
+        return sendTextInternal(
+            text = text,
+            meta = buildMetaForPublish(params.meta, quotedMessage = null),
+            shouldStore = params.shouldStore,
+            usePost = params.usePost,
+            ttl = params.ttl,
+            quotedMessage = null,
+            files = null,
+            usersToMention = null,
+            customPushData = params.customPushData,
+        )
+    }
+
+    @Deprecated("Use sendText(text, SendTextParams) instead", level = DeprecationLevel.WARNING)
     override fun sendText(
         text: String,
         meta: Map<String, Any>?,
@@ -380,12 +452,12 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 return@thenAsync channelMembers.members.first().asFuture()
             } else {
                 chat.pubNub.setMemberships(
-                    channels = listOf(PNChannelMembership.Partial(this.id)),
+                    channels = listOf(PNChannelMembership.Partial(channelId = this.id, status = MEMBERSHIP_PENDING_STATUS)),
                     userId = user.id,
                     filter = channelFilterString,
                     include = MembershipInclude(
                         includeCustom = true,
-                        includeStatus = false,
+                        includeStatus = true,
                         includeType = false,
                         includeTotalCount = true,
                         includeChannel = true,
@@ -400,7 +472,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
                         membership.setLastReadMessageTimetoken(time.timetoken)
                     }
                 }.alsoAsync {
-                    chat.emitEvent(user.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
+                    chat.emitEvent(
+                        channelId = user.id,
+                        payload = EventContent.Invite(channelType = this.type ?: ChannelType.UNKNOWN, channelId = this.id),
+                    )
                 }
             }
         }
@@ -414,10 +489,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
 
         return chat.pubNub.setChannelMembers(
             this.id,
-            users.map { PNMember.Partial(it.id) },
+            users.map { PNMember.Partial(uuidId = it.id, status = MEMBERSHIP_PENDING_STATUS) },
             include = MemberInclude(
                 includeCustom = true,
-                includeStatus = false,
+                includeStatus = true,
                 includeType = false,
                 includeTotalCount = true,
                 includeUser = true,
@@ -435,7 +510,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
             }
         }.alsoAsync {
             users.map { u ->
-                chat.emitEvent(u.id, EventContent.Invite(this.type ?: ChannelType.UNKNOWN, this.id))
+                chat.emitEvent(
+                    channelId = u.id,
+                    payload = EventContent.Invite(channelType = this.type ?: ChannelType.UNKNOWN, channelId = this.id),
+                )
             }.awaitAll()
         }
     }
@@ -454,8 +532,8 @@ abstract class BaseChannel<C : Channel, M : Message>(
             sort = sort,
             include = MemberInclude(
                 includeCustom = true,
-                includeStatus = false,
-                includeType = false,
+                includeStatus = true,
+                includeType = true,
                 includeTotalCount = true,
                 includeUser = true,
                 includeUserCustom = true,
@@ -475,7 +553,38 @@ abstract class BaseChannel<C : Channel, M : Message>(
         }
     }
 
+    override fun getInvitees(
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNMemberKey>>,
+    ): PNFuture<MembersResponse> {
+        val pendingFilter = "status == '$MEMBERSHIP_PENDING_STATUS'"
+        val combinedFilter = if (filter.isNullOrBlank()) {
+            pendingFilter
+        } else {
+            "($filter) && $pendingFilter"
+        }
+        return getMembers(limit = limit, page = page, filter = combinedFilter, sort = sort)
+    }
+
+    override fun hasMember(userId: String): PNFuture<Boolean> {
+        return getMembers(filter = "uuid.id == '$userId'", limit = 1).then { membersResponse ->
+            membersResponse.members.isNotEmpty()
+        }
+    }
+
+    override fun getMember(userId: String): PNFuture<Membership?> {
+        return getMembers(filter = "uuid.id == '$userId'", limit = 1).then { membersResponse ->
+            membersResponse.members.firstOrNull()
+        }
+    }
+
     override fun connect(callback: (Message) -> Unit): AutoCloseable {
+        return onMessageReceived(callback)
+    }
+
+    override fun onMessageReceived(callback: (Message) -> Unit): AutoCloseable {
         val channelEntity = chat.pubNub.channel(id)
         val subscription = channelEntity.subscription()
         val listener = createEventListener(
@@ -508,43 +617,92 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return subscription
     }
 
-    override fun join(custom: CustomObject?, callback: ((Message) -> Unit)?): PNFuture<JoinResult> {
+    override fun emitCustomEvent(
+        payload: Map<String, Any?>,
+        messageType: String?,
+        storeInHistory: Boolean,
+    ): PNFuture<PNPublishResult> {
+        return chat.pubNub.publish(
+            channel = id,
+            message = payload,
+            customMessageType = messageType,
+            shouldStore = storeInHistory,
+        )
+    }
+
+    override fun onCustomEvent(
+        messageType: String?,
+        callback: (event: CustomEvent<Map<String, Any?>>) -> Unit,
+    ): AutoCloseable {
+        val channelEntity = chat.pubNub.channel(id)
+        val subscription = channelEntity.subscription()
+        val listener = createEventListener(
+            chat.pubNub,
+            onMessage = { _, pnMessageResult ->
+                if (pnMessageResult.channel != id) {
+                    return@createEventListener
+                }
+                if (pnMessageResult.publisher in chat.mutedUsersManager.mutedUsers) {
+                    return@createEventListener
+                }
+                if (messageType != null && messageType != pnMessageResult.customMessageType) {
+                    return@createEventListener
+                }
+
+                val payload = pnMessageResult.message.decode() as? Map<String, Any?> ?: return@createEventListener
+
+                // Filter out known EventContent types that use polymorphic serialization
+                // with a "type" discriminator via @SerialName. These are internal SDK events
+                // and should not be delivered as custom events.
+                if (payload["type"] in setOf("text", "typing", "report", "receipt", "mention", "invite", "moderation")) {
+                    return@createEventListener
+                }
+
+                callback(
+                    CustomEvent(
+                        timetoken = pnMessageResult.timetoken ?: 0L,
+                        userId = pnMessageResult.publisher ?: "",
+                        payload = payload,
+                        type = pnMessageResult.customMessageType,
+                    )
+                )
+            },
+        )
+        subscription.addListener(listener)
+        subscription.subscribe()
+        return subscription
+    }
+
+    override fun join(status: String?, type: String?, custom: CustomObject?): PNFuture<Membership> {
         val user = this.chat.currentUser
         return chat.pubNub.setMemberships(
             channels = listOf(
                 PNChannelMembership.Partial(
-                    this.id,
-                    custom
+                    channelId = this.id,
+                    custom = custom,
+                    status = status ?: "",
+                    type = type
                 )
-            ), // todo should null overwrite? Waiting for optionals?
+            ),
             filter = channelFilterString,
             include = MembershipInclude(
                 includeCustom = true,
-                includeStatus = false,
-                includeType = false,
+                includeStatus = true,
+                includeType = true,
                 includeTotalCount = true,
                 includeChannel = true,
                 includeChannelCustom = true,
                 includeChannelType = true,
-                includeChannelStatus = false
+                includeChannelStatus = true
             )
-        ).thenAsync { membershipArray: PNChannelMembershipArrayResult ->
-            val resultDisconnect = callback?.let { connect(it) }
-
-            chat.pubNub.time().thenAsync { time: PNTimeResult ->
-                MembershipImpl.fromMembershipDTO(chat, membershipArray.data.first(), user)
-                    .setLastReadMessageTimetoken(time.timetoken)
-            }.then { membership: Membership ->
-                JoinResult(
-                    membership,
-                    resultDisconnect
-                )
-            }
+        ).then { membershipArray: PNChannelMembershipArrayResult ->
+            MembershipImpl.fromMembershipDTO(chat, membershipArray.data.first(), user)
         }
     }
 
     // there is a discrepancy between KMP and JS. There is no unsubscribe here. This is agreed and will be changed in JS Chat
-    override fun leave(): PNFuture<Unit> = chat.pubNub.removeMemberships(channels = listOf(id), include = MembershipInclude()).then { Unit }
+    override fun leave(): PNFuture<Unit> =
+        chat.pubNub.removeMemberships(channels = listOf(id), include = MembershipInclude()).then { Unit }
 
     override fun getPinnedMessage(): PNFuture<Message?> {
         val pinnedMessageTimetoken = this.custom?.get(PINNED_MESSAGE_TIMETOKEN).tryLong() ?: return null.asFuture()
@@ -634,6 +792,38 @@ abstract class BaseChannel<C : Channel, M : Message>(
         )
     }
 
+    override fun fetchReadReceipts(
+        limit: Int?,
+        page: PNPage?,
+        filter: String?,
+        sort: Collection<PNSortKey<PNMemberKey>>,
+    ): PNFuture<ReadReceiptsResponse> {
+        return getMembers(limit = limit, page = page, filter = filter, sort = sort).then { members ->
+            ReadReceiptsResponse(
+                next = members.next,
+                prev = members.prev,
+                total = members.total,
+                status = members.status,
+                receipts = members.members.mapNotNull { m ->
+                    m.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN)?.tryLong()?.let {
+                        ReadReceipt(userId = m.user.id, lastReadTimetoken = it)
+                    }
+                }
+            )
+        }
+    }
+
+    override fun onReadReceiptReceived(callback: (receipt: ReadReceipt) -> Unit): AutoCloseable {
+        return chat.listenForEvents<EventContent.Receipt>(id) { event ->
+            callback(
+                ReadReceipt(
+                    userId = event.userId,
+                    lastReadTimetoken = event.payload.messageTimetoken
+                )
+            )
+        }
+    }
+
     override fun streamReadReceipts(callback: (receipts: Map<Long, List<String>>) -> Unit): AutoCloseable {
         if (type == ChannelType.PUBLIC) {
             log.pnError(READ_RECEIPTS_ARE_NOT_SUPPORTED_IN_PUBLIC_CHATS)
@@ -682,6 +872,10 @@ abstract class BaseChannel<C : Channel, M : Message>(
     }
 
     override fun streamPresence(callback: (userIds: Collection<String>) -> Unit): AutoCloseable {
+        return onPresenceChanged(callback)
+    }
+
+    override fun onPresenceChanged(callback: (userIds: Collection<String>) -> Unit): AutoCloseable {
         val ids = mutableSetOf<String>()
         // todo what to do
         val future = whoIsPresent().then {
@@ -750,6 +944,22 @@ abstract class BaseChannel<C : Channel, M : Message>(
         return chat.listenForEvents<EventContent.Report>(channelId = channelId, callback = callback)
     }
 
+    override fun onMessageReported(callback: (report: Report) -> Unit): AutoCloseable {
+        val channelId = "${INTERNAL_MODERATION_PREFIX}$id"
+        return chat.listenForEvents<EventContent.Report>(channelId = channelId) { event ->
+            callback(
+                Report(
+                    reason = event.payload.reason,
+                    text = event.payload.text,
+                    messageTimetoken = event.payload.reportedMessageTimetoken,
+                    reportedMessageChannelId = event.payload.reportedMessageChannelId,
+                    reportedUserId = event.payload.reportedUserId,
+                    autoModerationId = event.payload.autoModerationId,
+                )
+            )
+        }
+    }
+
     internal fun getRestrictions(
         user: User?,
         limit: Int? = null,
@@ -782,9 +992,9 @@ abstract class BaseChannel<C : Channel, M : Message>(
         customPushData: Map<String, String>? = null,
     ): PNFuture<PNPublishResult> {
         return chat.emitEvent(
-            userId,
-            EventContent.Mention(timetoken, id),
-            getPushPayload(this, text, chat.config.pushNotifications, customPushData)
+            channelId = userId,
+            payload = EventContent.Mention(messageTimetoken = timetoken, channel = id),
+            mergePayloadWith = getPushPayload(this, text, chat.config.pushNotifications, customPushData),
         )
     }
 
@@ -798,8 +1008,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
             payload = EventContent.Typing(value),
         )
     }
-
-    internal abstract fun copyWithStatusDeleted(): C
 
     private fun toPNChannelMetadata(): PNChannelMetadata {
         return PNChannelMetadata(
@@ -961,15 +1169,6 @@ abstract class BaseChannel<C : Channel, M : Message>(
             return pushBuilder.build()
         }
 
-        internal fun generateReceipts(timetokensPerUser: Map<String, Long>): Map<Long, MutableList<String>> {
-            return buildMap {
-                timetokensPerUser.forEach {
-                    val list = this.getOrPut(it.value) { mutableListOf() }
-                    list += it.key
-                }
-            }
-        }
-
         internal fun updateUserTypingStatus(
             userId: String,
             isTyping: Boolean,
@@ -980,6 +1179,15 @@ abstract class BaseChannel<C : Channel, M : Message>(
                 userLastTyped[userId] = now
             } else {
                 userLastTyped.remove(userId)
+            }
+        }
+
+        internal fun generateReceipts(timetokensPerUser: Map<String, Long>): Map<Long, MutableList<String>> {
+            return buildMap {
+                timetokensPerUser.forEach {
+                    val list = this.getOrPut(it.value) { mutableListOf() }
+                    list += it.key
+                }
             }
         }
 

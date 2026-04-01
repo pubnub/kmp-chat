@@ -4,9 +4,11 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.chat.types.GetFileItem
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.createJsObject
+import com.pubnub.kmp.toMap
 
 external interface GetEventsHistoryParams {
     val channel: String
@@ -23,8 +25,16 @@ external interface MarkAllMessageAsReadResponseJs {
 }
 
 external interface GetCurrentUserMentionsResultJs {
+    var mentions: Array<UserMentionJs>
     var enhancedMentionsData: Array<UserMentionDataJs>
     var isMore: Boolean
+}
+
+external interface UserMentionJs {
+    var message: MessageJs
+    var userId: String
+    var channelId: String
+    var parentChannelId: String?
 }
 
 external interface UserMentionDataJs {
@@ -174,7 +184,15 @@ external interface ChatConfig {
     val rateLimitPerChannel: RateLimitPerChannelJs?
     val errorLogger: Any?
     val customPayloads: CustomPayloadsJs?
+    val emitReadReceiptEvents: EmitReadReceiptEventsJs?
     val syncMutedUsers: Boolean?
+}
+
+external interface EmitReadReceiptEventsJs {
+    val direct: Boolean?
+    val group: Boolean?
+    val public: Boolean?
+    val unknown: Boolean?
 }
 
 external interface CustomPayloadsJs {
@@ -203,6 +221,10 @@ external interface MessageDraftConfig {
     var channelLimit: Int?
 }
 
+/**
+ * Legacy parameters for sending text messages with rich composition options.
+ * @deprecated Use [SendTextParamsJs] with [Channel.sendText] instead.
+ */
 external interface SendTextOptionParams : PubNub.PublishParameters {
     var mentionedUsers: JsMap<MessageMentionedUser>?
     var referencedChannels: JsMap<MessageReferencedChannel>?
@@ -210,6 +232,49 @@ external interface SendTextOptionParams : PubNub.PublishParameters {
     var quotedMessage: MessageJs?
     var files: Any?
     var customPushData: JsMap<String>?
+}
+
+/**
+ * Parameters for sending text messages, aligned with Kotlin's SendTextParams.
+ *
+ * @property meta Additional metadata to include with the message.
+ * @property storeInHistory Whether to store the message in history.
+ * @property sendByPost Whether to use POST request instead of GET.
+ * @property ttl Time-to-live for the message in hours.
+ * @property customPushData Custom data to include in push notifications.
+ */
+external interface SendTextParamsJs {
+    val meta: Any?
+    val storeInHistory: Boolean?
+    val sendByPost: Boolean?
+    val ttl: Number?
+    val customPushData: JsMap<String>?
+}
+
+fun SendTextParamsJs?.toSendTextParams(): SendTextParams {
+    return SendTextParams(
+        meta = this?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
+        shouldStore = this?.storeInHistory ?: true,
+        usePost = this?.sendByPost ?: false,
+        ttl = this?.ttl?.toInt(),
+        customPushData = this?.customPushData?.toMap(),
+    )
+}
+
+external interface CustomEventEmitOptions {
+    val messageType: String?
+    val storeInHistory: Boolean?
+}
+
+external interface CustomEventListenOptions {
+    val messageType: String?
+}
+
+external interface CustomEventData {
+    var timetoken: String
+    var userId: String
+    var payload: Any?
+    var type: String?
 }
 
 external interface GetHistoryParams {
@@ -227,33 +292,10 @@ external interface WhoIsPresentParams {
     val offset: Int?
 }
 
-external interface DeleteUserResult
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun DeleteUserResult(user: UserJs): DeleteUserResult {
-    return user.unsafeCast<DeleteUserResult>()
-}
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun DeleteUserResult(boolean: Boolean): DeleteUserResult {
-    return boolean.unsafeCast<DeleteUserResult>()
-}
-
-external interface DeleteChannelResult
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun DeleteChannelResult(channel: ChannelJs): DeleteChannelResult {
-    return channel.unsafeCast<DeleteChannelResult>()
-}
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun DeleteChannelResult(boolean: Boolean): DeleteChannelResult {
-    return boolean.unsafeCast<DeleteChannelResult>()
-}
-
-external interface JoinResultJs {
-    var membership: MembershipJs
-    var disconnect: () -> Unit
+external interface JoinParams {
+    val status: String?
+    val type: String?
+    val custom: PubNub.CustomObject?
 }
 
 external interface DeleteFileParams {
@@ -293,6 +335,20 @@ external interface SetMembershipsParametersAndCustom : PubNub.SetMembershipsPara
     val custom: PubNub.CustomObject?
 }
 
+external interface MentionJs {
+    var messageTimetoken: String
+    var channelId: String
+    var parentChannelId: String?
+    var mentionedByUserId: String
+}
+
+external interface InviteJs {
+    var channelId: String
+    var channelType: String
+    var invitedByUserId: String
+    var invitationTimetoken: String
+}
+
 external interface ListenForEventsParams {
     val type: String
     val channel: String?
@@ -318,7 +374,27 @@ external interface Reaction {
     var actionTimetoken: String
 }
 
+external interface MessageReactionJs {
+    var value: String
+    var isMine: Boolean
+    var userIds: Array<String>
+}
+
+external interface ReadReceiptJs {
+    var userId: String
+    var lastReadTimetoken: String
+}
+
+external interface ReadReceiptsResponseJs {
+    var page: PubNub.MetadataPage
+    var total: Int
+    var status: Int
+    var receipts: Array<ReadReceiptJs>
+}
+
 external interface UpdateMembershipParams {
+    val status: String?
+    val type: String?
     val custom: PubNub.CustomObject?
 }
 
@@ -333,25 +409,11 @@ external interface CreateThreadResultJs {
     var parentMessage: MessageJs
 }
 
-/**
- * Options for creating a thread with an initial message.
- *
- * @property meta Additional metadata to include with the message.
- * @property storeInHistory Whether to store the message in history.
- * @property sendByPost Whether to use POST request instead of GET.
- * @property ttl Time-to-live for the message in hours.
- * @property quotedMessage A message to quote in the thread's initial message.
- * @property files Files to attach to the initial message.
- * @property usersToMention Array of user IDs to mention in the message.
- * @property customPushData Custom data to include in push notifications.
- */
-external interface CreateThreadOptionsParams {
-    val meta: Any?
-    val storeInHistory: Boolean?
-    val sendByPost: Boolean?
-    val ttl: Number?
-    val quotedMessage: MessageJs?
-    val files: Any?
-    val usersToMention: Array<String>?
-    val customPushData: JsMap<String>?
+external interface MessageReportJs {
+    var reason: String
+    var text: String?
+    var messageTimetoken: String?
+    var reportedMessageChannelId: String?
+    var reportedUserId: String?
+    var autoModerationId: String?
 }

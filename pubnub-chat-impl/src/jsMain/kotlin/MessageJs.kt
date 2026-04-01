@@ -5,11 +5,9 @@ import com.pubnub.api.adjustCollectionTypes
 import com.pubnub.chat.Message
 import com.pubnub.chat.internal.MessageDraftImpl
 import com.pubnub.chat.internal.message.BaseMessage
-import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.kmp.JsMap
-import com.pubnub.kmp.UploadableImpl
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.then
 import com.pubnub.kmp.toJsMap
@@ -58,15 +56,21 @@ open class MessageJs internal constructor(internal val message: Message, interna
     val files get() = message.files.toTypedArray()
     val text by message::text
     val deleted by message::deleted
-    val reactions: JsMap<Array<Reaction>>
-        get() = message.reactions.mapValues { mapEntry ->
-            mapEntry.value.map { action ->
-                createJsObject<Reaction> {
-                    uuid = action.uuid
-                    actionTimetoken = action.actionTimetoken.toString()
-                }
-            }.toTypedArray()
-        }.toJsMap()
+    val reactions: Array<MessageReactionJs>
+        get() = message.reactions.map { reaction ->
+            createJsObject<MessageReactionJs> {
+                value = reaction.value
+                isMine = reaction.isMine
+                userIds = reaction.userIds.toTypedArray()
+            }
+        }.toTypedArray()
+
+    fun onUpdated(callback: (message: MessageJs) -> Unit): () -> Unit {
+        val closeable = message.onUpdated {
+            callback(it.asJs(chatJs))
+        }
+        return closeable::close
+    }
 
     fun streamUpdates(callback: (MessageJs?) -> Unit): () -> Unit {
         return message.streamUpdates<Message> { callback(it.asJs(chatJs)) }::close
@@ -92,7 +96,7 @@ open class MessageJs internal constructor(internal val message: Message, interna
         }
     }
 
-    fun editText(newText: String): Promise<MessageJs> {
+    open fun editText(newText: String): Promise<MessageJs> {
         return message.editText(newText).then { it.asJs(chatJs) }.asPromise()
     }
 
@@ -103,7 +107,7 @@ open class MessageJs internal constructor(internal val message: Message, interna
             }.asPromise()
     }
 
-    fun restore(): Promise<MessageJs> {
+    open fun restore(): Promise<MessageJs> {
         return message.restore().then { it.asJs(chatJs) }.asPromise()
     }
 
@@ -111,7 +115,7 @@ open class MessageJs internal constructor(internal val message: Message, interna
         return message.hasUserReaction(reaction)
     }
 
-    fun toggleReaction(reaction: String): Promise<MessageJs> {
+    open fun toggleReaction(reaction: String): Promise<MessageJs> {
         return message.toggleReaction(reaction).then { it.asJs(chatJs) }.asPromise()
     }
 
@@ -131,29 +135,10 @@ open class MessageJs internal constructor(internal val message: Message, interna
         return message.getThread().then { it.asJs(chatJs) }.asPromise()
     }
 
-    fun createThread(): Promise<ThreadChannelJs> {
-        return message.createThread().then { it.asJs(chatJs) }.asPromise()
-    }
-
-    fun createThreadWithResult(text: String, options: CreateThreadOptionsParams? = null): Promise<CreateThreadResultJs> {
-        @Suppress("USELESS_CAST") // cast required to be able to call "let" extension function
-        val files = (options?.files as? Any)?.let { files ->
-            val filesArray = files as? Array<*> ?: arrayOf(files)
-            filesArray.filterNotNull().map { file ->
-                InputFile("", file.asDynamic().type ?: file.asDynamic().mimeType ?: "", UploadableImpl(file))
-            }
-        } ?: listOf()
-
-        return message.createThreadWithResult(
+    fun createThread(text: String, options: SendTextParamsJs? = null): Promise<CreateThreadResultJs> {
+        return message.createThread(
             text = text,
-            meta = options?.meta?.unsafeCast<JsMap<Any>>()?.toMap(),
-            shouldStore = options?.storeInHistory ?: true,
-            usePost = options?.sendByPost ?: false,
-            ttl = options?.ttl?.toInt(),
-            quotedMessage = options?.quotedMessage?.message,
-            files = files,
-            usersToMention = options?.usersToMention?.toList(),
-            customPushData = options?.customPushData?.toMap()
+            params = options.toSendTextParams(),
         ).then { result ->
             createJsObject<CreateThreadResultJs> {
                 this.threadChannel = result.threadChannel.asJs(chatJs)
@@ -162,13 +147,29 @@ open class MessageJs internal constructor(internal val message: Message, interna
         }.asPromise()
     }
 
-    fun removeThread(): Promise<Array<Any>> {
+    @Deprecated("Use createThread(text, options) instead")
+    fun createThreadWithResult(text: String, options: SendTextParamsJs? = null): Promise<CreateThreadResultJs> {
+        return createThread(text, options)
+    }
+
+    fun createThreadMessageDraft(config: MessageDraftConfig? = null): Promise<MessageDraftV2Js> {
+        return message.createThread().then { threadChannel ->
+            val channelJs = threadChannel.asJs(chatJs)
+            channelJs.createMessageDraft(config)
+        }.asPromise()
+    }
+
+    @Deprecated("Use createThreadMessageDraft() instead.")
+    fun createThreadMessageDraftV2(config: MessageDraftConfig? = null): Promise<MessageDraftV2DeprecatedJs> {
+        return message.createThread().then { threadChannel ->
+            val channelJs = threadChannel.asJs(chatJs)
+            channelJs.createMessageDraftV2(config)
+        }.asPromise()
+    }
+
+    fun removeThread(): Promise<Boolean> {
         return message.removeThread().then {
-            arrayOf(
-                Any(),
-                it.second?.asJs(chatJs)?.let { channelJs -> DeleteChannelResult(channelJs) }
-                    ?: DeleteChannelResult(true)
-            )
+            true
         }.asPromise()
     }
 

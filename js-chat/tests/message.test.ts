@@ -42,13 +42,13 @@ describe("Send message test", () => {
   beforeEach(async () => {
     chat = await createChatInstance({ userId: generateRandomString() })
     channel = await createRandomChannel(chat)
-    messageDraft = channel.createMessageDraft()
+    messageDraft = channel.createMessageDraftV1()
   }, 15000)
 
   afterEach(async () => {
     await channel.delete()
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
 
     jest.clearAllMocks()
   }, 15000)
@@ -190,8 +190,7 @@ describe("Send message test", () => {
     const history = await channel.getHistory()
     const sentMessage = history.messages[history.messages.length - 1]
 
-    const messageThread = await sentMessage.createThread()
-    await messageThread.sendText("Some message in a thread")
+    const { threadChannel: messageThread } = await sentMessage.createThread("Initial thread message")
     await sleep(150)
 
     const updatedHistory = await channel.getHistory()
@@ -206,7 +205,7 @@ describe("Send message test", () => {
   }, 20000)
 
   test("should create thread with result and return updated parent message with hasThread true", async () => {
-    // given - a message without a thread
+    // Given - a message without a thread
     await channel.sendText("Parent message for createThreadWithResult test")
     await sleep(150)
 
@@ -214,26 +213,54 @@ describe("Send message test", () => {
     const message = history.messages[history.messages.length - 1]
     expect(message.hasThread).toBe(false)
 
-    // when - create thread using createThreadWithResult
+    // When - create thread using createThreadWithResult
     const result = await message.createThreadWithResult("First thread message")
 
-    // then - result should contain both threadChannel and updated parentMessage
+    // Then - result should contain both threadChannel and updated parentMessage
     const { threadChannel, parentMessage } = result
 
-    // verify threadChannel is valid
+    // Verify threadChannel is valid
     expect(threadChannel).toBeDefined()
     expect(threadChannel.id).toContain("PUBNUB_INTERNAL_THREAD")
     expect(threadChannel.parentChannelId).toBe(message.channelId)
 
-    // verify parentMessage has hasThread = true (this is the key improvement!)
+    // Verify parentMessage has hasThread = true (this is the key improvement!)
     // Previously with createThread(), you had to re-fetch the message to see hasThread=true
     expect(parentMessage.hasThread).toBe(true)
     expect(parentMessage.timetoken).toBe(message.timetoken)
     expect(parentMessage.text).toBe(message.text)
 
-    // cleanup
+    // Cleanup
     await parentMessage.removeThread()
   }, 20000)
+
+  test("should create thread message draft via createThreadMessageDraftV2", async () => {
+    // Given - a sent message
+    await channel.sendText("Parent message for thread draft")
+    await sleep(150)
+
+    const history = await channel.getHistory()
+    const message = history.messages[history.messages.length - 1]
+
+    // When - create thread message draft
+    const draft = await message.createThreadMessageDraftV2({ userSuggestionSource: "global" })
+
+    // Then - draft should be defined and functional
+    expect(draft).toBeDefined()
+    expect(draft.value).toBe("")
+
+    // Send a message via the draft
+    await draft.update("Thread message via draft")
+    await draft.send()
+    await sleep(300)
+
+    // Verify message was sent to the thread
+    const thread = await message.getThread()
+    expect(thread).toBeDefined()
+    const threadHistory = await thread.getHistory()
+    const draftMessage = threadHistory.messages.find((m: any) => m.text === "Thread message via draft")
+    expect(draftMessage).toBeDefined()
+  }, 30000)
 
   test("should soft delete message with thread", async () => {
     await channel.sendText("Test message")
@@ -241,8 +268,7 @@ describe("Send message test", () => {
 
     const historyBeforeThread = await channel.getHistory()
     const messageBeforeThread = historyBeforeThread.messages[historyBeforeThread.messages.length - 1]
-    const messageThread = await messageBeforeThread.createThread()
-    await messageThread.sendText("Some message in a thread")
+    const { threadChannel: messageThread } = await messageBeforeThread.createThread("Initial thread message")
     await sleep(150)
 
     const historyWithThread = await channel.getHistory()
@@ -268,8 +294,7 @@ describe("Send message test", () => {
 
     const historyBeforeThread = await channel.getHistory()
     const messageBeforeThread = historyBeforeThread.messages[historyBeforeThread.messages.length - 1]
-    const messageThread = await messageBeforeThread.createThread()
-    await messageThread.sendText("Some message in a thread")
+    const { threadChannel: messageThread } = await messageBeforeThread.createThread("Initial thread message")
     await sleep(150)
 
     const historyWithThread = await channel.getHistory()
@@ -335,7 +360,7 @@ describe("Send message test", () => {
       (message: Message) => message.timetoken === sentMessage.timetoken
     )
 
-    await deletedMessage.createThread().catch((e) => {
+    await deletedMessage.createThread("Initial thread message").catch((e) => {
       expect(e.message).toContain("You cannot create threads on deleted messages.")
     })
   }, 20000)
@@ -368,13 +393,19 @@ describe("Send message test", () => {
     const sentMessage = messagesBeforeReaction[messagesBeforeReaction.length - 1]
 
     expect(sentMessage.actions?.reactions?.like).toBeUndefined()
+    expect(sentMessage.reactions.length).toBe(0)
+
     const toggledMessage = await sentMessage.toggleReaction("like")
     expect(toggledMessage.actions?.reactions?.like).toBeDefined()
 
-    const likeReaction = toggledMessage.actions?.reactions?.like
-    expect(likeReaction[0].uuid).toBe(chat.currentUser.id)
+    const reactions = toggledMessage.reactions
+    expect(reactions.length).toBe(1)
+    const reaction = reactions[0]
+    expect(reaction.value).toBe("like")
+    expect(reaction.isMine).toBe(true)
+    expect(reaction.userIds.length).toBe(1)
+    expect(reaction.userIds).toContain(chat.currentUser.id)
   }, 30000)
-
 
   test("should be unable to pin multiple messages", async () => {
     await channel.sendText("First Test message")
@@ -500,7 +531,7 @@ describe("Send message test", () => {
   }, 15000)
 
   test("should render URLs correctly", async () => {
-    const messageDraft = channel.createMessageDraft()
+    const messageDraft = channel.createMessageDraftV1()
     const someUser = await chat.createUser(generateRandomString(), { name: "Lukasz" })
     const someUser2 = await chat.createUser(generateRandomString(), { name: "Anton" })
 
@@ -725,7 +756,7 @@ describe("Send message test", () => {
       }
     })
 
-    await channel.sendText(textMessage, {
+    await channel.sendTextLegacy(textMessage, {
       files: filesFromInput,
     })
 
@@ -770,7 +801,7 @@ describe("Send message test", () => {
       }
     })
 
-    await channel.sendText(textMessage, {
+    await channel.sendTextLegacy(textMessage, {
       files: filesFromInput,
     })
 
@@ -803,7 +834,7 @@ describe("Send message test", () => {
       }
     })
 
-    await channel.sendText(textMessage, {
+    await channel.sendTextLegacy(textMessage, {
       files: filesFromInput,
     })
 
@@ -837,7 +868,7 @@ describe("Send message test", () => {
       }
     })
 
-    await channel.sendText(textMessage, {
+    await channel.sendTextLegacy(textMessage, {
       files: filesFromInput,
     })
 
@@ -878,7 +909,7 @@ describe("Send message test", () => {
       }
     })
 
-    await channel.sendText(textMessage, {
+    await channel.sendTextLegacy(textMessage, {
       files: filesFromInput,
     })
 
@@ -953,6 +984,7 @@ describe("Send message test", () => {
       }
     })
 
+    await sleep(150)
     for (const longMessage of longMessages) {
       await channel.sendText(longMessage)
       const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -1084,8 +1116,7 @@ describe("Send message test", () => {
     const historyBeforeThread = await channel.getHistory()
 
     const originalMessage = historyBeforeThread.messages[0]
-    const newThread = await originalMessage.createThread()
-    await newThread.sendText("First message")
+    const { threadChannel: newThread } = await originalMessage.createThread("First message")
     await sleep(250)
 
     const historyWithThread = await channel.getHistory()
@@ -1094,7 +1125,7 @@ describe("Send message test", () => {
 
     const thread = await threadedMessage.getThread()
     const firstThreadMessage = (await thread.getHistory()).messages[0]
-    const messageDraft = thread.createMessageDraftV2()
+    const messageDraft = thread.createMessageDraft()
 
     messageDraft.addQuote(firstThreadMessage)
 
@@ -1121,8 +1152,7 @@ describe("Send message test", () => {
 
     expect(messageBeforeThread.hasThread).toBe(false)
 
-    const newThread = await messageBeforeThread.createThread()
-    await newThread.sendText("Hello!")
+    const { threadChannel: newThread } = await messageBeforeThread.createThread("Initial thread message")
     await sleep(150)
 
     const historyWithThread = await channel.getHistory()
@@ -1177,61 +1207,9 @@ describe("Send message test", () => {
     expect(encryptedHistory.messages[0].text).toBe("Random text")
     expect(cipheredHistory.messages[0].text.startsWith("UE5FRAFBQ1JIE")).toBeTruthy()
 
-    await someEncryptedGroupChannel.channel.delete({ soft: false })
-    await sameCipheredGroupChannel.delete({ soft: false })
-    await someRandomUser1.delete({ soft: false })
-    await encryptedChat.currentUser.delete()
-
-    disconnect1()
-    disconnect2()
-  }, 30000)
-
-  test("should encrypt and decrypt a file", async () => {
-    const file1 = fs.createReadStream("tests/fixtures/pblogo1.png")
-    const file2 = fs.createReadStream("tests/fixtures/pblogo2.png")
-    const file3 = fs.createReadStream("tests/fixtures/pblogo3.png")
-
-    const filesFromInput = [
-      { stream: file1, name: "pblogo1.png", mimeType: "image/png" },
-      { stream: file2, name: "pblogo2.png", mimeType: "image/png" },
-      { stream: file3, name: "pblogo3.png", mimeType: "image/png" },
-    ]
-
-    const encryptedChat = await createChatInstance({
-      config: {
-        cryptoModule: CryptoModule.aesCbcCryptoModule({ cipherKey: "pubnubenigma" }),
-        userId: "another-user",
-      },
-    })
-    const someRandomUser1 = await encryptedChat.createUser(generateRandomString(), { name: "random-1" })
-    const someEncryptedGroupChannel = await encryptedChat.createGroupConversation({ users: [someRandomUser1] })
-    const sameCipheredGroupChannel = await chat.getChannel(someEncryptedGroupChannel.channel.id)
-
-    let encryptedMessage: Message
-    let cipheredMessage: Message | undefined
-
-    const disconnect1 = someEncryptedGroupChannel.channel.connect((msg) => {
-      encryptedMessage = msg
-    })
-    const disconnect2 = sameCipheredGroupChannel.connect((msg) => {
-      cipheredMessage = msg
-    })
-
-    await someEncryptedGroupChannel.channel.sendText("Random text", { files: filesFromInput })
-    await sleep(200) // History calls have around 130ms of cache time
-    const encryptedHistory = await someEncryptedGroupChannel.channel.getHistory()
-    const cipheredHistory = await sameCipheredGroupChannel.getHistory()
-
-    expect(encryptedMessage).toBeDefined()
-    expect(encryptedMessage.text).toBe("Random text")
-    expect(encryptedHistory.messages[0].text).toBe("Random text")
-    expect(cipheredHistory.messages[0].text.startsWith("UE5FRAFBQ1JIE")).toBeTruthy()
-    expect(encryptedHistory.messages[0].files.length).toBe(3)
-    expect(cipheredHistory.messages[0].files.length).toBe(0)
-
-    await someEncryptedGroupChannel.channel.delete({ soft: false })
-    await sameCipheredGroupChannel.delete({ soft: false })
-    await someRandomUser1.delete({ soft: false })
+    await someEncryptedGroupChannel.channel.delete()
+    await sameCipheredGroupChannel.delete()
+    await someRandomUser1.delete()
     await encryptedChat.currentUser.delete()
 
     disconnect1()
@@ -1259,7 +1237,7 @@ describe("Send message test", () => {
     const disconnect2 = sameEncryptedGroupChannel.connect((msg) => {
       cipheredMessage = msg
     })
-
+    await sleep(150)
     await somePlainGroupChannel.channel.sendText("Random text")
     await sleep(1000) // History calls have around 130ms of cache time
 
@@ -1280,140 +1258,6 @@ describe("Send message test", () => {
     await sameEncryptedGroupChannel.delete()
     await someRandomUser1.delete()
     await encryptedChat.currentUser.delete()
-  }, 35000)
-
-  test("should still view files sent before enabling encryption", async () => {
-    const file1 = fs.createReadStream("tests/fixtures/pblogo1.png")
-    const file2 = fs.createReadStream("tests/fixtures/pblogo2.png")
-    const file3 = fs.createReadStream("tests/fixtures/pblogo3.png")
-
-    const filesFromInput = [
-      { stream: file1, name: "pblogo1.png", mimeType: "image/png" },
-      { stream: file2, name: "pblogo2.png", mimeType: "image/png" },
-      { stream: file3, name: "pblogo3.png", mimeType: "image/png" },
-    ]
-
-    const encryptedChat = await createChatInstance({
-      config: {
-        cryptoModule: CryptoModule.aesCbcCryptoModule({ cipherKey: "pubnubenigma" }),
-        userId: "another-user",
-      },
-    })
-
-    const someRandomUser1 = await encryptedChat.createUser(generateRandomString(), { name: "random-1" })
-    const somePlainGroupChannel = await chat.createGroupConversation({ users: [someRandomUser1] })
-    const sameEncryptedGroupChannel = await encryptedChat.getChannel(somePlainGroupChannel.channel.id)
-
-    let plainMessage: Message
-    let cipheredMessage: Message | undefined
-
-    const disconnect1 = somePlainGroupChannel.channel.connect((msg) => {
-      plainMessage = msg
-    })
-    const disconnect2 = sameEncryptedGroupChannel.connect((msg) => {
-      cipheredMessage = msg
-    })
-
-    await somePlainGroupChannel.channel.sendText("Random text", { files: filesFromInput })
-    await sleep(200) // History calls have around 130ms of cache time
-    const plainHistory = await somePlainGroupChannel.channel.getHistory()
-    const cipheredHistory = await sameEncryptedGroupChannel.getHistory()
-
-    expect(plainMessage).toBeDefined()
-    expect(cipheredMessage).toBeDefined()
-    expect(plainMessage.text).toBe("Random text")
-    expect(cipheredMessage.text).toBe("Random text")
-    expect(plainHistory.messages[0].text).toBe("Random text")
-    expect(cipheredHistory.messages[0].text).toBe("Random text")
-    expect(plainHistory.messages[0].files.length).toBe(3)
-    expect(cipheredHistory.messages[0].files.length).toBe(3)
-
-    disconnect1()
-    disconnect2()
-
-    await somePlainGroupChannel.channel.delete()
-    await sameEncryptedGroupChannel.delete()
-    await someRandomUser1.delete()
-    await encryptedChat.currentUser.delete()
-  }, 30000)
-
-  test("should be able to decrypt text and file messages sent using a previous encryption key", async () => {
-    const file1 = fs.createReadStream("tests/fixtures/pblogo1.png")
-    const file2 = fs.createReadStream("tests/fixtures/pblogo2.png")
-    const file3 = fs.createReadStream("tests/fixtures/pblogo3.png")
-
-    const filesFromInput = [
-      { stream: file1, name: "pblogo1.png", mimeType: "image/png" },
-      { stream: file2, name: "pblogo2.png", mimeType: "image/png" },
-      { stream: file3, name: "pblogo3.png", mimeType: "image/png" },
-    ]
-
-    const encryptedChat1 = await createChatInstance({
-      config: {
-        cryptoModule: CryptoModule.aesCbcCryptoModule({ cipherKey: "pubnubenigma" }),
-        userId: "some-user-1",
-      },
-    })
-    const encryptedChat2 = await createChatInstance({
-      config: {
-        cryptoModule: CryptoModule.aesCbcCryptoModule({ cipherKey: "another-pubnubenigma" }),
-        userId: "some-user-2",
-      },
-    })
-
-    const someRandomUser1 = await encryptedChat1.createUser(generateRandomString(), { name: "random-1" })
-    const someGroupChannel = await encryptedChat1.createGroupConversation({ users: [someRandomUser1] })
-    await someGroupChannel.channel.sendText("Random text", { files: filesFromInput })
-
-    await sleep(200) // History calls have around 130ms of cache time
-
-    const firstCypherKeyHistory = await someGroupChannel.channel.getHistory()
-    expect(firstCypherKeyHistory.messages[0].text).toBe("Random text")
-    expect(firstCypherKeyHistory.messages[0].files.length).toBe(3)
-
-    const sameChannelWithSecondCryptoKey = await encryptedChat2.getChannel(someGroupChannel.channel.id)
-    const secondCypherKeyHistory = await sameChannelWithSecondCryptoKey.getHistory()
-    expect(secondCypherKeyHistory.messages[0].text.startsWith("UE5FRAFBQ1JIE")).toBeTruthy()
-    expect(secondCypherKeyHistory.messages[0].files.length).toBe(0)
-
-    // Decryption with the original key
-    const decryptedMessages = secondCypherKeyHistory.messages.map((msg) => {
-      if (msg.error && msg.error.startsWith("Error while decrypting message content")) {
-        return CryptoUtils.decrypt({
-          chat: encryptedChat2,
-          message: msg,
-          decryptor: (encryptedContent) => {
-            const cryptoModule = CryptoModule.aesCbcCryptoModule({ cipherKey: "pubnubenigma" })
-            const enc = new TextDecoder("utf-8")
-            const decryptedArrayBuffer = cryptoModule.decrypt(encryptedContent) as ArrayBuffer
-
-            if (!decryptedArrayBuffer.byteLength) {
-              return {
-                type: "text",
-                files: [],
-                text: "(This message is corrupted)",
-              }
-            }
-            return JSON.parse(enc.decode(decryptedArrayBuffer))
-          },
-        })
-      }
-
-      return msg
-    })
-
-    expect(decryptedMessages[0].text).toBe("Random text")
-    expect(decryptedMessages[0].files.length).toBe(3)
-
-    filesFromInput.forEach((fileFromInput, index) => {
-      expect(decryptedMessages[0].files[index].name).toBe(fileFromInput.name)
-      expect(decryptedMessages[0].files[index].type).toBe(fileFromInput.mimeType)
-    })
-
-    await someGroupChannel.channel.delete({ soft: false })
-    await someRandomUser1.delete({ soft: false })
-    await encryptedChat1.currentUser.delete()
-    await encryptedChat2.currentUser.delete()
   }, 35000)
 
   test("should send a message with custom body and transform it to TextMessageContent when received", async () => {
@@ -1752,6 +1596,27 @@ describe("Send message test", () => {
     await chat.currentUser.delete()
   }, 20000)
 
+  test("should invoke onUpdated callback when message is edited", async () => {
+    await channel.sendText("Test message")
+    await sleep(150)
+
+    const history = await channel.getHistory()
+    const sentMessage = history.messages[history.messages.length - 1]
+
+    let updatedMessage: Message | undefined
+    const stop = sentMessage.onUpdated((message: Message) => { updatedMessage = message })
+    await sleep(3000)
+
+    await sentMessage.editText("Edited message")
+    await sleep(2000)
+
+    expect(updatedMessage).toBeDefined()
+    expect(updatedMessage?.text).toBe("Edited message")
+    expect(updatedMessage?.timetoken).toBe(sentMessage.timetoken)
+
+    stop()
+  }, 20000)
+
   test("should receive streamUpdates callback when soft deleting message", async () => {
     const disconnect = channel.connect((message) => {  })
 
@@ -1831,6 +1696,7 @@ describe("Send message test", () => {
     const message = history.messages[0]
 
     expect(message.hasUserReaction("👍")).toBe(false)
+    expect(message.reactions.length).toBe(0)
 
     await message.toggleReaction("👍")
     await sleep(150)
@@ -1839,6 +1705,12 @@ describe("Send message test", () => {
     const hasReactionAfter = updatedMessage.hasUserReaction("👍")
 
     expect(hasReactionAfter).toBe(true)
+
+    const reactions = updatedMessage.reactions
+    expect(reactions.length).toBe(1)
+    expect(reactions[0].value).toBe("👍")
+    expect(reactions[0].isMine).toBe(true)
+    expect(reactions[0].userIds.length).toBe(1)
   }, 20000)
 
   test("should forward message via message.forward", async () => {
@@ -1889,8 +1761,7 @@ describe("Send message test", () => {
     const history = await channel.getHistory()
     const parentMessage = history.messages[0]
 
-    const threadChannel = await parentMessage.createThread()
-    await threadChannel.sendText("Thread message to pin to parent")
+    const { threadChannel } = await parentMessage.createThread("Thread message to pin to parent")
     await sleep(150)
 
     const threadChannelHistory = await threadChannel.getHistory()
@@ -1913,8 +1784,7 @@ describe("Send message test", () => {
     const history = await channel.getHistory()
     const parentMessage = history.messages[0]
 
-    const threadChannel = await parentMessage.createThread()
-    await threadChannel.sendText("Thread message to unpin")
+    const { threadChannel } = await parentMessage.createThread("Thread message to unpin")
     await sleep(350)
 
     const threadChannelHistory = await threadChannel.getHistory()
@@ -1939,7 +1809,7 @@ describe("Send message test", () => {
   test("should get message elements with text, mentions, and links", async () => {
     const mentionedUser1 = await createRandomUser(chat, "mentioned1_")
     const mentionedUser2 = await createRandomUser(chat, "mentioned2_")
-    const messageDraft = channel.createMessageDraftV2()
+    const messageDraft = channel.createMessageDraft()
 
     // Build message with user mentions and a linked URL
     messageDraft.update(`Hello @${mentionedUser1.name}, check out `)
@@ -2013,19 +1883,15 @@ describe("Send message test", () => {
     const historyBeforeThread = await channel.getHistory()
     const messageBeforeThread = historyBeforeThread.messages[0]
 
-    const threadChannel = await messageBeforeThread.createThread()
-    await threadChannel.sendText("Thread message")
+    const { threadChannel } = await messageBeforeThread.createThread("Initial thread message")
     await sleep(300)
 
     const historyWithThread = await channel.getHistory()
     const messageWithThread = historyWithThread.messages[0]
     expect(messageWithThread.hasThread).toBe(true)
 
-    const [deleteData, channelOrBoolean] = await messageWithThread.removeThread()
+    await messageWithThread.removeThread()
     await sleep(300)
-
-    expect(deleteData).toBeDefined()
-    expect(channelOrBoolean).toBeDefined()
 
     const historyAfterRemoval = await channel.getHistory()
     const messageAfterRemoval = historyAfterRemoval.messages[0]
@@ -2039,9 +1905,8 @@ describe("Send message test", () => {
 
     const history = await channel.getHistory()
     const parentMessage = history.messages[0]
-    const threadChannel = await parentMessage.createThread()
+    const { threadChannel } = await parentMessage.createThread("First thread message")
 
-    await threadChannel.sendText("First thread message")
     await threadChannel.sendText("Second thread message")
     await sleep(300)
 

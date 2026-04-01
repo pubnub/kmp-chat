@@ -18,7 +18,7 @@ describe("Membership test", () => {
     await channel.delete()
     await user.delete()
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
 
     jest.clearAllMocks()
   })
@@ -49,21 +49,30 @@ describe("Membership test", () => {
     expect(lastReadTimetoken).toEqual(message.timetoken)
   }, 20000)
 
-  test("should update membership custom data via membership.update", async () => {
+  test("should update membership status, type, and custom data via membership.update", async () => {
     const membership = await channel.invite(user)
     await sleep(150)
 
+    const status = "moderatorStatus"
+    const type = "moderatorType"
     const customData = {
       role: "moderator"
     }
 
-    const updatedMembership = await membership.update({ custom: customData })
+    const updatedMembership = await membership.update({ status, type, custom: customData })
     await sleep(150)
 
     expect(updatedMembership).toBeDefined()
-    expect(updatedMembership.custom).toEqual(customData)
+    expect(updatedMembership.custom).toMatchObject(customData)
+    expect(updatedMembership.custom).toHaveProperty("lastReadMessageTimetoken")
+    expect(updatedMembership.status).toEqual(status)
+    expect(updatedMembership.type).toEqual(type)
     expect(updatedMembership.user.id).toEqual(user.id)
     expect(updatedMembership.channel.id).toEqual(channel.id)
+    expect(updatedMembership.updated).toBeDefined()
+    expect(typeof updatedMembership.updated).toBe("string")
+    expect(updatedMembership.eTag).toBeDefined()
+    expect(typeof updatedMembership.eTag).toBe("string")
   }, 20000)
 
   test("should set last read message timetoken directly via membership.setLastReadMessageTimetoken", async () => {
@@ -110,40 +119,33 @@ describe("Membership test", () => {
     expect(unreadCount).toBeGreaterThanOrEqual(2)
   }, 20000)
 
-  test("should access membership properties", async () => {
-    const customData = { role: "member" }
-    const membership = await channel.invite(user)
+  test("should preserve populated fields in streamUpdates during partial membership.update", async () => {
+    const membership = await channel.join({
+      status: "memberStatus",
+      type: "memberType",
+      custom: { role: "member" }
+    })
     await sleep(150)
 
-    const updatedMembership = await membership.update({ custom: customData })
-    await sleep(150)
-
-    expect(updatedMembership.channel).toBeDefined()
-    expect(updatedMembership.channel.id).toEqual(channel.id)
-    expect(updatedMembership.user).toBeDefined()
-    expect(updatedMembership.user.id).toEqual(user.id)
-    expect(updatedMembership.custom).toEqual(customData)
-    expect(updatedMembership.updated).toBeDefined()
-    expect(typeof updatedMembership.updated).toBe("string")
-    expect(updatedMembership.eTag).toBeDefined()
-    expect(typeof updatedMembership.eTag).toBe("string")
-  }, 20000)
-
-  test("should stream updates for a single membership via membership.streamUpdates", async () => {
-    const membership = await channel.invite(user)
-    await sleep(150)
-
-    const updates: any[] = []
+    const updates: Array<Membership | null> = []
     const stopStreaming = membership.streamUpdates((updatedMembership) => { updates.push(updatedMembership) })
     await sleep(150)
 
-    await membership.update({ custom: { role: "admin" } })
+    const directUpdatedMembership = await membership.update({ status: "moderatorStatus" })
     await sleep(500)
 
     stopStreaming()
 
-    expect(updates.length).toBeGreaterThan(0)
-    expect(updates[updates.length - 1].custom).toEqual({ role: "admin" })
+    const streamedMembership = updates[updates.length - 1]
+
+    expect(directUpdatedMembership.status).toEqual("moderatorStatus")
+    expect(directUpdatedMembership.type).toEqual("memberType")
+    expect(directUpdatedMembership.custom).toEqual({ role: "member" })
+    expect(streamedMembership).toBeDefined()
+    expect(streamedMembership).not.toBeNull()
+    expect(streamedMembership!.status).toEqual("moderatorStatus")
+    expect(streamedMembership!.type).toEqual("memberType")
+    expect(streamedMembership!.custom).toEqual({ role: "member" })
   }, 20000)
 
   test("should stream updates for multiple memberships via Membership.streamUpdatesOn", async () => {
@@ -162,7 +164,7 @@ describe("Membership test", () => {
     )
 
     await sleep(1000)
-    await membership1.update({ custom: { role: "moderator" } })
+    await membership1.update({ status: "moderatorStatus", type: "moderatorType", custom: { role: "moderator" } })
     await sleep(1000)
 
     const foundMembership = updates.find((value) => {
@@ -170,7 +172,10 @@ describe("Membership test", () => {
     })
 
     expect(foundMembership).toBeDefined()
-    expect(foundMembership?.custom).toEqual({ role: "moderator" })
+    expect(foundMembership?.custom).toMatchObject({ role: "moderator" })
+    expect(foundMembership?.custom).toHaveProperty("lastReadMessageTimetoken")
+    expect(foundMembership?.status).toEqual("moderatorStatus")
+    expect(foundMembership?.type).toEqual("moderatorType")
 
     stopStreaming()
 
@@ -195,5 +200,74 @@ describe("Membership test", () => {
     expect(unreadCount).toBeDefined()
     expect(typeof unreadCount === "number").toBe(true)
     expect(unreadCount === 0).toBe(true)
+  }, 20000)
+
+  test("should match direct update result and onUpdated callback for partial membership.update", async () => {
+    const membership = await channel.join({
+      status: "memberStatus",
+      type: "memberType",
+      custom: { role: "member" }
+    })
+    await sleep(150)
+
+    let callbackMembership: Membership | undefined
+    const stop = membership.onUpdated((m) => { callbackMembership = m })
+    await sleep(1000)
+
+    const directUpdatedMembership = await membership.update({ status: "moderatorStatus" })
+    await sleep(500)
+
+    expect(directUpdatedMembership.status).toEqual("moderatorStatus")
+    expect(directUpdatedMembership.type).toEqual("memberType")
+    expect(directUpdatedMembership.custom).toEqual({ role: "member" })
+    expect(callbackMembership).toBeDefined()
+    expect(callbackMembership!.status).toEqual("moderatorStatus")
+    expect(callbackMembership!.type).toEqual("memberType")
+    expect(callbackMembership!.custom).toEqual({ role: "member" })
+    stop()
+  }, 20000)
+
+  test("should preserve lastReadMessageTimetoken when updating custom data via membership.update", async () => {
+    const membership = await channel.invite(user)
+    await sleep(150)
+
+    await channel.sendText("Test message")
+    await sleep(350)
+
+    const history = await channel.getHistory()
+    const message = history.messages[0]
+
+    const membershipWithTimetoken = await membership.setLastReadMessage(message)
+    const timetoken = membershipWithTimetoken.lastReadMessageTimetoken
+    expect(timetoken).toBeDefined()
+
+    const updatedMembership = await membershipWithTimetoken.update({ custom: { role: "moderator" } })
+
+    expect(updatedMembership.lastReadMessageTimetoken).toEqual(timetoken)
+    expect(updatedMembership.custom.role).toEqual("moderator")
+  }, 20000)
+
+  test("should delete membership via membership.delete", async () => {
+    const membership = await channel.invite(user)
+    const result = await membership.delete()
+    expect(result).toBe(true)
+
+    const isMember = await user.isMemberOf(channel.id)
+    expect(isMember).toBe(false)
+  }, 20000)
+
+  test("should fire callback when membership is deleted via membership.onDeleted", async () => {
+    const membership = await channel.join()
+    await sleep(150)
+
+    let deletedCalled = false
+    const stop = membership.onDeleted(() => { deletedCalled = true })
+    await sleep(1000)
+
+    await channel.leave()
+    await sleep(500)
+
+    expect(deletedCalled).toBe(true)
+    stop()
   }, 20000)
 })

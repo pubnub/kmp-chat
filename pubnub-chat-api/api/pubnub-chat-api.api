@@ -1,9 +1,12 @@
 public abstract interface class com/pubnub/chat/Channel {
 	public static final field Companion Lcom/pubnub/chat/Channel$Companion;
 	public abstract fun connect (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
-	public abstract fun delete (Z)Lcom/pubnub/kmp/PNFuture;
-	public static synthetic fun delete$default (Lcom/pubnub/chat/Channel;ZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun delete ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun deleteFile (Ljava/lang/String;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun emitCustomEvent (Ljava/util/Map;Ljava/lang/String;Z)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun emitCustomEvent$default (Lcom/pubnub/chat/Channel;Ljava/util/Map;Ljava/lang/String;ZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun fetchReadReceipts (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun fetchReadReceipts$default (Lcom/pubnub/chat/Channel;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun forwardMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getChat ()Lcom/pubnub/chat/Chat;
 	public abstract fun getCustom ()Ljava/util/Map;
@@ -13,6 +16,9 @@ public abstract interface class com/pubnub/chat/Channel {
 	public abstract fun getHistory (Ljava/lang/Long;Ljava/lang/Long;I)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getHistory$default (Lcom/pubnub/chat/Channel;Ljava/lang/Long;Ljava/lang/Long;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getId ()Ljava/lang/String;
+	public abstract fun getInvitees (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun getInvitees$default (Lcom/pubnub/chat/Channel;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun getMember (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getMembers (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getMembers$default (Lcom/pubnub/chat/Channel;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getMessage (J)Lcom/pubnub/kmp/PNFuture;
@@ -29,17 +35,29 @@ public abstract interface class com/pubnub/chat/Channel {
 	public static synthetic fun getUserSuggestions$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;IILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getUsersRestrictions (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getUsersRestrictions$default (Lcom/pubnub/chat/Channel;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun hasMember (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun invite (Lcom/pubnub/chat/User;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun inviteMultiple (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun isPresent (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun join (Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Lcom/pubnub/kmp/PNFuture;
-	public static synthetic fun join$default (Lcom/pubnub/chat/Channel;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun join (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun join$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun leave ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun onCustomEvent (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public static synthetic fun onCustomEvent$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/AutoCloseable;
+	public abstract fun onDeleted (Lkotlin/jvm/functions/Function0;)Ljava/lang/AutoCloseable;
+	public abstract fun onMessageReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onMessageReported (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onPresenceChanged (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onReadReceiptReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onTypingChanged (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pinMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun plus (Lcom/pubnub/api/models/consumer/objects/channel/PNChannelMetadata;)Lcom/pubnub/chat/Channel;
 	public abstract fun registerForPush ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun sendText (Ljava/lang/String;Lcom/pubnub/chat/types/SendTextParams;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun sendText (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun sendText (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Ljava/util/Map;Ljava/util/Map;Ljava/util/List;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun sendText$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Lcom/pubnub/chat/types/SendTextParams;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun sendText$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun sendText$default (Lcom/pubnub/chat/Channel;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Ljava/util/Map;Ljava/util/Map;Ljava/util/List;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun setRestrictions (Lcom/pubnub/chat/User;ZZLjava/lang/String;)Lcom/pubnub/kmp/PNFuture;
@@ -69,6 +87,8 @@ public abstract interface class com/pubnub/chat/ChannelGroup {
 	public abstract fun getId ()Ljava/lang/String;
 	public abstract fun listChannels (Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun listChannels$default (Lcom/pubnub/chat/ChannelGroup;Ljava/lang/String;Ljava/util/Collection;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun onMessageReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onPresenceChanged (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun removeChannelIdentifiers (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun removeChannels (Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun streamPresence (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
@@ -87,10 +107,8 @@ public abstract interface class com/pubnub/chat/Chat {
 	public static synthetic fun createPublicConversation$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun createUser (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun createUser$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun deleteChannel (Ljava/lang/String;Z)Lcom/pubnub/kmp/PNFuture;
-	public static synthetic fun deleteChannel$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;ZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
-	public abstract fun deleteUser (Ljava/lang/String;Z)Lcom/pubnub/kmp/PNFuture;
-	public static synthetic fun deleteUser$default (Lcom/pubnub/chat/Chat;Ljava/lang/String;ZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun deleteChannel (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun deleteUser (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun destroy ()V
 	public abstract fun disconnectSubscriptions ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun emitEvent (Ljava/lang/String;Lcom/pubnub/chat/types/EventContent;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
@@ -148,6 +166,7 @@ public abstract interface class com/pubnub/chat/Event {
 
 public abstract interface class com/pubnub/chat/Membership {
 	public static final field Companion Lcom/pubnub/chat/Membership$Companion;
+	public abstract fun delete ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getChannel ()Lcom/pubnub/chat/Channel;
 	public abstract fun getChat ()Lcom/pubnub/chat/Chat;
 	public abstract fun getCustom ()Ljava/util/Map;
@@ -158,11 +177,15 @@ public abstract interface class com/pubnub/chat/Membership {
 	public abstract fun getUnreadMessagesCount ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getUpdated ()Ljava/lang/String;
 	public abstract fun getUser ()Lcom/pubnub/chat/User;
+	public abstract fun onDeleted (Lkotlin/jvm/functions/Function0;)Ljava/lang/AutoCloseable;
+	public abstract fun onUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun plus (Lcom/pubnub/api/models/consumer/pubsub/objects/PNSetMembershipEvent;)Lcom/pubnub/chat/Membership;
 	public abstract fun setLastReadMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun setLastReadMessageTimetoken (J)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun streamUpdates (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
-	public abstract fun update (Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public fun update (Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun update (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun update$default (Lcom/pubnub/chat/Membership;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 }
 
 public final class com/pubnub/chat/Membership$Companion {
@@ -207,9 +230,13 @@ public final class com/pubnub/chat/MentionTarget$User : com/pubnub/chat/MentionT
 public abstract interface class com/pubnub/chat/Message {
 	public static final field Companion Lcom/pubnub/chat/Message$Companion;
 	public abstract fun createThread ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun createThread (Ljava/lang/String;Lcom/pubnub/chat/types/SendTextParams;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun createThread (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun createThread$default (Lcom/pubnub/chat/Message;Ljava/lang/String;Lcom/pubnub/chat/types/SendTextParams;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun createThread$default (Lcom/pubnub/chat/Message;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun createThreadWithResult (Ljava/lang/String;Lcom/pubnub/chat/types/SendTextParams;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun createThreadWithResult (Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun createThreadWithResult$default (Lcom/pubnub/chat/Message;Ljava/lang/String;Lcom/pubnub/chat/types/SendTextParams;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun createThreadWithResult$default (Lcom/pubnub/chat/Message;Ljava/lang/String;Ljava/util/Map;ZZLjava/lang/Integer;Lcom/pubnub/chat/Message;Ljava/util/List;Ljava/util/Collection;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun delete (ZZ)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun delete$default (Lcom/pubnub/chat/Message;ZZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
@@ -226,7 +253,7 @@ public abstract interface class com/pubnub/chat/Message {
 	public abstract fun getMentionedUsers ()Ljava/util/Map;
 	public abstract fun getMeta ()Ljava/util/Map;
 	public abstract fun getQuotedMessage ()Lcom/pubnub/chat/types/QuotedMessage;
-	public abstract fun getReactions ()Ljava/util/Map;
+	public abstract fun getReactions ()Ljava/util/List;
 	public abstract fun getReferencedChannels ()Ljava/util/Map;
 	public abstract fun getText ()Ljava/lang/String;
 	public abstract fun getTextLinks ()Ljava/util/List;
@@ -235,6 +262,7 @@ public abstract interface class com/pubnub/chat/Message {
 	public abstract fun getType ()Ljava/lang/String;
 	public abstract fun getUserId ()Ljava/lang/String;
 	public abstract fun hasUserReaction (Ljava/lang/String;)Z
+	public abstract fun onUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pin ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun removeThread ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun report (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
@@ -261,7 +289,9 @@ public abstract interface class com/pubnub/chat/MessageDraft {
 	public abstract fun removeChangeListener (Lcom/pubnub/chat/MessageDraftChangeListener;)V
 	public abstract fun removeMention (I)V
 	public abstract fun removeText (II)V
+	public abstract fun send (Lcom/pubnub/chat/types/SendTextParams;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun send (Ljava/util/Map;ZZLjava/lang/Integer;)Lcom/pubnub/kmp/PNFuture;
+	public static synthetic fun send$default (Lcom/pubnub/chat/MessageDraft;Lcom/pubnub/chat/types/SendTextParams;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun send$default (Lcom/pubnub/chat/MessageDraft;Ljava/util/Map;ZZLjava/lang/Integer;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun setQuotedMessage (Lcom/pubnub/chat/Message;)V
 	public abstract fun update (Ljava/lang/String;)V
@@ -326,12 +356,17 @@ public final class com/pubnub/chat/SuggestedMention {
 public abstract interface class com/pubnub/chat/ThreadChannel : com/pubnub/chat/Channel {
 	public static final field Companion Lcom/pubnub/chat/ThreadChannel$Companion;
 	public abstract fun getHistory (Ljava/lang/Long;Ljava/lang/Long;I)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun getMessage (J)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getParentChannelId ()Ljava/lang/String;
 	public abstract fun getParentMessage ()Lcom/pubnub/chat/Message;
+	public abstract fun getPinnedMessage ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun onThreadChannelUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onThreadMessageReceived (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pinMessage (Lcom/pubnub/chat/Message;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun pinMessageToParentChannel (Lcom/pubnub/chat/ThreadMessage;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun unpinMessage ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun unpinMessageFromParentChannel ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun update (Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Lcom/pubnub/chat/types/ChannelType;)Lcom/pubnub/kmp/PNFuture;
 }
 
 public final class com/pubnub/chat/ThreadChannel$Companion {
@@ -339,8 +374,12 @@ public final class com/pubnub/chat/ThreadChannel$Companion {
 
 public abstract interface class com/pubnub/chat/ThreadMessage : com/pubnub/chat/Message {
 	public static final field Companion Lcom/pubnub/chat/ThreadMessage$Companion;
+	public abstract fun editText (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getParentChannelId ()Ljava/lang/String;
+	public abstract fun onThreadMessageUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun pinToParentChannel ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun restore ()Lcom/pubnub/kmp/PNFuture;
+	public abstract fun toggleReaction (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun unpinFromParentChannel ()Lcom/pubnub/kmp/PNFuture;
 }
 
@@ -350,8 +389,7 @@ public final class com/pubnub/chat/ThreadMessage$Companion {
 public abstract interface class com/pubnub/chat/User {
 	public static final field Companion Lcom/pubnub/chat/User$Companion;
 	public abstract fun active ()Lcom/pubnub/kmp/PNFuture;
-	public abstract fun delete (Z)Lcom/pubnub/kmp/PNFuture;
-	public static synthetic fun delete$default (Lcom/pubnub/chat/User;ZILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun delete ()Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getActive ()Z
 	public abstract fun getChannelRestrictions (Lcom/pubnub/chat/Channel;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getChannelsRestrictions (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
@@ -363,6 +401,7 @@ public abstract interface class com/pubnub/chat/User {
 	public abstract fun getExternalId ()Ljava/lang/String;
 	public abstract fun getId ()Ljava/lang/String;
 	public abstract fun getLastActiveTimestamp ()Ljava/lang/Long;
+	public abstract fun getMembership (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getMemberships (Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun getMemberships$default (Lcom/pubnub/chat/User;Ljava/lang/Integer;Lcom/pubnub/api/models/consumer/objects/PNPage;Ljava/lang/String;Ljava/util/Collection;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun getName ()Ljava/lang/String;
@@ -370,7 +409,13 @@ public abstract interface class com/pubnub/chat/User {
 	public abstract fun getStatus ()Ljava/lang/String;
 	public abstract fun getType ()Ljava/lang/String;
 	public abstract fun getUpdated ()Ljava/lang/String;
+	public abstract fun isMemberOf (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public abstract fun isPresentOn (Ljava/lang/String;)Lcom/pubnub/kmp/PNFuture;
+	public abstract fun onDeleted (Lkotlin/jvm/functions/Function0;)Ljava/lang/AutoCloseable;
+	public abstract fun onInvited (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onMentioned (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onRestrictionChanged (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
+	public abstract fun onUpdated (Lkotlin/jvm/functions/Function1;)Ljava/lang/AutoCloseable;
 	public abstract fun plus (Lcom/pubnub/api/models/consumer/objects/uuid/PNUUIDMetadata;)Lcom/pubnub/chat/User;
 	public abstract fun setRestrictions (Lcom/pubnub/chat/Channel;ZZLjava/lang/String;)Lcom/pubnub/kmp/PNFuture;
 	public static synthetic fun setRestrictions$default (Lcom/pubnub/chat/User;Lcom/pubnub/chat/Channel;ZZLjava/lang/String;ILjava/lang/Object;)Lcom/pubnub/kmp/PNFuture;
@@ -406,6 +451,7 @@ public final class com/pubnub/chat/User$UpdatableValues {
 
 public abstract interface class com/pubnub/chat/config/ChatConfiguration {
 	public abstract fun getCustomPayloads ()Lcom/pubnub/chat/config/CustomPayloads;
+	public abstract fun getEmitReadReceiptEvents ()Ljava/util/Map;
 	public abstract fun getLogLevel ()Lcom/pubnub/chat/config/LogLevel;
 	public abstract fun getPushNotifications ()Lcom/pubnub/chat/config/PushNotificationsConfig;
 	public abstract fun getRateLimitFactor ()I
@@ -417,8 +463,10 @@ public abstract interface class com/pubnub/chat/config/ChatConfiguration {
 }
 
 public final class com/pubnub/chat/config/ChatConfigurationKt {
-	public static final fun ChatConfiguration-ZH2SSTU (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;Z)Lcom/pubnub/chat/config/ChatConfiguration;
-	public static synthetic fun ChatConfiguration-ZH2SSTU$default (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;ZILjava/lang/Object;)Lcom/pubnub/chat/config/ChatConfiguration;
+	public static final fun ChatConfiguration-eUJyBe4 (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;Ljava/util/Map;Z)Lcom/pubnub/chat/config/ChatConfiguration;
+	public static synthetic fun ChatConfiguration-eUJyBe4$default (Lcom/pubnub/chat/config/LogLevel;JJZLcom/pubnub/chat/config/PushNotificationsConfig;ILjava/util/Map;Lcom/pubnub/chat/config/CustomPayloads;Ljava/util/Map;ZILjava/lang/Object;)Lcom/pubnub/chat/config/ChatConfiguration;
+	public static final fun EmitReadReceiptEvents (ZZZZ)Ljava/util/Map;
+	public static synthetic fun EmitReadReceiptEvents$default (ZZZZILjava/lang/Object;)Ljava/util/Map;
 	public static final fun RateLimitPerChannel-InTURus (JJJJ)Ljava/util/Map;
 	public static synthetic fun RateLimitPerChannel-InTURus$default (JJJJILjava/lang/Object;)Ljava/util/Map;
 }
@@ -598,6 +646,23 @@ public final class com/pubnub/chat/types/CreateThreadResult {
 	public final fun getThreadChannel ()Lcom/pubnub/chat/ThreadChannel;
 }
 
+public final class com/pubnub/chat/types/CustomEvent {
+	public fun <init> (JLjava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V
+	public final fun component1 ()J
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/Object;
+	public final fun copy (JLjava/lang/String;Ljava/lang/String;Ljava/lang/Object;)Lcom/pubnub/chat/types/CustomEvent;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/types/CustomEvent;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lcom/pubnub/chat/types/CustomEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPayload ()Ljava/lang/Object;
+	public final fun getTimetoken ()J
+	public final fun getType ()Ljava/lang/String;
+	public final fun getUserId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/pubnub/chat/types/EmitEventMethod : java/lang/Enum {
 	public static final field PUBLISH Lcom/pubnub/chat/types/EmitEventMethod;
 	public static final field SIGNAL Lcom/pubnub/chat/types/EmitEventMethod;
@@ -634,7 +699,7 @@ public final class com/pubnub/chat/types/EventContent$Invite : com/pubnub/chat/t
 	public final fun getChannelType ()Lcom/pubnub/chat/types/ChannelType;
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$Invite$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$Invite$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$Invite$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$Invite;
@@ -642,7 +707,6 @@ public synthetic class com/pubnub/chat/types/EventContent$Invite$$serializer : k
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$Invite;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$Invite$Companion {
@@ -658,7 +722,7 @@ public final class com/pubnub/chat/types/EventContent$Mention : com/pubnub/chat/
 	public final fun getParentChannel ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$Mention$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$Mention$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$Mention$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$Mention;
@@ -666,7 +730,6 @@ public synthetic class com/pubnub/chat/types/EventContent$Mention$$serializer : 
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$Mention;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$Mention$Companion {
@@ -682,7 +745,7 @@ public final class com/pubnub/chat/types/EventContent$Moderation : com/pubnub/ch
 	public final fun getRestriction ()Lcom/pubnub/chat/restrictions/RestrictionType;
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$Moderation$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$Moderation$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$Moderation$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$Moderation;
@@ -690,7 +753,6 @@ public synthetic class com/pubnub/chat/types/EventContent$Moderation$$serializer
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$Moderation;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$Moderation$Companion {
@@ -703,7 +765,7 @@ public final class com/pubnub/chat/types/EventContent$Receipt : com/pubnub/chat/
 	public final fun getMessageTimetoken ()J
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$Receipt$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$Receipt$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$Receipt$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$Receipt;
@@ -711,7 +773,6 @@ public synthetic class com/pubnub/chat/types/EventContent$Receipt$$serializer : 
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$Receipt;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$Receipt$Companion {
@@ -730,7 +791,7 @@ public final class com/pubnub/chat/types/EventContent$Report : com/pubnub/chat/t
 	public final fun getText ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$Report$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$Report$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$Report$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$Report;
@@ -738,7 +799,6 @@ public synthetic class com/pubnub/chat/types/EventContent$Report$$serializer : k
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$Report;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$Report$Companion {
@@ -758,7 +818,7 @@ public class com/pubnub/chat/types/EventContent$TextMessageContent : com/pubnub/
 	public static final synthetic fun write$Self (Lcom/pubnub/chat/types/EventContent$TextMessageContent;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$TextMessageContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$TextMessageContent$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$TextMessageContent$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$TextMessageContent;
@@ -766,7 +826,6 @@ public synthetic class com/pubnub/chat/types/EventContent$TextMessageContent$$se
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$TextMessageContent;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$TextMessageContent$Companion {
@@ -779,7 +838,7 @@ public final class com/pubnub/chat/types/EventContent$Typing : com/pubnub/chat/t
 	public final fun getValue ()Z
 }
 
-public synthetic class com/pubnub/chat/types/EventContent$Typing$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/EventContent$Typing$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/EventContent$Typing$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/EventContent$Typing;
@@ -787,7 +846,6 @@ public synthetic class com/pubnub/chat/types/EventContent$Typing$$serializer : k
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/EventContent$Typing;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/EventContent$Typing$Companion {
@@ -809,7 +867,7 @@ public final class com/pubnub/chat/types/File {
 	public final fun getUrl ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/File$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/File$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/File$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/File;
@@ -817,7 +875,6 @@ public synthetic class com/pubnub/chat/types/File$$serializer : kotlinx/serializ
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/File;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/File$Companion {
@@ -833,8 +890,10 @@ public final class com/pubnub/chat/types/GetChannelsResponse {
 }
 
 public final class com/pubnub/chat/types/GetCurrentUserMentionsResult {
-	public fun <init> (Ljava/util/List;Z)V
+	public fun <init> (Ljava/util/List;ZLjava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;ZLjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getEnhancedMentionsData ()Ljava/util/List;
+	public final fun getMentions ()Ljava/util/List;
 	public final fun isMore ()Z
 }
 
@@ -871,12 +930,6 @@ public final class com/pubnub/chat/types/InputFile {
 	public final fun getType ()Ljava/lang/String;
 }
 
-public final class com/pubnub/chat/types/JoinResult {
-	public fun <init> (Lcom/pubnub/chat/Membership;Ljava/lang/AutoCloseable;)V
-	public final fun getDisconnect ()Ljava/lang/AutoCloseable;
-	public final fun getMembership ()Lcom/pubnub/chat/Membership;
-}
-
 public final class com/pubnub/chat/types/MessageActionType : java/lang/Enum {
 	public static final field DELETED Lcom/pubnub/chat/types/MessageActionType;
 	public static final field EDITED Lcom/pubnub/chat/types/MessageActionType;
@@ -894,7 +947,7 @@ public final class com/pubnub/chat/types/MessageMentionedUser {
 	public final fun getName ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/MessageMentionedUser$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/MessageMentionedUser$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/MessageMentionedUser$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/MessageMentionedUser;
@@ -902,11 +955,26 @@ public synthetic class com/pubnub/chat/types/MessageMentionedUser$$serializer : 
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/MessageMentionedUser;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/MessageMentionedUser$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/pubnub/chat/types/MessageReaction {
+	public fun <init> (Ljava/lang/String;ZLjava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Z
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;ZLjava/util/List;)Lcom/pubnub/chat/types/MessageReaction;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/types/MessageReaction;Ljava/lang/String;ZLjava/util/List;ILjava/lang/Object;)Lcom/pubnub/chat/types/MessageReaction;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCount ()I
+	public final fun getUserIds ()Ljava/util/List;
+	public final fun getValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isMine ()Z
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/pubnub/chat/types/MessageReferencedChannel {
@@ -916,7 +984,7 @@ public final class com/pubnub/chat/types/MessageReferencedChannel {
 	public final fun getName ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/MessageReferencedChannel$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/MessageReferencedChannel$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/MessageReferencedChannel$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/MessageReferencedChannel;
@@ -924,7 +992,6 @@ public synthetic class com/pubnub/chat/types/MessageReferencedChannel$$serialize
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/MessageReferencedChannel;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/MessageReferencedChannel$Companion {
@@ -939,7 +1006,7 @@ public final class com/pubnub/chat/types/QuotedMessage {
 	public final fun getUserId ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/QuotedMessage$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/QuotedMessage$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/QuotedMessage$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/QuotedMessage;
@@ -947,11 +1014,75 @@ public synthetic class com/pubnub/chat/types/QuotedMessage$$serializer : kotlinx
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/QuotedMessage;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/QuotedMessage$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/pubnub/chat/types/ReadReceipt {
+	public fun <init> (Ljava/lang/String;J)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun copy (Ljava/lang/String;J)Lcom/pubnub/chat/types/ReadReceipt;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/types/ReadReceipt;Ljava/lang/String;JILjava/lang/Object;)Lcom/pubnub/chat/types/ReadReceipt;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLastReadTimetoken ()J
+	public final fun getUserId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/pubnub/chat/types/ReadReceiptsResponse {
+	public fun <init> (Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;IILjava/util/List;)V
+	public final fun getNext ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNNext;
+	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
+	public final fun getReceipts ()Ljava/util/List;
+	public final fun getStatus ()I
+	public final fun getTotal ()I
+}
+
+public final class com/pubnub/chat/types/Report {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/Long;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/pubnub/chat/types/Report;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/types/Report;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/chat/types/Report;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAutoModerationId ()Ljava/lang/String;
+	public final fun getMessageTimetoken ()Ljava/lang/Long;
+	public final fun getReason ()Ljava/lang/String;
+	public final fun getReportedMessageChannelId ()Ljava/lang/String;
+	public final fun getReportedUserId ()Ljava/lang/String;
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/pubnub/chat/types/SendTextParams {
+	public fun <init> ()V
+	public fun <init> (Ljava/util/Map;ZZLjava/lang/Integer;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/util/Map;ZZLjava/lang/Integer;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/Map;
+	public final fun component2 ()Z
+	public final fun component3 ()Z
+	public final fun component4 ()Ljava/lang/Integer;
+	public final fun component5 ()Ljava/util/Map;
+	public final fun copy (Ljava/util/Map;ZZLjava/lang/Integer;Ljava/util/Map;)Lcom/pubnub/chat/types/SendTextParams;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/types/SendTextParams;Ljava/util/Map;ZZLjava/lang/Integer;Ljava/util/Map;ILjava/lang/Object;)Lcom/pubnub/chat/types/SendTextParams;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCustomPushData ()Ljava/util/Map;
+	public final fun getMeta ()Ljava/util/Map;
+	public final fun getShouldStore ()Z
+	public final fun getTtl ()Ljava/lang/Integer;
+	public final fun getUsePost ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/pubnub/chat/types/TextLink {
@@ -970,7 +1101,7 @@ public final class com/pubnub/chat/types/TextLink {
 	public fun toString ()Ljava/lang/String;
 }
 
-public synthetic class com/pubnub/chat/types/TextLink$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+public final synthetic class com/pubnub/chat/types/TextLink$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
 	public static final field INSTANCE Lcom/pubnub/chat/types/TextLink$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
 	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/pubnub/chat/types/TextLink;
@@ -978,7 +1109,6 @@ public synthetic class com/pubnub/chat/types/TextLink$$serializer : kotlinx/seri
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/pubnub/chat/types/TextLink;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
 public final class com/pubnub/chat/types/TextLink$Companion {
@@ -994,6 +1124,14 @@ public final class com/pubnub/chat/types/ThreadMentionData : com/pubnub/chat/typ
 	public fun getUserId ()Ljava/lang/String;
 }
 
+public final class com/pubnub/chat/types/UserMention {
+	public fun <init> (Lcom/pubnub/chat/Message;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getChannelId ()Ljava/lang/String;
+	public final fun getMessage ()Lcom/pubnub/chat/Message;
+	public final fun getParentChannelId ()Ljava/lang/String;
+	public final fun getUserId ()Ljava/lang/String;
+}
+
 public abstract class com/pubnub/chat/types/UserMentionData {
 	public abstract fun getEvent ()Lcom/pubnub/chat/Event;
 	public abstract fun getMessage ()Lcom/pubnub/chat/Message;
@@ -1006,5 +1144,39 @@ public final class com/pubnub/chat/user/GetUsersResponse {
 	public final fun getPrev ()Lcom/pubnub/api/models/consumer/objects/PNPage$PNPrev;
 	public final fun getTotal ()I
 	public final fun getUsers ()Ljava/util/List;
+}
+
+public final class com/pubnub/chat/user/Invite {
+	public fun <init> (Ljava/lang/String;Lcom/pubnub/chat/types/ChannelType;Ljava/lang/String;J)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/pubnub/chat/types/ChannelType;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()J
+	public final fun copy (Ljava/lang/String;Lcom/pubnub/chat/types/ChannelType;Ljava/lang/String;J)Lcom/pubnub/chat/user/Invite;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/user/Invite;Ljava/lang/String;Lcom/pubnub/chat/types/ChannelType;Ljava/lang/String;JILjava/lang/Object;)Lcom/pubnub/chat/user/Invite;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChannelId ()Ljava/lang/String;
+	public final fun getChannelType ()Lcom/pubnub/chat/types/ChannelType;
+	public final fun getInvitationTimetoken ()J
+	public final fun getInvitedByUserId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/pubnub/chat/user/Mention {
+	public fun <init> (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()J
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/pubnub/chat/user/Mention;
+	public static synthetic fun copy$default (Lcom/pubnub/chat/user/Mention;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/pubnub/chat/user/Mention;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChannelId ()Ljava/lang/String;
+	public final fun getMentionedByUserId ()Ljava/lang/String;
+	public final fun getMessageTimetoken ()J
+	public final fun getParentChannelId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 

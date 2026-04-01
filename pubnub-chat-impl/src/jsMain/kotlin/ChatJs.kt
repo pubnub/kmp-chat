@@ -130,15 +130,8 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         ).then { it.asJs(this@ChatJs) }.asPromise()
     }
 
-    fun deleteUser(id: String, params: DeleteParameters?): Promise<DeleteUserResult> {
-        return chat.deleteUser(id, params?.soft ?: false)
-            .then {
-                if (it != null) {
-                    DeleteUserResult(it.asJs(this@ChatJs))
-                } else {
-                    DeleteUserResult(true)
-                }
-            }.asPromise()
+    fun deleteUser(id: String): Promise<Boolean> {
+        return chat.deleteUser(id).then { true }.asPromise()
     }
 
     fun getUsers(params: PubNub.GetAllMetadataParameters?): Promise<GetUsersResponseJs> {
@@ -186,15 +179,8 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         }.asPromise()
     }
 
-    fun deleteChannel(id: String, params: DeleteParameters?): Promise<DeleteChannelResult> {
-        return chat.deleteChannel(id, params?.soft ?: false)
-            .then {
-                if (it != null) {
-                    DeleteChannelResult(it.asJs(this@ChatJs))
-                } else {
-                    DeleteChannelResult(true)
-                }
-            }.asPromise()
+    fun deleteChannel(id: String): Promise<Boolean> {
+        return chat.deleteChannel(id).then { true }.asPromise()
     }
 
     // internal
@@ -303,6 +289,15 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
         ).then { result ->
             createJsObject<GetCurrentUserMentionsResultJs> {
                 this.isMore = result.isMore
+                this.mentions = result.mentions.map { mention ->
+                    createJsObject<UserMentionJs> {
+                        this.message = mention.message.asJs(this@ChatJs)
+                        this.userId = mention.userId
+                        this.channelId = mention.channelId
+                        this.parentChannelId = mention.parentChannelId
+                    }
+                }.toTypedArray()
+
                 this.enhancedMentionsData = result.enhancedMentionsData.map {
                     when (it) {
                         is ChannelMentionData -> createJsObject<ChannelMentionDataJs> {
@@ -470,6 +465,10 @@ class ChatJs internal constructor(val chat: ChatInternal, val config: ChatConfig
 
     fun removeChannelGroup(id: String): Promise<Any> {
         return chat.removeChannelGroup(id).asPromise()
+    }
+
+    fun destroy() {
+        chat.destroy()
     }
 
     companion object {

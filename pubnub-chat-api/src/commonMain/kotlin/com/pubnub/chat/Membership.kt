@@ -57,6 +57,9 @@ interface Membership {
     /**
      * Setting the last read message for users lets you implement the Read Receipts feature and monitor which channel member read which message.
      *
+     * This method emits a read receipt event on the channel, unless
+     * [com.pubnub.chat.config.ChatConfiguration.emitReadReceiptEvents] is set to `false` for the channel's type.
+     *
      * @param message Last read message on a given channel with the timestamp that gets added to the user-channel membership as the [lastReadMessageTimetoken] property.
      * @return A [PNFuture] that returns an updated [Membership] object.
      */
@@ -65,18 +68,47 @@ interface Membership {
     /**
      * Updates the channel membership information for a given user.
      *
+     * @param status Optional membership status value.
+     * @param type Optional membership type value.
      * @param custom Any custom properties or metadata associated with the channel-user membership in a `Map`. Values must be scalar only; arrays or objects are not supported. App Context filtering language doesn’t support filtering by custom properties.
      * @return A [PNFuture] that returns an updated [Membership] object.
      */
-    fun update(custom: CustomObject?): PNFuture<Membership>
+    fun update(
+        status: String? = null,
+        type: String? = null,
+        custom: CustomObject? = null,
+    ): PNFuture<Membership>
+
+    /**
+     * Updates the channel membership information for a given user.
+     *
+     * @param custom Any custom properties or metadata associated with the channel-user membership in a `Map`. Values must be scalar only; arrays or objects are not supported. App Context filtering language doesn't support filtering by custom properties.
+     * @return A [PNFuture] that returns an updated [Membership] object.
+     */
+    @Deprecated(
+        message = "Use update(status, type, custom) instead.",
+        replaceWith = ReplaceWith("update(custom = custom)"),
+        level = DeprecationLevel.WARNING,
+    )
+    fun update(custom: CustomObject?): PNFuture<Membership> = update(status = null, type = null, custom = custom)
 
     /**
      * Setting the last read message for users lets you implement the Read Receipts feature and monitor which channel member read which message.
+     *
+     * This method emits a read receipt event on the channel, unless
+     * [com.pubnub.chat.config.ChatConfiguration.emitReadReceiptEvents] is set to `false` for the channel's type.
      *
      * @param timetoken Timetoken of the last read message on a given channel that gets added to the user-channel membership as the [lastReadMessageTimetoken] property.
      * @return A [PNFuture] that returns an updated [Membership] object.
      */
     fun setLastReadMessageTimetoken(timetoken: Long): PNFuture<Membership>
+
+    /**
+     * Deletes this membership, removing the user-channel relationship.
+     *
+     * @return [PNFuture] that completes when the membership is deleted.
+     */
+    fun delete(): PNFuture<Unit>
 
     /**
      * Returns the number of messages you didn't read on a given channel. You can display this number on UI in the channel list of your chat app.
@@ -91,7 +123,33 @@ interface Membership {
      * @param callback Defines the custom behavior to be executed when detecting membership changes.
      * @return An [AutoCloseable] that you can use to stop receiving objects events by invoking [AutoCloseable.close].
      */
+    @Deprecated(
+        message = "Will be removed from SDK in the future. Use onUpdated(callback) and onDeleted(callback) instead.",
+        replaceWith = ReplaceWith("onUpdated(callback)"),
+        level = DeprecationLevel.WARNING,
+    )
     fun streamUpdates(callback: (membership: Membership?) -> Unit): AutoCloseable
+
+    /**
+     * Emits the updated entity whenever this membership's metadata (custom fields, etc.) is modified.
+     *
+     * @param callback Function that receives the updated [Membership] entity reflecting the new metadata state.
+     *
+     * @return [AutoCloseable] interface that lets you stop receiving membership-related updates (objects events)
+     * and clean up resources by invoking the close() method.
+     */
+    fun onUpdated(callback: (membership: Membership) -> Unit): AutoCloseable
+
+    /**
+     * Fires when this membership is removed.
+     *
+     * @param callback Function that is invoked when the membership is deleted. The membership identity is already known
+     * from the entity the method was called on.
+     *
+     * @return [AutoCloseable] interface that lets you stop receiving membership deletion events
+     * and clean up resources by invoking the close() method.
+     */
+    fun onDeleted(callback: () -> Unit): AutoCloseable
 
     /**
      * Get a new [Membership] object updated with the values received in the [update].

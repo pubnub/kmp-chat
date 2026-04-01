@@ -8,6 +8,7 @@ import com.pubnub.api.endpoints.files.GetFileUrl
 import com.pubnub.api.endpoints.files.SendFile
 import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
 import com.pubnub.api.endpoints.objects.member.GetChannelMembers
+import com.pubnub.api.endpoints.objects.membership.ManageMemberships
 import com.pubnub.api.endpoints.pubsub.Publish
 import com.pubnub.api.enums.PNPushEnvironment
 import com.pubnub.api.enums.PNPushType
@@ -18,11 +19,16 @@ import com.pubnub.api.models.consumer.files.PNFileUploadResult
 import com.pubnub.api.models.consumer.files.PNFileUrlResult
 import com.pubnub.api.models.consumer.history.PNFetchMessagesResult
 import com.pubnub.api.models.consumer.objects.PNMemberKey
+import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadata
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.models.consumer.objects.member.MemberInclude
+import com.pubnub.api.models.consumer.objects.membership.ChannelMembershipInput
+import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
+import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.utils.Clock
 import com.pubnub.api.utils.Instant
 import com.pubnub.api.utils.PatchValue
@@ -137,18 +143,6 @@ class ChannelTest : BaseTest() {
         ).async {}
 
         verify { chat.updateChannel(channelId, name, custom, description, status, type) }
-    }
-
-    @Test
-    fun canSoftDeleteChannel() {
-        val softDelete = true
-        val channelFutureMock: PNFuture<Channel> = mock(MockMode.strict)
-        every { chat.deleteChannel(any(), any()) } returns channelFutureMock
-
-        val deleteChannelFuture: PNFuture<Channel?> = objectUnderTest.delete(soft = softDelete)
-
-        assertEquals(channelFutureMock, deleteChannelFuture)
-        verify { chat.deleteChannel(id = channelId, soft = softDelete) }
     }
 
     @Test
@@ -889,10 +883,10 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
-    fun whenChannelIsPublicGetTypingShouldResultFailure() {
+    fun whenChannelIsPublicOnTypingChangedShouldResultFailure() {
         objectUnderTest = createChannel(ChannelType.PUBLIC)
         val e = assertFailsWith<PubNubException> {
-            objectUnderTest.getTyping {}
+            objectUnderTest.onTypingChanged {}
         }
         assertEquals("Typing indicators are not supported in Public chats.", e.message)
     }
@@ -963,6 +957,105 @@ class ChannelTest : BaseTest() {
     }
 
     @Test
+    fun join_passes_status_type_custom_to_memberships_endpoint() = runTest {
+        val userId = "user-id"
+        val membershipStatus = "status-1"
+        val membershipType = "type-1"
+        val membershipCustom = createCustomObject(mapOf("role" to "admin"))
+        val manageMemberships: ManageMemberships = mock(MockMode.strict)
+
+        every { chat.currentUser } returns UserImpl(chat, userId)
+        every {
+            pubNub.setMemberships(
+                channels = any<List<ChannelMembershipInput>>(),
+                userId = any<String?>(),
+                limit = any<Int?>(),
+                page = any<PNPage?>(),
+                filter = any<String?>(),
+                sort = any<Collection<PNSortKey<PNMembershipKey>>>(),
+                include = any<MembershipInclude>()
+            )
+        } returns manageMemberships
+        every { manageMemberships.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback.accept(Result.success(createMembershipArrayResult(channelId)))
+        }
+
+        objectUnderTest.join(
+            status = membershipStatus,
+            type = membershipType,
+            custom = membershipCustom
+        ).await()
+
+        verify {
+            pubNub.setMemberships(
+                channels = matching<List<ChannelMembershipInput>> { channels ->
+                    val partial = channels.single() as PNChannelMembership.Partial
+                    partial.channelId == channelId &&
+                        partial.status == membershipStatus &&
+                        partial.type == membershipType &&
+                        partial.custom == membershipCustom
+                },
+                userId = any<String?>(),
+                limit = any<Int?>(),
+                page = any<PNPage?>(),
+                filter = any<String?>(),
+                sort = any<Collection<PNSortKey<PNMembershipKey>>>(),
+                include = matching<MembershipInclude> {
+                    it.includeCustom &&
+                        it.includeStatus &&
+                        it.includeType &&
+                        it.includeChannel &&
+                        it.includeChannelCustom &&
+                        it.includeChannelType &&
+                        it.includeChannelStatus
+                }
+            )
+        }
+    }
+
+    @Test
+    fun join_without_params_passes_empty_status_but_null_for_type_custom() = runTest {
+        val userId = "user-id"
+        val manageMemberships: ManageMemberships = mock(MockMode.strict)
+
+        every { chat.currentUser } returns UserImpl(chat, userId)
+        every {
+            pubNub.setMemberships(
+                channels = any<List<ChannelMembershipInput>>(),
+                userId = any<String?>(),
+                limit = any<Int?>(),
+                page = any<PNPage?>(),
+                filter = any<String?>(),
+                sort = any<Collection<PNSortKey<PNMembershipKey>>>(),
+                include = any<MembershipInclude>()
+            )
+        } returns manageMemberships
+        every { manageMemberships.async(any()) } calls { (callback: Consumer<Result<PNChannelMembershipArrayResult>>) ->
+            callback.accept(Result.success(createMembershipArrayResult(channelId)))
+        }
+
+        objectUnderTest.join().await()
+
+        verify {
+            pubNub.setMemberships(
+                channels = matching<List<ChannelMembershipInput>> { channels ->
+                    val partial = channels.single() as PNChannelMembership.Partial
+                    partial.channelId == channelId &&
+                        partial.status == "" &&
+                        partial.type == null &&
+                        partial.custom == null
+                },
+                userId = any<String?>(),
+                limit = any<Int?>(),
+                page = any<PNPage?>(),
+                filter = any<String?>(),
+                sort = any<Collection<PNSortKey<PNMembershipKey>>>(),
+                include = any<MembershipInclude>()
+            )
+        }
+    }
+
+    @Test
     fun getPushPayload_empty_when_sendPushes_is_false() {
         val config = PushNotificationsConfig(false, null, PNPushType.FCM, null, PNPushEnvironment.PRODUCTION)
 
@@ -1017,12 +1110,6 @@ class ChannelTest : BaseTest() {
             result["pn_apns"]["pn_push"][0]["targets"][0]["environment"]
         )
         assertEquals(objectUnderTest.name, result["pn_apns"]["subtitle"])
-    }
-
-    @Test
-    fun generateReceipts() {
-        val result = BaseChannel.generateReceipts(mapOf("user" to 1L, "user2" to 2L, "user3" to 1L, "user4" to 3L))
-        assertEquals(mapOf(1L to listOf("user", "user3"), 2L to listOf("user2"), 3L to listOf("user4")), result)
     }
 
     @Test
@@ -1238,6 +1325,24 @@ class ChannelTest : BaseTest() {
             assertEquals("Pinned message text", result.getOrNull()?.text)
         }
     }
+}
+
+private fun createMembershipArrayResult(channelId: String): PNChannelMembershipArrayResult {
+    return PNChannelMembershipArrayResult(
+        status = 200,
+        data = listOf(
+            PNChannelMembership(
+                channel = PNChannelMetadata(id = channelId),
+                custom = null,
+                updated = "2024-01-01",
+                eTag = "etag",
+                status = null
+            )
+        ),
+        totalCount = 1,
+        next = null,
+        prev = null
+    )
 }
 
 private operator fun Any?.get(s: String): Any? {

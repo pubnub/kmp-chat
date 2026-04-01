@@ -8,12 +8,12 @@ describe("Chat tests", () => {
   let chat: Chat
 
   beforeEach(async () => {
-    chat = await createChatInstance({ userId: generateRandomString() })
+    chat = await createChatInstance({ userId: generateRandomString(), config: { enableEventEngine: true } })
   })
 
   afterEach(async () => {
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
 
     jest.clearAllMocks()
   })
@@ -361,7 +361,7 @@ describe("Chat tests", () => {
 
   test("should get current user mentions", async () => {
     const channel = await createRandomChannel(chat)
-    const messageDraft = channel.createMessageDraft()
+    const messageDraft = channel.createMessageDraftV1()
 
     await messageDraft.onChange(`Hello @${chat.currentUser.name}`)
     messageDraft.addMentionedUser(chat.currentUser, 0)
@@ -443,6 +443,16 @@ describe("Chat tests", () => {
     expect(suggestionIds).toContain(channel3.id)
 
     await Promise.all([channel1.delete(), channel2.delete(), channel3.delete()])
+  }, 20000)
+
+  test("should destroy chat instance without throwing", async () => {
+    const tempChat = await createChatInstance({ userId: generateRandomString() })
+
+    // clean up backend fixtures before destroying
+    await tempChat.currentUser.delete()
+
+    // destroy should not throw
+    expect(() => tempChat.destroy()).not.toThrow()
   }, 20000)
 
   test("should get user suggestions", async () => {

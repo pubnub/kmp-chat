@@ -127,7 +127,7 @@ class AccessManagerTest : BaseChatIntegrationTest() {
 
         val channel = chatPamClient.createChannel(channelId).await()
         delayInMillis(1000)
-        val membership1 = channel.join().await().membership
+        val membership1 = channel.join().await()
         membership1.setLastReadMessage(
             MessageImpl(
                 chatPamClient,
@@ -138,7 +138,7 @@ class AccessManagerTest : BaseChatIntegrationTest() {
             )
         ).await()
         delayInMillis(1000)
-        assertEquals(2, numberOfReceiptEvents) // join and setLastReadMessage sets LastReadMessageTimetoken
+        assertEquals(1, numberOfReceiptEvents) // setLastReadMessage sets LastReadMessageTimetoken
 
         chatPamServer.deleteChannel(channelId).await()
     }

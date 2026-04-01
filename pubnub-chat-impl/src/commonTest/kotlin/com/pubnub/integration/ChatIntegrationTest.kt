@@ -35,7 +35,6 @@ import com.pubnub.chat.types.EmitEventMethod
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.GetCurrentUserMentionsResult
 import com.pubnub.chat.types.GetEventsHistoryResult
-import com.pubnub.chat.types.JoinResult
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageMentionedUsers
 import com.pubnub.chat.types.ThreadMentionData
@@ -345,9 +344,10 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
 
         // send message
         channel01.sendText("message01In$channelId01").await()
-        // join (implicitly setLastReadMessageTimetoken)
-        val joinResult: JoinResult = channel01.join { }.await()
-        val membership = joinResult.membership
+        // join and explicitly set lastReadMessageTimetoken
+        var membership = channel01.join().await()
+        val time = chat.pubNub.time().await().timetoken
+        membership = membership.setLastReadMessageTimetoken(time).await()
         delayForHistory()
         val unreadMessageCount: Long? = membership.getUnreadMessagesCount().await()
         assertEquals(0, unreadMessageCount)
@@ -377,9 +377,12 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         val channelId01 = channel01.id
         val channelId02 = channel02.id
 
-        // join two channels
-        channel01.join { }.await()
-        channel02.join { }.await()
+        // join two channels and explicitly set lastReadMessageTimetoken
+        val membership01 = channel01.join().await()
+        val membership02 = channel02.join().await()
+        val time = chat.pubNub.time().await().timetoken
+        membership01.setLastReadMessageTimetoken(time).await()
+        membership02.setLastReadMessageTimetoken(time).await()
 
         // send message
         channel01.sendText("message01In$channelId01").await()
@@ -807,8 +810,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             var subscription2: AutoCloseable? = null
 
             pubnub.awaitSubscribe(listOf(testChannelId)) {
-                subscription1 = testChannel.connect { }
-                subscription2 = testChannel.connect { }
+                subscription1 = testChannel.onMessageReceived { }
+                subscription2 = testChannel.onMessageReceived { }
             }
 
             val occupants: Collection<String> = chat.whoIsPresent(channelId = testChannelId, limit = 1).await()
@@ -834,7 +837,7 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
         pubnub.test(backgroundScope, checkAllEvents = false) {
             var subscription: AutoCloseable? = null
             pubnub.awaitSubscribe(listOf(testChannelId)) {
-                subscription = testChannel.connect { }
+                subscription = testChannel.onMessageReceived { }
             }
 
             // wait for presence to update
@@ -886,8 +889,8 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
             // Subscribe to both channels in a single awaitSubscribe call
             // JS SDK handles sequential subscribes differently than JVM
             pubnub.awaitSubscribe(listOf(testChannelId1, testChannelId2)) {
-                subscription1 = testChannel1.connect { }
-                subscription2 = testChannel2.connect { }
+                subscription1 = testChannel1.onMessageReceived { }
+                subscription2 = testChannel2.onMessageReceived { }
             }
 
             // wait for presence to update

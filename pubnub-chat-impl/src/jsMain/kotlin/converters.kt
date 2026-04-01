@@ -10,8 +10,10 @@ import com.pubnub.api.models.consumer.objects.PNSortKey
 import com.pubnub.api.models.consumer.objects.SortField
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.config.CustomPayloads
+import com.pubnub.chat.config.EmitReadReceiptEvents
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.config.RateLimitPerChannel
+import com.pubnub.chat.internal.encodeEventContentWithType
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
@@ -19,12 +21,14 @@ import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.chat.types.QuotedMessage
+import com.pubnub.chat.types.Report
 import com.pubnub.kmp.JsMap
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.kmp.createJsObject
 import com.pubnub.kmp.toMap
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationStrategy
 import kotlin.js.Promise
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -80,6 +84,45 @@ internal inline fun <reified T> @Serializable T.toJsObject(): JsMap<Any?> {
 
 internal inline fun Map<String, Any?>.toJsObject(): JsMap<Any?> {
     return createJsonElement(this).value.unsafeCast<JsMap<Any?>>()
+}
+
+private fun <T : EventContent> encodeEventContentToJsObject(
+    serializer: SerializationStrategy<T>,
+    value: T,
+): JsMap<Any?> {
+    return encodeEventContentWithType(serializer, value).toJsObject()
+}
+
+internal fun EventContent.toJsEventPayload(): JsMap<Any?> {
+    return when (this) {
+        is EventContent.Typing -> encodeEventContentToJsObject(EventContent.Typing.serializer(), this)
+        is EventContent.Report -> encodeEventContentToJsObject(EventContent.Report.serializer(), this)
+        is EventContent.Receipt -> encodeEventContentToJsObject(EventContent.Receipt.serializer(), this)
+        is EventContent.Mention -> encodeEventContentToJsObject(EventContent.Mention.serializer(), this)
+        is EventContent.Invite -> encodeEventContentToJsObject(EventContent.Invite.serializer(), this)
+        is EventContent.Moderation -> encodeEventContentToJsObject(EventContent.Moderation.serializer(), this)
+        is EventContent.UnknownMessageFormat ->
+            encodeEventContentToJsObject(EventContent.TextMessageContent.serializer(), this)
+        is EventContent.TextMessageContent ->
+            encodeEventContentToJsObject(EventContent.TextMessageContent.serializer(), this)
+        is EventContent.Custom -> data.toJsObject()
+        else -> error("Unsupported EventContent subtype for JS conversion: ${this::class}")
+    }
+}
+
+internal fun EventContent.jsEventType(): String {
+    return when (this) {
+        is EventContent.Typing -> EventContent.Typing.serializer().descriptor.serialName
+        is EventContent.Report -> EventContent.Report.serializer().descriptor.serialName
+        is EventContent.Receipt -> EventContent.Receipt.serializer().descriptor.serialName
+        is EventContent.Mention -> EventContent.Mention.serializer().descriptor.serialName
+        is EventContent.Invite -> EventContent.Invite.serializer().descriptor.serialName
+        is EventContent.Moderation -> EventContent.Moderation.serializer().descriptor.serialName
+        is EventContent.UnknownMessageFormat,
+        is EventContent.TextMessageContent -> EventContent.TextMessageContent.serializer().descriptor.serialName
+        is EventContent.Custom -> error("Custom event payload type is handled separately.")
+        else -> error("Unsupported EventContent subtype for JS type resolution: ${this::class}")
+    }
 }
 
 internal class TextMessageContentWithCustom(text: String, files: List<File>?, internal val customJsObject: Any) : EventContent.TextMessageContent(
@@ -143,6 +186,15 @@ fun PushNotificationsConfigJs?.toKmp(): PushNotificationsConfig {
     )
 }
 
+internal fun Report.toJs(): MessageReportJs = createJsObject {
+    reason = this@toJs.reason
+    text = this@toJs.text
+    messageTimetoken = this@toJs.messageTimetoken?.toString()
+    reportedMessageChannelId = this@toJs.reportedMessageChannelId
+    reportedUserId = this@toJs.reportedUserId
+    autoModerationId = this@toJs.autoModerationId
+}
+
 internal fun Restriction.asJs(): RestrictionJs {
     val restriction = this
     return createJsObject {
@@ -157,6 +209,7 @@ internal fun Restriction.asJs(): RestrictionJs {
 internal fun PubNub.MetadataPage?.toKmp() =
     this?.next?.let { PNPage.PNNext(it) } ?: this?.prev?.let { PNPage.PNPrev(it) }
 
+@Suppress("ktlint:standard:function-naming")
 internal fun MetadataPage(next: PNPage.PNNext?, prev: PNPage.PNPrev?) = createJsObject<PubNub.MetadataPage> {
     this.next = next?.pageHash ?: undefined
     this.prev = prev?.pageHash ?: undefined
@@ -185,7 +238,17 @@ internal fun ChatConfig.toChatConfiguration(): ChatConfiguration {
         rateLimitFactor = rateLimitFactor ?: 2,
         rateLimitPerChannel = rateLimitPerChannel.toKmp(),
         customPayloads = customPayloads.toKmp(),
+        emitReadReceiptEvents = emitReadReceiptEvents?.toKmp() ?: EmitReadReceiptEvents(),
         syncMutedUsers = syncMutedUsers == true
+    )
+}
+
+private fun EmitReadReceiptEventsJs.toKmp(): Map<ChannelType, Boolean> {
+    return EmitReadReceiptEvents(
+        direct = direct ?: true,
+        group = group ?: true,
+        public = public ?: false,
+        unknown = unknown ?: true
     )
 }
 
@@ -201,5 +264,5 @@ private fun RateLimitPerChannelJs?.toKmp(): Map<ChannelType, Duration> {
 internal fun EventContent.TextMessageContent.toJsTextMessage(): JsMap<Any?> =
     (
         (this as? TextMessageContentWithCustom)?.customJsObject?.unsafeCast<JsMap<Any?>>()
-            ?: (this as EventContent).toJsObject()
+            ?: this.toJsEventPayload()
     )

@@ -79,7 +79,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val publishTimetoken = pnPublishResult.timetoken
         delayForHistory()
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
-        val threadChannel: ThreadChannel = message.createThread("message in thread_${randomString()}").await()
+        val threadChannel = message.createThread("message in thread_${randomString()}").await().threadChannel
         delayForHistory()
         val history: HistoryResponse<ThreadMessage> = threadChannel.getHistory().await()
 
@@ -352,21 +352,38 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         val messageText = "messageText_${randomString()}"
         val pnPublishResult = channel01.sendText(text = messageText).await()
         val publishTimetoken = pnPublishResult.timetoken
-        delayForHistory()
-        val message: Message = channel01.getMessage(publishTimetoken).await()!!
 
+        delayForHistory()
+
+        val message: Message = channel01.getMessage(publishTimetoken).await()!!
         val messageWithReaction = message.toggleReaction(reactionValue).await()
 
         assertTrue(messageWithReaction.hasUserReaction(reactionValue))
 
+        val reactions = messageWithReaction.reactions
+        val reaction = reactions.first()
+
+        assertEquals(1, reactions.size)
+        assertEquals(reactionValue, reaction.value)
+        assertTrue(reaction.isMine,)
+        assertEquals(1, reaction.userIds.size)
+        assertTrue(reaction.userIds.contains(someUser.id))
+        assertEquals(1, reaction.count)
+
         delayForHistory()
-        val messageWithReactionFromHistory: Message =
-            channel01.getHistory(publishTimetoken + 1, publishTimetoken).await().messages.first()
+
+        val messageWithReactionFromHistory = channel01.getHistory(
+            startTimetoken = publishTimetoken + 1,
+            endTimetoken = publishTimetoken
+        ).await().messages.first()
 
         assertTrue(messageWithReactionFromHistory.hasUserReaction(reactionValue))
 
-        val softDeletedMessage = message.delete(soft = true).await()
-        assertEquals(softDeletedMessage?.deleted, true)
+        val reactionsFromHistory = messageWithReactionFromHistory.reactions
+        assertEquals(1, reactionsFromHistory.size)
+        assertEquals(reactionValue, reactionsFromHistory.first().value)
+        assertTrue(reactionsFromHistory.first().isMine)
+
         message.delete().await()
     }
 
@@ -459,7 +476,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
 
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
         val threadReplyText = "First thread reply_${randomString()}"
-        val threadChannel: ThreadChannel = message.createThread(threadReplyText).await()
+        val threadChannel = message.createThread(threadReplyText).await().threadChannel
         delayForHistory()
 
         // when - get thread channel using chat.getThreadChannel
@@ -489,7 +506,7 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         delayForHistory()
 
         val message: Message = channel01.getMessage(publishTimetoken).await()!!
-        val threadChannel: ThreadChannel = message.createThread("First thread message_${randomString()}").await()
+        val threadChannel = message.createThread("First thread message_${randomString()}").await().threadChannel
 
         // add more messages to thread
         val additionalMessageCount = 5
@@ -592,6 +609,32 @@ class MessageIntegrationTest : BaseChatIntegrationTest() {
         // cleanup
         originalMessage.delete().await()
         forwardedMessage.delete().await()
+    }
+
+    @Test
+    fun onUpdated() = runTest {
+        val messageText = "messageText_${randomString()}"
+        val newText = "editedText_${randomString()}"
+        val tt = channel01.sendText(messageText).await()
+
+        delayForHistory()
+
+        val message = channel01.getMessage(tt.timetoken).await()!!
+        val result = CompletableDeferred<Message>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(channel01.id)) {
+                dispose = message.onUpdated { updatedMessage ->
+                    result.complete(updatedMessage)
+                }
+            }
+            message.editText(newText).await()
+            val updated = result.await()
+            assertEquals(newText, updated.text)
+            assertEquals(message.timetoken, updated.timetoken)
+            dispose?.close()
+        }
     }
 
     private fun getDeletedActionMap() = mapOf(

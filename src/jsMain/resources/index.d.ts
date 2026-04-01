@@ -11,14 +11,20 @@ declare class Membership {
     readonly eTag: string;
     readonly status?: string;
     readonly type?: string;
-    update({ custom }: {
-        custom: AppContext.CustomData;
+    update(params?: {
+        status?: string;
+        type?: string;
+        custom?: AppContext.CustomData;
     }): Promise<Membership>;
+    delete(): Promise<boolean>;
     /*
     * Updates
     */
     static streamUpdatesOn(memberships: Membership[], callback: (memberships: Membership[]) => unknown): () => void;
-    streamUpdates(callback: (membership: Membership) => unknown): () => void;
+    /** @deprecated Use onUpdated() and onDeleted() instead. */
+    streamUpdates(callback: (membership: Membership | null) => unknown): () => void;
+    onUpdated(callback: (membership: Membership) => void): () => void;
+    onDeleted(callback: () => void): () => void;
     /*
     * Unread message counts
     */
@@ -45,12 +51,24 @@ declare class User {
     * CRUD
     */
     update(data: Omit<UserFields, "id">): Promise<User>;
-    delete(options?: DeleteParameters): Promise<true | User>;
+    delete(): Promise<true>;
     /*
     * Updates
     */
     static streamUpdatesOn(users: User[], callback: (users: User[]) => unknown): () => void;
-    streamUpdates(callback: (user: User) => unknown): () => void;
+    /** @deprecated Use onUpdated() and onDeleted() instead. */
+    streamUpdates(callback: (user: User | null) => unknown): () => void;
+    onUpdated(callback: (user: User) => void): () => void;
+    onDeleted(callback: () => void): () => void;
+    onMentioned(callback: (mention: Mention) => void): () => void;
+    onInvited(callback: (invite: Invite) => void): () => void;
+    onRestrictionChanged(callback: (restriction: {
+        userId: string;
+        channelId: string;
+        ban: boolean;
+        mute: boolean;
+        reason?: string;
+    }) => void): () => void;
     /*
     * Presence
     */
@@ -68,6 +86,8 @@ declare class User {
         status: number;
         memberships: Membership[];
     }>;
+    isMemberOf(channelId: string): Promise<boolean>;
+    getMembership(channelId: string): Promise<Membership | null>;
     /**
      * Moderation restrictions
      */
@@ -139,35 +159,43 @@ type TextMessageContent = {
         type?: string;
     }[];
 };
+/** @deprecated Use channel.onTypingChanged() instead. */
 type TypingEventParams = {
     type: "typing";
     channel: string;
 };
+/** @deprecated Use channel.onMessageReported() instead. */
 type ReportEventParams = {
     type: "report";
     channel: string;
 };
+/** @deprecated Use membership.setLastReadMessage() / membership.setLastReadMessageTimetoken() and channel.fetchReadReceipts() instead. */
 type ReceiptEventParams = {
     type: "receipt";
     channel: string;
 };
+/** @deprecated Use user.onMentioned() instead. */
 type MentionEventParams = {
     type: "mention";
     user: string;
 };
+/** @deprecated Use user.onInvited() instead. */
 type InviteEventParams = {
     type: "invite";
     channel: string;
 };
+/** @deprecated Use user.onRestrictionChanged() instead. */
 type ModerationEventParams = {
     type: "moderation";
     channel: string;
 };
+/** @deprecated Use channel.emitCustomEvent() and channel.onCustomEvent() instead. */
 type CustomEventParams = {
     type: "custom";
     method: "signal" | "publish";
     channel: string;
 };
+/** @deprecated Use the corresponding method on the entity (channel or user) instead, e.g. channel.onTypingChanged(), user.onMentioned(). */
 type EventParams = {
     typing: TypingEventParams;
     report: ReportEventParams;
@@ -177,9 +205,11 @@ type EventParams = {
     custom: CustomEventParams;
     moderation: ModerationEventParams;
 };
+/** @deprecated Use channel.onTypingChanged() instead. */
 type TypingEventPayload = {
     value: boolean;
 };
+/** @deprecated Use channel.onMessageReported() instead. */
 type ReportEventPayload = {
     text?: string;
     reason: string;
@@ -188,23 +218,49 @@ type ReportEventPayload = {
     reportedUserId?: string;
     autoModerationId?: string;
 };
+/** @deprecated Use membership.setLastReadMessage() / membership.setLastReadMessageTimetoken() and channel.fetchReadReceipts() instead. */
 type ReceiptEventPayload = {
     messageTimetoken: string;
 };
+/** @deprecated Use Mention type with user.onMentioned() instead. */
 type MentionEventPayload = {
     messageTimetoken: string;
     channel: string;
 };
+/** @deprecated Use Invite type with user.onInvited() instead. */
 type InviteEventPayload = {
     channelType: ChannelType | "unknown";
     channelId: string;
 };
+/** @deprecated Use user.onRestrictionChanged() instead. */
 type ModerationEventPayload = {
     channelId: string;
     restriction: "muted" | "banned" | "lifted";
     reason?: string;
 };
 type CustomEventPayload = any;
+type CustomEventData = {
+    timetoken: string;
+    userId: string;
+    payload: CustomEventPayload;
+    type?: string;
+};
+type CustomEventEmitOptions = {
+    messageType?: string;
+    storeInHistory?: boolean;
+};
+type CustomEventListenOptions = {
+    messageType?: string;
+};
+type MessageReport = {
+    reason: string;
+    text?: string;
+    messageTimetoken?: string;
+    reportedMessageChannelId?: string;
+    reportedUserId?: string;
+    autoModerationId?: string;
+};
+/** @deprecated Use the corresponding method on the entity (channel or user) instead, e.g. channel.onTypingChanged(), user.onMentioned(). */
 type EventPayloads = {
     typing: TypingEventPayload;
     report: ReportEventPayload;
@@ -214,6 +270,7 @@ type EventPayloads = {
     moderation: ModerationEventPayload;
     custom: CustomEventPayload;
 };
+/** @deprecated Use the corresponding method on the entity (channel or user) instead, e.g. channel.onTypingChanged(), user.onMentioned(). */
 type EmitEventParams = (TypingEventParams & {
     payload: TypingEventPayload;
 }) | (ReportEventParams & {
@@ -239,6 +296,24 @@ type MessageActions = {
         }>;
     };
 };
+type MessageReaction = {
+    value: string;
+    isMine: boolean;
+    userIds: string[];
+};
+type ReadReceipt = {
+    userId: string;
+    lastReadTimetoken: string;
+};
+type ReadReceiptsResponse = {
+    page: {
+        next?: string;
+        prev?: string;
+    };
+    total: number;
+    status: number;
+    receipts: ReadReceipt[];
+};
 type DeleteParameters = {
     soft?: boolean;
 };
@@ -254,6 +329,13 @@ type MessageReferencedChannels = {
         name: string;
     };
 };
+type SendTextParams = {
+    meta?: any;
+    storeInHistory?: boolean;
+    sendByPost?: boolean;
+    ttl?: number;
+    customPushData?: Record<string, string>;
+};
 type MessageDraftOptions = Omit<Publish.PublishParameters, "message" | "channel">;
 type SendTextOptionParams = Omit<Publish.PublishParameters, "message" | "channel"> & {
     mentionedUsers?: MessageMentionedUsers;
@@ -261,9 +343,7 @@ type SendTextOptionParams = Omit<Publish.PublishParameters, "message" | "channel
     textLinks?: TextLink[];
     quotedMessage?: Message;
     files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
-    customPushData?: {
-        [key: string]: string;
-    };
+    customPushData?: Record<string, string>;
 };
 type EnhancedMessageEvent = Subscription.Message;
 type MessageDTOParams = History.FetchMessagesForChannelsResponse['channels'][string][number] | History.FetchMessagesWithActionsResponse['channels'][string][number] | EnhancedMessageEvent;
@@ -317,6 +397,7 @@ type PayloadForTextTypes = {
     };
 };
 type TextTypes = keyof PayloadForTextTypes;
+type MentionType = "mention" | "channelReference" | "textLink";
 type TextTypeElement<T extends TextTypes> = {
     type: T;
     content: PayloadForTextTypes[T];
@@ -331,12 +412,14 @@ declare class ErrorLoggerImplementation {
     setItem(key: string, params: ErrorLoggerSetParams): void;
     getStorageObject(): Record<string, unknown>;
 }
+/** @deprecated Use UserMention instead. */
 type ChannelMentionData = {
     event: Event<"mention">;
     channelId: string;
     message: Message;
     userId: string;
 };
+/** @deprecated Use UserMention instead. */
 type ThreadMentionData = {
     event: Event<"mention">;
     parentChannelId: string;
@@ -344,21 +427,30 @@ type ThreadMentionData = {
     message: Message;
     userId: string;
 };
+/** @deprecated Use UserMention instead. */
 type UserMentionData = ChannelMentionData | ThreadMentionData;
+type Mention = {
+    messageTimetoken: string;
+    channelId: string;
+    parentChannelId?: string;
+    mentionedByUserId: string;
+};
+type Invite = {
+    channelId: string;
+    channelType: ChannelType;
+    invitedByUserId: string;
+    invitationTimetoken: string;
+};
+type UserMention = {
+    message: Message;
+    userId: string;
+    channelId: string;
+    parentChannelId?: string;
+};
 type MessageFields = Pick<Message, "timetoken" | "content" | "channelId" | "userId" | "actions" | "meta">;
 type CreateThreadResult = {
     threadChannel: ThreadChannel;
     parentMessage: Message;
-};
-type CreateThreadOptions = {
-    meta?: Payload;
-    storeInHistory?: boolean;
-    sendByPost?: boolean;
-    ttl?: number;
-    quotedMessage?: Message;
-    files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
-    usersToMention?: string[];
-    customPushData?: { [key: string]: string };
 };
 declare class Message {
     protected chat: Chat;
@@ -366,6 +458,7 @@ declare class Message {
     readonly content: TextMessageContent;
     readonly channelId: string;
     readonly userId: string;
+    /** @deprecated Use `Message.reactions` instead for accessing message reactions. */
     readonly actions?: MessageActions;
     readonly meta?: {
         [key: string]: any;
@@ -387,14 +480,16 @@ declare class Message {
     * Updates
     */
     static streamUpdatesOn(messages: Message[], callback: (messages: Message[]) => unknown): () => void;
+    /** @deprecated Use onUpdated() instead. */
     streamUpdates(callback: (message: Message) => unknown): () => void;
+    onUpdated(callback: (message: Message) => void): () => void;
     /*
     * Message text
     */
     get text(): string;
     getMessageElements(): MixedTextTypedElement[];
     /**
-     @deprecated use getMessageElements instead
+     @deprecated Use getMessageElements instead
      */
     getLinkedText(): MixedTextTypedElement[];
     editText(newText: string): Promise<Message>;
@@ -405,16 +500,11 @@ declare class Message {
     delete(params?: DeleteParameters & {
         preserveFiles?: boolean;
     }): Promise<true | Message>;
-    restore(): Promise<Message | undefined>;
+    restore(): Promise<Message>;
     /**
      * Reactions
      */
-    get reactions(): {
-        [value: string]: {
-            uuid: string;
-            actionTimetoken: string | number;
-        }[];
-    };
+    get reactions(): MessageReaction[];
     hasUserReaction(reaction: string): boolean;
     toggleReaction(reaction: string): Promise<Message>;
     /*
@@ -429,14 +519,13 @@ declare class Message {
      * Threads
      */
     getThread(): Promise<ThreadChannel>;
-    createThread(): Promise<ThreadChannel>;
-    createThreadWithResult(text: string, options?: CreateThreadOptions): Promise<CreateThreadResult>;
-    removeThread(): Promise<[
-        {
-            data: {};
-        },
-        true | Channel
-    ]>;
+    createThread(text: string, options?: SendTextParams): Promise<CreateThreadResult>;
+    /** @deprecated Use createThread() instead. */
+    createThreadWithResult(text: string, options?: SendTextParams): Promise<CreateThreadResult>;
+    createThreadMessageDraft(config?: Partial<MessageDraftConfig>): Promise<MessageDraft>;
+    /** @deprecated Use createThreadMessageDraft() instead. */
+    createThreadMessageDraftV2(config?: Partial<MessageDraftConfig>): Promise<MessageDraftV2>;
+    removeThread(): Promise<boolean>;
 }
 declare global {
     interface Array<T> {
@@ -449,10 +538,10 @@ type AddLinkedTextParams = {
     positionInInput: number;
 };
 
-export declare class MessageDraftV2 {
+declare class MessageDraft {
     get channel(): Channel;
     get value(): string;
-    quotedMessage: Message | undefined;
+    quotedMessage: Message | null | undefined;
     readonly config: MessageDraftConfig;
     files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
     addQuote(message: Message): void;
@@ -460,37 +549,46 @@ export declare class MessageDraftV2 {
     addLinkedText(params: AddLinkedTextParams): void;
     removeLinkedText(positionInInput: number): void;
     getMessagePreview(): MixedTextTypedElement[];
-    send(params?: MessageDraftOptions): Promise<Publish.PublishResponse>;
+    send(params?: SendTextParams): Promise<Publish.PublishResponse>;
     addChangeListener(listener: (p0: MessageDraftState) => void): void;
     removeChangeListener(listener: (p0: MessageDraftState) => void): void;
     insertText(offset: number, text: string): void;
     removeText(offset: number, length: number): void;
     insertSuggestedMention(mention: SuggestedMention, text: string): void;
-    addMention(offset: number, length: number, mentionType: TextTypes, mentionTarget: string): void;
+    addMention(offset: number, length: number, mentionType: MentionType, mentionTarget: string): void;
     removeMention(offset: number): void;
     update(text: string): void;
 }
 
-export declare class MessageDraftState {
-    private constructor();
-    get messageElements(): Array<MixedTextTypedElement>;
-    get suggestedMentions(): Promise<Array<SuggestedMention>>;
-}
-
-export declare class SuggestedMention {
-    offset: number;
-    replaceFrom: string;
-    replaceWith: string;
-    type: TextTypes;
-    target: string;
-}
-
-declare class MessageDraft {
-    private chat;
-    value: string;
-    quotedMessage: Message | undefined;
+/** @deprecated Use MessageDraft instead. */
+declare class MessageDraftV2 {
+    get channel(): Channel;
+    get value(): string;
+    quotedMessage: Message | null | undefined;
     readonly config: MessageDraftConfig;
     files?: FileList | File[] | FileSharing.SendFileParameters<PubNub.PubNubFileParameters>["file"][];
+    addQuote(message: Message): void;
+    removeQuote(): void;
+    addLinkedText(params: AddLinkedTextParams): void;
+    removeLinkedText(positionInInput: number): void;
+    getMessagePreview(): MixedTextTypedElement[];
+    send(params?: SendTextParams): Promise<Publish.PublishResponse>;
+    addChangeListener(listener: (p0: MessageDraftState) => void): void;
+    removeChangeListener(listener: (p0: MessageDraftState) => void): void;
+    insertText(offset: number, text: string): void;
+    removeText(offset: number, length: number): void;
+    insertSuggestedMention(mention: SuggestedMention, text: string): void;
+    addMention(offset: number, length: number, mentionType: MentionType, mentionTarget: string): void;
+    removeMention(offset: number): void;
+    update(text: string): void;
+}
+
+declare class MessageDraftV1 {
+    value: string;
+    readonly textLinks: TextLink[];
+    quotedMessage: Message | null | undefined;
+    readonly config: MessageDraftConfig;
+    files?: FileList | File[] | { name: string; type: string; data: any }[];
     onChange(text: string): Promise<{
         users: {
             nameOccurrenceIndex: number;
@@ -505,12 +603,8 @@ declare class MessageDraft {
     addReferencedChannel(channel: Channel, channelNameOccurrenceIndex: number): void;
     removeReferencedChannel(channelNameOccurrenceIndex: number): void;
     removeMentionedUser(nameOccurrenceIndex: number): void;
-    send(params?: MessageDraftOptions): Promise<unknown>;
     getHighlightedMention(selectionStart: number): {
-        mentionedUser: null;
-        nameOccurrenceIndex: number;
-    } | {
-        mentionedUser: User;
+        mentionedUser: User | null;
         nameOccurrenceIndex: number;
     };
     addLinkedText(params: AddLinkedTextParams): void;
@@ -518,7 +612,23 @@ declare class MessageDraft {
     getMessagePreview(): MixedTextTypedElement[];
     addQuote(message: Message): void;
     removeQuote(): void;
+    send(params?: MessageDraftOptions): Promise<unknown>;
 }
+
+declare class MessageDraftState {
+    private constructor();
+    get messageElements(): Array<MixedTextTypedElement>;
+    get suggestedMentions(): Promise<Array<SuggestedMention>>;
+}
+
+declare class SuggestedMention {
+    offset: number;
+    replaceFrom: string;
+    replaceWith: string;
+    type: MentionType;
+    target: string;
+}
+
 type ChannelFields = Pick<Channel, "id" | "name" | "custom" | "description" | "updated" | "status" | "type">;
 declare class Channel {
     protected chat: Chat;
@@ -533,27 +643,40 @@ declare class Channel {
     * CRUD
     */
     update(data: Omit<ChannelFields, "id">): Promise<Channel>;
-    delete(options?: DeleteParameters): Promise<true | Channel>;
+    delete(): Promise<true>;
     /*
     * Updates
     */
     static streamUpdatesOn(channels: Channel[], callback: (channels: Channel[]) => unknown): () => void;
-    streamUpdates(callback: (channel: Channel) => unknown): () => void;
-    sendText(text: string, options?: SendTextOptionParams): Promise<unknown>;
+    /** @deprecated Use onUpdated and onDeleted instead. */
+    streamUpdates(callback: (channel: Channel | null) => unknown): () => void;
+    onUpdated(callback: (channel: Channel) => void): () => void;
+    onDeleted(callback: () => void): () => void;
+    sendText(text: string, options?: SendTextParams): Promise<Publish.PublishResponse>;
+    /** @deprecated Use sendText(text, SendTextParams) for simple messages or MessageDraft for rich composition. */
+    sendTextLegacy(text: string, options?: SendTextOptionParams): Promise<Publish.PublishResponse>;
     forwardMessage(message: Message): Promise<Publish.PublishResponse>;
     startTyping(): Promise<Signal.SignalResponse | undefined>;
     stopTyping(): Promise<Signal.SignalResponse | undefined>;
+    /** @deprecated Use onTypingChanged() instead. */
     getTyping(callback: (typingUserIds: string[]) => unknown): () => void;
+    onTypingChanged(callback: (typingUserIds: string[]) => void): () => void;
     /*
     * Streaming messages
     */
+    /** @deprecated Use onMessageReceived() instead. */
     connect(callback: (message: Message) => void): () => void;
+    onMessageReceived(callback: (message: Message) => void): () => void;
+    emitCustomEvent(payload: CustomEventPayload, options?: CustomEventEmitOptions): Promise<Publish.PublishResponse>;
+    onCustomEvent(callback: (event: CustomEventData) => void, options?: CustomEventListenOptions): () => void;
     /*
     * Presence
     */
     whoIsPresent(params?: { limit?: number; offset?: number }): Promise<string[]>;
     isPresent(userId: string): Promise<boolean>;
+    /** @deprecated Use onPresenceChanged() instead. */
     streamPresence(callback: (userIds: string[]) => unknown): Promise<() => void>;
+    onPresenceChanged(callback: (userIds: string[]) => void): () => void;
     /*
     * Messages
     */
@@ -566,12 +689,12 @@ declare class Channel {
         isMore: boolean;
     }>;
     getMessage(timetoken: string): Promise<Message>;
-    join(callback: (message: Message) => void, params?: Omit<AppContext.SetMembershipsParameters<AppContext.CustomData>, "channels" | "include" | "filter"> & {
+    /** Note: when `status` is omitted, the SDK sends an empty string (`""`) as the membership status. */
+    join(params?: {
+        status?: string;
+        type?: string;
         custom?: AppContext.CustomData;
-    }): Promise<{
-        membership: Membership;
-        disconnect: () => void;
-    }>;
+    }): Promise<Membership>;
     leave(): Promise<boolean>;
     getMembers(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<{
         page: {
@@ -582,21 +705,38 @@ declare class Channel {
         status: number;
         members: Membership[];
     }>;
+    hasMember(userId: string): Promise<boolean>;
+    getMember(userId: string): Promise<Membership | null>;
     invite(user: User): Promise<Membership>;
     inviteMultiple(users: User[]): Promise<Membership[]>;
+    getInvitees(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<{
+        page: {
+            next: string | undefined;
+            prev: string | undefined;
+        };
+        total: number | undefined;
+        status: number;
+        members: Membership[];
+    }>;
     pinMessage(message: Message): Promise<Channel>;
     unpinMessage(): Promise<Channel>;
     getPinnedMessage(): Promise<Message | null>;
-    getUserSuggestions(text: string, options?: {
-        limit: number;
-    }): Promise<Membership[]>;
     createMessageDraft(config?: Partial<MessageDraftConfig>): MessageDraft;
+    /**
+     * @deprecated Use createMessageDraft() instead.
+     */
     createMessageDraftV2(config?: Partial<MessageDraftConfig>): MessageDraftV2;
+    createMessageDraftV1(config?: Partial<MessageDraftConfig>): MessageDraftV1;
+    /** @deprecated Use MessageDraft with addChangeListener for suggestions instead. */
+    getUserSuggestions(text: string, options?: { limit: number }): Promise<Membership[]>;
     registerForPush(): Promise<void>;
     unregisterFromPush(): Promise<void>;
+    fetchReadReceipts(params?: Omit<AppContext.GetMembersParameters, "channel" | "include">): Promise<ReadReceiptsResponse>;
+    /** @deprecated Use onReadReceiptReceived instead. */
     streamReadReceipts(callback: (receipts: {
         [key: string]: string[];
-    }) => unknown): Promise<() => void>;
+    }) => void): Promise<() => void>;
+    onReadReceiptReceived(callback: (receipt: ReadReceipt) => void): () => void;
     getFiles(params?: Omit<FileSharing.ListFilesParameters, "channel">): Promise<{
         files: {
             name: string;
@@ -648,7 +788,9 @@ declare class Channel {
         events: Event<"report">[];
         isMore: boolean;
     }>;
+    /** @deprecated Use onMessageReported instead. */
     streamMessageReports(callback: (event: Event<"report">) => void): () => void;
+    onMessageReported(callback: (report: MessageReport) => void): () => void;
 }
 type ChatConfig = {
     saveDebugLog: boolean;
@@ -674,6 +816,9 @@ type ChatConfig = {
         deleteMessageActionName?: string;
         reactionsActionName?: string;
     };
+    emitReadReceiptEvents?: {
+        [key in ChannelType]?: boolean;
+    };
     authKey?: string;
     syncMutedUsers?: boolean;
 };
@@ -683,7 +828,9 @@ declare class Chat {
     readonly config: ChatConfig;
     private user;
     static init(params: ChatConstructor): Promise<Chat>;
+    /** @deprecated Use channel.emitCustomEvent() for custom events. */
     emitEvent(event: EmitEventParams): Promise<Signal.SignalResponse>;
+    /** @deprecated Use the corresponding method on the entity (channel or user) instead, e.g. channel.onTypingChanged(), user.onMentioned(). */
     listenForEvents<T extends EventType>(event: GenericEventParams<T> & {
         callback: (event: Event<T>) => unknown;
     }): () => void;
@@ -707,7 +854,7 @@ declare class Chat {
     getUser(id: string): Promise<User | null>;
     createUser(id: string, data: Omit<UserFields, "id">): Promise<User>;
     updateUser(id: string, data: Omit<UserFields, "id">): Promise<User>;
-    deleteUser(id: string, params?: DeleteParameters): Promise<true | User>;
+    deleteUser(id: string): Promise<true>;
     getUsers(params?: Omit<AppContext.GetAllMetadataParameters<AppContext.UUIDMetadataObject<AppContext.CustomData>>, "include">): Promise<{
         users: User[];
         page: {
@@ -729,7 +876,7 @@ declare class Chat {
         };
         total: number | undefined;
     }>;
-    deleteChannel(id: string, params?: DeleteParameters): Promise<true | Channel>;
+    deleteChannel(id: string): Promise<true>;
     /**
      * Channel types
      */
@@ -767,12 +914,6 @@ declare class Chat {
         hostMembership: Membership;
         inviteesMemberships: Membership[];
     }>;
-    getUserSuggestions(text: string, options?: {
-        limit: number;
-    }): Promise<User[]>;
-    getChannelSuggestions(text: string, options?: {
-        limit: number;
-    }): Promise<Channel[]>;
     registerPushChannels(channels: string[]): Promise<void>;
     unregisterPushChannels(channels: string[]): Promise<void>;
     unregisterAllPushChannels(): Promise<void>;
@@ -783,6 +924,8 @@ declare class Chat {
         endTimetoken?: string;
         count?: number;
     }): Promise<{
+        mentions: UserMention[];
+        /** @deprecated Use `mentions` instead. */
         enhancedMentionsData: UserMentionData[];
         isMore: boolean;
     }>;
@@ -819,6 +962,10 @@ declare class Chat {
         mute?: boolean;
         reason?: string;
     }): Promise<void>;
+    /** @deprecated Use MessageDraft with addChangeListener for suggestions instead. */
+    getUserSuggestions(text: string, options?: { limit: number }): Promise<User[]>;
+    /** @deprecated Use MessageDraft with addChangeListener for suggestions instead. */
+    getChannelSuggestions(text: string, options?: { limit: number }): Promise<Channel[]>;
     /**
      * Channel group
      */
@@ -838,15 +985,32 @@ declare class Chat {
     reconnectSubscriptions(): Promise<void>;
 
     /**
-     * Disconnect all subscriptions
+     * Disconnects all active subscriptions.
+     *
+     * This method stops all active connections to:
+     * - Channels that were connected via channel.onMessageReceived()
+     * - Channel groups that were connected via channelGroup.onMessageReceived()
+     *
+     * The Chat instance remains active and can be used to reconnect later by either:
+     * - Using reconnectSubscriptions() to restore all previous connections at once
+     * - Manually rejoining using the original connection methods
      */
     disconnectSubscriptions(): Promise<void>;
+
+    /**
+     * Clears resources of Chat instance and related PubNub SDK instance.
+     */
+    destroy(): void;
 }
 declare class ThreadMessage extends Message {
     readonly parentChannelId: string;
     static streamUpdatesOn(threadMessages: ThreadMessage[], callback: (threadMessages: ThreadMessage[]) => unknown): () => void;
     pinToParentChannel(): Promise<Channel>;
     unpinFromParentChannel(): Promise<Channel>;
+    onThreadMessageUpdated(callback: (message: ThreadMessage) => void): () => void;
+    editText(newText: string): Promise<ThreadMessage>;
+    restore(): Promise<ThreadMessage>;
+    toggleReaction(reaction: string): Promise<ThreadMessage>;
 }
 declare class ThreadChannel extends Channel {
     readonly parentChannelId: string;
@@ -854,6 +1018,9 @@ declare class ThreadChannel extends Channel {
     unpinMessage(): Promise<ThreadChannel>;
     pinMessageToParentChannel(message: ThreadMessage): Promise<Channel>;
     unpinMessageFromParentChannel(): Promise<Channel>;
+    onThreadMessageReceived(callback: (message: ThreadMessage) => void): () => void;
+    onThreadChannelUpdated(callback: (threadChannel: ThreadChannel) => void): () => void;
+    getMessage(timetoken: string): Promise<ThreadMessage>;
     getHistory(params?: {
         startTimetoken?: string;
         endTimetoken?: string;
@@ -862,7 +1029,9 @@ declare class ThreadChannel extends Channel {
         messages: ThreadMessage[];
         isMore: boolean;
     }>;
-    delete(options?: DeleteParameters): Promise<true | Channel>;
+    update(data: Omit<ChannelFields, "id">): Promise<ThreadChannel>;
+    getPinnedMessage(): Promise<ThreadMessage | null>;
+    delete(): Promise<true>;
 }
 declare class TimetokenUtils {
     static unixToTimetoken(unixTime: string | number): number;
@@ -897,8 +1066,12 @@ declare class ChannelGroup {
     addChannelIdentifiers(ids: string[]): Promise<any>;
     removeChannels(channels: Channel[]): Promise<any>;
     removeChannelIdentifiers(ids: string[]): Promise<any>;
+    /** @deprecated Use onMessageReceived instead. */
     connect(callback: (message: Message) => void): () => void;
+    onMessageReceived(callback: (message: Message) => void): () => void;
     whoIsPresent(params?: { limit?: number; offset?: number }): Promise<{ [key: string]: string[] }>
+    onPresenceChanged(callback: (presenceByChannels: { [key: string]: string[] }) => void): () => void;
+    /** @deprecated Use onPresenceChanged instead. */
     streamPresence(callback: (presenceByChannels: {
         [key: string]: string[];
     }) => unknown): Promise<() => void>;
@@ -922,4 +1095,38 @@ declare const INTERNAL_MODERATION_PREFIX = "PUBNUB_INTERNAL_MODERATION_";
 declare const INTERNAL_ADMIN_CHANNEL = "PUBNUB_INTERNAL_ADMIN_CHANNEL";
 declare const ERROR_LOGGER_KEY_PREFIX = "PUBNUB_INTERNAL_ERROR_LOGGER";
 declare const CryptoModule: typeof PubNub.CryptoModule;
-export { ChatConfig, Chat, ChannelFields, Channel, ChannelGroup, ConnectionStatusCategory, ConnectionStatus, UserFields, User, MessageFields, Message, MembershipFields, Membership, ThreadChannel, ThreadMessage, MessageDraft, EventFields, Event, ChannelType, MessageType, MessageActionType, TextMessageContent, EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams, MessageActions, DeleteParameters, MessageMentionedUsers, MessageReferencedChannels, MessageDraftOptions, SendTextOptionParams, EnhancedMessageEvent, MessageDTOParams, ThreadMessageDTOParams, MembershipResponse, OptionalAllBut, ChannelDTOParams, ThreadChannelDTOParams, MessageDraftConfig, TextLink, GetLinkedTextParams, PayloadForTextTypes, TextTypes, TextTypeElement, MixedTextTypedElement, ErrorLoggerSetParams, ErrorLoggerImplementation, ChannelMentionData, ThreadMentionData, UserMentionData, TimetokenUtils, CryptoUtils, MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX, CryptoModule, CreateThreadResult, CreateThreadOptions};
+export {
+    ChatConfig, Chat, ChannelFields, Channel, ChannelGroup,
+    ConnectionStatusCategory, ConnectionStatus,
+    UserFields, User,
+    MessageFields, Message,
+    MembershipFields, Membership,
+    ThreadChannel, ThreadMessage,
+    MessageDraft, MessageDraftV1, MessageDraftV2,
+    MessageDraftOptions, MessageDraftState, SuggestedMention,
+    EventFields, Event,
+    ChannelType, MessageType, MessageActionType, TextMessageContent,
+    EventParams, EventPayloads, EmitEventParams, EventType, GenericEventParams,
+    Mention, Invite,
+    MessageActions, MessageReaction,
+    DeleteParameters,
+    MessageMentionedUsers, MessageReferencedChannels,
+    SendTextParams, SendTextOptionParams,
+    EnhancedMessageEvent,
+    MessageDTOParams, ThreadMessageDTOParams,
+    MembershipResponse, OptionalAllBut,
+    ChannelDTOParams, ThreadChannelDTOParams,
+    MessageDraftConfig,
+    TextLink, GetLinkedTextParams,
+    PayloadForTextTypes, TextTypes, MentionType, TextTypeElement, MixedTextTypedElement,
+    ErrorLoggerSetParams, ErrorLoggerImplementation,
+    UserMention,
+    ChannelMentionData, ThreadMentionData, UserMentionData,
+    TimetokenUtils, CryptoUtils,
+    MESSAGE_THREAD_ID_PREFIX, INTERNAL_MODERATION_PREFIX, INTERNAL_ADMIN_CHANNEL, ERROR_LOGGER_KEY_PREFIX,
+    CryptoModule,
+    CreateThreadResult,
+    ReadReceipt, ReadReceiptsResponse,
+    MessageReport,
+    CustomEventData, CustomEventEmitOptions, CustomEventListenOptions
+};

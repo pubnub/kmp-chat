@@ -6,12 +6,12 @@ import com.pubnub.api.asString
 import com.pubnub.chat.internal.error.PubNubErrorMessage.ERROR_CALLING_DEFAULT_GET_MESSAGE_RESPONSE_BODY
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.types.EventContent
+import kotlinx.serialization.SerializationStrategy
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 private val log = Logger.withTag("DefaultGetMessage")
 
-internal const val DELETED = "deleted"
 internal const val ORIGINAL_PUBLISHER = "originalPublisher"
 internal const val ORIGINAL_CHANNEL_ID = "originalChannelId"
 internal const val HTTP_ERROR_404 = 404
@@ -29,7 +29,17 @@ internal const val PINNED_MESSAGE_CHANNEL_ID = "pinnedMessageChannelID"
 internal const val LAST_ACTIVE_TIMESTAMP = "lastActiveTimestamp"
 
 fun defaultGetMessagePublishBody(m: EventContent.TextMessageContent): Map<String, Any> =
-    PNDataEncoder.encode(m as EventContent) as Map<String, Any>
+    encodeEventContentWithType(EventContent.TextMessageContent.serializer(), m) as Map<String, Any>
+
+internal fun <T : EventContent> encodeEventContentWithType(
+    serializer: SerializationStrategy<T>,
+    value: T,
+): Map<String, Any?> {
+    return buildMap {
+        put(TYPE_OF_MESSAGE, serializer.descriptor.serialName)
+        putAll(PNDataEncoder.encode(serializer, value) as Map<String, Any?>)
+    }
+}
 
 fun defaultGetMessageResponseBody(message: JsonElement): EventContent.TextMessageContent? {
     return message.asString()?.let { messageString -> EventContent.TextMessageContent(messageString, null) }
@@ -51,9 +61,12 @@ internal const val TYPE_OF_MESSAGE_IS_CUSTOM = "custom"
 internal const val RESTRICTION_BAN = "ban"
 internal const val RESTRICTION_MUTE = "mute"
 internal const val RESTRICTION_REASON = "reason"
+internal const val CUSTOM_MESSAGE_TYPE_MODERATED = "moderated"
 
 internal const val TYPE_PUBNUB_PRIVATE = "pn.prv"
 internal const val PREFIX_PUBNUB_PRIVATE = "PN_PRV."
 internal const val SUFFIX_MUTE_1 = "mute1"
 
 internal const val METADATA_AUTO_MODERATION_ID = "pn_mod_id"
+internal const val DELETED = "deleted"
+internal const val MEMBERSHIP_PENDING_STATUS = "pending"

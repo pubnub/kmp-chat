@@ -1,14 +1,17 @@
-import { Channel, Chat } from "../dist-test"
+import { Channel, Chat, MessageDraftV1 } from "../dist-test"
 import {
   createChatInstance,
   generateRandomString,
   renderMessagePart,
   createRandomChannel,
-  createRandomUser
+  createRandomUser,
+  sleep
 } from "./utils"
 import { jest } from "@jest/globals"
 
-describe("MessageDraft", function () {
+jest.setTimeout(60000)
+
+describe("MessageDraftV1", function () {
   jest.retryTimes(2)
 
   let chat: Chat
@@ -18,13 +21,13 @@ describe("MessageDraft", function () {
   beforeEach(async () => {
     chat = await createChatInstance({ userId: generateRandomString() })
     channel = await createRandomChannel(chat)
-    messageDraft = channel.createMessageDraft({ userSuggestionSource: "global" })
+    messageDraft = channel.createMessageDraftV1({ userSuggestionSource: "global" })
   })
 
   afterEach(async () => {
     await channel.delete()
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
 
     jest.clearAllMocks()
   })
@@ -46,7 +49,7 @@ describe("MessageDraft", function () {
     expect(messageDraft.value).toBe(`Hello @${user1.name} and @${user2.name}`)
     expect(messagePreview.map(renderMessagePart).join("")).toBe(`Hello @${user1.name} and @${user2.name}`)
 
-    await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
+    await Promise.all([user1.delete(), user2.delete()])
   })
 
   test("should mention 2 - 3 users next to each other", async () => {
@@ -74,9 +77,9 @@ describe("MessageDraft", function () {
     expect(messageDraft.value).toBe(`Hello @${user1.name} @${user2.name} @${user3.name}`)
 
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false }),
-      user3.delete({ soft: false }),
+      user1.delete(),
+      user2.delete(),
+      user3.delete(),
     ])
   })
 
@@ -107,9 +110,9 @@ describe("MessageDraft", function () {
     expect(messageDraft.value).toBe(`Hello @${user1.name} @${user2.name} and @${user3.name}`)
 
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false }),
-      user3.delete({ soft: false }),
+      user1.delete(),
+      user2.delete(),
+      user3.delete(),
     ])
   })
 
@@ -130,7 +133,7 @@ describe("MessageDraft", function () {
     expect(messagePreview.map(renderMessagePart).join("")).toBe(`Hello #${channel1.name} and #${channel2.name}`)
     expect(messageDraft.value).toBe(`Hello #${channel1.name} and #${channel2.name}`)
 
-    await Promise.all([channel1.delete({ soft: false }), channel2.delete({ soft: false })])
+    await Promise.all([channel1.delete(), channel2.delete()])
   })
 
   test("should reference 2 channels and 2 mentions", async () => {
@@ -162,8 +165,8 @@ describe("MessageDraft", function () {
       `Hello #${channel1.name} and @${user1.name} and #${channel2.name} or @${user2.name}.`
     )
 
-    await Promise.all([channel1.delete({ soft: false }), channel2.delete({ soft: false })])
-    await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
+    await Promise.all([channel1.delete(), channel2.delete()])
+    await Promise.all([user1.delete(), user2.delete()])
   })
 
   test("should reference 2 channels and 2 mentions with commas", async () => {
@@ -195,8 +198,8 @@ describe("MessageDraft", function () {
       `Hello #${channel1.name}, @${user1.name}, #${channel2.name} or @${user2.name}`
     )
 
-    await Promise.all([channel1.delete({ soft: false }), channel2.delete({ soft: false })])
-    await Promise.all([user1.delete({ soft: false }), user2.delete({ soft: false })])
+    await Promise.all([channel1.delete(), channel2.delete()])
+    await Promise.all([user1.delete(), user2.delete()])
   })
 
   test("should reference 2 channels and 2 mentions with commas - another variation", async () => {
@@ -235,13 +238,13 @@ describe("MessageDraft", function () {
     )
 
     await Promise.all([
-      channel1.delete({ soft: false }),
-      channel2.delete({ soft: false }),
-      channel3.delete({ soft: false }),
+      channel1.delete(),
+      channel2.delete(),
+      channel3.delete(),
     ])
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false })
+      user1.delete(),
+      user2.delete()
     ])
   })
 
@@ -355,14 +358,14 @@ describe("MessageDraft", function () {
     )
 
     await Promise.all([
-      channel1.delete({ soft: false }),
-      channel2.delete({ soft: false })
+      channel1.delete(),
+      channel2.delete()
     ])
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false }),
-      user4.delete({ soft: false }),
-      user5.delete({ soft: false }),
+      user1.delete(),
+      user2.delete(),
+      user4.delete(),
+      user5.delete(),
     ])
   }, 20000)
 
@@ -441,16 +444,41 @@ describe("MessageDraft", function () {
     )
 
     await Promise.all([
-      channel1.delete({ soft: false }),
-      channel2.delete({ soft: false })
+      channel1.delete(),
+      channel2.delete()
     ])
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false }),
-      user4.delete({ soft: false }),
-      user5.delete({ soft: false }),
+      user1.delete(),
+      user2.delete(),
+      user4.delete(),
+      user5.delete(),
     ])
   }, 20000)
+
+  test("should send V1 draft with mentions and quote via legacy path", async () => {
+    const user = await createRandomUser(chat)
+
+    // Send a message to quote
+    await channel.sendText("Message to quote")
+    await sleep(150)
+    const history = await channel.getHistory()
+    const quotedMsg = history.messages[0]
+
+    messageDraft.onChange("Hello @user1")
+    messageDraft.addMentionedUser(user, 0)
+    messageDraft.addQuote(quotedMsg)
+
+    await messageDraft.send({ storeInHistory: true })
+    await sleep(300)
+
+    const historyAfter = await channel.getHistory()
+    const sentMessage = historyAfter.messages.find((m) => m.text === messageDraft.value)
+    expect(sentMessage).toBeDefined()
+    expect(sentMessage!.mentionedUsers).toBeDefined()
+    expect(sentMessage!.quotedMessage).toBeDefined()
+
+    await user.delete()
+  }, 30000)
 
   test("should reference 3 channels and 3 mentions with no order", async () => {
     const testId = `js-chat-${Date.now()}`
@@ -487,14 +515,14 @@ describe("MessageDraft", function () {
     )
 
     await Promise.all([
-      channel1.delete({ soft: false }),
-      channel2.delete({ soft: false }),
-      channel3.delete({ soft: false }),
+      channel1.delete(),
+      channel2.delete(),
+      channel3.delete(),
     ])
     await Promise.all([
-      user1.delete({ soft: false }),
-      user2.delete({ soft: false }),
-      user3.delete({ soft: false }),
+      user1.delete(),
+      user2.delete(),
+      user3.delete(),
     ])
   })
 })

@@ -2,6 +2,7 @@ package com.pubnub.chat
 
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.chat.types.InputFile
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.kmp.PNFuture
 
 /**
@@ -117,6 +118,17 @@ interface MessageDraft {
     /**
      * Send the [MessageDraft], along with its [files] and [quotedMessage] if any, on the [channel].
      *
+     * @param params [SendTextParams] containing additional parameters for the message.
+     *
+     * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the sent message.
+     */
+    fun send(
+        params: SendTextParams = SendTextParams(),
+    ): PNFuture<PNPublishResult>
+
+    /**
+     * Send the [MessageDraft], along with its [files] and [quotedMessage] if any, on the [channel].
+     *
      * @param meta Publish additional details with the request.
      * @param shouldStore If true, the messages are stored in Message Persistence if enabled in Admin Portal.
      * @param usePost Use HTTP POST
@@ -128,6 +140,10 @@ interface MessageDraft {
      *
      * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the sent message.
      */
+    @Deprecated(
+        message = "Use send(SendTextParams) instead",
+        level = DeprecationLevel.WARNING,
+    )
     fun send(
         meta: Map<String, Any>? = null,
         shouldStore: Boolean = true,

@@ -21,12 +21,21 @@ class MembershipJs internal constructor(internal val membership: Membership, int
 
     val lastReadMessageTimetoken: String? get() = membership.lastReadMessageTimetoken?.toString()
 
-    fun update(custom: UpdateMembershipParams?): Promise<MembershipJs> {
-        return membership.update(custom?.custom?.let { convertToCustomObject(it) })
+    fun update(params: UpdateMembershipParams?): Promise<MembershipJs> {
+        return membership.update(
+            status = params?.status,
+            type = params?.type,
+            custom = params?.custom?.let { convertToCustomObject(it) }
+        )
             .then { it.asJs(chatJs) }
             .asPromise()
     }
 
+    fun delete(): Promise<Boolean> {
+        return membership.delete().then { true }.asPromise()
+    }
+
+    @Deprecated("Use onUpdated(callback) and onDeleted(callback) instead.")
     fun streamUpdates(callback: (MembershipJs?) -> Unit): () -> Unit {
         return streamUpdatesOn(arrayOf(this)) {
             callback(it.firstOrNull())
@@ -49,6 +58,14 @@ class MembershipJs internal constructor(internal val membership: Membership, int
                 GetUnreadMessagesCountResult(false)
             }
         }.asPromise()
+    }
+
+    fun onUpdated(callback: (MembershipJs) -> Unit): () -> Unit {
+        return membership.onUpdated { callback(it.asJs(chatJs)) }::close
+    }
+
+    fun onDeleted(callback: () -> Unit): () -> Unit {
+        return membership.onDeleted { callback() }::close
     }
 
     fun toJSON(): Json {

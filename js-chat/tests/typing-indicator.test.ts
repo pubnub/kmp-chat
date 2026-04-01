@@ -14,9 +14,9 @@ describe("Typing indicator test", () => {
 
   afterEach(async () => {
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
     await chat2.currentUser.delete()
-    await chat2.sdk.disconnect()
+    chat2.destroy()
 
     jest.clearAllMocks()
   })
@@ -30,6 +30,26 @@ describe("Typing indicator test", () => {
     const callback = jest.fn()
 
     const unsubscribe = await channel.getTyping(callback)
+    await sleep(500)
+
+    await channel2.startTyping()
+    await sleep(2000)
+
+    expect(callback).toHaveBeenCalledWith([chat2.currentUser.id])
+
+    unsubscribe()
+    await channel.delete()
+  }, 20000)
+
+  test("should call the callback via onTypingChanged when a typing signal is received", async () => {
+    const channel = await createRandomChannel(chat)
+    const membership = await channel.invite(chat2.currentUser)
+    await sleep(500)
+
+    const channel2 = await chat2.getChannel(channel.id)
+    const callback = jest.fn()
+
+    const unsubscribe = await channel.onTypingChanged(callback)
     await sleep(500)
 
     await channel2.startTyping()

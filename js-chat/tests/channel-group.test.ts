@@ -10,6 +10,8 @@ import {
   sleep,
 } from "./utils"
 
+jest.setTimeout(60000)
+
 describe("Channel group test", () => {
   let chat: Chat
   let firstChannel: Channel
@@ -17,7 +19,7 @@ describe("Channel group test", () => {
   let channelGroup: ChannelGroup
 
   beforeEach(async () => {
-    chat = await createChatInstance({ userId: generateRandomString() })
+    chat = await createChatInstance({ userId: generateRandomString(), config: { enableEventEngine: true } })
     firstChannel = await createRandomChannel(chat)
     secondChannel = await createRandomChannel(chat)
     channelGroup = chat.getChannelGroup(generateRandomString())
@@ -28,7 +30,7 @@ describe("Channel group test", () => {
     await secondChannel.delete()
     await chat.removeChannelGroup(channelGroup.id)
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
   })
 
   test("successfully adds channels to a channel group", async () => {
@@ -91,6 +93,28 @@ describe("Channel group test", () => {
     disconnect()
   }, 30000)
 
+  test("should receive a message via onMessageReceived", async () => {
+    const messages: string[] = []
+    const messagesToSend = ["Some text via onMessageReceived"]
+    await channelGroup.addChannels([firstChannel, secondChannel])
+
+    const disconnect = channelGroup.onMessageReceived((message) => {
+      if (message.content.text !== undefined) {
+        messages.push(message.content.text)
+      }
+    })
+
+    await sleep(1000)
+
+    for (const message of messagesToSend) {
+      await firstChannel.sendText(message)
+      await sleep(500)
+    }
+
+    expect(messages).toStrictEqual(messagesToSend)
+    disconnect()
+  }, 30000)
+
   test("get present users", async () => {
     await channelGroup.addChannels([firstChannel, secondChannel])
     const disconnect = firstChannel.connect(() => null)
@@ -130,6 +154,32 @@ describe("Channel group test", () => {
 
     const presencePromise = new Promise<{ [key: string]: string[] }>((resolve) => {
       channelGroup.streamPresence((presenceByChannels) => {
+        const hasFirstChannel = presenceByChannels[firstChannel.id] != null
+        const hasSecondChannel = presenceByChannels[secondChannel.id] != null
+
+        if (hasFirstChannel && hasSecondChannel) {
+          resolve(presenceByChannels)
+        }
+      })
+    })
+
+    const presenceByChannels = await presencePromise
+    expect(presenceByChannels[firstChannel.id]).toEqual([chat.currentUser.id])
+    expect(presenceByChannels[secondChannel.id]).toEqual([chat.currentUser.id])
+
+    disconnect()
+    secondDisconnect()
+  }, 30000)
+
+  test("should receive presence changes via channelGroup.onPresenceChanged", async () => {
+    await channelGroup.addChannels([firstChannel, secondChannel])
+    const disconnect = firstChannel.connect(() => null)
+    const secondDisconnect = secondChannel.connect(() => null)
+
+    await sleep(3000)
+
+    const presencePromise = new Promise<{ [key: string]: string[] }>((resolve) => {
+      channelGroup.onPresenceChanged((presenceByChannels) => {
         const hasFirstChannel = presenceByChannels[firstChannel.id] != null
         const hasSecondChannel = presenceByChannels[secondChannel.id] != null
 

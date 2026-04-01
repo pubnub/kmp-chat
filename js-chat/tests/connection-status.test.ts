@@ -25,9 +25,8 @@ describe("Connection Status test", () => {
     })
 
     afterEach(async () => {
-        // Use type assertion to access destroy method
-        ;(chat1 as any)?.destroy?.()
-        ;(chat2 as any)?.destroy?.()
+        chat1?.destroy()
+        chat2?.destroy()
     })
 
     const waitForCondition = (

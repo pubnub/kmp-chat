@@ -49,8 +49,15 @@ class ChannelGroupJs internal constructor(
         return channelGroup.removeChannelIdentifiers(ids.asList()).asPromise()
     }
 
+    @Deprecated("Will be removed from SDK in the future. Use onMessageReceived(callback) instead.")
     fun connect(callback: (MessageJs) -> Unit): () -> Unit {
         return channelGroup.connect {
+            callback(it.asJs(chatJs))
+        }::close
+    }
+
+    fun onMessageReceived(callback: (MessageJs) -> Unit): () -> Unit {
+        return channelGroup.onMessageReceived {
             callback(it.asJs(chatJs))
         }::close
     }
@@ -67,6 +74,17 @@ class ChannelGroupJs internal constructor(
         }.asPromise()
     }
 
+    fun onPresenceChanged(callback: (JsMap<Array<String>>) -> Unit): () -> Unit {
+        return channelGroup.onPresenceChanged {
+            callback(
+                it.mapKeys { entry -> entry.key.toString() }
+                    .mapValues { entry -> entry.value.toTypedArray() }
+                    .toJsMap()
+            )
+        }::close
+    }
+
+    @Deprecated("Use onPresenceChanged(callback) instead.")
     fun streamPresence(callback: (JsMap<Array<String>>) -> Unit): Promise<() -> Unit> {
         return channelGroup.streamPresence {
             callback(

@@ -39,14 +39,55 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
         }.asPromise()
     }
 
-    fun delete(options: DeleteParameters?): Promise<DeleteUserResult> {
-        return user.delete(options?.soft ?: false).then {
-            if (it != null) {
-                DeleteUserResult(it.asJs(chatJs))
-            } else {
-                DeleteUserResult(true)
-            }
-        }.asPromise()
+    fun delete(): Promise<Boolean> {
+        return user.delete().then { true }.asPromise()
+    }
+
+    fun onUpdated(callback: (user: UserJs) -> Unit): () -> Unit {
+        val closeable = user.onUpdated {
+            callback(it.asJs(chatJs))
+        }
+        return closeable::close
+    }
+
+    fun onDeleted(callback: () -> Unit): () -> Unit {
+        val closeable = user.onDeleted(callback)
+        return closeable::close
+    }
+
+    fun onMentioned(callback: (mention: MentionJs) -> Unit): () -> Unit {
+        val closeable = user.onMentioned { mention ->
+            callback(
+                createJsObject {
+                    this.messageTimetoken = mention.messageTimetoken.toString()
+                    this.channelId = mention.channelId
+                    this.parentChannelId = mention.parentChannelId
+                    this.mentionedByUserId = mention.mentionedByUserId
+                }
+            )
+        }
+        return closeable::close
+    }
+
+    fun onInvited(callback: (invite: InviteJs) -> Unit): () -> Unit {
+        val closeable = user.onInvited { invite ->
+            callback(
+                createJsObject {
+                    this.channelId = invite.channelId
+                    this.channelType = invite.channelType.name.lowercase()
+                    this.invitedByUserId = invite.invitedByUserId
+                    this.invitationTimetoken = invite.invitationTimetoken.toString()
+                }
+            )
+        }
+        return closeable::close
+    }
+
+    fun onRestrictionChanged(callback: (restriction: RestrictionJs) -> Unit): () -> Unit {
+        val closeable = user.onRestrictionChanged { restriction ->
+            callback(restriction.asJs())
+        }
+        return closeable::close
     }
 
     fun streamUpdates(callback: (user: UserJs?) -> Unit): () -> Unit {
@@ -79,6 +120,14 @@ class UserJs internal constructor(internal val user: User, internal val chatJs: 
                 this.status = it.status
             }
         }.asPromise()
+    }
+
+    fun isMemberOf(channelId: String): Promise<Boolean> {
+        return user.isMemberOf(channelId).asPromise()
+    }
+
+    fun getMembership(channelId: String): Promise<MembershipJs?> {
+        return user.getMembership(channelId).then { it?.asJs(chatJs) }.asPromise()
     }
 
     fun setRestrictions(

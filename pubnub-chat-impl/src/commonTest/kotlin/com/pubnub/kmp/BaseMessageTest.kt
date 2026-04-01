@@ -9,7 +9,6 @@ import com.pubnub.api.endpoints.objects.channel.SetChannelMetadata
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
-import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
 import com.pubnub.api.v2.callbacks.Consumer
 import com.pubnub.api.v2.callbacks.Result
@@ -26,6 +25,7 @@ import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.types.ChannelType
+import com.pubnub.chat.types.CreateThreadResult
 import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.utils.BaseTest
 import com.pubnub.kmp.utils.get
@@ -222,7 +222,7 @@ class BaseMessageTest : BaseTest() {
             userId = "testUserId"
         )
 
-        message.createThread("First reply").async { result: Result<ThreadChannel> ->
+        message.createThread("First reply").async { result: Result<CreateThreadResult> ->
             assertTrue(result.isFailure)
             assertEquals("Only one level of thread nesting is allowed.", result.exceptionOrNull()?.message)
         }
@@ -252,7 +252,7 @@ class BaseMessageTest : BaseTest() {
 
         every { chat.deleteMessageActionName } returns deleteActionName
 
-        message.createThread("First reply").async { result: Result<ThreadChannel> ->
+        message.createThread("First reply").async { result: Result<CreateThreadResult> ->
             assertTrue(result.isFailure)
             assertEquals("You cannot create threads on deleted messages.", result.exceptionOrNull()?.message)
         }
@@ -284,7 +284,7 @@ class BaseMessageTest : BaseTest() {
         every { chat.deleteMessageActionName } returns "deleted"
         every { chat.getChannel(threadChannelId) } returns existingChannel.asFuture()
 
-        message.createThread("First reply").async { result: Result<ThreadChannel> ->
+        message.createThread("First reply").async { result: Result<CreateThreadResult> ->
             assertTrue(result.isFailure)
             assertEquals("Thread for this message already exists.", result.exceptionOrNull()?.message)
         }
@@ -301,11 +301,9 @@ class BaseMessageTest : BaseTest() {
             channelId = messageChannelId,
             userId = "testUserId"
         )
-        val mockResult = Pair(PNRemoveMessageActionResult(), null as Channel?)
+        every { chat.removeThreadChannel(chat, message, false) } returns Unit.asFuture()
 
-        every { chat.removeThreadChannel(chat, message) } returns mockResult.asFuture()
-
-        message.removeThread().async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+        message.removeThread().async { result: Result<Unit> ->
             assertTrue(result.isSuccess)
         }
     }
@@ -323,34 +321,28 @@ class BaseMessageTest : BaseTest() {
         )
         val errorMessage = "There is no thread to be deleted."
 
-        every { chat.removeThreadChannel(chat, message) } returns PubNubException(errorMessage).asFuture()
+        every { chat.removeThreadChannel(chat, message, false) } returns PubNubException(errorMessage).asFuture()
 
-        message.removeThread().async { result: Result<Pair<PNRemoveMessageActionResult, Channel?>> ->
+        message.removeThread().async { result: Result<Unit> ->
             assertTrue(result.isFailure)
             assertEquals(errorMessage, result.exceptionOrNull()?.message)
         }
     }
 
     @Test
-    fun reactions_shouldReturnEmptyMapWhenNoActionsExist() {
-        every { chat.reactionsActionName } returns "reactions"
-        val message = MessageImpl(
-            chat = chat,
-            timetoken = 12345L,
-            content = EventContent.TextMessageContent(text = "test message", files = listOf()),
-            channelId = "testChannelId",
-            userId = "testUserId",
-            actions = null
+    fun reactions_shouldReturnReactionsListWhenReactionsExist() {
+        val pubNub: PubNub = mock(MockMode.strict)
+        val reactionsActionName = "reactions"
+
+        every { chat.reactionsActionName } returns reactionsActionName
+        every { chat.pubNub } returns pubNub
+        every { pubNub.configuration } returns createPNConfiguration(
+            UserId("user1"),
+            "demo",
+            "demo",
+            authToken = null
         )
 
-        val reactions = message.reactions
-
-        assertTrue(reactions.isEmpty())
-    }
-
-    @Test
-    fun reactions_shouldReturnEmptyMapWhenNoReactionsInActions() {
-        every { chat.reactionsActionName } returns "reactions"
         val message = MessageImpl(
             chat = chat,
             timetoken = 12345L,
@@ -358,47 +350,36 @@ class BaseMessageTest : BaseTest() {
             channelId = "testChannelId",
             userId = "testUserId",
             actions = mapOf(
-                "someOtherAction" to mapOf(
-                    "value" to listOf(PNFetchMessageItem.Action("user1", 99999L))
+                reactionsActionName to mapOf(
+                    "👍" to listOf(
+                        PNFetchMessageItem.Action("user1", 11111L),
+                        PNFetchMessageItem.Action("user2", 22222L)
+                    ),
+                    "❤️" to listOf(
+                        PNFetchMessageItem.Action("user3", 33333L)
+                    )
                 )
             )
         )
 
         val reactions = message.reactions
 
-        assertTrue(reactions.isEmpty())
-    }
-
-    @Test
-    fun reactions_shouldReturnReactionsMapWhenReactionsExist() {
-        val reactionsActionName = "reactions"
-        every { chat.reactionsActionName } returns reactionsActionName
-        val expectedReactions = mapOf(
-            "👍" to listOf(
-                PNFetchMessageItem.Action("user1", 11111L),
-                PNFetchMessageItem.Action("user2", 22222L)
-            ),
-            "❤️" to listOf(
-                PNFetchMessageItem.Action("user3", 33333L)
-            )
-        )
-        val message = MessageImpl(
-            chat = chat,
-            timetoken = 12345L,
-            content = EventContent.TextMessageContent(text = "test message", files = listOf()),
-            channelId = "testChannelId",
-            userId = "testUserId",
-            actions = mapOf(reactionsActionName to expectedReactions)
-        )
-
-        val reactions = message.reactions
-
         assertEquals(2, reactions.size)
-        assertEquals(2, reactions["👍"]?.size)
-        assertEquals(1, reactions["❤️"]?.size)
-        assertEquals("user1", reactions["👍"]?.get(0)?.uuid)
-        assertEquals("user2", reactions["👍"]?.get(1)?.uuid)
-        assertEquals("user3", reactions["❤️"]?.get(0)?.uuid)
+
+        val thumbsUp = reactions.find { it.value == "👍" }!!
+        assertEquals("👍", thumbsUp.value)
+        assertTrue(thumbsUp.isMine)
+        assertEquals(2, thumbsUp.userIds.size)
+        assertTrue(thumbsUp.userIds.contains("user1"))
+        assertTrue(thumbsUp.userIds.contains("user2"))
+        assertEquals(2, thumbsUp.count)
+
+        val heart = reactions.find { it.value == "❤️" }!!
+        assertEquals("❤️", heart.value)
+        assertFalse(heart.isMine)
+        assertEquals(1, heart.userIds.size)
+        assertTrue(heart.userIds.contains("user3"))
+        assertEquals(1, heart.count)
     }
 
     @Test
@@ -556,8 +537,8 @@ class BaseMessageTest : BaseTest() {
             }
             callback.accept(Result.success(PNAddMessageActionResult(action)))
         }
-        // Thread doesn't exist - getThread returns "This message is not a thread."
-        every { chat.getThreadChannel(message) } returns PubNubException("This message is not a thread.").asFuture()
+        // Thread doesn't exist - removeThreadChannel returns "This message is not a thread."
+        every { chat.removeThreadChannel(chat, message, soft = true) } returns PubNubException("This message is not a thread.").asFuture()
 
         message.delete(soft = true).async { result: Result<Message?> ->
             assertTrue(result.isSuccess, "Delete should succeed when thread doesn't exist")
@@ -592,7 +573,7 @@ class BaseMessageTest : BaseTest() {
         }
         // Non-404 error (e.g., network error, auth error)
         val networkError = PubNubException("Network error", statusCode = 500)
-        every { chat.getThreadChannel(message) } returns networkError.asFuture()
+        every { chat.removeThreadChannel(chat, message, soft = true) } returns networkError.asFuture()
 
         message.delete(soft = true).async { result: Result<Message?> ->
             assertTrue(result.isFailure, "Delete should fail when thread returns non-404 error")

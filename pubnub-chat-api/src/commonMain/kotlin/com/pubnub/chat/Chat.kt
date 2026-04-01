@@ -159,17 +159,13 @@ interface Chat {
     ): PNFuture<User>
 
     /**
-     * Deletes a [User] with or without deleting its historical data from the App Context storage.
+     * Deletes a [User], permanently removing their metadata from the App Context storage.
      *
      * @param id Unique user identifier.
-     * @param soft Decide if you want to permanently remove user metadata. The user metadata gets permanently deleted
-     * from the App Context storage by default. If you set this parameter to true, the User object gets the deleted
-     * status, and you can still restore/get their metadata.
      *
-     * @return For hard delete, the method returns [PNFuture] without a value (`null`).
-     * For soft delete, [PNFuture] containing an updated [User] instance with the status field set to "deleted".
+     * @return [PNFuture] that completes when the user is deleted.
      */
-    fun deleteUser(id: String, soft: Boolean = false): PNFuture<User?>
+    fun deleteUser(id: String): PNFuture<Unit>
 
     /**
      * Retrieves list of [Channel.id] where a given user is present.
@@ -240,17 +236,13 @@ interface Chat {
     ): PNFuture<Channel>
 
     /**
-     * Allows to delete [Channel] (with or without deleting its historical data from the App Context storage)
+     * Deletes a [Channel], permanently removing its metadata from the App Context storage.
      *
      * @param id Unique channel identifier (up to 92 UTF-8 byte sequences).
-     * @param soft Decide if you want to permanently remove channel metadata. The channel metadata gets permanently
-     * deleted from the App Context storage by default. If you set this parameter to true, the Channel object
-     * gets the deleted status, and you can still restore/get its data.
      *
-     * @return For hard delete, the method returns [PNFuture] without a value (`null`).
-     *         For soft delete, [PNFuture] containing an updated [Channel] instance with the status field set to "deleted".
+     * @return [PNFuture] that completes when the channel is deleted.
      */
-    fun deleteChannel(id: String, soft: Boolean = false): PNFuture<Channel?>
+    fun deleteChannel(id: String): PNFuture<Unit>
 
     /**
      * Returns a list of [User.id] present on the given [Channel].
@@ -278,6 +270,7 @@ interface Chat {
      *
      * @return [PNFuture] containing [PNPublishResult] that holds the timetoken of the emitted event.
      */
+    @Deprecated("Use Channel.emitCustomEvent(...) for custom events.")
     fun <T : EventContent> emitEvent(
         channelId: String,
         payload: T,
@@ -374,6 +367,7 @@ interface Chat {
      * @return AutoCloseable Interface you can call to stop listening for new messages and clean up resources when they
      * are no longer needed by invoking the close() method.
      */
+    @Deprecated("Use the corresponding method on the entity (Channel or User) instead, e.g. Channel.onTypingChanged(), User.onMentioned().")
     fun <T : EventContent> listenForEvents(
         type: KClass<T>,
         channelId: String,
@@ -463,6 +457,9 @@ interface Chat {
     /**
      * Allows you to mark as read all messages you didn't read on all joined channels.
      *
+     * This method emits a read receipt event on each affected channel, unless
+     * [com.pubnub.chat.config.ChatConfiguration.emitReadReceiptEvents] is set to `false` for the channel's type.
+     *
      * @param limit Number of objects to return in response. The default (and maximum) value is 100.
      * @param page Object used for pagination to define which previous or next result page you want to fetch.
      * @param filter Expression used to filter the results. Returns only these channels whose properties satisfy the given expression are returned.
@@ -530,8 +527,8 @@ interface Chat {
      * - CONNECTION_ERROR: Connection lost due to an error (network issues, auth problems, etc.)
      *
      * The listener monitors the overall Chat SDK connectivity status which affects:
-     * - Channels that were connected via chat.join() or chat.connect()
-     * - Channel groups that were connected via channelGroup.connect()
+     * - Channels that were connected via channel.onMessageReceived()
+     * - Channel groups that were connected via channelGroup.onMessageReceived()
      *
      * Note: This provides global connection status and does not provide per-channel
      * or per-channel group status information. When connection is lost, you can use
@@ -546,8 +543,8 @@ interface Chat {
      * Reconnects all subscriptions that were previously established.
      *
      * This method restores all previous connections to:
-     * - Channels that were connected via chat.join() or chat.connect()
-     * - Channel groups that were connected via channelGroup.connect()
+     * - Channels that were connected via channel.onMessageReceived()
+     * - Channel groups that were connected via channelGroup.onMessageReceived()
      *
      * Should be called when recovering from connection errors.
      *
@@ -559,8 +556,8 @@ interface Chat {
      * Disconnects all active subscriptions.
      *
      * This method stops all active connections to:
-     * - Channels that were connected via chat.join() or chat.connect()
-     * - Channel groups that were connected via channelGroup.connect()
+     * - Channels that were connected via channel.onMessageReceived()
+     * - Channel groups that were connected via channelGroup.onMessageReceived()
      *
      * The Chat instance remains active and can be used to reconnect later by either:
      * - Using reconnectSubscriptions() to restore all previous connections at once
@@ -608,6 +605,7 @@ interface Chat {
  * @return AutoCloseable Interface you can call to stop listening for new messages and clean up resources when they
  * are no longer needed by invoking the close() method.
  */
+@Deprecated("Use the corresponding method on the entity (Channel or User) instead, e.g. Channel.onTypingChanged(), User.onMentioned().")
 inline fun <reified T : EventContent> Chat.listenForEvents(
     channelId: String,
     customMethod: EmitEventMethod = EmitEventMethod.PUBLISH,

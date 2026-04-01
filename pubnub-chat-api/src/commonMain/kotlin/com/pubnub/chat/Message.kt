@@ -3,14 +3,15 @@ package com.pubnub.chat
 import com.pubnub.api.PubNubError
 import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem.Action
-import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.chat.types.CreateThreadResult
 import com.pubnub.chat.types.EventContent
 import com.pubnub.chat.types.File
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUsers
+import com.pubnub.chat.types.MessageReaction
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.PNFuture
 
@@ -46,6 +47,7 @@ interface Message {
     /**
      * Any actions associated with the message, such as reactions, replies, or other interactive elements.
      */
+    @Deprecated("Use `Message.reactions` instead for accessing message reactions.")
     val actions: Map<String, Map<String, List<Action>>>?
 
     /**
@@ -90,7 +92,7 @@ interface Message {
     /**
      * List of reactions attached to the message.
      */
-    val reactions: Map<String, List<Action>>
+    val reactions: List<MessageReaction>
 
     /**
      * Error associated with the message, if any.
@@ -178,9 +180,25 @@ interface Message {
      * @return PNFuture that returns a ThreadChannel object which can be used for sending and reading messages from the newly created message thread.
      */
     @Deprecated(
-        message = "Use `createThread(text, ...)` or `createThreadMessageDraft()` instead to create a thread by sending the first reply.`"
+        message = "Use `createThread(text, ...)` to create a thread by sending the first reply, or `createThreadMessageDraft()` to get a draft for composing the first reply."
     )
     fun createThread(): PNFuture<ThreadChannel>
+
+    /**
+     * Creates a thread (channel) for this message and sends the first reply, returning both the
+     * thread channel and an updated parent message with [hasThread] set to `true`.
+     *
+     * @param text Text that you want to send to the selected channel.
+     * @param params [SendTextParams] containing additional parameters for the message.
+     *
+     * @return [PNFuture] containing [CreateThreadResult] with:
+     *   - [CreateThreadResult.threadChannel]: The newly created thread for sending/receiving messages.
+     *   - [CreateThreadResult.parentMessage]: The updated message with [hasThread] = `true`.
+     */
+    fun createThread(
+        text: String,
+        params: SendTextParams = SendTextParams(),
+    ): PNFuture<CreateThreadResult>
 
     /**
      * Create a thread (channel) for a selected message.
@@ -203,6 +221,10 @@ interface Message {
      *
      * @return [PNFuture] that returns a ThreadChannel object which can be used for sending and reading messages from the newly created message thread.
      */
+    @Deprecated(
+        message = "Use createThread(text, SendTextParams) instead",
+        level = DeprecationLevel.WARNING,
+    )
     fun createThread(
         text: String,
         meta: Map<String, Any>? = null,
@@ -216,35 +238,29 @@ interface Message {
     ): PNFuture<ThreadChannel>
 
     /**
-     * Creates a thread (channel) for this message and sends the first reply, returning both the
-     * thread channel and an updated parent message with [hasThread] set to `true`.
-     *
-     * Use this method when you need immediate confirmation that the thread was created on the
-     * parent message. Unlike [createThread], which returns only the [ThreadChannel], this method
-     * also returns an updated [Message] instance reflecting the thread creation.
-     *
-     * @param text Text that you want to send to the selected channel.
-     * @param meta Publish additional details with the request.
-     * @param shouldStore If true, the messages are stored in Message Persistence if enabled in Admin Portal.
-     * @param usePost Use HTTP POST
-     * @param ttl Defines if / how long (in hours) the message should be stored in Message Persistence.
-     * If shouldStore = true, and ttl = 0, the message is stored with no expiry time.
-     * If shouldStore = true and ttl = X, the message is stored with an expiry time of X hours.
-     * If shouldStore = false, the ttl parameter is ignored.
-     * If ttl is not specified, then the expiration of the message defaults back to the expiry value for the keyset.
-     * @param quotedMessage Object added to a message when you quote another message. This object stores the following
-     * info about the quoted message: timetoken for the time when the quoted message was published, text with the
-     * original message content, and userId as the identifier of the user who published the quoted message.
-     * @param files One or multiple files attached to the text message.
-     * @param usersToMention A collection of user ids to automatically notify with a mention after this message is sent.
-     * @param customPushData Additional key-value pairs that will be added to the FCM and/or APNS push messages.
-     *
-     * @return [PNFuture] containing [CreateThreadResult] with:
-     *   - [CreateThreadResult.threadChannel]: The newly created thread for sending/receiving messages.
-     *   - [CreateThreadResult.parentMessage]: The updated message with [hasThread] = `true`.
+     * Deprecated: use [createThread] instead, which now returns [CreateThreadResult] directly.
      *
      * @see createThread
      */
+    @Deprecated(
+        message = "Use createThread(text, SendTextParams) instead",
+        replaceWith = ReplaceWith("createThread(text, params)"),
+        level = DeprecationLevel.WARNING,
+    )
+    fun createThreadWithResult(
+        text: String,
+        params: SendTextParams = SendTextParams(),
+    ): PNFuture<CreateThreadResult>
+
+    /**
+     * Deprecated: use [createThread] instead, which now returns [CreateThreadResult] directly.
+     *
+     * @see createThread
+     */
+    @Deprecated(
+        message = "Use createThread(text, SendTextParams) instead",
+        level = DeprecationLevel.WARNING,
+    )
     fun createThreadWithResult(
         text: String,
         meta: Map<String, Any>? = null,
@@ -260,9 +276,9 @@ interface Message {
     /**
      * Removes a thread (channel) for a selected message.
      *
-     * @return A pair of values containing an object with details about the result of the remove message action (indicating whether the message was successfully removed and potentially including additional metadata or information about the removal) and the updated channel object after the removal of the thread.
+     * @return [PNFuture] that completes when the thread channel is removed.
      */
-    fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>>
+    fun removeThread(): PNFuture<Unit>
 
     /**
      * Add or remove a reaction to a message.
@@ -277,11 +293,20 @@ interface Message {
     fun toggleReaction(reaction: String): PNFuture<Message>
 
     /**
+     * Emits the updated message entity whenever this message is edited, reactions are added or removed, or metadata changes.
+     *
+     * @param callback Function triggered with the updated [Message] entity reflecting the new state.
+     * @return [AutoCloseable] that stops receiving updates and cleans up resources when [AutoCloseable.close] is called.
+     */
+    fun onUpdated(callback: (message: Message) -> Unit): AutoCloseable
+
+    /**
      * You can receive updates when this message and related message reactions are added, edited, or removed.
      *
      * @param callback Function that takes a single Message object. It defines the custom behavior to be executed when detecting message or message reaction changes.
      * @return Interface that lets you stop receiving message-related updates by invoking the close() method
      */
+    @Deprecated("Use onUpdated() instead.", ReplaceWith("onUpdated(callback)"), level = DeprecationLevel.WARNING)
     fun <T : Message> streamUpdates(callback: (message: T) -> Unit): AutoCloseable
 
     /**

@@ -1,4 +1,4 @@
-import { Chat, User } from "../dist-test"
+import { Chat, User, Mention, Invite } from "../dist-test"
 import {createChatInstance, generateRandomString, sleep, createRandomUser, createRandomChannel} from "./utils"
 import {jest} from "@jest/globals";
 
@@ -9,14 +9,14 @@ describe("User test", () => {
   let user: User
 
   beforeEach(async () => {
-    chat = await createChatInstance({ userId: generateRandomString() })
+    chat = await createChatInstance({ userId: generateRandomString(), config: { enableEventEngine: true } })
     user = await createRandomUser(chat)
   })
 
   afterEach(async () => {
     await user.delete()
     await chat.currentUser.delete()
-    await chat.sdk.disconnect()
+    chat.destroy()
 
     jest.clearAllMocks()
   })
@@ -40,12 +40,7 @@ describe("User test", () => {
   })
 
   test("Should be able to delete user", async () => {
-    const deleteOptions = { soft: true }
-    const { status } = (await user.delete(deleteOptions)) as User
-    expect(status).toBe("deleted")
-
-    const deleteResult = await user.delete()
-    expect(deleteResult).toBe(true)
+    await user.delete()
     const fetchedUser = await chat.getUser(user.id)
     expect(fetchedUser).toBeNull()
   })
@@ -204,9 +199,9 @@ describe("User test", () => {
     const helloChannel2 = await chat.createChannel(`hello-channel-${timestamp}-2`, { name: "Hello Channel 2" })
     const testChannel = await chat.createChannel(`other-channel-${timestamp}`, { name: "Filter Test Channel" })
 
-    await helloChannel1.join(() => {})
-    await helloChannel2.join(() => {})
-    await testChannel.join(() => {})
+    await helloChannel1.join()
+    await helloChannel2.join()
+    await testChannel.join()
     await sleep(500)
 
     const helloFilter = `channel.name LIKE 'hello*'`
@@ -435,10 +430,133 @@ describe("User test", () => {
     await updatedUser.delete()
   })
 
-  test("should soft delete user", async () => {
+  test("should invoke onUpdated callback when user is updated", async () => {
+    let updatedUser: User | undefined
+    const name = "Updated User"
+
+    const stop = user.onUpdated((u: User) => { updatedUser = u })
+    await user.update({ name })
+    await sleep(150)
+
+    expect(updatedUser).toBeDefined()
+    expect(updatedUser!.name).toEqual(name)
+    expect(updatedUser!.id).toEqual(user.id)
+
+    stop()
+  }, 20000)
+
+  test("should invoke onDeleted callback when user is deleted", async () => {
     const testUser = await createRandomUser(chat)
-    const softDeleteResult = await testUser.delete({ soft: true })
-    expect(softDeleteResult).toBeDefined()
-    expect((softDeleteResult as User).status).toBe("deleted")
-  })
+    let deleteCalled = false
+
+    const stop = testUser.onDeleted(() => { deleteCalled = true })
+    await sleep(450)
+    await chat.deleteUser(testUser.id)
+    await sleep(300)
+
+    expect(deleteCalled).toBe(true)
+
+    stop()
+  }, 20000)
+
+  test("should invoke onInvited callback when user is invited to a channel", async () => {
+    let receivedInvite: Invite | undefined
+    const channel = await createRandomChannel(chat)
+
+    const stop = user.onInvited((invite: Invite) => { receivedInvite = invite })
+    await channel.invite(user)
+    await sleep(150)
+
+    expect(receivedInvite).toBeDefined()
+    expect(receivedInvite?.channelId).toBe(channel.id)
+
+    stop()
+    await channel.delete()
+  }, 20000)
+
+  test("should invoke onRestrictionChanged callback when restriction is set", async () => {
+    const chatPamServer = await createChatInstance({userId: generateRandomString(), clientType: 'PamServer'})
+    const testUser = await chatPamServer.createUser(generateRandomString(), {name: "Test User"})
+    const channel = await chatPamServer.createChannel(generateRandomString(), {name: "Test Channel"})
+
+    let receivedRestriction: {
+      userId: string;
+      channelId: string;
+      ban: boolean;
+      mute: boolean;
+      reason?: string
+    } | undefined
+
+    const stop = testUser.onRestrictionChanged((restriction) => {
+      receivedRestriction = restriction
+    })
+    await testUser.setRestrictions(channel, {ban: true, mute: false, reason: "rude"})
+    await sleep(500)
+
+    expect(receivedRestriction).toBeDefined()
+    expect(receivedRestriction?.ban).toBe(true)
+    expect(receivedRestriction?.reason).toBe("rude")
+    expect(receivedRestriction?.channelId).toBe(channel.id)
+
+    stop()
+    await Promise.all([testUser.delete(), channel.delete(), chatPamServer.currentUser.delete()])
+  }, 20000)
+
+  test("should check if user is a member of channel via user.isMemberOf", async () => {
+    const testChannel = await createRandomChannel(chat)
+
+    await testChannel.invite(user)
+    await sleep(200)
+
+    const isMember = await user.isMemberOf(testChannel.id)
+    expect(isMember).toBe(true)
+
+    const otherChannel = await createRandomChannel(chat)
+    const isNotMember = await user.isMemberOf(otherChannel.id)
+    expect(isNotMember).toBe(false)
+
+    await Promise.all([testChannel.delete(), otherChannel.delete()])
+  }, 20000)
+
+  test("should get membership for channel via user.getMembership", async () => {
+    const testChannel = await createRandomChannel(chat)
+
+    await testChannel.invite(user)
+    await sleep(200)
+
+    const membership = await user.getMembership(testChannel.id)
+    expect(membership).toBeDefined()
+    expect(membership?.user.id).toBe(user.id)
+    expect(membership?.channel.id).toBe(testChannel.id)
+
+    const otherChannel = await createRandomChannel(chat)
+    const noMembership = await user.getMembership(otherChannel.id)
+    expect(noMembership).toBeNull()
+
+    await Promise.all([testChannel.delete(), otherChannel.delete()])
+  }, 20000)
+
+  test("should invoke onMentioned callback when user is mentioned in a message", async () => {
+    let receivedMention: Mention | undefined
+    const channel = await createRandomChannel(chat)
+
+    const stop = user.onMentioned((mention: Mention) => { receivedMention = mention })
+    await sleep(950)
+
+    const messageDraft = channel.createMessageDraftV1()
+    await messageDraft.onChange(`Hello @${user.name}`)
+
+    messageDraft.addMentionedUser(user, 0)
+
+    await messageDraft.send()
+    await sleep(900)
+
+    expect(receivedMention).toBeDefined()
+    expect(receivedMention?.channelId).toBe(channel.id)
+    expect(receivedMention?.mentionedByUserId).toBe(chat.currentUser.id)
+    expect(receivedMention?.messageTimetoken).toBeDefined()
+
+    stop()
+    await channel.delete()
+  }, 20000)
 })

@@ -11,7 +11,6 @@ import com.pubnub.api.models.consumer.PNPublishResult
 import com.pubnub.api.models.consumer.history.PNFetchMessageItem
 import com.pubnub.api.models.consumer.message_actions.PNAddMessageActionResult
 import com.pubnub.api.models.consumer.message_actions.PNMessageAction
-import com.pubnub.api.models.consumer.message_actions.PNRemoveMessageActionResult
 import com.pubnub.api.v2.callbacks.Result
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Message
@@ -50,9 +49,11 @@ import com.pubnub.chat.types.File
 import com.pubnub.chat.types.InputFile
 import com.pubnub.chat.types.MessageMentionedUser
 import com.pubnub.chat.types.MessageMentionedUsers
+import com.pubnub.chat.types.MessageReaction
 import com.pubnub.chat.types.MessageReferencedChannel
 import com.pubnub.chat.types.MessageReferencedChannels
 import com.pubnub.chat.types.QuotedMessage
+import com.pubnub.chat.types.SendTextParams
 import com.pubnub.chat.types.TextLink
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.alsoAsync
@@ -74,7 +75,7 @@ abstract class BaseMessage<T : Message>(
     override val channelId: String,
     override val userId: String,
     override val actions: Map<String, Map<String, List<PNFetchMessageItem.Action>>>? = null,
-    private val metaInternal: JsonElement? = null,
+    open val metaInternal: JsonElement? = null,
     override val error: PubNubError? = null,
 ) : Message {
     override val meta: Map<String, Any>? get() = metaInternal?.decode() as? Map<String, Any>
@@ -110,8 +111,20 @@ abstract class BaseMessage<T : Message>(
     override val files: List<File>
         get() = content.files ?: emptyList()
 
-    override val reactions: Map<String, List<PNFetchMessageItem.Action>>
+    internal val reactionsMap: Map<String, List<PNFetchMessageItem.Action>>
         get() = actions?.get(chat.reactionsActionName) ?: emptyMap()
+
+    override val reactions: List<MessageReaction>
+        get() {
+            val currentUserId = chat.pubNub.configuration.userId.value
+            return reactionsMap.map { (value, actionList) ->
+                MessageReaction(
+                    value = value,
+                    isMine = actionList.any { it.uuid == currentUserId },
+                    userIds = actionList.map { it.uuid }
+                )
+            }
+        }
 
     override val textLinks: List<TextLink>? get() = (
         meta?.get(
@@ -128,7 +141,7 @@ abstract class BaseMessage<T : Message>(
     }
 
     override fun hasUserReaction(reaction: String): Boolean {
-        return reactions[reaction]?.any { it.uuid == chat.pubNub.configuration.userId.value } ?: false
+        return reactionsMap[reaction]?.any { it.uuid == chat.pubNub.configuration.userId.value } ?: false
     }
 
     override fun editText(newText: String): PNFuture<Message> {
@@ -165,7 +178,7 @@ abstract class BaseMessage<T : Message>(
                 // add action related to delete
                 updatedActions = assignAction(updatedActions, addMessageActionResult)
             }.alsoAsync {
-                deleteThread(soft)
+                deleteThread(soft = true)
             }.then {
                 // deleteThread method deletes reaction related to thread from PN and here be want to remove this action from "actions" map
                 updatedActions = updatedActions.filterNot { it.key == THREAD_ROOT_ID }
@@ -178,7 +191,7 @@ abstract class BaseMessage<T : Message>(
                 previousTimetoken,
                 timetoken
             ).alsoAsync {
-                deleteThread(soft)
+                deleteThread()
             }.alsoAsync {
                 if (files.isNotEmpty() && !preserveFiles) {
                     files.map { file ->
@@ -222,7 +235,10 @@ abstract class BaseMessage<T : Message>(
         )
     }
 
-    @Deprecated("Use `createThread(text, ...)` or `createThreadMessageDraft()` instead to create a thread by sending the first reply.`")
+    @Deprecated(
+        "Use `createThread(text, ...)` to create a thread by sending the first reply, " +
+            "or `createThreadMessageDraft()` to get a draft for composing the first reply."
+    )
     override fun createThread(): PNFuture<ThreadChannel> {
         if (channelId.startsWith(MESSAGE_THREAD_ID_PREFIX)) {
             return log.logErrorAndReturnException(ONLY_ONE_LEVEL_OF_THREAD_NESTING_IS_ALLOWED).asFuture()
@@ -249,6 +265,22 @@ abstract class BaseMessage<T : Message>(
 
     override fun createThread(
         text: String,
+        params: SendTextParams,
+    ): PNFuture<CreateThreadResult> {
+        @Suppress("DEPRECATION")
+        return createThread().thenAsync { threadChannel ->
+            threadChannel.sendText(text, params).thenAsync {
+                // Re-fetch message from server to get accurate actions with correct timetokens
+                BaseChannel.getMessage(chat, channelId, timetoken)
+            }.then { fetchedMessage ->
+                CreateThreadResult(threadChannel, fetchedMessage ?: this)
+            }
+        }
+    }
+
+    @Deprecated("Use createThread(text, SendTextParams) instead", level = DeprecationLevel.WARNING)
+    override fun createThread(
+        text: String,
         meta: Map<String, Any>?,
         shouldStore: Boolean,
         usePost: Boolean,
@@ -261,11 +293,29 @@ abstract class BaseMessage<T : Message>(
         @Suppress("DEPRECATION")
         return createThread().alsoAsync {
             it.sendText(
-                text, meta, shouldStore, usePost, ttl, quotedMessage, files, usersToMention, customPushData
+                text = text,
+                meta = meta,
+                shouldStore = shouldStore,
+                usePost = usePost,
+                ttl = ttl,
+                quotedMessage = quotedMessage,
+                files = files,
+                usersToMention = usersToMention,
+                customPushData = customPushData,
             )
         }
     }
 
+    @Deprecated(
+        "Use createThread(text, SendTextParams) instead",
+        level = DeprecationLevel.WARNING
+    )
+    override fun createThreadWithResult(
+        text: String,
+        params: SendTextParams,
+    ): PNFuture<CreateThreadResult> = createThread(text, params)
+
+    @Deprecated("Use createThread(text, SendTextParams) instead", level = DeprecationLevel.WARNING)
     override fun createThreadWithResult(
         text: String,
         meta: Map<String, Any>?,
@@ -280,9 +330,16 @@ abstract class BaseMessage<T : Message>(
         @Suppress("DEPRECATION")
         return createThread().thenAsync { threadChannel ->
             threadChannel.sendText(
-                text, meta, shouldStore, usePost, ttl, quotedMessage, files, usersToMention, customPushData
+                text = text,
+                meta = meta,
+                shouldStore = shouldStore,
+                usePost = usePost,
+                ttl = ttl,
+                quotedMessage = quotedMessage,
+                files = files,
+                usersToMention = usersToMention,
+                customPushData = customPushData,
             ).thenAsync {
-                // Re-fetch message from server to get accurate actions with correct timetokens
                 BaseChannel.getMessage(chat, channelId, timetoken)
             }.then { fetchedMessage ->
                 CreateThreadResult(threadChannel, fetchedMessage ?: this)
@@ -290,11 +347,11 @@ abstract class BaseMessage<T : Message>(
         }
     }
 
-    override fun removeThread(): PNFuture<Pair<PNRemoveMessageActionResult, Channel?>> =
-        chat.removeThreadChannel(chat, this)
+    override fun removeThread(): PNFuture<Unit> =
+        chat.removeThreadChannel(chat, this, soft = false)
 
     override fun toggleReaction(reaction: String): PNFuture<Message> {
-        val existingReaction = reactions[reaction]?.find {
+        val existingReaction = reactionsMap[reaction]?.find {
             it.uuid == chat.currentUser.id
         }
         val messageAction =
@@ -310,6 +367,31 @@ abstract class BaseMessage<T : Message>(
                 .then { assignAction(actions, it) }
         }
         return newActions.then { copyWithActions(it) }
+    }
+
+    override fun onUpdated(callback: (message: Message) -> Unit): AutoCloseable {
+        var latestMessage: Message = this
+        val listener = createEventListener(chat.pubNub, onMessageAction = { _, event ->
+            if (event.messageAction.messageTimetoken != timetoken || event.channel != channelId) {
+                return@createEventListener
+            }
+            val actions = if (event.event == "added") {
+                assignAction(latestMessage.actions, event.messageAction)
+            } else {
+                filterAction(latestMessage.actions, event.messageAction)
+            }
+
+            val newMessage = (latestMessage as BaseMessage<Message>).copyWithActions(actions)
+            latestMessage = newMessage
+            callback(newMessage)
+        })
+
+        val channelEntity = chat.pubNub.channel(channelId)
+        val subscription = channelEntity.subscription()
+        subscription.addListener(listener)
+        subscription.subscribe()
+
+        return subscription
     }
 
     override fun <M : Message> streamUpdates(callback: (message: M) -> Unit): AutoCloseable {
@@ -351,14 +433,10 @@ abstract class BaseMessage<T : Message>(
         return actions?.get(chat.deleteMessageActionName)?.get(chat.deleteMessageActionName)
     }
 
-    private fun deleteThread(soft: Boolean): PNFuture<Unit> {
+    private fun deleteThread(soft: Boolean = false): PNFuture<Unit> {
         // Always attempt to delete thread (don't rely on local hasThread state which may be stale
         // e.g. after createThread(text) the local message doesn't have updated actions)
-        return getThread().thenAsync {
-            it.delete(soft)
-        }.then {
-            Unit
-        }.catch {
+        return chat.removeThreadChannel(chat, this, soft = soft).catch {
             // Ignore if thread doesn't exist, propagate other errors
             if (it is PubNubException && errorMessageIndicatesThatThreadDoesNotExist(it.message)) {
                 Result.success(Unit)

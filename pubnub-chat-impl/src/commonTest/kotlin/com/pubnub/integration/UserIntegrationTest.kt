@@ -12,16 +12,22 @@ import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.membership.MembershipsResponse
 import com.pubnub.chat.restrictions.GetRestrictionsResponse
 import com.pubnub.chat.restrictions.Restriction
+import com.pubnub.chat.user.Invite
+import com.pubnub.chat.user.Mention
 import com.pubnub.kmp.createCustomObject
 import com.pubnub.test.await
 import com.pubnub.test.randomString
 import com.pubnub.test.test
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 class UserIntegrationTest : BaseChatIntegrationTest() {
     @Test
@@ -318,5 +324,178 @@ class UserIntegrationTest : BaseChatIntegrationTest() {
             membership.channel.id.contains(INTERNAL_MODERATION_PREFIX)
         }.size
         assertEquals(0, internalModerationChannelCount)
+    }
+
+    @Test
+    fun onUpdated() = runTest {
+        val newName = "newName_${randomString()}"
+        val result = CompletableDeferred<User>()
+
+        chat.createUser(someUser).await()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(someUser.id)) {
+                dispose = someUser.onUpdated { user ->
+                    result.complete(user)
+                }
+            }
+            someUser.update(name = newName).await()
+            val updated = result.await()
+            assertEquals(newName, updated.name)
+            assertEquals(someUser.id, updated.id)
+
+            someUser.delete().await()
+            dispose?.close()
+        }
+    }
+
+    @Test
+    fun onDeleted() = runTest {
+        val deleted = CompletableDeferred<Unit>()
+        val user = chat.createUser(randomString()).await()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(user.id)) {
+                dispose = user.onDeleted {
+                    deleted.complete(Unit)
+                }
+            }
+            user.delete().await()
+            deleted.await()
+            dispose?.close()
+        }
+    }
+
+    @Test
+    fun onMentioned() = runTest(timeout = 10.seconds) {
+        val result = CompletableDeferred<Mention>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(someUser.id)) {
+                dispose = someUser.onMentioned { mention ->
+                    result.complete(mention)
+                }
+            }
+            channel01.sendText(
+                text = "Hello @user",
+                usersToMention = listOf(someUser.id)
+            ).await()
+
+            val mention = result.await()
+            assertEquals(channel01.id, mention.channelId)
+            dispose?.close()
+        }
+    }
+
+    @Test
+    fun onInvited() = runTest(timeout = 10.seconds) {
+        val result = CompletableDeferred<Invite>()
+
+        pubnub.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnub.awaitSubscribe(listOf(someUser.id)) {
+                dispose = someUser.onInvited { invite ->
+                    result.complete(invite)
+                }
+            }
+
+            channel01.invite(someUser).await()
+            val invite = result.await()
+            assertEquals(channel01.id, invite.channelId)
+            dispose?.close()
+        }
+    }
+
+    @Test
+    fun onRestrictionChanged() = runTest(timeout = 10.seconds) {
+        if (isIos()) {
+            println("Skipping test on iOS")
+            return@runTest
+        }
+
+        val result = CompletableDeferred<Restriction>()
+        val channel = ChannelImpl(chat = chatPamServer, id = "channelId_${randomString()}")
+
+        pubnubPamServer.test(backgroundScope, checkAllEvents = false) {
+            var dispose: AutoCloseable? = null
+            pubnubPamServer.awaitSubscribe(listOf("PUBNUB_INTERNAL_MODERATION.${userPamServer.id}")) {
+                dispose = userPamServer.onRestrictionChanged { restriction ->
+                    result.complete(restriction)
+                }
+            }
+
+            userPamServer.setRestrictions(
+                channel = channel,
+                ban = true,
+                mute = false,
+                reason = "rude"
+            ).await()
+
+            val restriction = result.await()
+            assertEquals(userPamServer.id, restriction.userId)
+            assertEquals(channel.id, restriction.channelId)
+            assertTrue(restriction.ban)
+            assertEquals("rude", restriction.reason)
+            dispose?.close()
+        }
+    }
+
+    @Test
+    fun isMemberOf_shouldReturnTrueForMember() = runTest {
+        val channelId = randomString()
+        val testChannel = chat.createChannel(channelId).await()
+
+        testChannel.invite(someUser).await()
+
+        val isMember = someUser.isMemberOf(channelId).await()
+
+        assertTrue(isMember, "isMemberOf should return true for channel user is member of")
+
+        testChannel.leave().await()
+        testChannel.delete().await()
+    }
+
+    @Test
+    fun isMemberOf_shouldReturnFalseForNonMember() = runTest {
+        val channelId = randomString()
+        val testChannel = chat.createChannel(channelId).await()
+        val isMember = someUser.isMemberOf(channelId).await()
+
+        assertFalse(isMember, "isMemberOf should return false for channel user is not member of")
+
+        testChannel.leave().await()
+        testChannel.delete().await()
+    }
+
+    @Test
+    fun getMembership_shouldReturnMembershipForMember() = runTest {
+        val channelId = randomString()
+        val testChannel = chat.createChannel(channelId).await()
+
+        testChannel.invite(someUser).await()
+
+        val membership = someUser.getMembership(channelId).await()
+
+        assertNotNull(membership, "getMembership should return membership for channel user is member of")
+        assertEquals(channelId, membership.channel.id)
+        assertEquals(someUser.id, membership.user.id)
+
+        testChannel.leave().await()
+        testChannel.delete().await()
+    }
+
+    @Test
+    fun getMembership_shouldReturnNullForNonMember() = runTest {
+        val channelId = randomString()
+        val testChannel = chat.createChannel(channelId).await()
+        val membership = someUser.getMembership(channelId).await()
+
+        assertNull(membership, "getMembership should return null for channel user is not member of")
+
+        testChannel.leave().await()
+        testChannel.delete().await()
     }
 }
