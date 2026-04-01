@@ -31,7 +31,7 @@ You will need the publish and subscribe keys to authenticate your app. Get your 
       <dependency>
          <groupId>com.pubnub</groupId>
          <artifactId>pubnub-chat</artifactId>
-         <version>0.16.3</version>
+         <version>1.0.0</version>
       </dependency>
       ```
 
