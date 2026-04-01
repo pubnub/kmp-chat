@@ -119,9 +119,9 @@ changelog:
       - type: feature
         text: "Added `UserMention`, `Mention`, `Invite`, `CustomEvent`, `MessageReaction`, `ReadReceipt`, `ReadReceiptsResponse`, `Report`, `SendTextParams` types."
       - type: improvement
-        text: "BREAKING CHANGES: `Message.reactions` changed from `Map<String, List<Action>>` to `List<MessageReaction>` with `isMine`, `userIds`, `count` per reaction."
+        text: "BREAKING CHANGES: `Message.reactions` changed from `Map&lt;String, List&lt;Action&gt;&gt;` to `List&lt;MessageReaction&gt;` with `isMine`, `userIds`, `count` per reaction."
       - type: improvement
-        text: "BREAKING CHANGES: `Message.removeThread()` returns `PNFuture<Unit>` instead of `PNFuture<Pair<PNRemoveMessageActionResult, Channel?>>`."
+        text: "BREAKING CHANGES: `Message.removeThread()` returns `PNFuture&lt;Unit&gt;` instead of `PNFuture&lt;Pair&lt;PNRemoveMessageActionResult, Channel?&gt;&gt;`."
       - type: improvement
         text: "BREAKING CHANGES: `Channel.delete()` and `Chat.deleteChannel()` now permanently delete. The `soft` parameter is removed."
       - type: improvement
@@ -132,6 +132,8 @@ changelog:
         text: "`GetCurrentUserMentionsResult` adds `mentions` field using `UserMention` type. Old `enhancedMentionsData` field is deprecated."
       - type: improvement
         text: "`Chat.emitEvent()` and `Chat.listenForEvents()` deprecated. Replaced by entity-level methods like `Channel.emitCustomEvent()` and `User.onMentioned()`."
+      - type: improvement
+        text: "Updated Kotlin to 2.2.21."
   - date: 2026-02-11
     version: 0.16.3
     changes:
