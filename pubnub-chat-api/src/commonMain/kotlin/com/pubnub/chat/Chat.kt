@@ -534,6 +534,9 @@ interface Chat {
      * or per-channel group status information. When connection is lost, you can use
      * reconnectSubscriptions() to restore all previous connections.
      *
+     * Requires the event engine on the underlying PubNub instance — enabled by default
+     * in JS Core 11+. If disabled, the callback will not fire.
+     *
      * @param listener The connection status listener to add
      * @return AutoCloseable that can be used to remove the listener
      */

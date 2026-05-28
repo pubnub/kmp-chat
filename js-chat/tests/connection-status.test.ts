@@ -12,15 +12,9 @@ describe("Connection Status test", () => {
     beforeEach(async () => {
         chat1 = await createChatInstance({
             userId: generateRandomString(),
-            config: {
-                enableEventEngine: true
-            }
         })
         chat2 = await createChatInstance({
             userId: generateRandomString(),
-            config: {
-                enableEventEngine: true
-            }
         })
     })
 
