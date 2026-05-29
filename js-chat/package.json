@@ -42,10 +42,10 @@
     "module": "dist/index.es.js",
     "types": "dist/index.d.ts",
     "react-native": "dist/index.es.js",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "name": "@pubnub/chat",
     "dependencies": {
-        "pubnub": "10.2.6",
+        "pubnub": "11.0.1",
         "@js-joda/core": "3.2.0"
     }
 }

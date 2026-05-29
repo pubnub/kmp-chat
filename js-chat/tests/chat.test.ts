@@ -8,7 +8,7 @@ describe("Chat tests", () => {
   let chat: Chat
 
   beforeEach(async () => {
-    chat = await createChatInstance({ userId: generateRandomString(), config: { enableEventEngine: true } })
+    chat = await createChatInstance({ userId: generateRandomString() })
   })
 
   afterEach(async () => {

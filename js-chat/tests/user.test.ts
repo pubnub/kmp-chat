@@ -9,7 +9,7 @@ describe("User test", () => {
   let user: User
 
   beforeEach(async () => {
-    chat = await createChatInstance({ userId: generateRandomString(), config: { enableEventEngine: true } })
+    chat = await createChatInstance({ userId: generateRandomString() })
     user = await createRandomUser(chat)
   })
 
