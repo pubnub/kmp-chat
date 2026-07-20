@@ -32,6 +32,22 @@ inline fun Logger.logErrorAndReturnException(message: String): PubNubException {
     return PubNubException(message).logErrorAndReturnException(this)
 }
 
+/**
+ * Escapes a raw value for safe embedding inside a single-quoted App Context filter string literal,
+ * e.g. `name LIKE '<value>*'`.
+ *
+ * Escapes backslash (`\` -> `\\`) first, then single quote (`'` -> `\'`), so user-supplied text cannot
+ * break out of the quoted literal and inject arbitrary filter syntax. The LIKE wildcard `*` is intentionally
+ * left untouched so a `*` typed by the user still acts as a wildcard.
+ *
+ * Note: PubNub's filter language uses backslash-escaping (not SQL-style `''` doubling). The `\'` escape is
+ * confirmed against a live App Context endpoint by ChatIntegrationTest.
+ */
+internal fun escapeAppContextFilterValue(value: String): String =
+    value
+        .replace("\\", "\\\\")
+        .replace("'", "\\'")
+
 internal fun <T> PNFuture<T>.nullOn404() = catch {
     if (it is PubNubException && it.statusCode == HTTP_ERROR_404) {
         Result.success(null)

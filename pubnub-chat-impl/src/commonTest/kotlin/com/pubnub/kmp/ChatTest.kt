@@ -883,6 +883,72 @@ class ChatTest : BaseTest() {
     }
 
     @Test
+    fun getUserSuggestionsShouldEscapeSingleQuoteInFilter() {
+        val filterSlot: SlotCapture<String?> = Capture.slot()
+        val emptyResult = PNUUIDMetadataArrayResult(status = 200, data = emptyList(), totalCount = 0, null, null)
+        every {
+            pubnub.getAllUUIDMetadata(any(), any(), capture(filterSlot), any(), any(), any())
+        } returns getAllUUIDMetadataEndpoint
+        every { getAllUUIDMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNUUIDMetadataArrayResult>>) ->
+            callback1.accept(Result.success(emptyResult))
+        }
+
+        objectUnderTest.getUserSuggestions("o'brien").async { }
+
+        // A raw single quote would break out of the 'name LIKE '...'' literal; it must be backslash-escaped.
+        assertEquals("name LIKE 'o\\'brien*'", filterSlot.get())
+    }
+
+    @Test
+    fun getUserSuggestionsShouldEscapeBackslashInFilter() {
+        val filterSlot: SlotCapture<String?> = Capture.slot()
+        val emptyResult = PNUUIDMetadataArrayResult(status = 200, data = emptyList(), totalCount = 0, null, null)
+        every {
+            pubnub.getAllUUIDMetadata(any(), any(), capture(filterSlot), any(), any(), any())
+        } returns getAllUUIDMetadataEndpoint
+        every { getAllUUIDMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNUUIDMetadataArrayResult>>) ->
+            callback1.accept(Result.success(emptyResult))
+        }
+
+        objectUnderTest.getUserSuggestions("a\\b").async { }
+
+        assertEquals("name LIKE 'a\\\\b*'", filterSlot.get())
+    }
+
+    @Test
+    fun getChannelSuggestionsShouldEscapeSingleQuoteInFilter() {
+        val filterSlot: SlotCapture<String?> = Capture.slot()
+        val emptyResult = PNChannelMetadataArrayResult(status = 200, data = emptyList(), totalCount = 0, null, null)
+        every {
+            pubnub.getAllChannelMetadata(any(), any(), capture(filterSlot), any(), any(), any())
+        } returns getAllChannelMetadataEndpoint
+        every { getAllChannelMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNChannelMetadataArrayResult>>) ->
+            callback1.accept(Result.success(emptyResult))
+        }
+
+        objectUnderTest.getChannelSuggestions("o'brien").async { }
+
+        assertEquals("name LIKE 'o\\'brien*'", filterSlot.get())
+    }
+
+    @Test
+    fun getUserSuggestionsShouldLeaveWildcardStarUnescaped() {
+        val filterSlot: SlotCapture<String?> = Capture.slot()
+        val emptyResult = PNUUIDMetadataArrayResult(status = 200, data = emptyList(), totalCount = 0, null, null)
+        every {
+            pubnub.getAllUUIDMetadata(any(), any(), capture(filterSlot), any(), any(), any())
+        } returns getAllUUIDMetadataEndpoint
+        every { getAllUUIDMetadataEndpoint.async(any()) } calls { (callback1: Consumer<Result<PNUUIDMetadataArrayResult>>) ->
+            callback1.accept(Result.success(emptyResult))
+        }
+
+        objectUnderTest.getUserSuggestions("foo*bar").async { }
+
+        // '*' is intentionally left as a LIKE wildcard.
+        assertEquals("name LIKE 'foo*bar*'", filterSlot.get())
+    }
+
+    @Test
     fun getChannelsShouldResultSuccessWhenUserExists() {
         val totalCount = 1
         val pnChannelMetadataSet: Collection<PNChannelMetadata> = setOf(getPNChannelMetadata())

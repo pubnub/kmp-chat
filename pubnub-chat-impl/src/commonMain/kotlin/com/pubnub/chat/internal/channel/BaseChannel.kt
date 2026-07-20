@@ -63,6 +63,7 @@ import com.pubnub.chat.internal.message.MessageImpl
 import com.pubnub.chat.internal.restrictions.RestrictionImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.util.channelsUrlDecoded
+import com.pubnub.chat.internal.util.escapeAppContextFilterValue
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.ExponentialRateLimiter
@@ -918,7 +919,7 @@ abstract class BaseChannel<C : Channel, M : Message>(
             return nonNullMemberships.asFuture()
         }
 
-        return getMembers(filter = "uuid.name LIKE '$text*'", limit = limit).then { membersResponse ->
+        return getMembers(filter = "uuid.name LIKE '${escapeAppContextFilterValue(text)}*'", limit = limit).then { membersResponse ->
             val memberships = membersResponse.members
             suggestedMemberships[text] = memberships
             memberships

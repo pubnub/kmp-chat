@@ -70,6 +70,21 @@ class ChatIntegrationTest : BaseChatIntegrationTest() {
     }
 
     @Test
+    fun getUserSuggestions_shouldMatchNameContainingSingleQuote() = runTest {
+        // given a user whose name contains a single quote — the character that would otherwise
+        // break out of the `name LIKE '...'` filter literal. This proves the App Context endpoint
+        // accepts the backslash-escaped quote (\') produced by escapeAppContextFilterValue.
+        val userName = "O'Brien-${randomString()}"
+        chat.createUser(id = someUser.id, name = userName).await()
+
+        // when searching by a prefix that contains the single quote
+        val suggestions = chat.getUserSuggestions("O'Brien").await()
+
+        // then the user is found (no server-side filter parse error, correct literal match)
+        assertTrue(suggestions.any { it.id == someUser.id && it.name == userName })
+    }
+
+    @Test
     fun test_storeUserActivityInterval_and_storeUserActivityTimestamps() = runTest {
         val chat =
             createChat {
