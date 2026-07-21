@@ -189,6 +189,10 @@ sealed interface MentionTarget {
 
     /**
      * Link to [url].
+     *
+     * Note: [url] is user-controlled and is preserved verbatim; the SDK does not validate or filter its
+     * scheme. Consumers that render this value into markup (e.g. an HTML `<a href>`) are responsible for
+     * sanitizing it at the render sink.
      */
     data class Url(val url: String) : MentionTarget
 }

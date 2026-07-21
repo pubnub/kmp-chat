@@ -82,6 +82,7 @@ import com.pubnub.chat.internal.timer.PlatformTimer
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.internal.timer.createTimerManager
 import com.pubnub.chat.internal.util.channelsUrlDecoded
+import com.pubnub.chat.internal.util.escapeAppContextFilterValue
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.nullOn404
 import com.pubnub.chat.internal.util.pnError
@@ -999,7 +1000,7 @@ class ChatImpl(
             return nonNullChannels.asFuture()
         }
 
-        return getChannels(filter = "name LIKE '$cacheKey*'", limit = limit).then { getChannelsResponse ->
+        return getChannels(filter = "name LIKE '${escapeAppContextFilterValue(cacheKey)}*'", limit = limit).then { getChannelsResponse ->
             suggestedChannelsCache[cacheKey] = getChannelsResponse.channels
             getChannelsResponse.channels
         }
@@ -1010,7 +1011,7 @@ class ChatImpl(
             return nonNullUser.asFuture()
         }
 
-        return getUsers(filter = "name LIKE '$text*'", limit = limit).then { getUsersResponse ->
+        return getUsers(filter = "name LIKE '${escapeAppContextFilterValue(text)}*'", limit = limit).then { getUsersResponse ->
             suggestedUsersCache[text] = getUsersResponse.users
             getUsersResponse.users
         }

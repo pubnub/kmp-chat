@@ -369,6 +369,14 @@ type MessageDraftConfig = {
 type TextLink = {
     startIndex: number;
     endIndex: number;
+    /**
+     * The link target, taken verbatim from message content.
+     *
+     * SECURITY: `link` is untrusted, user-controlled input and is NOT scheme-validated by the SDK. A
+     * malicious message can carry a dangerous scheme such as `javascript:` or `data:`. Before rendering
+     * this value into HTML (for example as an `<a href>`), you MUST allowlist the scheme (typically
+     * `http`, `https`, `mailto`) and encode the value at the render sink to avoid cross-site scripting (XSS).
+     */
     link: string;
 };
 type GetLinkedTextParams = {
@@ -389,6 +397,14 @@ type PayloadForTextTypes = {
     };
     textLink: {
         text: string;
+        /**
+         * The link target, taken verbatim from message content.
+         *
+         * SECURITY: untrusted, user-controlled input that is NOT scheme-validated by the SDK. It may contain
+         * a dangerous scheme such as `javascript:` or `data:`. Allowlist the scheme (typically `http`,
+         * `https`, `mailto`) and encode the value before rendering it into HTML (e.g. an `<a href>`) to
+         * avoid cross-site scripting (XSS).
+         */
         link: string;
     };
     channelReference: {
@@ -534,6 +550,12 @@ declare global {
 }
 type AddLinkedTextParams = {
     text: string;
+    /**
+     * The link target. Stored verbatim; the SDK does not validate or filter its scheme. When link targets
+     * are later read back (see `TextLink.link` / the `textLink` element from `getMessageElements()`) and
+     * rendered into HTML, the scheme must be allowlisted and the value encoded at the render sink to avoid
+     * cross-site scripting (XSS).
+     */
     link: string;
     positionInInput: number;
 };
