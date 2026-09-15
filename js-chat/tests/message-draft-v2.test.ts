@@ -1,4 +1,4 @@
-import { Channel, Chat, Message, MessageDraft, MessageDraftV2, MixedTextTypedElement, CryptoUtils, CryptoModule } from "../dist-test"
+import { Channel, Chat, Message, MessageDraft, MessageDraftV2, MessageDraftState, MixedTextTypedElement, CryptoUtils, CryptoModule } from "../dist-test"
 import {
   createChatInstance,
   renderMessagePart,
@@ -354,4 +354,37 @@ describe("MessageDraft2", function () {
     await encryptedChat1.currentUser.delete()
     await encryptedChat2.currentUser.delete()
   }, 35000)
+
+  test.each([
+    ["createMessageDraft", (ch: Channel) => ch.createMessageDraft({ userSuggestionSource: "channel" })],
+    ["createMessageDraftV2 (deprecated)", (ch: Channel) => ch.createMessageDraftV2({ userSuggestionSource: "channel" })],
+  ])("should invoke change listener on update() without throwing via %s (issue #169)", async (_name, thmakeDraft) => {
+    const draft = makeDraft(channel)
+
+    let resolve, reject
+    const changed = new Promise<MessageDraftState>((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+
+    draft.addChangeListener((state) => {
+      try {
+        // Accessing the whole state (as the customer did via console.log)
+        // must not throw synchronously.
+        void state.messageElements
+        void state.suggestedMentions
+        resolve(state)
+      } catch (e) {
+        reject(e)
+      }
+    })
+
+    // This is the call that previously threw synchronously.
+    draft.update("Any text")
+
+    const state = await changed
+    expect(state.messageElements.length).toBe(1)
+    expect(state.messageElements[0].type).toBe("text")
+    expect(await state.suggestedMentions).toEqual([])
+  }, 20000)
 })
