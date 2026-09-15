@@ -73,8 +73,9 @@ class ChatIntegrationTest : BaseIntegrationTest() {
         latch.await(3, TimeUnit.SECONDS)
         val exceptionMessage = capturedException?.message
         assertNotNull(exceptionMessage, "Exception message should not be null")
-        assertTrue(exceptionMessage.contains("\"status\": 403"))
-        assertTrue(exceptionMessage.contains("\"message\": \"Forbidden\""))
+        val normalized = exceptionMessage.replace(" ", "")
+        assertTrue(normalized.contains("\"status\":403"))
+        assertTrue(normalized.contains("\"message\":\"Forbidden\""))
     }
 
     @Test
