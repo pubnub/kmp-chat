@@ -45,7 +45,7 @@
     "version": "1.0.4",
     "name": "@pubnub/chat",
     "dependencies": {
-        "pubnub": "11.0.1",
+        "pubnub": "13.1.2",
         "@js-joda/core": "3.2.0"
     }
 }
