@@ -1,5 +1,5 @@
 name: pubnub-js-chat
-version: 1.0.4
+version: 1.0.5
 scm: github.com/pubnub/js-chat
 schema: 1
 files:
@@ -82,6 +82,11 @@ sdks:
                   - 'Microsoft Edge 87.0.664.60"'
                   - 'Safari 13.0'
 changelog:
+  - date: 2026-10-22
+    version: 1.0.5
+    changes:
+      - type: bug
+        text: "Update dependencies."
   - date: 2026-09-15
     version: 1.0.4
     changes:
