@@ -1,0 +1,96 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:BaseChannel.kt$BaseChannel.Companion$internal fun getPushPayload( baseChannel: BaseChannel&lt;*, *>, text: String, pushConfig: PushNotificationsConfig, customPushData: Map&lt;String, String>? = null ): Map&lt;String, Any></ID>
+    <ID>CyclomaticComplexMethod:MembershipImpl.kt$MembershipImpl.Companion$fun streamUpdatesOn( memberships: Collection&lt;Membership>, callback: (memberships: Collection&lt;Membership>) -> Unit, ): AutoCloseable</ID>
+    <ID>CyclomaticComplexMethod:MessageDraftV1Js.kt$MessageDraftV1Js$private fun getUserOrChannelReference( splitSymbol: String, referencesObject: Map&lt;Int, Any>, ): UserOfChannelReference</ID>
+    <ID>CyclomaticComplexMethod:MessageDraftV1Js.kt$MessageDraftV1Js$private fun reindexTextLinks()</ID>
+    <ID>CyclomaticComplexMethod:MessageDraftV1Js.kt$MessageElementsUtils$fun getMessageElements( text: String, mentionedUsers: Map&lt;Int, MessageMentionedUser>, textLinks: List&lt;TextLink>, referencedChannels: Map&lt;Int, MessageReferencedChannel>, ): Array&lt;MixedTextTypedElement></ID>
+    <ID>EmptyFunctionBlock:JsonElementDecoder.kt$JsonElementDecoder${}</ID>
+    <ID>EmptyFunctionBlock:encoders.kt$ListEncoder${ }</ID>
+    <ID>EmptyFunctionBlock:encoders.kt$MapEncoder${ }</ID>
+    <ID>ExplicitItLambdaParameter:BaseChannel.kt$BaseChannel${ it: List&lt;PNFileUrlResult> -> val fileItems = filesList.zip(it).map { GetFileItem(it.first.name, it.first.id, it.second.url) } GetFilesResult(fileItems, listFilesResult.next?.pageHash, listFilesResult.count) }</ID>
+    <ID>ExplicitItLambdaParameter:BaseChannel.kt$BaseChannel${ it: PNMemberArrayResult -> MembersResponse( it.next, it.prev, it.totalCount!!, it.status, it.data.map { MembershipImpl.fromChannelMemberDTO(chat, it, this) } ) }</ID>
+    <ID>ExplicitItLambdaParameter:BaseMessage.kt$BaseMessage${ it: Channel? -> if (it != null) { return@thenAsync log.logErrorAndReturnException(THREAD_FOR_THIS_MESSAGE_ALREADY_EXISTS).asFuture() } ThreadChannelImpl( this, chat, description = "Thread on channel $channelId with message timetoken $timetoken", id = threadChannelId, threadCreated = false ).asFuture() }</ID>
+    <ID>ExplicitItLambdaParameter:ChannelGroupImpl.kt$ChannelGroupImpl${ it -> it.value.occupants.map(PNHereNowOccupantData::uuid) }</ID>
+    <ID>FunctionNaming:converters.kt$@Suppress("ktlint:standard:function-naming") internal fun MetadataPage(next: PNPage.PNNext?, prev: PNPage.PNPrev?)</ID>
+    <ID>FunctionParameterNaming:ChatImpl.kt$ChatImpl$_: PubNub</ID>
+    <ID>LargeClass:BaseChannel.kt$BaseChannel&lt;C : Channel, M : Message> : Channel</ID>
+    <ID>LargeClass:ChatImpl.kt$ChatImpl : ChatInternal</ID>
+    <ID>LongMethod:ChatImpl.kt$ChatImpl$override fun markAllMessagesAsRead( limit: Int?, page: PNPage?, filter: String?, sort: Collection&lt;PNSortKey&lt;PNMembershipKey>>, ): PNFuture&lt;MarkAllMessageAsReadResponse></ID>
+    <ID>LongMethod:ChatImpl.kt$ChatImpl$override fun setRestrictions( restriction: Restriction ): PNFuture&lt;Unit></ID>
+    <ID>LongMethod:MessageDraftV1Js.kt$MessageDraftV1Js$private fun getUserOrChannelReference( splitSymbol: String, referencesObject: Map&lt;Int, Any>, ): UserOfChannelReference</ID>
+    <ID>LongMethod:MessageDraftV1Js.kt$MessageDraftV1Js$private fun reindexTextLinks()</ID>
+    <ID>LongMethod:MessageDraftV1Js.kt$MessageElementsUtils$fun getMessageElements( text: String, mentionedUsers: Map&lt;Int, MessageMentionedUser>, textLinks: List&lt;TextLink>, referencedChannels: Map&lt;Int, MessageReferencedChannel>, ): Array&lt;MixedTextTypedElement></ID>
+    <ID>MagicNumber:ChannelGroupJs.kt$ChannelGroupJs$1000</ID>
+    <ID>MagicNumber:ChannelJs.kt$ChannelJs$10</ID>
+    <ID>MagicNumber:ChannelJs.kt$ChannelJs$100</ID>
+    <ID>MagicNumber:ChannelJs.kt$ChannelJs$1000</ID>
+    <ID>MagicNumber:ChannelJs.kt$ChannelJs$25</ID>
+    <ID>MagicNumber:ChatImpl.js.kt$12</ID>
+    <ID>MagicNumber:ChatImpl.js.kt$16</ID>
+    <ID>MagicNumber:ChatImpl.js.kt$19</ID>
+    <ID>MagicNumber:ChatImpl.js.kt$20</ID>
+    <ID>MagicNumber:ChatImpl.js.kt$3</ID>
+    <ID>MagicNumber:ChatImpl.js.kt$32</ID>
+    <ID>MagicNumber:ChatImpl.js.kt$4</ID>
+    <ID>MagicNumber:ChatImpl.js.kt$8</ID>
+    <ID>MagicNumber:ChatImpl.kt$ChatImpl$10</ID>
+    <ID>MagicNumber:ChatImpl.kt$ChatImpl$100</ID>
+    <ID>MagicNumber:ChatJs.kt$ChatJs$10</ID>
+    <ID>MagicNumber:ChatJs.kt$ChatJs$100</ID>
+    <ID>MagicNumber:ChatJs.kt$ChatJs$1000</ID>
+    <ID>MagicNumber:MessageDraftImpl.kt$MessageDraftImpl$3</ID>
+    <ID>MagicNumber:MessageDraftV1Js.kt$MessageDraftV1Js$10</ID>
+    <ID>MagicNumber:MessageDraftV1Js.kt$MessageElementsUtils$3</ID>
+    <ID>MagicNumber:MessageDraftV1Js.kt$Validator$3</ID>
+    <ID>MagicNumber:PlatformTimer.ios.kt$TimerManagerImpl$1000.0</ID>
+    <ID>MagicNumber:ThreadChannelJs.kt$ThreadChannelJs$25</ID>
+    <ID>MagicNumber:hashes.kt$11</ID>
+    <ID>MagicNumber:hashes.kt$15</ID>
+    <ID>MagicNumber:hashes.kt$16</ID>
+    <ID>MagicNumber:hashes.kt$2097152L</ID>
+    <ID>MagicNumber:hashes.kt$53</ID>
+    <ID>MatchingDeclarationName:TimeTokenUtils.kt$TimetokenUtils</ID>
+    <ID>NestedBlockDepth:MessageDraftV1Js.kt$MessageDraftV1Js$fun addMentionedUser(user: UserJs, nameOccurrenceIndex: Int)</ID>
+    <ID>NestedBlockDepth:MessageDraftV1Js.kt$MessageDraftV1Js$fun addReferencedChannel(channel: ChannelJs, channelNameOccurrenceIndex: Int)</ID>
+    <ID>NestedBlockDepth:MessageDraftV1Js.kt$MessageDraftV1Js$private fun getUserOrChannelReference( splitSymbol: String, referencesObject: Map&lt;Int, Any>, ): UserOfChannelReference</ID>
+    <ID>ReturnCount:AccessManager.kt$AccessManager.Companion$private fun checkPatterns( resourcePatterns: Map&lt;String, PNToken.PNResourcePermissions>, resourceName: String, permission: Permission ): Boolean</ID>
+    <ID>ReturnCount:BaseChannel.kt$BaseChannel$override fun getPinnedMessage(): PNFuture&lt;Message?></ID>
+    <ID>ReturnCount:BaseChannel.kt$BaseChannel$override fun startTyping(): PNFuture&lt;PNPublishResult?></ID>
+    <ID>ReturnCount:BaseChannel.kt$BaseChannel$override fun stopTyping(): PNFuture&lt;PNPublishResult?></ID>
+    <ID>ReturnCount:BaseMessage.kt$BaseMessage$@Deprecated( "Use `createThread(text, ...)` to create a thread by sending the first reply, " + "or `createThreadMessageDraft()` to get a draft for composing the first reply." ) override fun createThread(): PNFuture&lt;ThreadChannel></ID>
+    <ID>ReturnCount:ChatImpl.kt$ChatImpl$fun(_: PubNub, pnEvent: PNEvent)</ID>
+    <ID>ReturnCount:ChatImpl.kt$ChatImpl$override fun forwardMessage(message: Message, channelId: String): PNFuture&lt;PNPublishResult></ID>
+    <ID>ReturnCount:ChatImpl.kt$ChatImpl$override fun isPresent(userId: String, channelId: String): PNFuture&lt;Boolean></ID>
+    <ID>ReturnCount:JsonElementDecoder.kt$JsonElementDecoder$override fun &lt;T> decodeSerializableElement( descriptor: SerialDescriptor, index: Int, deserializer: DeserializationStrategy&lt;T>, previousValue: T? ): T</ID>
+    <ID>ReturnCount:JsonElementDecoder.kt$JsonElementDecoder$override fun decodeElementIndex(descriptor: SerialDescriptor): Int</ID>
+    <ID>ReturnCount:JsonElementDecoder.kt$JsonElementDecoder$override fun decodeStringElement(descriptor: SerialDescriptor, index: Int): String</ID>
+    <ID>ReturnCount:MembershipImpl.kt$MembershipImpl$@Suppress("UNCHECKED_CAST") private fun mergeCustomWithLastReadTimetoken(custom: CustomObject?): CustomObject?</ID>
+    <ID>ReturnCount:MessageDraftV1Js.kt$MessageDraftV1Js$fun getHighlightedMention(selectionStart: Int): JsMap&lt;Any?></ID>
+    <ID>ReturnCount:MessageDraftV1Js.kt$MessageElementsUtils$fun getChannelPhraseToLookFor(text: String): String?</ID>
+    <ID>ReturnCount:MessageDraftV1Js.kt$MessageElementsUtils$fun getPhraseToLookFor(text: String): String?</ID>
+    <ID>ReturnCount:MessageDraftV1Js.kt$Validator$fun isUrl(potentialUrl: String): Boolean</ID>
+    <ID>TooGenericExceptionCaught:BaseChannel.kt$BaseChannel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ChatImpl.kt$ChatImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Constants.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:EventImpl.kt$EventImpl.Companion$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ThreadChannelImpl.kt$ThreadChannelImpl$e: Exception</ID>
+    <ID>TooGenericExceptionThrown:MessageDraftV1Js.kt$MessageDraftV1Js$throw Exception("This channel does not appear in the text")</ID>
+    <ID>TooGenericExceptionThrown:MessageDraftV1Js.kt$MessageDraftV1Js$throw Exception("This user does not appear in the text")</ID>
+    <ID>TooGenericExceptionThrown:MessageDraftV1Js.kt$MessageDraftV1Js$throw Exception("You cannot insert a link inside another link")</ID>
+    <ID>TooGenericExceptionThrown:MessageDraftV1Js.kt$MessageDraftV1Js$throw Exception("You need to insert a URL")</ID>
+    <ID>TooManyFunctions:ChannelJs.kt$ChannelJs : ChannelFields</ID>
+    <ID>TooManyFunctions:ChatJs.kt$ChatJs</ID>
+    <ID>UnusedParameter:converters.kt$defaultMessageResponseBody: (JsonElement) -> EventContent.TextMessageContent?</ID>
+    <ID>UnusedPrivateProperty:MessageDraftV2Js.kt$private const val TYPE_TEXT = "text"</ID>
+    <ID>UseCheckOrError:MessageDraftV2Js.kt$MessageDraftV2Js$throw IllegalStateException("Unknown target type")</ID>
+    <ID>UseCheckOrError:encoders.kt$AnyEncoder$throw IllegalStateException("Only class instance, map or list expected here")</ID>
+    <ID>UtilityClassWithPublicConstructor:CryptoUtils.kt$CryptoUtils</ID>
+    <ID>UtilityClassWithPublicConstructor:RestrictionImpl.kt$RestrictionImpl</ID>
+    <ID>UtilityClassWithPublicConstructor:TimeTokenUtils.kt$TimetokenUtils</ID>
+    <ID>UtilityClassWithPublicConstructor:utils.ios.kt$KClassConstants</ID>
+    <ID>UtilityClassWithPublicConstructor:utils.ios.kt$KotlinDurationUtils</ID>
+  </CurrentIssues>
+</SmellBaseline>
