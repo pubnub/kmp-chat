@@ -80,7 +80,7 @@ describe("MessageDraft2", function () {
       createRandomUser(chat),
     ])
 
-    let elements: MixedTextTypedElement[][] = []
+    const elements: MixedTextTypedElement[][] = []
     let resolve, reject;
 
     const promise = new Promise((res, rej) => {
@@ -94,7 +94,7 @@ describe("MessageDraft2", function () {
         resolve()
         return
       }
-      let mentions = await state.suggestedMentions
+      const mentions = await state.suggestedMentions
       messageDraft.insertSuggestedMention(mentions[0], mentions[0].replaceWith)
     })
 
@@ -143,7 +143,7 @@ describe("MessageDraft2", function () {
           positionInInput: messageDraft.value.length,
       })
 
-      let elements: MixedTextTypedElement[][] = []
+      const elements: MixedTextTypedElement[][] = []
       let resolve, reject;
 
       const promise = new Promise((res, rej) => {
@@ -153,7 +153,7 @@ describe("MessageDraft2", function () {
 
       messageDraft.addChangeListener(async function(state) {
           elements.push(state.messageElements)
-          let mentions = await state.suggestedMentions
+          const mentions = await state.suggestedMentions
           if (mentions.length == 0) {
               resolve()
               return

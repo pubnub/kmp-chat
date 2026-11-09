@@ -75,3 +75,29 @@ jobs:
             **/build/reports/detekt/**
           if-no-files-found: ignore
           retention-days: 7
+  js-lint:
+    name: JS lint (ESLint)
+    runs-on:
+      group: organization/Default
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+        working-directory: js-chat
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: js-chat/package-lock.json
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Check baseline only references tracked files
+        run: |
+          node -e 'const s=require("./eslint-suppressions.json");console.log(Object.keys(s).join("\n"))' \
+            | while read -r f; do [ -z "$f" ] && continue; git ls-files --error-unmatch -- "$f" >/dev/null || { echo "Untracked baseline entry: $f"; exit 1; }; done
+      - name: Run ESLint
+        run: npm run lint
