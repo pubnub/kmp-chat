@@ -1,6 +1,0 @@
-# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-# Codacy is replaced by Detekt/ktlint (Static analysis job); CodeRabbit auto-review is disabled
-# to match the Kotlin Core SDK. Keep the app installed but silent.
-reviews:
-  auto_review:
-    enabled: false
