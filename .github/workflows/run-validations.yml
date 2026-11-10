@@ -63,7 +63,7 @@ jobs:
         # ENABLE_TARGET_IOS_ALL matches the release build (.github/workflows/release/kotlin-maven-build.sh):
         # ktlint covers all Apple source sets (e.g. iosArm64Main) and the release target set is configured
         # with detekt applied. detekt itself analyses every non-test src/* dir regardless of enabled targets.
-        run: ./gradlew -PENABLE_TARGET_IOS_ALL=true ktlintCheck detekt --continue
+        run: ./gradlew ktlintCheck detekt --continue
       - name: Expose static analysis reports
         uses: actions/upload-artifact@v4
         # cancelled(): another job's fast-jobs-failure may cancel this run after Gradle has written reports.
