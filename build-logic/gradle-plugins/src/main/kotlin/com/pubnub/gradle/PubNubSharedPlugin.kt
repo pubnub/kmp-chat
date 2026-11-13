@@ -1,6 +1,11 @@
 package com.pubnub.gradle
 
 import com.vanniktech.maven.publish.MavenPublishPlugin
+import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
+import io.gitlab.arturbosch.detekt.DetektPlugin
+import io.gitlab.arturbosch.detekt.extensions.DetektExtension
+import io.gitlab.arturbosch.detekt.getSupportedKotlinVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
@@ -10,6 +15,7 @@ import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.maven
 import org.gradle.kotlin.dsl.project
 import org.gradle.kotlin.dsl.repositories
+import org.gradle.kotlin.dsl.withType
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import org.jlleitschuh.gradle.ktlint.KtlintPlugin
 
@@ -56,6 +62,52 @@ class PubNubSharedPlugin : Plugin<Project> {
             dependencies {
                 "ktlintRuleset"("com.pubnub:ktlint-custom-rules:1.0.0")
             }
+
+            // Detekt
+            configureDetekt()
+        }
+    }
+
+    private fun Project.configureDetekt() {
+        apply<DetektPlugin>()
+
+        extensions.configure<DetektExtension> {
+            config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+            buildUponDefaultConfig = true
+            baseline = rootProject.file("config/detekt/baseline-${project.name}.xml")
+            parallel = true
+            // The plain `detekt` task defaults to src/main/kotlin, which doesn't exist in KMP modules.
+            // Analyse every main (non-test) source set instead: src/commonMain, src/jvmMain, src/jsMain, src/appleMain, ...
+            source.setFrom(
+                provider {
+                    file("src").listFiles { dir -> dir.isDirectory && !dir.name.endsWith("Test") && dir.name != "test" }
+                        .orEmpty()
+                        .flatMap { listOf(it.resolve("kotlin"), it.resolve("java")) }
+                }
+            )
+        }
+
+        // detekt 1.23.x embeds its own Kotlin compiler; keep it from being aligned to the project's Kotlin version
+        configurations.matching { it.name == "detekt" }.configureEach {
+            it.resolutionStrategy.eachDependency { details ->
+                if (details.requested.group == "org.jetbrains.kotlin") {
+                    details.useVersion(getSupportedKotlinVersion())
+                }
+            }
+        }
+
+        tasks.withType<Detekt>().configureEach {
+            it.jvmTarget = "1.8"
+            it.reports { report ->
+                report.xml.required.set(true)
+                report.html.required.set(true)
+                report.sarif.required.set(true)
+                report.txt.required.set(false)
+                report.md.required.set(false)
+            }
+        }
+        tasks.withType<DetektCreateBaselineTask>().configureEach {
+            it.jvmTarget = "1.8"
         }
     }
 }

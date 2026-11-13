@@ -36,3 +36,68 @@ jobs:
       - name: Cancel workflow runs for commit on error
         if: failure()
         uses: ./.github/.release/actions/actions/utils/fast-jobs-failure
+  static-analysis:
+    name: Static analysis
+    runs-on:
+      group: macos-gh
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "21"
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-static-analysis-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-static-analysis-gradle-
+      - name: Run ktlint and detekt
+        # ENABLE_TARGET_IOS_ALL matches the release build (.github/workflows/release/kotlin-maven-build.sh):
+        # ktlint covers all Apple source sets (e.g. iosArm64Main) and the release target set is configured
+        # with detekt applied. detekt itself analyses every non-test src/* dir regardless of enabled targets.
+        run: ./gradlew ktlintCheck detekt --continue
+      - name: Expose static analysis reports
+        uses: actions/upload-artifact@v4
+        # cancelled(): another job's fast-jobs-failure may cancel this run after Gradle has written reports.
+        if: failure() || cancelled()
+        with:
+          name: static-analysis-reports
+          path: |
+            **/build/reports/ktlint/**
+            **/build/reports/detekt/**
+          if-no-files-found: ignore
+          retention-days: 7
+  js-lint:
+    name: JS lint (ESLint)
+    runs-on:
+      group: organization/Default
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+        working-directory: js-chat
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: js-chat/package-lock.json
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Check baseline only references tracked files
+        run: |
+          node -e 'const s=require("./eslint-suppressions.json");console.log(Object.keys(s).join("\n"))' \
+            | while read -r f; do [ -z "$f" ] && continue; git ls-files --error-unmatch -- "$f" >/dev/null || { echo "Untracked baseline entry: $f"; exit 1; }; done
+      - name: Run ESLint
+        run: npm run lint

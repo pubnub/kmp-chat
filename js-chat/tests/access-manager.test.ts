@@ -16,7 +16,7 @@ describe("Access Manager test test", () => {
     let chatPamServer: Chat
 
     beforeEach(async () => {
-        let chatClientUserId = generateRandomString()
+        const chatClientUserId = generateRandomString()
         chatPamServer = await createChatInstance( { clientType: 'PamServer' })
         const token = await _grantTokenForUserId(chatPamServer, chatClientUserId);
         chatPamClient = await createChatInstance( {
@@ -53,7 +53,7 @@ describe("Access Manager test test", () => {
                 }
             }
         )
-        let channelId = createDirectConversationResult.channel.id
+        const channelId = createDirectConversationResult.channel.id
         let token = await _grantTokenForChannel(1, chatPamServer, channelId);
         await chatPamClient.sdk.setToken(token)
 
@@ -63,8 +63,8 @@ describe("Access Manager test test", () => {
         // Verify that the fetched channel ID matches the expected channel ID
         expect(channelRetrievedByClient?.id).toEqual(channelId);
 
-        let publishResult  = await channelRetrievedByClient.sendText("my first message");
-        let message = await channelRetrievedByClient.getMessage(publishResult.timetoken);
+        const publishResult  = await channelRetrievedByClient.sendText("my first message");
+        const message = await channelRetrievedByClient.getMessage(publishResult.timetoken);
         await message.toggleReaction("one")
 
         // Sleep so that token expires
