@@ -54,3 +54,7 @@ bin/
 node_modules
 js-chat/dist
 js-chat/junit.xml
+
+### Local secrets / agent output ###
+js-chat/.env
+build/agent-logs/
