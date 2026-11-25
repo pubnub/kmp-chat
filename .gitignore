@@ -57,4 +57,5 @@ js-chat/junit.xml
 
 ### Local secrets / agent output ###
 js-chat/.env
+.claude/settings.local.json
 build/agent-logs/

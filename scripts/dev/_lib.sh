@@ -19,23 +19,51 @@ ensure_java() {
   fi
 }
 
-# Integration tests hit real PubNub; fail fast (without printing any secret) if credentials are missing.
+# file_value <file> <key>: the value of "key=value" / "key: value" / "export key=value" in a .properties or
+# .env file, unquoted and trimmed; empty if the file or key is absent.
+file_value() {
+  [ -f "$1" ] || return 0
+  # LC_ALL=C: macOS sed aborts with "illegal byte sequence" on non-UTF-8 bytes in a UTF-8 locale.
+  LC_ALL=C sed -nE "s/^[[:space:]]*(export[[:space:]]+)?$2[[:space:]]*[=:][[:space:]]*//p" "$1" | tail -n 1 \
+    | LC_ALL=C sed -E "s/[[:space:]]+\$//; s/^['\"]//; s/['\"]\$//"
+}
+
+# A usable key is non-empty and not the "demo" placeholder.
+is_real_key() { [ -n "$1" ] && [ "$1" != demo ]; }
+
+# Integration tests hit real PubNub; fail fast if credentials are missing. Prints key NAMES only, never values.
 # require_credentials kotlin|js <name>
 require_credentials() {
+  local missing="" src k v
   case "$1" in
     kotlin)
-      # pubnub-chat-test/build.gradle.kts reads test.properties, else SDK_* env vars, else silently uses "demo".
-      if [ -f "$REPO_ROOT/test.properties" ]; then return 0; fi
-      # All five are required: if any one is missing, the Gradle fallback sets every key to "demo".
-      if [ -n "${SDK_PUB_KEY:-}" ] && [ -n "${SDK_SUB_KEY:-}" ] && [ -n "${SDK_PAM_PUB_KEY:-}" ] \
-        && [ -n "${SDK_PAM_SUB_KEY:-}" ] && [ -n "${SDK_PAM_SEC_KEY:-}" ]; then return 0; fi
-      echo "FAIL $2: no credentials. Create test.properties in the repo root (pubKey, subKey, pamPubKey, pamSubKey, pamSecKey) or export SDK_PUB_KEY/SDK_SUB_KEY/SDK_PAM_PUB_KEY/SDK_PAM_SUB_KEY/SDK_PAM_SEC_KEY."
+      # pubnub-chat-test/build.gradle.kts uses test.properties as-is when it exists (no per-key fallback);
+      # otherwise it needs all five SDK_* env vars, and if any one is missing it sets EVERY key to "demo".
+      if [ -f "$REPO_ROOT/test.properties" ]; then
+        src="test.properties"
+        for k in pubKey subKey pamPubKey pamSubKey pamSecKey; do
+          is_real_key "$(file_value "$REPO_ROOT/test.properties" "$k")" || missing="$missing $k"
+        done
+      else
+        src="environment (no test.properties)"
+        for k in SDK_PUB_KEY SDK_SUB_KEY SDK_PAM_PUB_KEY SDK_PAM_SUB_KEY SDK_PAM_SEC_KEY; do
+          is_real_key "${!k:-}" || missing="$missing $k"
+        done
+      fi
+      [ -z "$missing" ] && return 0
+      echo "FAIL $2: missing, empty or demo in $src:$missing. Set all five in test.properties (pubKey, subKey, pamPubKey, pamSubKey, pamSecKey) or export SDK_PUB_KEY/SDK_SUB_KEY/SDK_PAM_PUB_KEY/SDK_PAM_SUB_KEY/SDK_PAM_SEC_KEY."
       ;;
     js)
-      # js-chat/tests/utils.ts loads js-chat/.env via dotenv; real env vars work too.
-      if [ -f "$REPO_ROOT/js-chat/.env" ]; then return 0; fi
-      if [ -n "${PUBLISH_KEY:-}" ] && [ -n "${SUBSCRIBE_KEY:-}" ]; then return 0; fi
-      echo "FAIL $2: no credentials. Create js-chat/.env (PUBLISH_KEY, SUBSCRIBE_KEY, PAM_*, PAM_WITH_INTEGRITY_*) or export them."
+      # js-chat/tests/utils.ts reads these via dotenv, where a variable already in the environment wins over
+      # js-chat/.env. All eight are required: chat, access-manager, user and channel tests use the PAM keysets.
+      src="environment or js-chat/.env"
+      for k in PUBLISH_KEY SUBSCRIBE_KEY PAM_PUBLISH_KEY PAM_SUBSCRIBE_KEY PAM_SECRET_KEY \
+        PAM_WITH_INTEGRITY_PUBLISH_KEY PAM_WITH_INTEGRITY_SUBSCRIBE_KEY PAM_WITH_INTEGRITY_SECRET_KEY; do
+        if [ -n "${!k+set}" ]; then v="${!k}"; else v="$(file_value "$REPO_ROOT/js-chat/.env" "$k")"; fi
+        is_real_key "$v" || missing="$missing $k"
+      done
+      [ -z "$missing" ] && return 0
+      echo "FAIL $2: missing, empty or demo in $src:$missing. Set all eight in js-chat/.env or export them."
       ;;
   esac
   exit 2

@@ -26,12 +26,12 @@ Java 21 is required to drive the build (CI uses Zulu 21). Node 22 is used for `j
 | `scripts/dev/check.sh lint` | `ktlintCheck` |
 | `scripts/dev/check.sh static` | `ktlintCheck detekt` (same as CI "Static analysis") |
 | `scripts/dev/check.sh api` | `apiCheck` (binary-compatibility validator, `api/pubnub-chat.api`) |
-| `scripts/dev/check.sh compile` | JVM main + test, JS main compilation |
+| `scripts/dev/check.sh compile` | JVM + JS main and test compilation (tests are compiled, not run) |
 | `scripts/dev/check.sh unit [--tests X]` | `:pubnub-chat-impl:jvmTest` limited to `com.pubnub.kmp.*` and `com.pubnub.internal.*` (no network) |
 | `scripts/dev/check.sh jslint` | `npm --prefix js-chat run lint` (ESLint, as in CI) |
 | `scripts/dev/check.sh format` | `ktlintFormat` — **writes files**; may be run without asking |
 | `scripts/dev/check.sh apidump` | `apiDump` — **writes `api/*.api`**; may be run without asking, then review the `.api` diff |
-| `scripts/dev/integration-kotlin.sh [--tests X]` | `:pubnub-chat-impl:jvmTest --tests 'com.pubnub.integration.*'` — real PubNub, opt-in |
+| `scripts/dev/integration-kotlin.sh [--tests X]` | `:pubnub-chat-impl:jvmTest --tests 'com.pubnub.integration.*'` plus the root module's `:jvmTest` — real PubNub, opt-in. `--tests X` runs only the impl module; `--root [--tests X]` only the root module |
 | `scripts/dev/js-build.sh` | Kotlin/JS production build, packs `js-chat/dist`, then `npm run build` |
 | `scripts/dev/integration-js.sh [tests/x.test.ts]` | jest suite in `js-chat/` — real PubNub, opt-in, needs `js-build.sh` first |
 
@@ -42,13 +42,14 @@ CI (`.github/workflows/run-tests.yml`) runs `./gradlew check -x detekt` — all 
 ### Tests
 
 - **Kotlin integration tests** hit real PubNub and live in `pubnub-chat-impl/src/commonTest/kotlin/com/pubnub/integration/` (base class `BaseChatIntegrationTest`), with a few platform-specific ones in `jvmTest`/`jsTest`/`appleTest` under the same package. They run inside the normal `*Test` tasks — there is no separate `integrationTest` source set.
+- **Root-module integration tests** (base class `BaseIntegrationTest` from `pubnub-chat-test`): `src/commonTest/kotlin/com/pubnub/integration/MessageDraftIntegrationTest.kt` covers the `createMessageDraft()` / `createThreadMessageDraft()` extensions in the root module's `src/commonMain/kotlin/com/pubnub/chat/mediators.kt`, so it cannot move to `pubnub-chat-impl`; `src/jvmTest/kotlin/compubnub/chat/ChatIntegrationTest.kt` (package `compubnub.chat`) is JVM-only. Both run in the root `:jvmTest`, not in `:pubnub-chat-impl:jvmTest`.
 - **Kotlin unit tests** live under `com.pubnub.kmp` and `com.pubnub.internal`. Fakes and helpers: `pubnub-chat-impl/src/commonTest/kotlin/com/pubnub/kmp/utils/`.
 - **JS tests** are hand-written jest integration tests in `js-chat/tests/*.test.ts`. Each entity has its own file (`channel.test.ts`, `membership.test.ts`, `thread-channel.test.ts`, `channel-group.test.ts`, …); new tests go in the file matching the entity being tested.
 
 ### Test credentials
 
-- **Kotlin:** `pubnub-chat-test/build.gradle.kts` (buildkonfig `Keys` object) reads `test.properties` in the repo root (git-ignored; keys `pubKey`, `subKey`, `pamPubKey`, `pamSubKey`, `pamSecKey`), else env vars `SDK_PUB_KEY`, `SDK_SUB_KEY`, `SDK_PAM_PUB_KEY`, `SDK_PAM_SUB_KEY`, `SDK_PAM_SEC_KEY`, else silently falls back to `demo`. `integration-kotlin.sh` refuses to run without real credentials.
-- **JS:** `js-chat/tests/utils.ts` loads `js-chat/.env` via dotenv (git-ignored): `PUBLISH_KEY`, `SUBSCRIBE_KEY`, `PAM_PUBLISH_KEY`, `PAM_SUBSCRIBE_KEY`, `PAM_SECRET_KEY`, `PAM_WITH_INTEGRITY_PUBLISH_KEY`, `PAM_WITH_INTEGRITY_SUBSCRIBE_KEY`, `PAM_WITH_INTEGRITY_SECRET_KEY`.
+- **Kotlin:** `pubnub-chat-test/build.gradle.kts` (buildkonfig `Keys` object) reads `test.properties` in the repo root (git-ignored; keys `pubKey`, `subKey`, `pamPubKey`, `pamSubKey`, `pamSecKey`), else env vars `SDK_PUB_KEY`, `SDK_SUB_KEY`, `SDK_PAM_PUB_KEY`, `SDK_PAM_SUB_KEY`, `SDK_PAM_SEC_KEY`, else silently falls back to `demo`. `integration-kotlin.sh` refuses to run unless all five keys are set, non-empty and not `demo`.
+- **JS:** `js-chat/tests/utils.ts` loads `js-chat/.env` via dotenv (git-ignored): `PUBLISH_KEY`, `SUBSCRIBE_KEY`, `PAM_PUBLISH_KEY`, `PAM_SUBSCRIBE_KEY`, `PAM_SECRET_KEY`, `PAM_WITH_INTEGRITY_PUBLISH_KEY`, `PAM_WITH_INTEGRITY_SUBSCRIBE_KEY`, `PAM_WITH_INTEGRITY_SECRET_KEY`. `integration-js.sh` refuses to run unless all eight are set (env var or `.env`), non-empty and not `demo`.
 - Never print, log or commit key values.
 
 ### Multiplatform targets
