@@ -5,7 +5,6 @@ import com.pubnub.api.enums.PNStatusCategory
 import com.pubnub.api.models.consumer.PNStatus
 import com.pubnub.chat.internal.PREFIX_PUBNUB_PRIVATE
 import com.pubnub.chat.internal.SUFFIX_MUTE_1
-import com.pubnub.chat.internal.metadata.AppContextMetadataRepository
 import com.pubnub.chat.internal.metadata.MetadataRepository
 import com.pubnub.chat.mutelist.MutedUsersManager
 import com.pubnub.kmp.PNFuture
@@ -21,10 +20,6 @@ class MutedUsersManagerImpl internal constructor(
     val syncEnabled: Boolean,
     private val metadataRepository: MetadataRepository,
 ) : MutedUsersManager {
-    /** Keeps the mute list in AppContext. Chat uses the constructor with an injected repository. */
-    constructor(pubNub: PubNub, userId: String, syncEnabled: Boolean) :
-        this(pubNub, userId, syncEnabled, AppContextMetadataRepository(pubNub))
-
     private val muteSetAtomic = atomic(emptySet<String>())
     override val mutedUsers by muteSetAtomic
 

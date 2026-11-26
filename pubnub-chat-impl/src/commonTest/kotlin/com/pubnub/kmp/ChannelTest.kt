@@ -112,7 +112,8 @@ class ChannelTest : BaseTest() {
         every { chat.config } returns chatConfig
         every { chat.pubNub } returns pubNub
         every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
-        every { chat.mutedUsersManager } returns MutedUsersManagerImpl(pubNub, "demo", false)
+        every { chat.mutedUsersManager } returns
+            MutedUsersManagerImpl(pubNub, "demo", false, AppContextMetadataRepository(pubNub))
         val timerManager = createTimerManager()
         every { chat.timerManager } returns timerManager
         every { pubNub.configuration } returns createPNConfiguration(UserId("demo"), "demo", "demo", authToken = null)
