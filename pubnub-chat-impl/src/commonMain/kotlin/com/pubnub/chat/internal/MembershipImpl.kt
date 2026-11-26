@@ -209,7 +209,9 @@ data class MembershipImpl(
             return null
         }
         val existingTimetoken = this.custom?.get(METADATA_LAST_READ_MESSAGE_TIMETOKEN) ?: return custom
-        val customMap = custom as Map<String, Any?>
+        // Cast via Any so the Map methods are dispatched dynamically. When called from Swift, `custom` is a bridged
+        // NSDictionary rather than a real CustomObject, and a devirtualized CustomObject call would dereference null.
+        val customMap = (custom as Any) as Map<String, Any?>
         if (customMap.containsKey(METADATA_LAST_READ_MESSAGE_TIMETOKEN)) {
             return custom
         }
