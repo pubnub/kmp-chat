@@ -20,6 +20,7 @@ import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.MembershipImpl
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.metadata.AppContextMetadataRepository
 import com.pubnub.test.await
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -39,6 +40,7 @@ class MembershipTest {
     private val pubNub: PubNub = mock(MockMode.strict)
     private val chat: ChatInternal = mock<ChatInternal>(MockMode.strict).also {
         every { it.pubNub } returns pubNub
+        every { it.metadataRepository } returns AppContextMetadataRepository(pubNub)
     }
     private val user = UserImpl(chat, "user")
     private val channel = ChannelImpl(chat, id = "abc")

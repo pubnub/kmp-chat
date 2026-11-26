@@ -9,6 +9,7 @@ import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.PREFIX_PUBNUB_PRIVATE
 import com.pubnub.chat.internal.SUFFIX_MUTE_1
+import com.pubnub.chat.internal.metadata.AppContextMetadataRepository
 import com.pubnub.chat.internal.mutelist.MutedUsersManagerImpl
 import com.pubnub.chat.listenForEvents
 import com.pubnub.chat.mutelist.MutedUsersManager
@@ -30,7 +31,8 @@ import kotlin.test.assertTrue
 class MutedUsersIntegrationTest : BaseChatIntegrationTest() {
     private fun getMutedUsers(
         sync: Boolean = false
-    ): MutedUsersManager = MutedUsersManagerImpl(pubnub, pubnub.configuration.userId.value, sync)
+    ): MutedUsersManager =
+        MutedUsersManagerImpl(pubnub, pubnub.configuration.userId.value, sync, AppContextMetadataRepository(pubnub))
 
     @Test
     fun muteUser_adds_user_to_set() {
@@ -65,7 +67,12 @@ class MutedUsersIntegrationTest : BaseChatIntegrationTest() {
     @Test
     fun sync_updates_between_clients() = runTest {
         val mutedUsers1 = getMutedUsers(true)
-        val mutedUsers2 = MutedUsersManagerImpl(pubnub02, pubnub.configuration.userId.value, true)
+        val mutedUsers2 = MutedUsersManagerImpl(
+            pubnub02,
+            pubnub.configuration.userId.value,
+            true,
+            AppContextMetadataRepository(pubnub02)
+        )
         pubnub.test(backgroundScope) {
             pubnub.awaitSubscribe(listOf("aaa")) // just to kick off connection
             pubnub.awaitSubscribe(listOf("${PREFIX_PUBNUB_PRIVATE}${pubnub.configuration.userId.value}.$SUFFIX_MUTE_1")) {

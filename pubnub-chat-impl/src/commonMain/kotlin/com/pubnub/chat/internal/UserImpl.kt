@@ -2,17 +2,10 @@ package com.pubnub.chat.internal
 
 import co.touchlab.kermit.Logger
 import com.pubnub.api.PubNubException
-import com.pubnub.api.endpoints.objects.uuid.SetUUIDMetadata
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
-import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
-import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
-import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
 import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadata
-import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
-import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteUUIDMetadataEventMessage
-import com.pubnub.api.models.consumer.pubsub.objects.PNSetUUIDMetadataEventMessage
 import com.pubnub.api.utils.Clock
 import com.pubnub.api.utils.Instant
 import com.pubnub.api.utils.PatchValue
@@ -25,7 +18,7 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_USER_UPD
 import com.pubnub.chat.internal.error.PubNubErrorMessage.FAILED_TO_CREATE_UPDATE_USER_DATA
 import com.pubnub.chat.internal.error.PubNubErrorMessage.MODERATION_CAN_BE_SET_ONLY_BY_CLIENT_HAVING_SECRET_KEY
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_NOT_EXIST
-import com.pubnub.chat.internal.restrictions.RestrictionImpl
+import com.pubnub.chat.internal.metadata.MetadataEvent
 import com.pubnub.chat.internal.util.logErrorAndReturnException
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.listenForEvents
@@ -40,7 +33,6 @@ import com.pubnub.kmp.CustomObject
 import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.catch
-import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import tryLong
@@ -116,31 +108,14 @@ data class UserImpl(
         val internalModerationFilter = "!(channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*')"
         val effectiveFilter: String = filter?.let { "$internalModerationFilter && ($filter)" } ?: internalModerationFilter
 
-        return chat.pubNub.getMemberships(
-            userId = id,
+        return chat.metadataRepository.getMemberships(
+            chat = chat,
+            user = this,
             limit = limit,
             page = page,
             filter = effectiveFilter,
             sort = sort,
-            include = MembershipInclude(
-                includeCustom = true,
-                includeStatus = true,
-                includeType = true,
-                includeTotalCount = true,
-                includeChannel = true,
-                includeChannelCustom = true,
-                includeChannelType = true,
-                includeChannelStatus = true
-            )
-        ).then { pnChannelMembershipArrayResult ->
-            MembershipsResponse(
-                next = pnChannelMembershipArrayResult.next,
-                prev = pnChannelMembershipArrayResult.prev,
-                total = pnChannelMembershipArrayResult.totalCount ?: 0,
-                status = pnChannelMembershipArrayResult.status,
-                memberships = getMembershipsFromResult(pnChannelMembershipArrayResult, this)
-            )
-        }.catch { exception ->
+        ).catch { exception ->
             Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_RETRIEVE_GET_MEMBERSHIP_DATA, exception))
         }
     }
@@ -173,9 +148,8 @@ data class UserImpl(
     }
 
     override fun getChannelRestrictions(channel: Channel): PNFuture<Restriction> {
-        return getRestrictions(channel).then { pnChannelMembershipArrayResult ->
-            val firstMembership: PNChannelMembership = pnChannelMembershipArrayResult.data.first()
-            RestrictionImpl.fromChannelMembershipDTO(id, firstMembership)
+        return getRestrictions(channel).then { response ->
+            response.restrictions.first()
         }
     }
 
@@ -191,57 +165,23 @@ data class UserImpl(
             limit = limit,
             page = page,
             sort = sort
-        ).then { pnChannelMembershipArrayResult: PNChannelMembershipArrayResult ->
-            val restrictions = pnChannelMembershipArrayResult.data.map { pnChannelMembership ->
-                RestrictionImpl.fromChannelMembershipDTO(id, pnChannelMembership)
-            }
-
-            GetRestrictionsResponse(
-                restrictions = restrictions,
-                next = pnChannelMembershipArrayResult.next,
-                prev = pnChannelMembershipArrayResult.prev,
-                total = pnChannelMembershipArrayResult.totalCount ?: 0,
-                status = pnChannelMembershipArrayResult.status
-            )
-        }
+        )
     }
 
     override fun onUpdated(callback: (user: User) -> Unit): AutoCloseable {
-        var latestUser: User = this
-        val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
-            when (val message = event.extractedMessage) {
-                is PNSetUUIDMetadataEventMessage -> {
-                    if (message.data.id == id) {
-                        latestUser += message.data
-                        callback(latestUser)
-                    }
-                }
-                else -> return@createEventListener
+        return chat.metadataRepository.streamUserUpdates(chat, listOf(this)) { event ->
+            if (event is MetadataEvent.UserUpdated && event.user.id == id) {
+                callback(event.user)
             }
-        })
-
-        val subscription = chat.pubNub.channel(id).subscription()
-        subscription.addListener(listener)
-        subscription.subscribe()
-        return subscription
+        }
     }
 
     override fun onDeleted(callback: () -> Unit): AutoCloseable {
-        val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
-            when (val message = event.extractedMessage) {
-                is PNDeleteUUIDMetadataEventMessage -> {
-                    if (message.uuid == id) {
-                        callback()
-                    }
-                }
-                else -> return@createEventListener
+        return chat.metadataRepository.streamUserUpdates(chat, listOf(this)) { event ->
+            if (event is MetadataEvent.UserDeleted && event.userId == id) {
+                callback()
             }
-        })
-
-        val subscription = chat.pubNub.channel(id).subscription()
-        subscription.addListener(listener)
-        subscription.subscribe()
-        return subscription
+        }
     }
 
     override fun onMentioned(callback: (mention: Mention) -> Unit): AutoCloseable {
@@ -303,7 +243,7 @@ data class UserImpl(
         limit: Int? = null,
         page: PNPage? = null,
         sort: Collection<PNSortKey<PNMembershipKey>> = listOf(),
-    ): PNFuture<PNChannelMembershipArrayResult> {
+    ): PNFuture<GetRestrictionsResponse> {
         val filter: String =
             if (channel != null) {
                 "channel.id == '${INTERNAL_MODERATION_PREFIX}${channel.id}'"
@@ -311,34 +251,13 @@ data class UserImpl(
                 "channel.id LIKE '${INTERNAL_MODERATION_PREFIX}*'"
             }
 
-        return chat.pubNub.getMemberships(
+        return chat.metadataRepository.getUserRestrictions(
             userId = id,
+            filter = filter,
             limit = limit,
             page = page,
-            filter = filter,
             sort = sort,
-            include = MembershipInclude(
-                includeCustom = true,
-                includeStatus = true,
-                includeType = true,
-                includeTotalCount = true,
-                includeChannel = true,
-                includeChannelCustom = true,
-                includeChannelType = true,
-                includeChannelStatus = true
-            )
         )
-    }
-
-    private fun getMembershipsFromResult(
-        pnChannelMembershipArrayResult: PNChannelMembershipArrayResult,
-        user: User,
-    ): List<Membership> {
-        val memberships: List<Membership> =
-            pnChannelMembershipArrayResult.data.map { pnChannelMembership: PNChannelMembership ->
-                MembershipImpl.fromMembershipDTO(chat, pnChannelMembership, user)
-            }
-        return memberships
     }
 
     private fun toUUIDMetadata(): PNUUIDMetadata {
@@ -368,16 +287,17 @@ data class UserImpl(
         ): PNFuture<User> {
             val updatableValues = User.UpdatableValues()
             updatableValues.updateAction(user)
-            return user.setUserUpdatedValues(updatableValues)
+            val chat = user.chat as ChatInternal
+            return chat.metadataRepository.updateUser(chat, user, updatableValues)
                 .catch {
                     if (it is PubNubException && it.statusCode == HTTP_ERROR_412) {
                         Result.success(null)
                     } else {
                         Result.failure(it)
                     }
-                }.thenAsync { userDataResult: PNUUIDMetadataResult? ->
-                    if (userDataResult != null) {
-                        return@thenAsync fromDTO(user.chat as ChatInternal, userDataResult.data).asFuture()
+                }.thenAsync { updatedUser: User? ->
+                    if (updatedUser != null) {
+                        return@thenAsync updatedUser.asFuture()
                     }
                     user.chat.getUser(user.id).thenAsync { newUser: User? ->
                         if (newUser == null) {
@@ -412,16 +332,11 @@ data class UserImpl(
             }
             var latestUsers = users
             val chat = users.first().chat as ChatInternal
-            val listener = createEventListener(chat.pubNub, onObjects = { pubNub, event ->
-                val (newUser, newUserId) = when (val message = event.extractedMessage) {
-                    is PNSetUUIDMetadataEventMessage -> {
-                        val newUserId = message.data.id
-                        val previousUser = latestUsers.firstOrNull { it.id == newUserId }
-                        val newUser = previousUser?.plus(message.data) ?: fromDTO(chat, message.data)
-                        newUser to newUserId
-                    }
-                    is PNDeleteUUIDMetadataEventMessage -> null to message.uuid
-                    else -> return@createEventListener
+            return chat.metadataRepository.streamUserUpdates(chat, users) { event ->
+                val (newUser, newUserId) = when (event) {
+                    is MetadataEvent.UserUpdated -> event.user to event.user.id
+                    is MetadataEvent.UserDeleted -> null to event.userId
+                    else -> return@streamUserUpdates
                 }
 
                 latestUsers = latestUsers.asSequence().filter { user ->
@@ -434,28 +349,10 @@ data class UserImpl(
                     }
                 }.toList()
                 callback(latestUsers)
-            })
-
-            val subscriptionSet = chat.pubNub.subscriptionSetOf(users.map { it.id }.toSet())
-            subscriptionSet.addListener(listener)
-            subscriptionSet.subscribe()
-            return subscriptionSet
+            }
         }
     }
 }
-
-private fun User.setUserUpdatedValues(updatableValues: User.UpdatableValues): SetUUIDMetadata = chat.pubNub.setUUIDMetadata(
-    uuid = id,
-    name = updatableValues.name,
-    externalId = updatableValues.externalId,
-    profileUrl = updatableValues.profileUrl,
-    email = updatableValues.email,
-    custom = updatableValues.custom,
-    includeCustom = true,
-    type = updatableValues.type,
-    status = updatableValues.status,
-    ifMatchesEtag = eTag
-)
 
 internal val User.uuidFilterString get() = "uuid.id == '${this.id}'"
 internal val User.isInternalModerator get() = this.id == INTERNAL_MODERATOR_DATA_ID && this.type == INTERNAL_MODERATOR_DATA_TYPE

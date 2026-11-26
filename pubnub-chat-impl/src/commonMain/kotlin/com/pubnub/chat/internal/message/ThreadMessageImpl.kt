@@ -11,7 +11,6 @@ import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadMessage
 import com.pubnub.chat.internal.ChatImpl
 import com.pubnub.chat.internal.ChatInternal
-import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.defaultGetMessageResponseBody
 import com.pubnub.chat.internal.error.PubNubErrorMessage.PARENT_CHANNEL_DOES_NOT_EXISTS
 import com.pubnub.chat.internal.util.pnError
@@ -123,9 +122,7 @@ data class ThreadMessageImpl(
             if (parentChannel == null) {
                 log.pnError(PARENT_CHANNEL_DOES_NOT_EXISTS)
             }
-            ChatImpl.pinOrUnpinMessageToChannel(chat.pubNub, message, parentChannel).then {
-                ChannelImpl.fromDTO(chat, it.data)
-            }
+            ChatImpl.pinOrUnpinMessageToChannel(chat, message, parentChannel)
         }
     }
 

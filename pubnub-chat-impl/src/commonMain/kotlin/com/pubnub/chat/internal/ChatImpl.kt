@@ -19,14 +19,6 @@ import com.pubnub.api.models.consumer.objects.PNKey
 import com.pubnub.api.models.consumer.objects.PNMembershipKey
 import com.pubnub.api.models.consumer.objects.PNPage
 import com.pubnub.api.models.consumer.objects.PNSortKey
-import com.pubnub.api.models.consumer.objects.channel.PNChannelMetadataResult
-import com.pubnub.api.models.consumer.objects.member.PNMember
-import com.pubnub.api.models.consumer.objects.member.PNMemberArrayResult
-import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
-import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
-import com.pubnub.api.models.consumer.objects.membership.PNChannelMembershipArrayResult
-import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataArrayResult
-import com.pubnub.api.models.consumer.objects.uuid.PNUUIDMetadataResult
 import com.pubnub.api.models.consumer.presence.PNHereNowOccupantData
 import com.pubnub.api.models.consumer.pubsub.MessageResult
 import com.pubnub.api.models.consumer.pubsub.PNEvent
@@ -51,7 +43,6 @@ import com.pubnub.chat.config.LogLevel
 import com.pubnub.chat.config.PushNotificationsConfig
 import com.pubnub.chat.internal.channel.BaseChannel
 import com.pubnub.chat.internal.channel.ChannelImpl
-import com.pubnub.chat.internal.channel.ThreadChannelImpl
 import com.pubnub.chat.internal.channelGroup.ChannelGroupImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.APNS_TOPIC_SHOULD_BE_DEFINED_WHEN_DEVICE_GATEWAY_IS_SET_TO_APNS2
@@ -76,6 +67,9 @@ import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_MESSAGE_IS_NOT_A_T
 import com.pubnub.chat.internal.error.PubNubErrorMessage.THIS_THREAD_ID_ALREADY_RESTORED
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_ID_ALREADY_EXIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.USER_NOT_EXIST
+import com.pubnub.chat.internal.metadata.AppContextMetadataRepository
+import com.pubnub.chat.internal.metadata.MembershipInput
+import com.pubnub.chat.internal.metadata.MetadataRepository
 import com.pubnub.chat.internal.mutelist.MutedUsersManagerImpl
 import com.pubnub.chat.internal.serialization.PNDataEncoder
 import com.pubnub.chat.internal.timer.PlatformTimer
@@ -84,7 +78,6 @@ import com.pubnub.chat.internal.timer.createTimerManager
 import com.pubnub.chat.internal.util.channelsUrlDecoded
 import com.pubnub.chat.internal.util.escapeAppContextFilterValue
 import com.pubnub.chat.internal.util.logErrorAndReturnException
-import com.pubnub.chat.internal.util.nullOn404
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.cyrb53a
 import com.pubnub.chat.listeners.ConnectionStatus
@@ -145,8 +138,11 @@ class ChatImpl(
         UserImpl(this, pubNub.configuration.userId.value, name = pubNub.configuration.userId.value)
         private set
 
+    // the only place where the metadata repository is chosen and created
+    override val metadataRepository: MetadataRepository = AppContextMetadataRepository(pubNub)
+
     override val mutedUsersManager =
-        MutedUsersManagerImpl(pubNub, pubNub.configuration.userId.value, config.syncMutedUsers)
+        MutedUsersManagerImpl(pubNub, pubNub.configuration.userId.value, config.syncMutedUsers, metadataRepository)
 
     private val suggestedChannelsCache: MutableMap<String, List<Channel>> = mutableMapOf()
     private val suggestedUsersCache: MutableMap<String, List<User>> = mutableMapOf()
@@ -304,10 +300,7 @@ class ChatImpl(
             return log.logErrorAndReturnException(ID_IS_REQUIRED).asFuture()
         }
 
-        return pubNub.getUUIDMetadata(uuid = userId, includeCustom = true)
-            .then { pnUUIDMetadataResult: PNUUIDMetadataResult ->
-                UserImpl.fromDTO(this, pnUUIDMetadataResult.data)
-            }.nullOn404()
+        return metadataRepository.getUser(this, userId)
     }
 
     override fun getUsers(
@@ -316,24 +309,13 @@ class ChatImpl(
         limit: Int?,
         page: PNPage?,
     ): PNFuture<GetUsersResponse> {
-        return pubNub.getAllUUIDMetadata(
-            limit = limit,
-            page = page,
+        return metadataRepository.getUsers(
+            chat = this,
             filter = filter,
             sort = sort,
-            includeCount = true,
-            includeCustom = true
-        ).then { pnUUIDMetadataArrayResult: PNUUIDMetadataArrayResult ->
-            val users = pnUUIDMetadataArrayResult.data.map { pnUUIDMetadata ->
-                UserImpl.fromDTO(this, pnUUIDMetadata)
-            }
-            GetUsersResponse(
-                users = users,
-                next = pnUUIDMetadataArrayResult.next,
-                prev = pnUUIDMetadataArrayResult.prev,
-                total = pnUUIDMetadataArrayResult.totalCount ?: 0
-            )
-        }.catch {
+            limit = limit,
+            page = page,
+        ).catch {
             Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_GET_USERS, it))
         }
     }
@@ -427,24 +409,13 @@ class ChatImpl(
         limit: Int?,
         page: PNPage?
     ): PNFuture<GetChannelsResponse> {
-        return pubNub.getAllChannelMetadata(
-            limit = limit,
-            page = page,
+        return metadataRepository.getChannels(
+            chat = this,
             filter = filter,
             sort = sort,
-            includeCount = true,
-            includeCustom = true
-        ).then { pnChannelMetadataArrayResult ->
-            val channels = pnChannelMetadataArrayResult.data.map { pnChannelMetadata ->
-                ChannelImpl.fromDTO(this, pnChannelMetadata)
-            }
-            GetChannelsResponse(
-                channels = channels,
-                next = pnChannelMetadataArrayResult.next,
-                prev = pnChannelMetadataArrayResult.prev,
-                total = pnChannelMetadataArrayResult.totalCount ?: 0
-            )
-        }.catch { exception ->
+            limit = limit,
+            page = page,
+        ).catch { exception ->
             Result.failure(PubNubException(PubNubErrorMessage.FAILED_TO_GET_CHANNELS, exception))
         }
     }
@@ -453,10 +424,7 @@ class ChatImpl(
         if (!isValidId(channelId)) {
             return log.logErrorAndReturnException(CHANNEL_ID_IS_REQUIRED).asFuture()
         }
-        return pubNub.getChannelMetadata(channel = channelId, includeCustom = true)
-            .then { pnChannelMetadataResult: PNChannelMetadataResult ->
-                ChannelImpl.fromDTO(this, pnChannelMetadataResult.data)
-            }.nullOn404()
+        return metadataRepository.getChannel(this, channelId)
     }
 
     override fun updateChannel(
@@ -572,31 +540,19 @@ class ChatImpl(
                 channelStatus
             )
         }.thenAsync { channel: Channel ->
-            val hostMembershipFuture = pubNub.setMemberships(
-                listOf(PNChannelMembership.Partial(channel.id, membershipCustom)),
+            val hostMembershipFuture = metadataRepository.setMembershipsWithoutStatusAndType(
+                chat = this,
+                user = user,
+                memberships = listOf(MembershipInput(channel.id, membershipCustom)),
                 filter = "channel.id == '${channel.id}'",
-                include = MembershipInclude(
-                    includeCustom = true,
-                    includeStatus = false,
-                    includeType = false,
-                    includeTotalCount = true,
-                    includeChannel = true,
-                    includeChannelCustom = true,
-                    includeChannelType = true,
-                    includeChannelStatus = false
-                ),
             )
             awaitAll(
                 hostMembershipFuture,
                 channel.invite(invitedUser)
-            ).then { (hostMembershipResponse: PNChannelMembershipArrayResult, inviteeMembership: Membership) ->
+            ).then { (hostMembershipResponse: MembershipsResponse, inviteeMembership: Membership) ->
                 CreateDirectConversationResult(
                     channel,
-                    MembershipImpl.fromMembershipDTO(
-                        this,
-                        hostMembershipResponse.data.first(),
-                        user
-                    ),
+                    hostMembershipResponse.memberships.first(),
                     inviteeMembership,
                 )
             }
@@ -624,31 +580,19 @@ class ChatImpl(
                 channelStatus
             )
         }.thenAsync { channel: Channel ->
-            val hostMembershipFuture = pubNub.setMemberships(
-                listOf(PNChannelMembership.Partial(channel.id, membershipCustom)),
+            val hostMembershipFuture = metadataRepository.setMembershipsWithoutStatusAndType(
+                chat = this,
+                user = user,
+                memberships = listOf(MembershipInput(channel.id, membershipCustom)),
                 filter = "channel.id == '${channel.id}'",
-                include = MembershipInclude(
-                    includeCustom = true,
-                    includeStatus = false,
-                    includeType = false,
-                    includeTotalCount = true,
-                    includeChannel = true,
-                    includeChannelCustom = true,
-                    includeChannelType = true,
-                    includeChannelStatus = false
-                ),
             )
             awaitAll(
                 hostMembershipFuture,
                 channel.inviteMultiple(invitedUsers)
-            ).then { (hostMembershipResponse: PNChannelMembershipArrayResult, inviteeMemberships: List<Membership>) ->
+            ).then { (hostMembershipResponse: MembershipsResponse, inviteeMemberships: List<Membership>) ->
                 CreateGroupConversationResult(
                     channel,
-                    MembershipImpl.fromMembershipDTO(
-                        this,
-                        hostMembershipResponse.data.first(),
-                        user
-                    ),
+                    hostMembershipResponse.memberships.first(),
                     inviteeMemberships.toTypedArray(),
                 )
             }
@@ -751,9 +695,9 @@ class ChatImpl(
                 Result.failure(exception)
             }
         }.thenAsync {
-            val moderationEvent: PNFuture<PNMemberArrayResult> =
+            val moderationEvent: PNFuture<Unit> =
                 if (!restriction.ban && !restriction.mute) {
-                    pubNub.removeChannelMembers(channel = channel, uuids = listOf(userId))
+                    metadataRepository.removeRestriction(moderationChannelId = channel, userId = userId)
                         .alsoAsync { _ ->
                             emitEvent(
                                 channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
@@ -772,8 +716,6 @@ class ChatImpl(
                             RESTRICTION_REASON to restriction.reason
                         )
                     )
-                    val uuids = listOf(PNMember.Partial(uuidId = userId, custom = custom, null))
-
                     // if "Enforce referential integrity for memberships" is enabled we need to make sure that user exists in AppContext
                     createUser(id = userId).catch { exception ->
                         if (exception.message == USER_ID_ALREADY_EXIST) {
@@ -782,7 +724,11 @@ class ChatImpl(
                             Result.failure(exception)
                         }
                     }.thenAsync {
-                        pubNub.setChannelMembers(channel = channel, users = uuids).alsoAsync { _ ->
+                        metadataRepository.setRestriction(
+                            moderationChannelId = channel,
+                            userId = userId,
+                            custom = custom
+                        ).alsoAsync { _ ->
                             emitEvent(
                                 channelId = INTERNAL_USER_MODERATION_CHANNEL_PREFIX + userId,
                                 payload = EventContent.Moderation(
@@ -798,7 +744,7 @@ class ChatImpl(
                         }
                     }
                 }
-            moderationEvent.then { }
+            moderationEvent
         }
     }
 
@@ -839,9 +785,7 @@ class ChatImpl(
 
     override fun getThreadChannel(message: Message): PNFuture<ThreadChannel> {
         val threadChannelId = getThreadId(message.channelId, message.timetoken)
-        return pubNub.getChannelMetadata(threadChannelId).then {
-            ThreadChannelImpl.fromDTO(this, message, it.data)
-        }.catch {
+        return metadataRepository.getThreadChannel(this, message, threadChannelId).catch {
             if (it is PubNubException && it.statusCode == HTTP_ERROR_404) {
                 Result.failure(PubNubException(THIS_MESSAGE_IS_NOT_A_THREAD, it))
             } else {
@@ -932,28 +876,19 @@ class ChatImpl(
                                 put(METADATA_LAST_READ_MESSAGE_TIMETOKEN, relevantLastMessageTimeToken.toString())
                             }
 
-                            PNChannelMembership.Partial(
+                            MembershipInput(
                                 channelId = channelId,
                                 custom = createCustomObject(customMap)
                             )
                         }.toList()
                         val filterExpression = relevantChannelIds.joinToString(" || ") { "channel.id == '$it'" }
 
-                        pubNub.setMemberships(
-                            channels = channelMembershipInputs,
+                        metadataRepository.setMembershipsWithoutStatusAndType(
+                            chat = this,
+                            user = currentUser,
+                            memberships = channelMembershipInputs,
                             filter = filterExpression,
-                            userId = currentUser.id,
-                            include = MembershipInclude(
-                                includeCustom = true,
-                                includeStatus = false,
-                                includeType = false,
-                                includeTotalCount = true,
-                                includeChannel = true,
-                                includeChannelCustom = true,
-                                includeChannelType = true,
-                                includeChannelStatus = false
-                            ),
-                        ).alsoAsync { _: PNChannelMembershipArrayResult ->
+                        ).alsoAsync { _: MembershipsResponse ->
                             val channelTypeMap: Map<String, ChannelType?> =
                                 userMembershipsResponse.memberships.associate { it.channel.id to it.channel.type }
                             val emitEventFutures: List<PNFuture<PNPublishResult>> =
@@ -974,18 +909,12 @@ class ChatImpl(
                                     }
                                 }
                             emitEventFutures.awaitAll()
-                        }.then { setMembershipsResponse: PNChannelMembershipArrayResult ->
+                        }.then { setMembershipsResponse: MembershipsResponse ->
                             MarkAllMessageAsReadResponse(
-                                memberships = setMembershipsResponse.data.map { membership: PNChannelMembership ->
-                                    MembershipImpl.fromMembershipDTO(
-                                        this,
-                                        membership,
-                                        currentUser
-                                    )
-                                },
+                                memberships = setMembershipsResponse.memberships,
                                 next = setMembershipsResponse.next,
                                 prev = setMembershipsResponse.prev,
-                                total = setMembershipsResponse.totalCount ?: 0,
+                                total = setMembershipsResponse.total,
                                 status = setMembershipsResponse.status
                             )
                         }
@@ -1308,10 +1237,10 @@ class ChatImpl(
     }
 
     private fun performUserDelete(userId: String): PNFuture<Unit> =
-        pubNub.removeUUIDMetadata(uuid = userId).then { }
+        metadataRepository.removeUser(userId)
 
     private fun performChannelDelete(channelId: String): PNFuture<Unit> =
-        pubNub.removeChannelMetadata(channel = channelId).then { }
+        metadataRepository.removeChannel(channelId)
 
     private fun setChannelMetadata(
         id: String,
@@ -1321,17 +1250,15 @@ class ChatImpl(
         type: ChannelType?,
         status: String?,
     ): PNFuture<Channel> {
-        return pubNub.setChannelMetadata(
-            channel = id,
+        return metadataRepository.setChannel(
+            chat = this,
+            id = id,
             name = name,
             description = description,
             custom = custom,
-            includeCustom = true,
-            type = type?.stringValue,
+            type = type,
             status = status
-        ).then { pnChannelMetadataResult ->
-            ChannelImpl.fromDTO(this, pnChannelMetadataResult.data)
-        }.catch { exception ->
+        ).catch { exception ->
             Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_CHANNEL_DATA, exception))
         }
     }
@@ -1346,19 +1273,17 @@ class ChatImpl(
         type: String? = null,
         status: String? = null,
     ): PNFuture<User> {
-        return pubNub.setUUIDMetadata(
-            uuid = id,
+        return metadataRepository.setUser(
+            chat = this,
+            id = id,
             name = name,
             externalId = externalId,
             profileUrl = profileUrl,
             email = email,
             custom = custom,
-            includeCustom = true,
             type = type,
             status = status
-        ).then { pnUUIDMetadataResult ->
-            UserImpl.fromDTO(this, pnUUIDMetadataResult.data)
-        }.catch { exception ->
+        ).catch { exception ->
             Result.failure(PubNubException(FAILED_TO_CREATE_UPDATE_USER_DATA, exception))
         }
     }
@@ -1367,10 +1292,10 @@ class ChatImpl(
         private val log = Logger.withTag("ChatImpl")
 
         internal fun pinOrUnpinMessageToChannel(
-            pubNub: PubNub,
+            chat: ChatInternal,
             message: Message?,
             channel: Channel
-        ): PNFuture<PNChannelMetadataResult> {
+        ): PNFuture<Channel> {
             val customMetadataToSet = channel.custom?.toMutableMap() ?: mutableMapOf()
             if (message == null) {
                 customMetadataToSet.remove(PINNED_MESSAGE_TIMETOKEN)
@@ -1381,9 +1306,9 @@ class ChatImpl(
                 customMetadataToSet[PINNED_MESSAGE_TIMETOKEN] = message.timetoken.toString()
                 customMetadataToSet[PINNED_MESSAGE_CHANNEL_ID] = message.channelId
             }
-            return pubNub.setChannelMetadata(
-                channel = channel.id,
-                includeCustom = true,
+            return chat.metadataRepository.setChannelCustom(
+                chat = chat,
+                channelId = channel.id,
                 custom = createCustomObject(customMetadataToSet)
             )
         }

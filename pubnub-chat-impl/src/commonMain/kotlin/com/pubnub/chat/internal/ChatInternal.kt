@@ -8,6 +8,7 @@ import com.pubnub.chat.Event
 import com.pubnub.chat.Message
 import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.User
+import com.pubnub.chat.internal.metadata.MetadataRepository
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
@@ -21,6 +22,7 @@ interface ChatInternal : Chat {
     val deleteMessageActionName: String
     val reactionsActionName: String
     val timerManager: TimerManager
+    internal val metadataRepository: MetadataRepository
 
     fun createUser(user: User): PNFuture<User>
 

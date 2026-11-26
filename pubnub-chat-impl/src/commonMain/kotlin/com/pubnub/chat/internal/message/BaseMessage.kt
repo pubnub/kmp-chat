@@ -27,7 +27,6 @@ import com.pubnub.chat.internal.METADATA_TEXT_LINKS
 import com.pubnub.chat.internal.PUBNUB_INTERNAL_AUTOMODERATED
 import com.pubnub.chat.internal.THREAD_ROOT_ID
 import com.pubnub.chat.internal.channel.BaseChannel
-import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.channel.ThreadChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage
 import com.pubnub.chat.internal.error.PubNubErrorMessage.AUTOMODERATED_MESSAGE_CANNOT_BE_EDITED
@@ -215,9 +214,7 @@ abstract class BaseMessage<T : Message>(
             if (channel == null) {
                 log.pnError(PubNubErrorMessage.CHANNEL_NOT_EXIST)
             }
-            ChatImpl.pinOrUnpinMessageToChannel(chat.pubNub, this, channel).then {
-                ChannelImpl.fromDTO(chat, it.data)
-            }
+            ChatImpl.pinOrUnpinMessageToChannel(chat, this, channel)
         }
     }
 

@@ -18,6 +18,8 @@ import com.pubnub.chat.ThreadChannel
 import com.pubnub.chat.User
 import com.pubnub.chat.config.ChatConfiguration
 import com.pubnub.chat.internal.ChatInternal
+import com.pubnub.chat.internal.metadata.AppContextMetadataRepository
+import com.pubnub.chat.internal.metadata.MetadataRepository
 import com.pubnub.chat.internal.timer.TimerManager
 import com.pubnub.chat.internal.timer.createTimerManager
 import com.pubnub.chat.listeners.ConnectionStatus
@@ -41,6 +43,8 @@ import kotlin.time.Duration
 
 abstract class FakeChat(override val config: ChatConfiguration, override val pubNub: PubNub) : ChatInternal {
     override val timerManager: TimerManager = createTimerManager()
+
+    override val metadataRepository: MetadataRepository = AppContextMetadataRepository(pubNub)
 
     override val mutedUsersManager: MutedUsersManager
         get() = TODO("Not yet implemented")
