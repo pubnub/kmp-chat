@@ -9,6 +9,7 @@ import com.pubnub.chat.Channel
 import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.message.ThreadMessageImpl
+import com.pubnub.chat.internal.metadata.AppContextMetadataRepository
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.EventContent
 import com.pubnub.kmp.utils.BaseTest
@@ -72,6 +73,7 @@ class ThreadMessageTest : BaseTest() {
 
         every { chat.getChannel(parentChannelId) } returns parentChannel.asFuture()
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
 
         val customSlot = Capture.slot<CustomObject>()
         every {
@@ -130,6 +132,7 @@ class ThreadMessageTest : BaseTest() {
 
         every { chat.getChannel(parentChannelId) } returns parentChannel.asFuture()
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
 
         val customSlot = Capture.slot<CustomObject>()
         every {

@@ -2,11 +2,8 @@ package com.pubnub.chat.internal
 
 import co.touchlab.kermit.Logger
 import com.pubnub.api.models.consumer.objects.member.PNMember
-import com.pubnub.api.models.consumer.objects.membership.MembershipInclude
 import com.pubnub.api.models.consumer.objects.membership.PNChannelMembership
-import com.pubnub.api.models.consumer.pubsub.objects.PNDeleteMembershipEventMessage
 import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEvent
-import com.pubnub.api.models.consumer.pubsub.objects.PNSetMembershipEventMessage
 import com.pubnub.chat.Channel
 import com.pubnub.chat.Membership
 import com.pubnub.chat.Message
@@ -15,6 +12,8 @@ import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.error.PubNubErrorMessage.CAN_NOT_STREAM_MEMBERSHIP_UPDATES_ON_EMPTY_LIST
 import com.pubnub.chat.internal.error.PubNubErrorMessage.NO_SUCH_MEMBERSHIP_EXISTS
 import com.pubnub.chat.internal.error.PubNubErrorMessage.RECEIPT_EVENT_WAS_NOT_SENT_TO_CHANNEL
+import com.pubnub.chat.internal.metadata.MembershipInput
+import com.pubnub.chat.internal.metadata.MetadataEvent
 import com.pubnub.chat.internal.util.pnError
 import com.pubnub.chat.internal.utils.AccessManager
 import com.pubnub.chat.types.EventContent
@@ -23,7 +22,6 @@ import com.pubnub.kmp.PNFuture
 import com.pubnub.kmp.alsoAsync
 import com.pubnub.kmp.asFuture
 import com.pubnub.kmp.createCustomObject
-import com.pubnub.kmp.createEventListener
 import com.pubnub.kmp.then
 import com.pubnub.kmp.thenAsync
 import tryLong
@@ -48,10 +46,7 @@ data class MembershipImpl(
     }
 
     override fun delete(): PNFuture<Unit> {
-        return chat.pubNub.removeMemberships(
-            userId = user.id,
-            channels = listOf(channel.id)
-        ).then { Unit }
+        return chat.metadataRepository.removeMembership(userId = user.id, channelId = channel.id)
     }
 
     override fun update(status: String?, type: String?, custom: CustomObject?): PNFuture<Membership> {
@@ -59,29 +54,20 @@ data class MembershipImpl(
             if (!exists) {
                 log.pnError(NO_SUCH_MEMBERSHIP_EXISTS)
             }
-            chat.pubNub.setMemberships(
-                userId = user.id,
-                channels = listOf(
-                    PNChannelMembership.Partial(
+            chat.metadataRepository.setMemberships(
+                chat = chat,
+                user = user,
+                memberships = listOf(
+                    MembershipInput(
                         channelId = channel.id,
                         custom = mergeCustomWithLastReadTimetoken(custom),
                         status = status,
                         type = type,
                     )
                 ),
-                include = MembershipInclude(
-                    includeCustom = true,
-                    includeStatus = true,
-                    includeType = true,
-                    includeTotalCount = true,
-                    includeChannel = true,
-                    includeChannelCustom = true,
-                    includeChannelType = true,
-                    includeChannelStatus = true
-                ),
                 filter = filterThisChannel()
-            ).then { pnChannelMembershipArrayResult ->
-                fromMembershipDTO(chat, pnChannelMembershipArrayResult.data.first(), user)
+            ).then { membershipsResponse ->
+                membershipsResponse.memberships.first()
             }
         }
     }
@@ -134,42 +120,22 @@ data class MembershipImpl(
     }
 
     override fun onUpdated(callback: (membership: Membership) -> Unit): AutoCloseable {
-        val channelEntity = chat.pubNub.channel(channel.id)
-        val subscription = channelEntity.subscription()
-        var latestMembership: Membership = this
-        val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
-            when (val message = event.extractedMessage) {
-                is PNSetMembershipEventMessage -> {
-                    if (event.channel == channel.id && message.data.uuid == user.id) {
-                        val updatedMembership = latestMembership + message.data
-                        latestMembership = updatedMembership
-                        callback(updatedMembership)
-                    }
-                }
-                else -> return@createEventListener
+        return chat.metadataRepository.streamMembershipUpdates(chat, listOf(this)) { event ->
+            if (event is MetadataEvent.MembershipUpdated &&
+                event.membership.channel.id == channel.id &&
+                event.membership.user.id == user.id
+            ) {
+                callback(event.membership)
             }
-        })
-        subscription.addListener(listener)
-        subscription.subscribe()
-        return subscription
+        }
     }
 
     override fun onDeleted(callback: () -> Unit): AutoCloseable {
-        val channelEntity = chat.pubNub.channel(channel.id)
-        val subscription = channelEntity.subscription()
-        val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
-            when (val message = event.extractedMessage) {
-                is PNDeleteMembershipEventMessage -> {
-                    if (event.channel == channel.id && message.data.uuid == user.id) {
-                        callback()
-                    }
-                }
-                else -> return@createEventListener
+        return chat.metadataRepository.streamMembershipUpdates(chat, listOf(this)) { event ->
+            if (event is MetadataEvent.MembershipDeleted && event.channelId == channel.id && event.userId == user.id) {
+                callback()
             }
-        })
-        subscription.addListener(listener)
-        subscription.subscribe()
-        return subscription
+        }
     }
 
     override fun plus(update: PNSetMembershipEvent): Membership {
@@ -222,9 +188,7 @@ data class MembershipImpl(
     }
 
     private fun exists(): PNFuture<Boolean> =
-        chat.pubNub.getMemberships(userId = user.id, filter = filterThisChannel()).then {
-            it.data.isNotEmpty()
-        }
+        chat.metadataRepository.membershipExists(userId = user.id, channelId = channel.id)
 
     private fun filterThisChannel() = "channel.id == '${this.channel.id}'"
 
@@ -240,36 +204,17 @@ data class MembershipImpl(
             }
             var latestMemberships = memberships
             val chat = memberships.first().chat as ChatInternal
-            val listener = createEventListener(chat.pubNub, onObjects = { _, event ->
-                val eventUuid = when (val message = event.extractedMessage) {
-                    is PNDeleteMembershipEventMessage -> message.data.uuid
-                    is PNSetMembershipEventMessage -> message.data.uuid
-                    else -> return@createEventListener
-                }
-                val membership = memberships.find { it.channel.id == event.channel && it.user.id == eventUuid }
-                    ?: return@createEventListener
-                val newMembership = when (val message = event.extractedMessage) {
-                    is PNSetMembershipEventMessage -> {
-                        val previousMembership = latestMemberships.find { it.channel.id == event.channel && it.user.id == eventUuid }
-                        previousMembership?.let { it + message.data }
-                            ?: MembershipImpl(
-                                chat,
-                                channel = membership.channel,
-                                user = membership.user,
-                                custom = message.data.custom?.value,
-                                updated = message.data.updated,
-                                eTag = message.data.eTag,
-                                status = message.data.status?.value,
-                                type = message.data.type?.value,
-                            )
-                    }
-                    is PNDeleteMembershipEventMessage -> null
-                    else -> return@createEventListener
+            return chat.metadataRepository.streamMembershipUpdates(chat, memberships) { event ->
+                val (newMembership, eventChannelId, eventUserId) = when (event) {
+                    is MetadataEvent.MembershipUpdated ->
+                        Triple(event.membership, event.membership.channel.id, event.membership.user.id)
+                    is MetadataEvent.MembershipDeleted -> Triple(null, event.channelId, event.userId)
+                    else -> return@streamMembershipUpdates
                 }
                 latestMemberships = latestMemberships
                     .asSequence()
                     .filter { membership ->
-                        membership.channel.id != event.channel || membership.user.id != eventUuid
+                        membership.channel.id != eventChannelId || membership.user.id != eventUserId
                     }.let { sequence ->
                         if (newMembership != null) {
                             sequence + newMembership
@@ -278,12 +223,7 @@ data class MembershipImpl(
                         }
                     }.toList()
                 callback(latestMemberships)
-            })
-
-            val subscriptionSet = chat.pubNub.subscriptionSetOf(memberships.map { it.channel.id }.toSet())
-            subscriptionSet.addListener(listener)
-            subscriptionSet.subscribe()
-            return subscriptionSet
+            }
         }
 
         internal fun fromMembershipDTO(chat: ChatInternal, channelMembership: PNChannelMembership, user: User) =

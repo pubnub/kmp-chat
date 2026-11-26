@@ -31,6 +31,8 @@ data class ChannelImpl(
         channelFactory = ::fromDTO,
         messageFactory = MessageImpl::fromDTO
     ) {
+    override fun channelFromModel(channel: Channel): Channel = channel
+
     companion object {
         fun fromDTO(chat: ChatInternal, channel: PNChannelMetadata): Channel {
             return ChannelImpl(

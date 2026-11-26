@@ -66,6 +66,18 @@ data class ThreadChannelImpl(
     override val parentChannelId: String
         get() = parentMessage.channelId
 
+    override fun channelFromModel(channel: Channel): ThreadChannel = ThreadChannelImpl(
+        parentMessage,
+        chat,
+        id = channel.id,
+        name = channel.name,
+        custom = channel.custom,
+        description = channel.description,
+        updated = channel.updated,
+        status = channel.status,
+        type = channel.type
+    )
+
     override fun pinMessageToParentChannel(message: ThreadMessage) = pinOrUnpinMessageFromParentChannel(message)
 
     override fun unpinMessageFromParentChannel(): PNFuture<Channel> = pinOrUnpinMessageFromParentChannel(null)
@@ -75,9 +87,7 @@ data class ThreadChannelImpl(
             if (parentChannel == null) {
                 log.pnError(PARENT_CHANNEL_DOES_NOT_EXISTS)
             }
-            ChatImpl.pinOrUnpinMessageToChannel(chat.pubNub, message, parentChannel).then {
-                ChannelImpl.fromDTO(chat, it.data)
-            }
+            ChatImpl.pinOrUnpinMessageToChannel(chat, message, parentChannel)
         }
     }
 
@@ -149,7 +159,7 @@ data class ThreadChannelImpl(
         return (
             if (!threadCreated) {
                 awaitAll(
-                    chat.pubNub.setChannelMetadata(id, description = description),
+                    chat.metadataRepository.setThreadChannelDescription(id, description),
                     chat.pubNub.addMessageAction(
                         parentMessage.channelId,
                         PNMessageAction(

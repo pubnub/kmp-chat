@@ -24,6 +24,7 @@ import com.pubnub.chat.internal.PUBNUB_INTERNAL_AUTOMODERATED
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
 import com.pubnub.chat.internal.message.MessageImpl
+import com.pubnub.chat.internal.metadata.AppContextMetadataRepository
 import com.pubnub.chat.types.ChannelType
 import com.pubnub.chat.types.CreateThreadResult
 import com.pubnub.chat.types.EventContent
@@ -124,6 +125,7 @@ class BaseMessageTest : BaseTest() {
 
         every { chat.getChannel(messageChannelId) } returns channel.asFuture()
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
 
         val customSlot = Capture.slot<CustomObject>()
         every {
@@ -336,6 +338,7 @@ class BaseMessageTest : BaseTest() {
 
         every { chat.reactionsActionName } returns reactionsActionName
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
         every { pubNub.configuration } returns createPNConfiguration(
             UserId("user1"),
             "demo",
@@ -389,6 +392,7 @@ class BaseMessageTest : BaseTest() {
 
         every { chat.reactionsActionName } returns "reactions"
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
         every { pubNub.configuration } returns createPNConfiguration(
             UserId(currentUserId),
             "demo",
@@ -416,6 +420,7 @@ class BaseMessageTest : BaseTest() {
 
         every { chat.reactionsActionName } returns reactionsActionName
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
         every { pubNub.configuration } returns createPNConfiguration(
             UserId(currentUserId),
             "demo",
@@ -450,6 +455,7 @@ class BaseMessageTest : BaseTest() {
 
         every { chat.reactionsActionName } returns reactionsActionName
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
         every { pubNub.configuration } returns createPNConfiguration(
             UserId(currentUserId),
             "demo",
@@ -484,6 +490,7 @@ class BaseMessageTest : BaseTest() {
 
         every { chat.reactionsActionName } returns reactionsActionName
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
         every { pubNub.configuration } returns createPNConfiguration(
             UserId(currentUserId),
             "demo",
@@ -529,6 +536,7 @@ class BaseMessageTest : BaseTest() {
 
         every { chat.deleteMessageActionName } returns deleteActionName
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
         every { pubNub.addMessageAction(any(), any()) } returns addMessageActionEndpoint
         every { addMessageActionEndpoint.async(any()) } calls { (callback: Consumer<Result<PNAddMessageActionResult>>) ->
             val action = PNMessageAction(deleteActionName, deleteActionName, messageTimetoken).apply {
@@ -563,6 +571,7 @@ class BaseMessageTest : BaseTest() {
 
         every { chat.deleteMessageActionName } returns deleteActionName
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
         every { pubNub.addMessageAction(any(), any()) } returns addMessageActionEndpoint
         every { addMessageActionEndpoint.async(any()) } calls { (callback: Consumer<Result<PNAddMessageActionResult>>) ->
             val action = PNMessageAction(deleteActionName, deleteActionName, messageTimetoken).apply {

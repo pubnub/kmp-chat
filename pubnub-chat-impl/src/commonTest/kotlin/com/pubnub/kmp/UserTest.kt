@@ -21,6 +21,7 @@ import com.pubnub.chat.internal.ChatInternal
 import com.pubnub.chat.internal.INTERNAL_MODERATION_PREFIX
 import com.pubnub.chat.internal.UserImpl
 import com.pubnub.chat.internal.channel.ChannelImpl
+import com.pubnub.chat.internal.metadata.AppContextMetadataRepository
 import com.pubnub.kmp.utils.FakeChat
 import com.pubnub.test.randomString
 import dev.mokkery.MockMode
@@ -61,6 +62,7 @@ class UserTest {
         every { chatConfig.typingTimeout } returns 2000.milliseconds
         every { chat.config } returns chatConfig
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
         every { pubNub.configuration } returns pubnubConfig
         every { pubnubConfig.secretKey } returns ""
         objectUnderTest = createUser(chat)
@@ -153,6 +155,7 @@ class UserTest {
         val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
         val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
         every {
             pubNub.getMemberships(
                 userId = any(),
@@ -185,6 +188,7 @@ class UserTest {
         val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
         val getMembershipsEndpoint: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
         every {
             pubNub.getMemberships(
                 userId = any(),
@@ -232,6 +236,7 @@ class UserTest {
         val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
         val getMemberships: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
         every {
             pubNub.getMemberships(
                 any(),
@@ -276,6 +281,7 @@ class UserTest {
         val sort = listOf(PNSortKey.PNAsc(PNMembershipKey.CHANNEL_ID))
         val getMemberships: GetMemberships = mock(MockMode.strict)
         every { chat.pubNub } returns pubNub
+        every { chat.metadataRepository } returns AppContextMetadataRepository(pubNub)
         every {
             pubNub.getMemberships(
                 any(),
