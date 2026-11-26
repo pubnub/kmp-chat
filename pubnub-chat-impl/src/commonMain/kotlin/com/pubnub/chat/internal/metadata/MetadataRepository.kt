@@ -26,6 +26,7 @@ import com.pubnub.kmp.PNFuture
  * Every implementation turns the responses of its own storage into Chat-level types. "Not found" is
  * returned as `null`, not as a storage specific error.
  */
+@Suppress("TooManyFunctions")
 internal interface MetadataRepository {
     // users
     fun getUser(chat: ChatInternal, userId: String): PNFuture<User?>

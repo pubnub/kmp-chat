@@ -20,14 +20,18 @@ internal class UserEventTracker(private val chat: ChatInternal, users: Collectio
 
     fun updated(patch: PNUUIDMetadata): MetadataEvent.UserUpdated? {
         val userId = patch.id
-        if (userId !in trackedIds) return null
+        if (userId !in trackedIds) {
+            return null
+        }
         val newUser = latestUsers[userId]?.plus(patch) ?: UserImpl.fromDTO(chat, patch)
         latestUsers = latestUsers + (userId to newUser)
         return MetadataEvent.UserUpdated(newUser)
     }
 
     fun deleted(userId: String): MetadataEvent.UserDeleted? {
-        if (userId !in trackedIds) return null
+        if (userId !in trackedIds) {
+            return null
+        }
         latestUsers = latestUsers - userId
         return MetadataEvent.UserDeleted(userId)
     }
@@ -42,14 +46,18 @@ internal class ChannelEventTracker(private val chat: ChatInternal, channels: Col
 
     fun updated(patch: PNChannelMetadata): MetadataEvent.ChannelUpdated? {
         val channelId = patch.id
-        if (channelId !in trackedIds) return null
+        if (channelId !in trackedIds) {
+            return null
+        }
         val newChannel = latestChannels[channelId]?.plus(patch) ?: ChannelImpl.fromDTO(chat, patch)
         latestChannels = latestChannels + (channelId to newChannel)
         return MetadataEvent.ChannelUpdated(newChannel)
     }
 
     fun deleted(channelId: String): MetadataEvent.ChannelDeleted? {
-        if (channelId !in trackedIds) return null
+        if (channelId !in trackedIds) {
+            return null
+        }
         latestChannels = latestChannels - channelId
         return MetadataEvent.ChannelDeleted(channelId)
     }
@@ -83,7 +91,9 @@ internal class MembershipEventTracker(private val chat: ChatInternal, membership
 
     fun deleted(channelId: String, userId: String): MetadataEvent.MembershipDeleted? {
         val key = channelId to userId
-        if (findGiven(key) == null) return null
+        if (findGiven(key) == null) {
+            return null
+        }
         latestMemberships = latestMemberships - key
         return MetadataEvent.MembershipDeleted(channelId = channelId, userId = userId)
     }

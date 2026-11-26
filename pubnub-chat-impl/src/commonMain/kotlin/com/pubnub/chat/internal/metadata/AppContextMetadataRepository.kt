@@ -407,14 +407,14 @@ internal class AppContextMetadataRepository(private val pubNub: PubNub) : Metada
                 includeUserType = true,
                 includeUserStatus = false
             ),
-        ).then { it: PNMemberArrayResult ->
+        ).then { result: PNMemberArrayResult ->
             MembersResponse(
-                it.next,
-                it.prev,
-                it.totalCount!!,
-                it.status,
-                it.data.map {
-                    MembershipImpl.fromChannelMemberDTO(chat, it, channel)
+                result.next,
+                result.prev,
+                result.totalCount!!,
+                result.status,
+                result.data.map { member ->
+                    MembershipImpl.fromChannelMemberDTO(chat, member, channel)
                 }
             )
         }
